@@ -25,6 +25,27 @@ export default defineConfig({
     ],
     exclude: [],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'charts':      ['recharts'],
+          'tiptap':      [
+            '@tiptap/react', '@tiptap/core', '@tiptap/starter-kit',
+            '@tiptap/extension-highlight', '@tiptap/extension-typography',
+            '@tiptap/extension-underline', '@tiptap/extension-task-list',
+            '@tiptap/extension-task-item', '@tiptap/extension-table',
+            '@tiptap/extension-table-row', '@tiptap/extension-table-header',
+            '@tiptap/extension-table-cell', '@tiptap/extension-link',
+            '@tiptap/extension-image',
+          ],
+          'docx-export': ['docx', 'file-saver'],
+          'pdf-export':  ['jspdf', 'html2canvas'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   server: {
     port: 5173,
     proxy: {

@@ -1,7 +1,7 @@
 # ════════════════════════════════════════════════════════════════════════
 # LabOS v3 — Backend Docker image (used by Fly.io, Cloud Run, Render, etc.)
 # ════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # System deps needed for psycopg, cryptography, qrcode, etc.
 RUN apt-get update && apt-get install -y --no-install-recommends \

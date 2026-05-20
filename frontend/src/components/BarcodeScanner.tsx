@@ -364,7 +364,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
         };
       }
     } catch (e) {
-      console.log('Open Food Facts lookup failed:', e);
+      // lookup failed — try next strategy
     }
 
     // Strategy 2: Try UPC Database API (free tier)
@@ -385,7 +385,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
         };
       }
     } catch (e) {
-      console.log('UPC Database lookup failed:', e);
+      // lookup failed — barcode not in database
     }
 
     return null;

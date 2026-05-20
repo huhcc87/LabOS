@@ -164,7 +164,6 @@ export default function ProtocolDetailDrawer({ protocol: p, onClose, onUpdatePro
       onSaveExecution(session)
     }
     // Show toast or notification
-    console.log('Execution saved:', session)
   }
 
   const handleUpdateReagents = (reagents: string[]) => {
