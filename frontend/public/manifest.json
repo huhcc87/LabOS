@@ -1,0 +1,129 @@
+{
+  "name": "LabOS \u2014 Medical Research Platform",
+  "short_name": "LabOS",
+  "description": "Complete medical research lab management: ELN, samples, grants, IoT monitoring, clinical trials, biobank, vendor intelligence, and more.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#0d1b2a",
+  "theme_color": "#6366f1",
+  "categories": [
+    "productivity",
+    "science",
+    "medical",
+    "healthcare"
+  ],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lab Notebook",
+      "short_name": "ELN",
+      "url": "/?page=eln",
+      "description": "Electronic Lab Notebook \u2014 record experiments",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "IoT Monitor",
+      "short_name": "IoT",
+      "url": "/?page=iot-dashboard",
+      "description": "Real-time instrument monitoring",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Sample Hub",
+      "short_name": "Samples",
+      "url": "/?page=samples",
+      "description": "Manage lab samples",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Grant Hub",
+      "short_name": "Grants",
+      "url": "/?page=grants",
+      "description": "Write and manage grants",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Freezer Map",
+      "short_name": "Freezer",
+      "url": "/?page=freezer-biobank",
+      "description": "Biobank visual map",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "/?page=dashboard",
+      "description": "Lab overview dashboard",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

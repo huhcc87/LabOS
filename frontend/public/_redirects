@@ -1,0 +1,7 @@
+# ════════════════════════════════════════════════════════════════════════
+# Cloudflare Pages — SPA fallback
+# Any request that doesn't match a real file → serve index.html
+# This lets React Router (or our state-based routing) handle deep links.
+# ════════════════════════════════════════════════════════════════════════
+
+/*    /index.html   200

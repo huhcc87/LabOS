@@ -1,0 +1,44 @@
+# Files that shouldn't make it into the Docker image
+.env
+.env.local
+.env.*.local
+*.log
+server.log
+
+# Local data (re-created at runtime or stored in cloud DB)
+lab.db
+lab.db-journal
+*.sqlite
+*.sqlite3
+uploads/*
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Virtual envs
+venv/
+env/
+.venv/
+
+# Tests + dev tooling
+tests/
+*.test.py
+.git/
+.gitignore
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs / dev files
+*.md
+*.bak
+
+# Large fixture data
+seed_suppliers.py

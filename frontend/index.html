@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>LabOS — Medical Research Platform</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#6366f1" />
+    <!-- PWA / Apple -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LabOS" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- SEO / meta -->
+    <meta name="description" content="Complete medical research lab management: ELN, samples, grants, IoT monitoring, clinical trials, biobank, and more." />
+    <meta name="keywords" content="lab management, electronic lab notebook, grant management, biobank, clinical trials, medical research" />
+    <!-- Mobile safe area support -->
+    <style>
+      /* Mobile-first base overrides */
+      @media (max-width: 768px) {
+        .sidebar { display: none !important; }
+        .main-content { margin-left: 0 !important; padding-bottom: 80px !important; }
+        .mobile-nav { display: flex !important; }
+        .card { padding: 14px !important; }
+        .page { padding: 12px !important; }
+        h1 { font-size: 22px !important; }
+        .fab { display: none !important; }
+      }
+      .mobile-nav {
+        display: none;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: var(--surface, #13293d);
+        border-top: 1px solid var(--border, #2a4a67);
+        z-index: 9999;
+        padding: 8px 0;
+        padding-bottom: env(safe-area-inset-bottom, 8px);
+        justify-content: space-around;
+        align-items: center;
+      }
+      .mobile-nav-item {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 3px; padding: 4px 12px; cursor: pointer;
+        color: var(--text-muted, #8fa3b8); font-size: 10px; font-weight: 500;
+        border: none; background: none; border-radius: 8px; transition: color 0.15s;
+      }
+      .mobile-nav-item.active { color: var(--primary, #6366f1); }
+      .mobile-nav-item .nav-icon { font-size: 22px; }
+      /* Touch-friendly tap targets */
+      @media (max-width: 768px) {
+        button { min-height: 40px; }
+        input, select, textarea { font-size: 16px !important; } /* Prevent iOS zoom */
+        .btn { min-height: 44px; }
+      }
+      /* Safe area padding for notched phones */
+      @supports (padding: max(0px)) {
+        .mobile-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+# ════════════════════════════════════════════════════════════════════════
+# LabOS v3 — Root gitignore
+# ════════════════════════════════════════════════════════════════════════
+
+# Secrets — never commit
+.env
+.env.local
+.env.production
+.env.*.local
+*.pem
+*.key
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+.npm
+.eslintcache
+.pnpm-debug.log*
+
+# Vite / React
+dist/
+dist-ssr/
+*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+lab.db
+lab.db-journal
+
+# Uploads (local file storage)
+backend/uploads/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+
+# Capacitor (mobile)
+android/app/build/
+android/.gradle/
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+
+# Build artifacts
+*.tsbuildinfo
+.cache/
+
+# Local development
+server.log
+*.bak
+
+# Don't ship the prepared extension zips through git — rebuild per release
+dist-extension/
+
+# Local override for Claude
+.claude/
+
+# Large datasets / fixtures
+*.xlsx
+*.xls
+biomedical_suppliers_master_150.xlsx
+
+# Stale Grant module
+grant-writing-port/

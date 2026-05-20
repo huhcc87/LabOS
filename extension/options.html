@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LabOS Reagent Capture — Settings</title>
+<style>
+  body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 20px; background: #0f172a; color: #f1f5f9; }
+  h1 { font-size: 22px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  p.sub { color: #94a3b8; font-size: 14px; margin: 0 0 24px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #818cf8; }
+  .card .desc { font-size: 12px; color: #94a3b8; margin: 0 0 12px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; font-size: 13px; margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-ghost { background: transparent; color: #cbd5e1; border: 1px solid #334155; }
+  .vendor-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .vendor-item { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 8px; align-items: center; padding: 8px; background: #0f172a; border-radius: 6px; }
+  .pre-supported { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-block; padding: 4px 10px; background: rgba(99,102,241,0.15); color: #818cf8; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .status { padding: 8px 12px; border-radius: 6px; font-size: 12px; }
+  .status.ok { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .status.err { background: rgba(239,68,68,0.15); color: #f87171; }
+  .saved { color: #4ade80; font-size: 12px; margin-left: 12px; }
+</style>
+</head>
+<body>
+  <h1>🧪 LabOS Reagent Capture</h1>
+  <p class="sub">Capture reagents from any biomedical vendor and route them to LabOS for centralized purchasing.</p>
+
+  <div class="card">
+    <h2>Connection</h2>
+    <p class="desc">Point the extension at your LabOS backend. Captured items will sync automatically.</p>
+    <label>LabOS API base URL</label>
+    <input id="apiBase" type="url" placeholder="http://localhost:8000/api" />
+    <label>API token (from LabOS → Settings → Tokens)</label>
+    <input id="apiToken" type="password" placeholder="paste your bearer token here" />
+    <button class="btn btn-primary" id="save-connection">Save</button>
+    <button class="btn btn-ghost" id="test-connection">Test connection</button>
+    <span class="saved" id="saved-msg"></span>
+    <div id="connection-status" class="status" style="margin-top: 10px; display: none;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Pre-supported vendors</h2>
+    <p class="desc">These vendors work out of the box — just visit a product page and click the orange "Add to LabOS" button.</p>
+    <div class="pre-supported">
+      <span class="chip">Sigma-Aldrich</span>
+      <span class="chip">MilliporeSigma</span>
+      <span class="chip">Thermo Fisher</span>
+      <span class="chip">Invitrogen</span>
+      <span class="chip">Life Technologies</span>
+      <span class="chip">Fisher Scientific</span>
+      <span class="chip">VWR</span>
+      <span class="chip">Bio-Rad</span>
+      <span class="chip">Abcam</span>
+      <span class="chip">NEB</span>
+      <span class="chip">IDT</span>
+      <span class="chip">R&D Systems</span>
+      <span class="chip">Cell Signaling</span>
+      <span class="chip">Qiagen</span>
+      <span class="chip">Santa Cruz</span>
+      <span class="chip">Miltenyi Biotec</span>
+      <span class="chip">Eppendorf</span>
+      <span class="chip">Beckman</span>
+      <span class="chip">Promega</span>
+      <span class="chip">Takara Bio</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Crowdsourced catalog enrichment (opt-in)</h2>
+    <p class="desc">Share parsed product details (anonymized — no prices, no user info) with the LabOS community catalog. Helps the extension work on new vendor sites for everyone. Off by default.</p>
+    <label style="display:flex;align-items:center;gap:8px;">
+      <input id="crowdsource" type="checkbox" /> <span>Contribute parsed product metadata anonymously</span>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Custom vendors</h2>
+    <p class="desc">Add any other vendor you order from. Provide the hostname and (optionally) CSS selectors that identify product name, catalog #, price on their pages. Most sites with schema.org Product microdata will work without any selectors.</p>
+    <div class="vendor-list" id="custom-vendor-list"></div>
+    <div class="row">
+      <input id="cv-host" placeholder="hostname (e.g. mycompany.com)" />
+      <input id="cv-vendor" placeholder="Display name (e.g. MyCompany)" />
+    </div>
+    <div class="row">
+      <input id="cv-name-sel" placeholder="Name selector (optional, e.g. h1.product-title)" />
+      <input id="cv-catalog-sel" placeholder="Catalog # selector (optional)" />
+    </div>
+    <div class="row">
+      <input id="cv-price-sel" placeholder="Price selector (optional, e.g. .price)" />
+      <input id="cv-size-sel" placeholder="Size/pack selector (optional)" />
+    </div>
+    <button class="btn btn-primary" id="add-vendor">+ Add vendor</button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
