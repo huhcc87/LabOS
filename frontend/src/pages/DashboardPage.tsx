@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, AreaChart, Area,
 } from 'recharts';
 import toast from 'react-hot-toast';
-import { dashboardApi, tasksApi } from '../lib/api';
+import { dashboardApi, tasksApi, instrumentsApi, iotApi, freezerApi, grantSubmissionsApi } from '../lib/api';
 import type { DashboardSummary } from '../lib/types';
 import { formatDateTime, statusColor } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
@@ -78,21 +78,57 @@ export default function DashboardPage() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [todayTasks, setTodayTasks] = useState<any[]>([]);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [equipmentAtRisk, setEquipmentAtRisk] = useState<any[]>([]);
+  const [expiringItems, setExpiringItems] = useState<any[]>([]);
+  const [grantDeadlines, setGrantDeadlines] = useState<any[]>([]);
+  const [sensorAlerts, setSensorAlerts] = useState<any[]>([]);
+  const [sensorSparkData, setSensorSparkData] = useState<{ name: string; value: number }[]>([]);
 
   const load = useCallback((showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     const today = new Date().toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+
     Promise.all([
       dashboardApi.summary(),
       tasksApi.list(1, 50, ''),
+      instrumentsApi.list(1, 50, '').catch(() => ({ data: { items: [] } })),
+      iotApi.listAlerts(true).catch(() => ({ data: [] })),
+      freezerApi.getExpiring(14).catch(() => ({ data: [] })),
+      grantSubmissionsApi.list(1, 20).catch(() => ({ data: { items: [] } })),
     ])
-      .then(([summaryRes, tasksRes]) => {
+      .then(([summaryRes, tasksRes, instrRes, alertsRes, expiringRes, grantsRes]) => {
         setSummary(summaryRes.data);
         const tasks = (tasksRes.data as any).items || [];
         setTodayTasks(tasks.filter((t: any) =>
           t.due_date === today || t.status === 'overdue'
         ).slice(0, 8));
         setLastRefreshed(new Date());
+
+        // Equipment at risk: overdue maintenance or critical status
+        const instruments: any[] = (instrRes.data as any).items || [];
+        setEquipmentAtRisk(instruments.filter((i: any) =>
+          i.status === 'maintenance_due' || i.status === 'offline' ||
+          (i.next_maintenance_date && i.next_maintenance_date <= in30)
+        ).slice(0, 4));
+
+        // Sensor alerts (unacknowledged)
+        const alerts: any[] = Array.isArray(alertsRes.data) ? alertsRes.data : [];
+        setSensorAlerts(alerts.slice(0, 5));
+        setSensorSparkData(alerts.slice(0, 20).map((a: any, idx: number) => ({
+          name: String(idx),
+          value: a.level === 'critical' ? 3 : a.level === 'warning' ? 2 : 1,
+        })));
+
+        // Expiring freezer samples
+        const expiring: any[] = Array.isArray(expiringRes.data) ? expiringRes.data : [];
+        setExpiringItems(expiring.slice(0, 4));
+
+        // Grant deadlines within 30 days
+        const grants: any[] = (grantsRes.data as any).items || [];
+        setGrantDeadlines(grants.filter((g: any) =>
+          g.deadline_date && g.deadline_date >= today && g.deadline_date <= in30
+        ).slice(0, 4));
       })
       .catch(() => toast.error('Failed to load dashboard'))
       .finally(() => { setLoading(false); setRefreshing(false); });
@@ -278,6 +314,162 @@ export default function DashboardPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* ── Smart Lab Intelligence ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 24 }}>
+
+        {/* Equipment Health */}
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>🔬</span>
+            <h3 style={{ fontSize: 14, fontWeight: 700 }}>Equipment Health</h3>
+            {equipmentAtRisk.length > 0 && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: 10, padding: '2px 8px' }}>
+                {equipmentAtRisk.length} at risk
+              </span>
+            )}
+          </div>
+          {equipmentAtRisk.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '12px 0', color: '#22c55e', fontSize: 13, fontWeight: 600 }}>
+              All equipment healthy ✓
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {equipmentAtRisk.map((eq: any) => {
+                const isOffline = eq.status === 'offline';
+                const color = isOffline ? '#ef4444' : '#f59e0b';
+                return (
+                  <div key={eq.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{eq.name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        {eq.next_maintenance_date ? `Maint: ${eq.next_maintenance_date}` : eq.status}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase' }}>{isOffline ? 'Offline' : 'Due'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => navigate('protocols')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+            View All Equipment →
+          </button>
+        </div>
+
+        {/* Inventory Risk */}
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>📦</span>
+            <h3 style={{ fontSize: 14, fontWeight: 700 }}>Inventory Risk</h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            {[
+              { label: 'Low Stock', value: (summary as any).low_stock_items ?? 0, color: '#f59e0b', icon: '⚠' },
+              { label: 'Expiring Soon', value: expiringItems.length, color: '#ef4444', icon: '⏰' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center', padding: '10px 6px', background: `${s.color}12`, borderRadius: 8, border: `1px solid ${s.color}30` }}>
+                <div style={{ fontSize: 11 }}>{s.icon}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {expiringItems.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {expiringItems.slice(0, 3).map((slot: any, i: number) => (
+                <div key={i} style={{ fontSize: 11, color: '#ef4444', background: '#ef444410', borderRadius: 5, padding: '4px 8px' }}>
+                  {slot.sample_label ?? slot.barcode ?? `Slot ${slot.id}`} — expires {slot.expiry_date}
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => navigate('inventory')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+            Manage Inventory →
+          </button>
+        </div>
+
+        {/* Grant Deadlines */}
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>📝</span>
+            <h3 style={{ fontSize: 14, fontWeight: 700 }}>Grant Deadlines</h3>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>next 30 days</span>
+          </div>
+          {grantDeadlines.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '12px 0', color: 'var(--text-muted)', fontSize: 12 }}>
+              No grant deadlines in the next 30 days
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {grantDeadlines.map((g: any) => {
+                const daysLeft = Math.ceil((new Date(g.deadline_date).getTime() - Date.now()) / 86_400_000);
+                const color = daysLeft <= 7 ? '#ef4444' : daysLeft <= 14 ? '#f59e0b' : '#22c55e';
+                return (
+                  <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}10`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.title ?? g.grant_type}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{g.deadline_date}</div>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{daysLeft}d</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => navigate('grants')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+            Open Grant Hub →
+          </button>
+        </div>
+
+        {/* Sensor Alerts */}
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 18 }}>🌡</span>
+            <h3 style={{ fontSize: 14, fontWeight: 700 }}>Sensor Alerts</h3>
+            {sensorAlerts.length > 0 && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 10, padding: '2px 8px' }}>
+                {sensorAlerts.length} active
+              </span>
+            )}
+          </div>
+          {sensorSparkData.length > 0 && (
+            <div style={{ height: 40, marginBottom: 8 }}>
+              <ResponsiveContainer width="100%" height={40}>
+                <AreaChart data={sensorSparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} fill="url(#sparkGrad)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+          {sensorAlerts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '12px 0', color: '#22c55e', fontSize: 13, fontWeight: 600 }}>
+              No active sensor alerts ✓
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {sensorAlerts.slice(0, 4).map((a: any) => {
+                const color = a.level === 'critical' ? '#ef4444' : '#f59e0b';
+                return (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', flexShrink: 0 }}>{a.level}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.message ?? a.sensor_name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => navigate('iot')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+            IoT Dashboard →
+          </button>
+        </div>
       </div>
 
       {/* ── Main Content: 2-column ── */}

@@ -5,20 +5,107 @@ live + historical data to the frontend.
 Authentication:
   - Pi devices POST readings using an X-API-Key header (per-sensor key).
   - Dashboard GET endpoints require a normal JWT bearer token.
+  - WebSocket /iot/ws streams live readings to connected browser clients.
+  - MQTT listener (optional) relays paho-mqtt messages into the WS broadcast.
 """
 
+import asyncio
+import json
+import logging
 import secrets
+import threading
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import IoTAlert, IoTAlertSeverity, IoTReading, IoTSensor, IoTSensorType
 from app.services.auth import get_current_user
+
+log = logging.getLogger(__name__)
+
+# ─── WebSocket connection manager ────────────────────────────────────────────
+
+class _WSManager:
+    """Thread-safe manager for all active WebSocket connections."""
+
+    def __init__(self):
+        self._connections: list[WebSocket] = []
+        self._lock = asyncio.Lock()
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        async with self._lock:
+            self._connections.append(ws)
+
+    async def disconnect(self, ws: WebSocket):
+        async with self._lock:
+            self._connections = [c for c in self._connections if c is not ws]
+
+    async def broadcast(self, payload: dict):
+        """Send JSON payload to all connected clients; silently drop dead sockets."""
+        text = json.dumps(payload)
+        async with self._lock:
+            live = list(self._connections)
+        dead = []
+        for ws in live:
+            try:
+                await ws.send_text(text)
+            except Exception:
+                dead.append(ws)
+        if dead:
+            async with self._lock:
+                self._connections = [c for c in self._connections if c not in dead]
+
+
+_ws_manager = _WSManager()
+
+
+# ─── MQTT subscriber (optional, starts only when broker is configured) ────────
+
+def _start_mqtt_listener(broker_host: str, broker_port: int, topic: str, loop: asyncio.AbstractEventLoop):
+    """Run a blocking paho-mqtt loop in a daemon thread and forward messages
+    to the WebSocket broadcast coroutine in the main asyncio event loop."""
+    try:
+        import paho.mqtt.client as mqtt  # type: ignore
+    except ImportError:
+        log.warning("paho-mqtt not installed; MQTT listener disabled")
+        return
+
+    def on_message(_client, _userdata, msg):
+        try:
+            payload = json.loads(msg.payload.decode())
+        except Exception:
+            payload = {"raw": msg.payload.decode()}
+        payload["_topic"] = msg.topic
+        asyncio.run_coroutine_threadsafe(_ws_manager.broadcast({"type": "mqtt", "data": payload}), loop)
+
+    client = mqtt.Client()
+    client.on_message = on_message
+    try:
+        client.connect(broker_host, broker_port, keepalive=60)
+        client.subscribe(topic)
+        client.loop_forever()
+    except Exception as exc:
+        log.warning("MQTT connection failed: %s — live sensor relay disabled", exc)
+
+
+def maybe_start_mqtt():
+    """Called once at startup. No-ops if MQTT_BROKER_HOST is not configured."""
+    broker = getattr(settings, "mqtt_broker_host", "")
+    if not broker:
+        return
+    port = getattr(settings, "mqtt_broker_port", 1883)
+    topic = getattr(settings, "mqtt_topic", "lab/sensors/#")
+    loop = asyncio.get_event_loop()
+    t = threading.Thread(target=_start_mqtt_listener, args=(broker, port, topic, loop), daemon=True)
+    t.start()
+    log.info("MQTT listener thread started for %s:%s topic=%s", broker, port, topic)
 
 router = APIRouter(prefix="/iot", tags=["iot"])
 
@@ -217,7 +304,7 @@ def delete_sensor(
 # ─── Pi → server: POST a reading ─────────────────────────────────────────────
 
 @router.post("/readings/{sensor_key}")
-def post_reading(
+async def post_reading(
     sensor_key: str,
     body: ReadingIn,
     x_api_key: str = Header(...),
@@ -231,14 +318,47 @@ def post_reading(
     if not sensor:
         raise HTTPException(401, "Invalid sensor key or API key")
 
-    reading = IoTReading(
-        sensor_id=sensor.id,
-        value=body.value,
-        recorded_at=body.recorded_at or datetime.utcnow(),
-    )
+    ts = body.recorded_at or datetime.utcnow()
+    reading = IoTReading(sensor_id=sensor.id, value=body.value, recorded_at=ts)
     db.add(reading)
     db.commit()
+
+    # Broadcast live reading to all connected WebSocket clients
+    await _ws_manager.broadcast({
+        "type": "reading",
+        "sensor_id": sensor.id,
+        "sensor_key": sensor.sensor_key,
+        "sensor_name": sensor.name,
+        "unit": sensor.unit,
+        "value": body.value,
+        "status": _sensor_status(sensor, body.value),
+        "recorded_at": ts.isoformat(),
+    })
     return {"ok": True, "sensor_id": sensor.id, "value": body.value}
+
+
+# ─── WebSocket live stream ────────────────────────────────────────────────────
+
+@router.websocket("/ws")
+async def iot_websocket(ws: WebSocket):
+    """
+    Connect to receive real-time sensor readings as JSON frames:
+      { type: "reading", sensor_id, sensor_name, value, unit, status, recorded_at }
+      { type: "mqtt",    data: { ... raw MQTT payload ... } }
+      { type: "ping" }   — sent every 30 s to keep the connection alive
+    """
+    await _ws_manager.connect(ws)
+    try:
+        while True:
+            # Send a keepalive ping every 30 s; also drain any incoming messages
+            try:
+                await asyncio.wait_for(ws.receive_text(), timeout=30.0)
+            except asyncio.TimeoutError:
+                await ws.send_text(json.dumps({"type": "ping"}))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await _ws_manager.disconnect(ws)
 
 
 # ─── History ─────────────────────────────────────────────────────────────────

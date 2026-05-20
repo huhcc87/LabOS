@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # AI (optional — leave blank to use template-based generation)
     openai_api_key: str = ""
 
+    # IoT / MQTT (optional — leave blank to disable MQTT relay)
+    mqtt_broker_host: str = ""
+    mqtt_broker_port: int = 1883
+    mqtt_topic: str = "lab/sensors/#"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator('cors_origins', mode='before')

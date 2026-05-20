@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useIoTWebSocket } from '../hooks/useIoTWebSocket';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType,
@@ -434,6 +435,7 @@ export default function IoTDashboardPage() {
   const timerRef = useRef<number | null>(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const { frames: wsFrames, connState: wsState } = useIoTWebSocket(100);
 
   const fetchRealAlerts = useCallback(async () => {
     if (!token) return;
@@ -668,8 +670,51 @@ export default function IoTDashboardPage() {
   const warnCount = sensors.filter(s => s.status === 'warning').length;
   const unackAlerts = alerts.filter(a => !a.acknowledged).length;
 
+  const wsColor = wsState === 'open' ? '#4ade80' : wsState === 'connecting' ? '#fbbf24' : '#f87171';
+  const wsLabel = wsState === 'open' ? 'WS Live' : wsState === 'connecting' ? 'WS Connecting…' : 'WS Offline';
+
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
+      {/* Live WebSocket feed panel */}
+      <div style={{
+        background: '#091520', border: '1px solid #1e3a54', borderRadius: 10,
+        padding: '12px 16px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 8,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 9, height: 9, borderRadius: '50%', background: wsColor, display: 'inline-block', flexShrink: 0 }} />
+          <span style={{ fontWeight: 600, fontSize: 13, color: '#a8d5ff' }}>{wsLabel}</span>
+          <span style={{ fontSize: 11, color: '#5a7a96', marginLeft: 'auto' }}>
+            WebSocket live stream — {wsFrames.length} frame{wsFrames.length !== 1 ? 's' : ''} received
+          </span>
+        </div>
+        {wsFrames.length === 0 ? (
+          <p style={{ fontSize: 12, color: '#5a7a96', margin: 0 }}>
+            Waiting for live sensor data… POST a reading from your Raspberry Pi or the REST API to see frames here.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 140, overflowY: 'auto' }}>
+            {wsFrames.slice(0, 10).map((f, i) => {
+              const statusColor = f.status === 'critical' ? '#f87171' : f.status === 'warning' ? '#fbbf24' : '#4ade80';
+              return (
+                <div key={i} style={{ display: 'flex', gap: 10, fontSize: 12, color: '#c8d9ea', alignItems: 'center' }}>
+                  <span style={{ color: '#5a7a96', width: 70, flexShrink: 0 }}>
+                    {f.recorded_at ? new Date(f.recorded_at).toLocaleTimeString() : '—'}
+                  </span>
+                  <span style={{ fontWeight: 600, minWidth: 120 }}>{f.sensor_name ?? f.sensor_key ?? 'sensor'}</span>
+                  <span style={{ color: statusColor, fontWeight: 700 }}>
+                    {f.value != null ? `${f.value} ${f.unit ?? ''}` : JSON.stringify(f.data)}
+                  </span>
+                  {f.status && (
+                    <span style={{ fontSize: 10, background: statusColor + '22', color: statusColor, borderRadius: 4, padding: '1px 5px' }}>
+                      {f.status}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>

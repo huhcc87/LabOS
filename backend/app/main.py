@@ -46,6 +46,7 @@ from app.api import email_notifications
 from app.api import org_hierarchy
 from app.api import freezer, biosketch, grant_versions, grant_submissions
 from app.api import reagent_cart, payments, procurement_extras, lab_members
+from app.api import export as export_router
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.migrations import auto_migrate
@@ -60,6 +61,8 @@ os.makedirs(settings.upload_dir, exist_ok=True)
 async def lifespan(app: FastAPI):
     auto_migrate()
     start_scheduler()
+    from app.api.iot import maybe_start_mqtt
+    maybe_start_mqtt()
     yield
     stop_scheduler()
 
@@ -128,6 +131,7 @@ app.include_router(reagent_cart.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
 app.include_router(procurement_extras.router, prefix="/api")
 app.include_router(lab_members.router, prefix="/api")
+app.include_router(export_router.router, prefix="/api")
 
 
 @app.get("/")
