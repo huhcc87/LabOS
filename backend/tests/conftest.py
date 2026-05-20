@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base, get_db
 from app.core.security import get_password_hash
+from app.core.security_middleware import _rate_buckets
 from app.main import app
 from app.models.models import User, UserRole
 
@@ -26,6 +27,8 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
+    # Drop then recreate to avoid stale data from a previous interrupted run.
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     admin = User(
@@ -47,6 +50,20 @@ def setup_db():
     db.close()
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits():
+    """Reset in-memory rate-limit counters and user sessions before each test
+    to avoid 429 errors and token_hash collisions between back-to-back tests."""
+    from app.models.models import UserSession
+    _rate_buckets.clear()
+    db = TestingSessionLocal()
+    db.query(UserSession).delete()
+    db.commit()
+    db.close()
+    yield
+    _rate_buckets.clear()
 
 
 @pytest.fixture
