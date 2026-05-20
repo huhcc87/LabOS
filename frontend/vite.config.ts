@@ -41,6 +41,7 @@ export default defineConfig({
           ],
           'docx-export': ['docx', 'file-saver'],
           'pdf-export':  ['jspdf', 'html2canvas'],
+          'protocol-lib': ['reactflow', 'react-qr-code', 'dexie'],
         },
       },
     },

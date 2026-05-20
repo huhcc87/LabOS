@@ -144,7 +144,7 @@ function AppInner() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <DashboardPage />;
-      case 'protocols': return <LabHubPage />;
+      case 'protocols': return <ProtocolsPage />;
       case 'lab-hub': return <LabHubPage />;
       case 'instruments': return <LabHubPage />;
       case 'bookings': return <LabHubPage />;
