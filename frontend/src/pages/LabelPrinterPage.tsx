@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Barcode from '../components/Barcode';
+import toast from 'react-hot-toast';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -94,15 +95,52 @@ function generateLabId(prefix = 'LAB'): string {
   return `${prefix}-${yr}-${rand}`;
 }
 
-// ─── Typography settings ──────────────────────────────────────────────────────
+// ─── Typography & color settings ─────────────────────────────────────────────
 interface Typography {
-  namePt: number;    // name / title font size (pt)
-  fieldPt: number;   // secondary fields font size (pt)
-  uidPt: number;     // brand/UID font size (pt)
-  qrPct: number;     // QR code size as % of label height (10–95)
+  namePt: number;
+  fieldPt: number;
+  uidPt: number;
+  qrPct: number;
+  fontFamily: string;
+  nameColor: string;
+  fieldColor: string;
+  fieldLabelColor: string;
+  labelBg: string;
+  borderColor: string;
 }
 
-const DEFAULT_TYPOGRAPHY: Typography = { namePt: 8, fieldPt: 6, uidPt: 5, qrPct: 60 };
+const DEFAULT_TYPOGRAPHY: Typography = {
+  namePt: 8, fieldPt: 6, uidPt: 5, qrPct: 60,
+  fontFamily: 'system',
+  nameColor: '#0f172a',
+  fieldColor: '#1e293b',
+  fieldLabelColor: '#94a3b8',
+  labelBg: '#ffffff',
+  borderColor: '#94a3b8',
+};
+
+const FONT_FAMILIES: Record<string, { label: string; css: string }> = {
+  system:    { label: 'System (default)',  css: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+  mono:      { label: 'Monospace',         css: 'ui-monospace, "Courier New", monospace' },
+  serif:     { label: 'Serif',             css: 'Georgia, "Times New Roman", serif' },
+  condensed: { label: 'Condensed',         css: '"Arial Narrow", Arial, sans-serif' },
+  rounded:   { label: 'Rounded',           css: '"Trebuchet MS", Tahoma, sans-serif' },
+};
+
+// ─── Saved template ───────────────────────────────────────────────────────────
+interface LabelTemplate {
+  id: string;
+  name: string;
+  createdAt: string;
+  entityType: string;
+  sizeId: string;
+  showQr: boolean;
+  showBarcode: boolean;
+  brand: string;
+  fields: LabelField[];
+  copies: number;
+  typo: Typography;
+}
 
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
 function LabelCard({
@@ -131,13 +169,17 @@ function LabelCard({
   // UID display: show last segment on tiny, full on standard
   const uidDisplay = isTiny ? uid.split('-').slice(-1)[0] : uid;
 
+  const ff = FONT_FAMILIES[typo.fontFamily]?.css ?? FONT_FAMILIES.system.css;
+
   return (
     <div
       className="label-card"
       style={{
         width: w, height: h,
-        background: '#ffffff', color: '#0f172a',
-        border: '1px dashed #94a3b8',
+        background: typo.labelBg,
+        color: typo.nameColor,
+        border: `1px dashed ${typo.borderColor}`,
+        fontFamily: ff,
         boxSizing: 'border-box',
         padding: isTiny ? 2 : 4,
         overflow: 'hidden',
@@ -165,7 +207,8 @@ function LabelCard({
             fontSize: typo.namePt,
             fontWeight: 800,
             lineHeight: 1.15,
-            color: '#0f172a',
+            color: typo.nameColor,
+            fontFamily: ff,
             wordBreak: 'break-word',
             overflowWrap: 'anywhere',
           }}>
@@ -179,11 +222,12 @@ function LabelCard({
             fontSize: typo.fieldPt,
             fontWeight: 600,
             lineHeight: 1.1,
-            color: '#1e293b',
+            color: typo.fieldColor,
+            fontFamily: ff,
             wordBreak: 'break-word',
             overflowWrap: 'anywhere',
           }}>
-            <span style={{ color: '#94a3b8', fontWeight: 400 }}>{f.label}: </span>
+            <span style={{ color: typo.fieldLabelColor, fontWeight: 400 }}>{f.label}: </span>
             {f.value}
           </div>
         ))}
@@ -191,8 +235,8 @@ function LabelCard({
         {/* Brand + UID */}
         <div style={{
           fontSize: typo.uidPt,
-          fontFamily: 'ui-monospace, monospace',
-          color: '#94a3b8',
+          fontFamily: ff,
+          color: typo.fieldLabelColor,
           lineHeight: 1,
           wordBreak: 'break-all',
           marginTop: 1,
@@ -228,6 +272,14 @@ export default function LabelPrinterPage() {
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
 
+  // ── Saved templates ──────────────────────────────────────────────────────────
+  const [savedTemplates, setSavedTemplates] = useState<LabelTemplate[]>(() => {
+    try { return JSON.parse(localStorage.getItem('labos_label_templates') || '[]'); }
+    catch { return []; }
+  });
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+
   const updateTypo = (patch: Partial<Typography>) => setTypo(prev => ({ ...prev, ...patch }));
 
   const size = useMemo(() => LABEL_SIZES.find(s => s.id === sizeId)!, [sizeId]);
@@ -256,6 +308,43 @@ export default function LabelPrinterPage() {
   };
 
   const handleNewUid = () => setUid(generateLabId());
+
+  const persistTemplates = (list: LabelTemplate[]) => {
+    setSavedTemplates(list);
+    localStorage.setItem('labos_label_templates', JSON.stringify(list));
+  };
+
+  const saveTemplate = () => {
+    const name = templateName.trim();
+    if (!name) return;
+    const tpl: LabelTemplate = {
+      id: Date.now().toString(),
+      name,
+      createdAt: new Date().toISOString(),
+      entityType, sizeId, showQr, showBarcode, brand, fields, copies, typo,
+    };
+    persistTemplates([...savedTemplates, tpl]);
+    setTemplateName('');
+    setShowSaveModal(false);
+    toast.success(`Template "${name}" saved`);
+  };
+
+  const loadTemplate = (tpl: LabelTemplate) => {
+    setEntityType(tpl.entityType);
+    setSizeId(tpl.sizeId);
+    setShowQr(tpl.showQr);
+    setShowBarcode(tpl.showBarcode);
+    setBrand(tpl.brand);
+    setFields(tpl.fields);
+    setCopies(tpl.copies);
+    setTypo(tpl.typo);
+    setUid(generateLabId());
+    toast.success(`Loaded "${tpl.name}"`);
+  };
+
+  const deleteTemplate = (id: string) => {
+    persistTemplates(savedTemplates.filter(t => t.id !== id));
+  };
 
   const tryConnectPrinter = async (vendorId: number | null) => {
     setShowPrinterModal(false);
@@ -334,6 +423,10 @@ export default function LabelPrinterPage() {
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
             Connect printer
           </button>
+          <button onClick={() => { setTemplateName(''); setShowSaveModal(true); }}
+            style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid #22c55e', background: 'rgba(34,197,94,0.1)', color: '#22c55e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            💾 Save Template
+          </button>
           <button onClick={handlePrint}
             style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', background: 'var(--primary, #6366f1)', color: '#fff', cursor: 'pointer' }}>
             🖨️ Print {copies > 1 ? `× ${copies}` : ''}
@@ -387,6 +480,81 @@ export default function LabelPrinterPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 12px', background: 'rgba(99,102,241,0.07)', borderRadius: 8 }}>
               <strong>Note:</strong> Web USB pairing requires Chrome or Edge. After pairing, use <strong>Print</strong> to send labels — LabOS uses your OS print dialog for full print-quality output.
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Save Template Modal ──────────────────────────────────────────────── */}
+      {showSaveModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setShowSaveModal(false)}>
+          <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 28, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>💾 Save Label Template</div>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              Save your current label setup — size, fields, font settings — so you can reload it instantly next time.
+            </p>
+            <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Template name</div>
+            <input
+              autoFocus
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveTemplate()}
+              placeholder={`e.g. "Cryo Vial – Human Tissue" or "Ampicillin Reagent"`}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13, marginBottom: 6, boxSizing: 'border-box' }}
+            />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 18 }}>
+              Saving: <strong>{ENTITY_PRESETS[entityType]?.emoji} {ENTITY_PRESETS[entityType]?.label}</strong> · {LABEL_SIZES.find(s => s.id === sizeId)?.name} · {fields.filter(f => f.show).length} fields
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowSaveModal(false)}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>
+                Cancel
+              </button>
+              <button onClick={saveTemplate} disabled={!templateName.trim()}
+                style={{ flex: 2, padding: '9px 0', borderRadius: 8, border: 'none', background: templateName.trim() ? '#22c55e' : 'var(--border)', color: templateName.trim() ? '#fff' : 'var(--text-muted)', cursor: templateName.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: 14 }}>
+                💾 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Saved Templates Panel ────────────────────────────────────────────── */}
+      {savedTemplates.length > 0 && (
+        <div style={{ marginBottom: 20, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: '14px 16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>📂 Saved Templates <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>({savedTemplates.length})</span></div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Click a template to load it instantly</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {savedTemplates.map(tpl => {
+              const preset = ENTITY_PRESETS[tpl.entityType];
+              const tplSize = LABEL_SIZES.find(s => s.id === tpl.sizeId);
+              const date = new Date(tpl.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              return (
+                <div key={tpl.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'var(--surface2)', borderRadius: 10, padding: '10px 14px',
+                  border: '1px solid var(--border)', flex: '0 0 auto', maxWidth: 260,
+                  transition: 'border-color 0.15s',
+                }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>{preset?.emoji || '🏷️'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tpl.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tplSize?.name || tpl.sizeId} · {date}</div>
+                  </div>
+                  <button onClick={() => loadTemplate(tpl)}
+                    style={{ padding: '5px 10px', borderRadius: 6, border: 'none', background: 'var(--accent, #6366f1)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                    Load
+                  </button>
+                  <button onClick={() => deleteTemplate(tpl.id)} title="Delete template"
+                    style={{ width: 24, height: 24, borderRadius: 6, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#ef4444', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+                    ×
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -494,38 +662,107 @@ export default function LabelPrinterPage() {
             </p>
           </div>
 
-          {/* Typography & size */}
+          {/* Label Style Customisation */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Font & figure size</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>🎨 Label Style & Font</div>
               <button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)}
                 style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                Reset
+                Reset all
               </button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {([
-                { label: 'Name font (pt)', key: 'namePt', min: 4, max: 32 },
-                { label: 'Fields font (pt)', key: 'fieldPt', min: 3, max: 20 },
-                { label: 'UID font (pt)', key: 'uidPt', min: 3, max: 16 },
-                { label: 'QR / barcode size (%)', key: 'qrPct', min: 20, max: 95 },
-              ] as { label: string; key: keyof Typography; min: number; max: number }[]).map(row => (
-                <div key={row.key}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.label}</label>
-                    <input
-                      type="number" min={row.min} max={row.max} value={typo[row.key]}
-                      onChange={e => updateTypo({ [row.key]: Math.max(row.min, Math.min(row.max, parseInt(e.target.value) || row.min)) })}
-                      style={{ width: 48, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, textAlign: 'center' }}
-                    />
+
+            {/* Font family */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Font family</div>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {Object.entries(FONT_FAMILIES).map(([key, ff]) => (
+                  <button key={key} onClick={() => updateTypo({ fontFamily: key })}
+                    style={{
+                      padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer', border: '1px solid',
+                      borderColor: typo.fontFamily === key ? 'var(--accent, #6366f1)' : 'var(--border)',
+                      background: typo.fontFamily === key ? 'rgba(99,102,241,0.12)' : 'transparent',
+                      color: typo.fontFamily === key ? 'var(--accent, #6366f1)' : 'var(--text-muted)',
+                      fontFamily: ff.css, fontWeight: 600,
+                    }}>
+                    {ff.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Font sizes */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Font sizes</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {([
+                  { label: 'Name size (pt)', key: 'namePt', min: 4, max: 32, color: typo.nameColor },
+                  { label: 'Fields size (pt)', key: 'fieldPt', min: 3, max: 20, color: typo.fieldColor },
+                  { label: 'UID size (pt)', key: 'uidPt', min: 3, max: 16, color: typo.fieldLabelColor },
+                  { label: 'QR / barcode (%)', key: 'qrPct', min: 20, max: 95, color: '#6366f1' },
+                ] as { label: string; key: keyof Typography; min: number; max: number; color: string }[]).map(row => (
+                  <div key={row.key}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.label}</label>
+                      <input
+                        type="number" min={row.min} max={row.max} value={typo[row.key] as number}
+                        onChange={e => updateTypo({ [row.key]: Math.max(row.min, Math.min(row.max, parseInt(e.target.value) || row.min)) })}
+                        style={{ width: 46, padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 11, textAlign: 'center' }}
+                      />
+                    </div>
+                    <input type="range" min={row.min} max={row.max} value={typo[row.key] as number}
+                      onChange={e => updateTypo({ [row.key]: parseInt(e.target.value) })}
+                      style={{ width: '100%', accentColor: row.color }} />
                   </div>
-                  <input
-                    type="range" min={row.min} max={row.max} value={typo[row.key]}
-                    onChange={e => updateTypo({ [row.key]: parseInt(e.target.value) })}
-                    style={{ width: '100%', accentColor: 'var(--primary, #6366f1)' }}
-                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Colors</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {([
+                  { label: 'Label background', key: 'labelBg' },
+                  { label: 'Border color', key: 'borderColor' },
+                  { label: 'Name text', key: 'nameColor' },
+                  { label: 'Field values', key: 'fieldColor' },
+                  { label: 'Field labels', key: 'fieldLabelColor' },
+                ] as { label: string; key: keyof Typography }[]).map(row => (
+                  <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="color"
+                      value={typo[row.key] as string}
+                      onChange={e => updateTypo({ [row.key]: e.target.value })}
+                      style={{ width: 32, height: 32, padding: 2, borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', background: 'none' }}
+                    />
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.3 }}>{row.label}</label>
+                  </div>
+                ))}
+                {/* Quick color presets */}
+                <div style={{ gridColumn: '1/-1', marginTop: 4 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 5 }}>Quick themes</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'White', bg: '#ffffff', border: '#94a3b8', name: '#0f172a', field: '#1e293b', fl: '#94a3b8' },
+                      { label: 'Cream', bg: '#fffbeb', border: '#d97706', name: '#92400e', field: '#78350f', fl: '#d97706' },
+                      { label: 'Ice Blue', bg: '#eff6ff', border: '#3b82f6', name: '#1e3a8a', field: '#1e40af', fl: '#93c5fd' },
+                      { label: 'Mint', bg: '#f0fdf4', border: '#16a34a', name: '#14532d', field: '#166534', fl: '#86efac' },
+                      { label: 'Dark', bg: '#0f172a', border: '#334155', name: '#f1f5f9', field: '#cbd5e1', fl: '#64748b' },
+                      { label: 'Pink', bg: '#fdf2f8', border: '#db2777', name: '#831843', field: '#9d174d', fl: '#f9a8d4' },
+                    ].map(theme => (
+                      <button key={theme.label} onClick={() => updateTypo({ labelBg: theme.bg, borderColor: theme.border, nameColor: theme.name, fieldColor: theme.field, fieldLabelColor: theme.fl })}
+                        style={{
+                          padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                          background: theme.bg, color: theme.name,
+                          border: `1.5px solid ${theme.border}`,
+                        }}>
+                        {theme.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
