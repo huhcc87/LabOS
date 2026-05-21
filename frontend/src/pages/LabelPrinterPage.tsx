@@ -79,6 +79,14 @@ const ENTITY_PRESETS: Record<string, { label: string; emoji: string; fields: Par
   },
 };
 
+// ─── Known printer models ─────────────────────────────────────────────────────
+const KNOWN_PRINTERS = [
+  { id: 'dymo',    name: 'Dymo LabelWriter', models: '450 · 550 · 4XL',             vendorId: 0x0922, accent: '#e74c3c', icon: '🔴' },
+  { id: 'brother', name: 'Brother QL Series', models: 'QL-800 · 820NWB · 1110NWB',  vendorId: 0x04f9, accent: '#2980b9', icon: '🔵' },
+  { id: 'zebra',   name: 'Zebra ZD / ZT',    models: 'ZD420 · ZD620 · ZT230',       vendorId: 0x0a5f, accent: '#27ae60', icon: '🟢' },
+  { id: 'any',     name: 'Other / Generic',  models: 'Any USB label printer',        vendorId: null,   accent: '#8e44ad', icon: '🔌' },
+] as const;
+
 // ─── Unique ID generator ──────────────────────────────────────────────────────
 function generateLabId(prefix = 'LAB'): string {
   const yr = new Date().getFullYear();
@@ -86,9 +94,19 @@ function generateLabId(prefix = 'LAB'): string {
   return `${prefix}-${yr}-${rand}`;
 }
 
+// ─── Typography settings ──────────────────────────────────────────────────────
+interface Typography {
+  namePt: number;    // name / title font size (pt)
+  fieldPt: number;   // secondary fields font size (pt)
+  uidPt: number;     // brand/UID font size (pt)
+  qrPct: number;     // QR code size as % of label height (10–95)
+}
+
+const DEFAULT_TYPOGRAPHY: Typography = { namePt: 8, fieldPt: 6, uidPt: 5, qrPct: 60 };
+
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
 function LabelCard({
-  size, fields, uid, codeType, showQr, showBarcode, brand,
+  size, fields, uid, showQr, showBarcode, brand, typo,
 }: {
   size: LabelSize;
   fields: LabelField[];
@@ -97,8 +115,8 @@ function LabelCard({
   showQr: boolean;
   showBarcode: boolean;
   brand: string;
+  typo: Typography;
 }) {
-  // Convert mm → px at 3.78 px/mm (96 DPI ~ 25.4 mm/in → 3.78 px/mm)
   const pxPerMm = 3.78;
   const w = size.widthMm * pxPerMm;
   const h = size.heightMm * pxPerMm;
@@ -106,96 +124,86 @@ function LabelCard({
   const isTiny = size.heightMm < 14;
   const visibleFields = fields.filter(f => f.show && f.value.trim());
 
-  // Decide layout based on aspect / size
-  const layout = isTiny ? 'inline' : 'card';
+  // QR size driven by typo.qrPct — user-controlled
+  const qrMax = h - (isTiny ? 2 : 6);
+  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100));
+
+  // UID display: show last segment on tiny, full on standard
+  const uidDisplay = isTiny ? uid.split('-').slice(-1)[0] : uid;
 
   return (
     <div
       className="label-card"
       style={{
-        width: w,
-        height: h,
-        background: '#ffffff',
-        color: '#0f172a',
+        width: w, height: h,
+        background: '#ffffff', color: '#0f172a',
         border: '1px dashed #94a3b8',
         boxSizing: 'border-box',
         padding: isTiny ? 2 : 4,
         overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: layout === 'inline' ? 'row' : 'row',
-        gap: 4,
-        alignItems: 'center',
+        display: 'flex', flexDirection: 'row',
+        gap: 3, alignItems: 'stretch',
       }}
     >
-      {/* Left: codes */}
+      {/* Left: QR / barcode */}
       {(showQr || showBarcode) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
-          {showQr && (
-            <Barcode
-              value={uid}
-              type="qrcode"
-              width={Math.min(h - (isTiny ? 4 : 8), w * 0.32)}
-              height={Math.min(h - (isTiny ? 4 : 8), w * 0.32)}
-            />
-          )}
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {showQr && <Barcode value={uid} type="qrcode" width={qrSize} height={qrSize} />}
           {showBarcode && !showQr && (
-            <Barcode
-              value={uid}
-              type="barcode"
-              width={w * 0.55}
-              height={Math.min(h * 0.7, 50)}
-              showText
-              textSize={Math.max(6, h * 0.06)}
-            />
+            <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
+              showText textSize={typo.uidPt} />
           )}
         </div>
       )}
 
-      {/* Right: textual content */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        {/* Top: brand + uid */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-          fontSize: Math.max(6, h * 0.07), color: '#64748b', fontWeight: 600,
-          lineHeight: 1, marginBottom: 2,
-        }}>
-          <span>{brand}</span>
-          <span style={{ fontFamily: 'ui-monospace, monospace' }}>{uid}</span>
-        </div>
+      {/* Right: all text fields — unified layout, wrapping allowed */}
+      <div style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1, overflow: 'hidden' }}>
 
-        {/* Main: name (largest field) */}
+        {/* Name — largest */}
         {fields[0]?.show && fields[0]?.value && (
           <div style={{
-            fontSize: Math.max(9, h * (isTiny ? 0.32 : 0.18)),
-            fontWeight: 700,
+            fontSize: typo.namePt,
+            fontWeight: 800,
             lineHeight: 1.15,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            color: '#0f172a',
+            wordBreak: 'break-word',
+            overflowWrap: 'anywhere',
           }}>
             {fields[0].value}
           </div>
         )}
 
-        {/* Remaining fields */}
-        {!isTiny && visibleFields.length > 1 && (
-          <div style={{ fontSize: Math.max(6, h * 0.08), lineHeight: 1.3, color: '#334155' }}>
-            {visibleFields.slice(1, isTiny ? 2 : 6).map(f => (
-              <div key={f.key} style={{
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                <span style={{ color: '#94a3b8' }}>{f.label}: </span>
-                <span style={{ fontWeight: 600 }}>{f.value}</span>
-              </div>
-            ))}
+        {/* All remaining visible fields */}
+        {visibleFields.slice(1).map(f => (
+          <div key={f.key} style={{
+            fontSize: typo.fieldPt,
+            fontWeight: 600,
+            lineHeight: 1.1,
+            color: '#1e293b',
+            wordBreak: 'break-word',
+            overflowWrap: 'anywhere',
+          }}>
+            <span style={{ color: '#94a3b8', fontWeight: 400 }}>{f.label}: </span>
+            {f.value}
           </div>
-        )}
+        ))}
 
-        {/* Bottom barcode strip when both QR + barcode requested */}
+        {/* Brand + UID */}
+        <div style={{
+          fontSize: typo.uidPt,
+          fontFamily: 'ui-monospace, monospace',
+          color: '#94a3b8',
+          lineHeight: 1,
+          wordBreak: 'break-all',
+          marginTop: 1,
+        }}>
+          {brand} · {uidDisplay}
+        </div>
+
+        {/* Dual-code: barcode strip below fields */}
         {showQr && showBarcode && !isTiny && (
           <div style={{ marginTop: 2 }}>
-            <Barcode value={uid} type="barcode" width={w * 0.55} height={h * 0.22} showText={false} />
+            <Barcode value={uid} type="barcode" width={w * 0.55} height={h * 0.18} showText={false} />
           </div>
         )}
       </div>
@@ -214,8 +222,13 @@ export default function LabelPrinterPage() {
   const [fields, setFields] = useState<LabelField[]>(DEFAULT_FIELDS);
   const [uid, setUid] = useState(generateLabId());
   const [copies, setCopies] = useState(1);
+  const [typo, setTypo] = useState<Typography>(DEFAULT_TYPOGRAPHY);
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
+  const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
+
+  const updateTypo = (patch: Partial<Typography>) => setTypo(prev => ({ ...prev, ...patch }));
 
   const size = useMemo(() => LABEL_SIZES.find(s => s.id === sizeId)!, [sizeId]);
 
@@ -244,29 +257,24 @@ export default function LabelPrinterPage() {
 
   const handleNewUid = () => setUid(generateLabId());
 
-  const tryConnectPrinter = async () => {
-    // Web USB is supported on Chromium-based browsers. Many lab label printers
-    // (Dymo LabelWriter, Brother QL series) expose USB endpoints. We can detect
-    // device pairing but actual raw printing requires vendor-specific protocols,
-    // so we fall back to browser print after pairing.
+  const tryConnectPrinter = async (vendorId: number | null) => {
+    setShowPrinterModal(false);
     const nav: any = navigator;
     if (!nav.usb) {
       setPrinterStatus('browser');
-      alert('Web USB not available in this browser. Falling back to system print dialog — works fine for any printer your OS sees.');
+      alert('Web USB is not available in this browser. Use Chrome or Edge for USB printer pairing. The system print dialog will work for any printer your OS sees.');
       return;
     }
     try {
-      const device = await nav.usb.requestDevice({
-        filters: [
-          { vendorId: 0x0922 },  // Dymo
-          { vendorId: 0x04f9 },  // Brother
-          { vendorId: 0x0a5f },  // Zebra
-        ],
-      });
+      const filters = vendorId
+        ? [{ vendorId }]
+        : [{ vendorId: 0x0922 }, { vendorId: 0x04f9 }, { vendorId: 0x0a5f }];
+      const device = await nav.usb.requestDevice({ filters });
       await device.open();
+      const name = device.productName || 'Label printer';
+      setConnectedPrinterName(name);
       setPrinterStatus('connected');
-      alert(`Paired with ${device.productName || 'label printer'}. Use Print to send labels.`);
-    } catch (err) {
+    } catch {
       setPrinterStatus('browser');
     }
   };
@@ -318,9 +326,11 @@ export default function LabelPrinterPage() {
             background: printerStatus === 'connected' ? 'rgba(34,197,94,0.15)' : 'rgba(99,102,241,0.1)',
             color: printerStatus === 'connected' ? '#22c55e' : '#818cf8',
           }}>
-            {printerStatus === 'connected' ? '🖨️ Paired printer' : '🖨️ Browser print'}
+            {printerStatus === 'connected'
+              ? `🖨️ ${connectedPrinterName ?? 'Paired printer'}`
+              : '🖨️ Browser print'}
           </div>
-          <button onClick={tryConnectPrinter}
+          <button onClick={() => setShowPrinterModal(true)}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
             Connect printer
           </button>
@@ -330,6 +340,56 @@ export default function LabelPrinterPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Printer Selection Modal ─────────────────────────────────────────── */}
+      {showPrinterModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999,
+          background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowPrinterModal(false)}>
+          <div style={{
+            background: 'var(--surface)', borderRadius: 16, padding: 28, width: 480, maxWidth: '92vw',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)', border: '1px solid var(--border)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>Select printer</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                  Choose your label printer model to filter the USB device picker
+                </div>
+              </div>
+              <button onClick={() => setShowPrinterModal(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1 }}>
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+              {KNOWN_PRINTERS.map(p => (
+                <button key={p.id} onClick={() => tryConnectPrinter(p.vendorId ?? null)}
+                  style={{
+                    padding: '14px 16px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+                    border: `1px solid ${p.accent}44`,
+                    background: `${p.accent}11`,
+                    color: 'var(--text)',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = `${p.accent}22`)}
+                  onMouseLeave={e => (e.currentTarget.style.background = `${p.accent}11`)}
+                >
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{p.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.models}</div>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 12px', background: 'rgba(99,102,241,0.07)', borderRadius: 8 }}>
+              <strong>Note:</strong> Web USB pairing requires Chrome or Edge. After pairing, use <strong>Print</strong> to send labels — LabOS uses your OS print dialog for full print-quality output.
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 24 }}>
         {/* LEFT: Configuration */}
@@ -433,6 +493,41 @@ export default function LabelPrinterPage() {
               Multiple copies get sequential suffixes (-01, -02…) so each label stays uniquely scannable.
             </p>
           </div>
+
+          {/* Typography & size */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Font & figure size</div>
+              <button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)}
+                style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                Reset
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {([
+                { label: 'Name font (pt)', key: 'namePt', min: 4, max: 32 },
+                { label: 'Fields font (pt)', key: 'fieldPt', min: 3, max: 20 },
+                { label: 'UID font (pt)', key: 'uidPt', min: 3, max: 16 },
+                { label: 'QR / barcode size (%)', key: 'qrPct', min: 20, max: 95 },
+              ] as { label: string; key: keyof Typography; min: number; max: number }[]).map(row => (
+                <div key={row.key}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.label}</label>
+                    <input
+                      type="number" min={row.min} max={row.max} value={typo[row.key]}
+                      onChange={e => updateTypo({ [row.key]: Math.max(row.min, Math.min(row.max, parseInt(e.target.value) || row.min)) })}
+                      style={{ width: 48, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, textAlign: 'center' }}
+                    />
+                  </div>
+                  <input
+                    type="range" min={row.min} max={row.max} value={typo[row.key]}
+                    onChange={e => updateTypo({ [row.key]: parseInt(e.target.value) })}
+                    style={{ width: '100%', accentColor: 'var(--primary, #6366f1)' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT: Live preview + print area */}
@@ -455,7 +550,7 @@ export default function LabelPrinterPage() {
           {/* Single big preview */}
           <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: 30, background: 'var(--surface2)' }}>
             <div style={{ transform: size.widthMm < 30 ? 'scale(2.5)' : size.widthMm < 60 ? 'scale(1.6)' : 'scale(1)', transformOrigin: 'center' }}>
-              <LabelCard size={size} fields={fields} uid={uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} />
+              <LabelCard size={size} fields={fields} uid={uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
             </div>
           </div>
 
@@ -472,7 +567,7 @@ export default function LabelPrinterPage() {
                 return (
                   <div key={pageIdx} style={printGridStyle} className={pageIdx < Math.ceil(labelsToPrint.length / ((size.cols || 1) * (size.rows || 1))) - 1 ? 'page-break' : ''}>
                     {labelsToPrint.slice(start, end).map((l, j) => (
-                      <LabelCard key={j} size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} />
+                      <LabelCard key={j} size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
                     ))}
                   </div>
                 );
@@ -481,7 +576,7 @@ export default function LabelPrinterPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {labelsToPrint.map((l, j) => (
                   <div key={j} className={j < labelsToPrint.length - 1 ? 'page-break' : ''}>
-                    <LabelCard size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} />
+                    <LabelCard size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
                   </div>
                 ))}
               </div>

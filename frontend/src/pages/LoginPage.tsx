@@ -91,11 +91,14 @@ export default function LoginPage() {
               ))}
             </div>
 
-            {/* Compliance badges */}
+            {/* Standards badges */}
             <div className="login-compliance">
-              {['GLP', '21 CFR Part 11', 'ISO 17025', 'HIPAA Ready', 'SOC 2'].map(b => (
+              {['GLP Workflows', '21 CFR Part 11', 'HIPAA-Ready', 'GDPR Tools', 'On-Premise', 'Audit Trail'].map(b => (
                 <span key={b} className="login-compliance-badge">{b}</span>
               ))}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+              Designed to support these workflows. Compliance is achieved through your institution's practices and policies.
             </div>
           </div>
         </div>

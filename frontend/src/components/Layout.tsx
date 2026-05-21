@@ -40,6 +40,8 @@ interface NavItem {
 interface NavCategory {
   category: string;
   icon: string;
+  color: string;
+  description: string;
   items: NavItem[];
 }
 
@@ -47,52 +49,79 @@ const NAV_CATEGORIES: NavCategory[] = [
   {
     category: 'Home',
     icon: '⬡',
+    color: '#0071bc',
+    description: 'Dashboard & overview',
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: '⬡', minRole: 'trainee' },
       { key: 'ai-manager', label: 'AI Lab Manager', icon: '🤖', minRole: 'trainee' },
       { key: 'tasks', label: 'My Tasks', icon: '✓', minRole: 'trainee' },
-      { key: 'lab-meetings', label: 'LabHuddle (Video / Audio)', icon: '🎥', minRole: 'trainee' },
-      { key: 'reports', label: 'Reports', icon: '📈', minRole: 'trainee' },
+      { key: 'reports', label: 'Reports & Analytics', icon: '📈', minRole: 'trainee' },
     ]
   },
   {
-    category: 'Lab Work',
+    category: 'Lab Hub',
     icon: '🔬',
+    color: '#2563eb',
+    description: 'Protocols, instruments & scheduling',
     items: [
-      { key: 'protocols', label: 'Protocols', icon: '📋', minRole: 'trainee' },
+      { key: 'lab-hub', label: 'Lab Hub Overview', icon: '🔬', minRole: 'trainee' },
+      { key: 'protocols', label: 'Protocols / SOPs', icon: '📋', minRole: 'trainee' },
       { key: 'eln', label: 'Lab Notebook', icon: '📓', minRole: 'trainee' },
-      { key: 'samples', label: 'Samples', icon: '🧪', minRole: 'trainee' },
       { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
-      { key: 'grants', label: 'Grants', icon: '📝', minRole: 'trainee' },
+      { key: 'equipment', label: 'Equipment', icon: '🔭', minRole: 'trainee' },
+      { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
+    ]
+  },
+  {
+    category: 'Sample Hub',
+    icon: '🧪',
+    color: '#16a34a',
+    description: 'Full sample lifecycle & storage',
+    items: [
+      { key: 'samples', label: 'Samples', icon: '🧪', minRole: 'trainee' },
+      { key: 'freezer-biobank', label: 'Freezer / Biobank', icon: '🧊', minRole: 'trainee' },
+      { key: 'label-printer', label: 'Label Printer', icon: '🏷️', minRole: 'trainee' },
+    ]
+  },
+  {
+    category: 'Grant Hub',
+    icon: '📝',
+    color: '#7c3aed',
+    description: 'NIH & NSF grant management',
+    items: [
+      { key: 'grants', label: 'Grants Overview', icon: '📝', minRole: 'trainee' },
     ]
   },
   {
     category: 'Safety & Quality',
     icon: '🛡️',
+    color: '#dc2626',
+    description: 'GLP, compliance & training',
     items: [
       { key: 'incidents', label: 'Incidents', icon: '⚠️', minRole: 'trainee' },
       { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee' },
       { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff' },
-      { key: 'training-cert', label: 'Training', icon: '🎓', minRole: 'trainee' },
+      { key: 'training-cert', label: 'Training & Certs', icon: '🎓', minRole: 'trainee' },
     ]
   },
   {
     category: 'Resources',
     icon: '📦',
+    color: '#d97706',
+    description: 'Inventory, procurement & IoT sensors',
     items: [
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
-      { key: 'equipment', label: 'Equipment', icon: '🔭', minRole: 'trainee' },
-      { key: 'iot-dashboard', label: 'Sensors (Freezer / CO₂)', icon: '🌡️', minRole: 'trainee' },
-      { key: 'freezer-biobank', label: 'Freezer / Biobank', icon: '🧊', minRole: 'trainee' },
-      { key: 'label-printer', label: 'Label Printer', icon: '🏷️', minRole: 'trainee' },
-      { key: 'reagent-cart', label: 'Reagent Cart (Extension)', icon: '🛒', minRole: 'trainee' },
-      { key: 'procurement-hub', label: 'Procurement Hub', icon: '🏛', minRole: 'staff' },
+      { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
+      { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
+      { key: 'procurement-hub', label: 'Procurement', icon: '🏛', minRole: 'staff' },
       { key: 'payment-methods', label: 'Payment Methods', icon: '💳', minRole: 'staff' },
     ]
   },
   {
     category: 'Admin',
     icon: '⚙️',
+    color: '#64748b',
+    description: 'Users, audit & settings',
     items: [
       { key: 'users', label: 'Users', icon: '👥', minRole: 'admin' },
       { key: 'lab-members', label: 'Lab Members (PI)', icon: '🔑', minRole: 'staff' },
@@ -371,10 +400,21 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   })).filter(cat => cat.items.length > 0);
 
   const pageTitle = NAV_CATEGORIES.flatMap(c => c.items).find(i => i.key === activePage)?.label || 'Dashboard';
+  const activeCategory = NAV_CATEGORIES.find(c => c.items.some(i => i.key === activePage));
   const canGoBack = activePage !== 'dashboard';
 
+  const PAGE_PARENT: Record<string, string> = {
+    'protocols': 'lab-hub', 'eln': 'lab-hub', 'experiments': 'lab-hub',
+    'equipment': 'lab-hub', 'lab-meetings': 'lab-hub',
+    'freezer-biobank': 'samples', 'label-printer': 'samples',
+    'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
+    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
+    'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',
+  };
+
   const handleBack = () => {
-    onNavigate('dashboard');
+    const parent = PAGE_PARENT[activePage];
+    onNavigate(parent ?? 'dashboard');
   };
 
   return (
@@ -400,34 +440,45 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           <span className="brand-home-hint" aria-hidden="true">🏠</span>
         </button>
         <nav className="sidebar-nav">
-          {visibleCategories.map((cat) => (
-            <div key={cat.category} className="nav-category">
-              <button
-                className="nav-category-header"
-                onClick={() => toggleCategory(cat.category)}
+          {visibleCategories.map((cat) => {
+            const isHubActive = cat.items.some(item => item.key === activePage);
+            const isCollapsed = collapsedCategories.has(cat.category);
+            return (
+              <div
+                key={cat.category}
+                className={`nav-category ${isHubActive ? 'hub-active' : ''}`}
+                style={{ '--hub-color': cat.color } as React.CSSProperties}
               >
-                <span className="nav-category-icon">{cat.icon}</span>
-                <span className="nav-category-label">{cat.category}</span>
-                <span className={`nav-category-chevron ${collapsedCategories.has(cat.category) ? 'collapsed' : ''}`}>
-                  ▼
-                </span>
-              </button>
-              {!collapsedCategories.has(cat.category) && (
-                <div className="nav-category-items">
-                  {cat.items.map((item) => (
-                    <button
-                      key={item.key}
-                      className={`nav-item ${activePage === item.key ? 'active' : ''}`}
-                      onClick={() => { onNavigate(item.key); setSidebarOpen(false); }}
-                    >
-                      <span className="nav-icon">{item.icon}</span>
-                      <span className="nav-label">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                <button
+                  className={`nav-category-header ${isHubActive ? 'hub-header-active' : ''}`}
+                  onClick={() => toggleCategory(cat.category)}
+                >
+                  <div className="hub-icon-box" style={{ background: `${cat.color}22`, color: cat.color }}>
+                    {cat.icon}
+                  </div>
+                  <div className="hub-header-text">
+                    <span className="hub-name">{cat.category}</span>
+                    <span className="hub-desc">{cat.description}</span>
+                  </div>
+                  <span className={`nav-category-chevron ${isCollapsed ? 'collapsed' : ''}`}>▼</span>
+                </button>
+                {!isCollapsed && (
+                  <div className="nav-category-items">
+                    {cat.items.map((item) => (
+                      <button
+                        key={item.key}
+                        className={`nav-item ${activePage === item.key ? 'active' : ''}`}
+                        onClick={() => { onNavigate(item.key); setSidebarOpen(false); }}
+                      >
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-label">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
         <div className="sidebar-footer">
           {/* Theme toggle */}
@@ -476,12 +527,18 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           {/* Back Arrow and Page Title */}
           <div className="header-title">
             {canGoBack && (
-              <button className="back-arrow" onClick={handleBack} aria-label="Go back">
+              <button className="back-arrow" onClick={handleBack} aria-label="Go back" title="Go back">
                 ←
               </button>
             )}
-            <h1>{pageTitle}</h1>
-            <span className="header-subtitle">Laboratory Operations System</span>
+            <div className="header-title-stack">
+              {activeCategory && activePage !== 'dashboard' && (
+                <span className="header-breadcrumb" style={{ color: activeCategory.color }}>
+                  {activeCategory.icon} {activeCategory.category}
+                </span>
+              )}
+              <h1>{pageTitle}</h1>
+            </div>
           </div>
 
           {/* Header Actions */}
@@ -743,16 +800,19 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Certifications column */}
+            {/* Standards column */}
             <div className="footer-column">
-              <h4 className="footer-col-title">Certifications</h4>
+              <h4 className="footer-col-title">Standards Supported</h4>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.5 }}>
+                Designed to support these workflows — compliance achieved through your institutional practices.
+              </div>
               <div className="footer-badges-grid">
-                <span className="footer-badge">GLP</span>
+                <span className="footer-badge">GLP Workflows</span>
                 <span className="footer-badge">21 CFR Part 11</span>
-                <span className="footer-badge">ISO 17025</span>
-                <span className="footer-badge">HIPAA Ready</span>
-                <span className="footer-badge">SOC 2</span>
-                <span className="footer-badge">FDA Compliant</span>
+                <span className="footer-badge">HIPAA-Ready</span>
+                <span className="footer-badge">GDPR Tools</span>
+                <span className="footer-badge">Audit Trail</span>
+                <span className="footer-badge">On-Premise</span>
               </div>
             </div>
           </div>

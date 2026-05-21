@@ -225,15 +225,19 @@ export default function PrivacyCenterPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   const TABS = [
-    { id: 'consent',  label: '🔒 Consent',         show: true },
-    { id: 'rights',   label: '📋 My Rights',        show: true },
-    { id: 'password', label: '🔑 Password',          show: true },
-    { id: 'policy',   label: '📄 Privacy Policy',   show: true },
-    { id: 'admin',    label: '⚙️ Admin',             show: isAdmin },
+    { id: 'overview',  label: '🏠 Overview',         show: true },
+    { id: 'security',  label: '🔐 Security',          show: true },
+    { id: 'onpremise', label: '🖥️ On-Premise & Data', show: true },
+    { id: 'standards', label: '📜 Standards',         show: true },
+    { id: 'consent',   label: '🔒 Consent',           show: true },
+    { id: 'rights',    label: '📋 My Rights',          show: true },
+    { id: 'password',  label: '🔑 Password',           show: true },
+    { id: 'policy',    label: '📄 Policy',             show: true },
+    { id: 'admin',     label: '⚙️ Admin',              show: isAdmin },
   ].filter(t => t.show);
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #1e3a5f 0%, #1a2940 100%)',
@@ -248,9 +252,9 @@ export default function PrivacyCenterPage() {
           fontSize: 32, flexShrink: 0,
         }}>🛡️</div>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Privacy Center</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Privacy & Security Center</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
-            Manage your data, consent, and privacy rights — GDPR · HIPAA · 21 CFR Part 11 · GLP
+            Your data stays on your servers. Always. Zero vendor access, zero telemetry.
           </p>
           {policy && (
             <span style={{
@@ -264,16 +268,26 @@ export default function PrivacyCenterPage() {
         </div>
       </div>
 
-      {/* Compliance badges */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-        {['GDPR', 'HIPAA', '21 CFR Part 11', 'GLP', 'CCPA', 'ISO 27001'].map(badge => (
-          <span key={badge} style={{
+      {/* Honest standards badges */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        {[
+          { label: 'GLP Workflows', color: '#22c55e' },
+          { label: '21 CFR Part 11 Ready', color: '#6366f1' },
+          { label: 'HIPAA-Ready', color: '#06b6d4' },
+          { label: 'GDPR Tools Built-in', color: '#f59e0b' },
+          { label: 'Zero Telemetry', color: '#ec4899' },
+          { label: 'On-Premise Only', color: '#8b5cf6' },
+        ].map(b => (
+          <span key={b.label} style={{
             padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-            background: 'rgba(34,197,94,0.1)', color: '#4ade80',
-            border: '1px solid rgba(34,197,94,0.2)',
-          }}>✓ {badge}</span>
+            background: `${b.color}18`, color: b.color,
+            border: `1px solid ${b.color}33`,
+          }}>✓ {b.label}</span>
         ))}
       </div>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 24 }}>
+        These badges indicate features and workflow support, not vendor certifications. Regulatory compliance is achieved through your institution's practices.
+      </p>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -287,6 +301,334 @@ export default function PrivacyCenterPage() {
           }}>{t.label}</button>
         ))}
       </div>
+
+      {/* ── TAB: Overview ──────────────────────────────────────────────────── */}
+      {tab === 'overview' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Core promise */}
+          <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '20px 24px' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#22c55e', marginBottom: 10 }}>Your Data. Your Servers. Always.</div>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+              LabOS is installed entirely on your institution's own hardware. The vendor has <strong style={{ color: 'var(--text)' }}>zero access</strong> to any data you enter.
+              No data is transmitted to vendor servers. No telemetry. No analytics. No cloud sync.
+              If you disconnect LabOS from the internet entirely, it works exactly the same.
+            </p>
+          </div>
+
+          {/* 6 key facts */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+            {[
+              { icon: '🖥️', title: 'Fully On-Premise', body: 'Installed on your servers. All data stored locally in your database and filesystem.', color: '#6366f1' },
+              { icon: '📵', title: 'Zero Telemetry', body: 'No usage analytics, crash reports, or any data is ever sent to the vendor.', color: '#22c55e' },
+              { icon: '🔐', title: 'bcrypt Passwords', body: 'Passwords hashed with bcrypt cost-12. Never stored in plaintext. Industry best practice.', color: '#06b6d4' },
+              { icon: '🔒', title: 'TLS Encryption', body: 'All network traffic encrypted with HTTPS/TLS 1.2+. HTTP connections rejected.', color: '#f59e0b' },
+              { icon: '📋', title: 'Full Audit Trail', body: 'Every action logged: who did what, when, from where. Tamper-evident, append-only.', color: '#ec4899' },
+              { icon: '👥', title: 'Role-Based Access', body: '6 roles from Trainee to Superadmin. Least-privilege principle enforced throughout.', color: '#8b5cf6' },
+            ].map(c => (
+              <div key={c.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 14 }}>
+                <div style={{ fontSize: 24, flexShrink: 0 }}>{c.icon}</div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: c.color, marginBottom: 4 }}>{c.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{c.body}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick links */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Quick Navigation</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
+              {[
+                { tab: 'security', label: '🔐 Security Levels & Controls' },
+                { tab: 'onpremise', label: '🖥️ What Data Is Stored & Where' },
+                { tab: 'standards', label: '📜 Regulatory Standards Supported' },
+                { tab: 'consent', label: '🔒 Manage My Consent' },
+                { tab: 'rights', label: '📋 Exercise My Privacy Rights' },
+                { tab: 'password', label: '🔑 Change My Password' },
+              ].map(l => (
+                <button key={l.tab} onClick={() => setTab(l.tab as any)} style={{
+                  padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                  background: 'var(--surface2)', color: 'var(--text)', fontSize: 12,
+                  fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                }}>{l.label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: Security ──────────────────────────────────────────────────── */}
+      {tab === 'security' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Security Architecture & Controls</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>How LabOS protects your data at every layer.</p>
+          </div>
+
+          {/* Security levels */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>Security Layers</div>
+            {[
+              { level: 'L1 — Network', icon: '🌐', color: '#6366f1', controls: ['HTTPS/TLS 1.2+ enforced on all connections', 'HTTP → HTTPS redirect', 'WSS (encrypted WebSockets) for IoT sensors', 'Recommended: deploy behind VPN for remote access'] },
+              { level: 'L2 — Authentication', icon: '🔑', color: '#06b6d4', controls: ['bcrypt password hashing (cost factor 12)', '5-attempt lockout with 15-min cooldown', 'JWT session tokens with 2-hour inactivity expiry', 'All auth events logged to audit trail'] },
+              { level: 'L3 — Authorisation', icon: '👥', color: '#22c55e', controls: ['Role-Based Access Control (RBAC) — 6 roles', 'Least-privilege: users see only what their role permits', 'Admin-only endpoints protected server-side', 'All permission checks enforced on the backend API'] },
+              { level: 'L4 — Application', icon: '🛡️', color: '#f59e0b', controls: ['ORM-based queries prevent SQL injection', 'React DOM rendering prevents XSS', 'All API inputs validated server-side (Pydantic)', 'CSRF not applicable — JWT tokens, not cookies'] },
+              { level: 'L5 — Data', icon: '💾', color: '#ec4899', controls: ['No plaintext passwords — bcrypt only', 'Audit trail is append-only in database', 'File uploads stored outside web root', 'At-rest encryption: your OS responsibility (LUKS/BitLocker)'] },
+            ].map(layer => (
+              <div key={layer.level} style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontSize: 20 }}>{layer.icon}</span>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: layer.color }}>{layer.level}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 6 }}>
+                  {layer.controls.map(c => (
+                    <div key={c} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)', alignItems: 'flex-start' }}>
+                      <span style={{ color: layer.color, flexShrink: 0, marginTop: 1 }}>✓</span>
+                      <span>{c}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Password policy */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🔑 Password Policy</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+              {[
+                { label: 'Minimum length', value: '8 characters' },
+                { label: 'Requires uppercase', value: 'Yes (A–Z)' },
+                { label: 'Requires lowercase', value: 'Yes (a–z)' },
+                { label: 'Requires number', value: 'Yes (0–9)' },
+                { label: 'Requires special char', value: 'Yes (!@#$…)' },
+                { label: 'Hash algorithm', value: 'bcrypt cost-12' },
+                { label: 'Failed attempts lockout', value: '5 attempts' },
+                { label: 'Lockout duration', value: '15 minutes' },
+                { label: 'Session timeout', value: '2 hours idle' },
+                { label: 'Recommended rotation', value: 'Every 90 days' },
+              ].map(r => (
+                <div key={r.label} style={{ padding: '8px 12px', background: 'var(--surface2)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{r.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Audit trail */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>📋 Audit Trail — What Is Logged</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
+              {[
+                'User login / logout', 'Failed login attempts', 'Password changes',
+                'Data record creation', 'Data record modification', 'Data record deletion',
+                'Protocol approvals', 'Electronic signatures', 'User permission changes',
+                'Data export requests', 'Erasure requests', 'File uploads / downloads',
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)', alignItems: 'center' }}>
+                  <span style={{ color: '#22c55e' }}>●</span> {item}
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+              Each audit entry captures: <strong>timestamp · user ID · email · IP address · action type · record affected · before/after values</strong>
+            </p>
+          </div>
+
+          {/* Vulnerability disclosure */}
+          <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>🐛 Vulnerability Disclosure</div>
+            <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Found a security issue? Email <strong>security@labos.app</strong> — we respond within 48 business hours.
+              Critical patches are released within 14 days of a verified report.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>🕐 Response: 48 business hours</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>🔧 Critical patch: within 14 days</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📧 security@labos.app</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: On-Premise & Data ──────────────────────────────────────────── */}
+      {tab === 'onpremise' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>On-Premise Architecture & Data Storage</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Exactly where your data lives and who controls it.</p>
+          </div>
+
+          {/* Architecture diagram */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>🏗️ Data Flow Architecture</div>
+            <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: '20px', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'var(--text-muted)', lineHeight: 2 }}>
+              <div>┌──────────────────── YOUR INSTITUTION'S NETWORK ──────────────────┐</div>
+              <div>│                                                                   │</div>
+              <div>│  Browser ──HTTPS──▶ LabOS Server ──▶ Database (your server)      │</div>
+              <div>│                          │                                        │</div>
+              <div>│                          └──▶ File Storage (your filesystem)      │</div>
+              <div>│                                                                   │</div>
+              <div>│  ✗ No data ever crosses this boundary to the vendor               │</div>
+              <div>└───────────────────────────────────────────────────────────────────┘</div>
+              <div style={{ marginTop: 8, color: '#ef4444' }}>  Vendor: ZERO access to your data at any time</div>
+            </div>
+          </div>
+
+          {/* What is stored */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>📦 What LabOS Stores (On Your Servers)</div>
+            {[
+              { category: 'User Accounts', icon: '👤', color: '#6366f1', items: ['Name and email address', 'bcrypt password hash (not the password)', 'Role and department', 'Login timestamps', 'Session tokens (server memory only)'] },
+              { category: 'Laboratory Records', icon: '🧪', color: '#22c55e', items: ['Samples, reagents, plasmids, equipment', 'Experiments and results', 'Protocols and SOPs', 'Safety incidents and reports', 'Inventory and freezer records'] },
+              { category: 'System Records', icon: '📋', color: '#f59e0b', items: ['Full audit trail of all user actions', 'Electronic signature records', 'Consent records', 'Training certifications'] },
+              { category: 'Files & Attachments', icon: '📁', color: '#06b6d4', items: ['Uploaded SOPs and protocol documents', 'Experiment attachments and images', 'Stored in /backend/uploads/ on your filesystem'] },
+            ].map(cat => (
+              <div key={cat.category} style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <span>{cat.icon}</span>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: cat.color }}>{cat.category}</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {cat.items.map(item => (
+                    <span key={item} style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, background: `${cat.color}12`, color: 'var(--text-muted)', border: `1px solid ${cat.color}22` }}>{item}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* What is NOT collected */}
+          <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#f87171', marginBottom: 12 }}>🚫 What LabOS NEVER Collects or Transmits</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
+              {[
+                'Usage analytics or page views', 'Feature adoption statistics', 'Error or crash reports',
+                'Performance metrics', 'User behaviour tracking', 'IP addresses (to vendor)',
+                'Search queries', 'Export contents', 'Any telemetry of any kind',
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)', alignItems: 'center' }}>
+                  <span style={{ color: '#f87171', flexShrink: 0 }}>✗</span> {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* No DPA required */}
+          <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', marginBottom: 8 }}>✅ No Data Processing Agreement Required</div>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+              Under GDPR, a Data Processing Agreement (DPA) is required when a vendor processes personal data on your behalf.
+              Because LabOS is on-premise and the vendor <strong style={{ color: 'var(--text)' }}>never accesses, stores, or processes your data</strong>,
+              the vendor is not a Data Processor. No DPA or BAA is required with the LabOS vendor.
+              Your institution is the sole Data Controller.
+            </p>
+          </div>
+
+          {/* Institution responsibilities */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🏛️ Your Institution's Responsibilities</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { item: 'Server security', detail: 'Patch OS, apply security updates, configure firewall' },
+                { item: 'Database backups', detail: 'Daily automated backups, tested restore procedures' },
+                { item: 'At-rest encryption', detail: 'Enable LUKS (Linux) or BitLocker (Windows) on the server' },
+                { item: 'Access control', detail: 'Manage who gets accounts; review user access quarterly' },
+                { item: 'Network security', detail: 'Deploy behind VPN for remote access; restrict port exposure' },
+                { item: 'Incident response', detail: 'Maintain your own breach notification and incident response plan' },
+                { item: 'Regulatory compliance', detail: 'HIPAA, FERPA, GDPR compliance as Data Controller is your responsibility' },
+              ].map(r => (
+                <div key={r.item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ color: '#f59e0b', fontSize: 14, flexShrink: 0, marginTop: 1 }}>▶</span>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>{r.item}: </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.detail}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: Standards ─────────────────────────────────────────────────── */}
+      {tab === 'standards' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Regulatory Standards Supported</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
+              LabOS provides features designed to support these workflows. Compliance is achieved through your institution's practices and policies — not vendor certification.
+            </p>
+          </div>
+
+          {/* Important disclaimer */}
+          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '14px 18px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#fbbf24', marginBottom: 6 }}>⚠️ Important Distinction</div>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+              The terms "GLP-compliant software" or "HIPAA-certified" would mean the vendor has been audited and certified. <strong style={{ color: 'var(--text)' }}>LabOS does not hold these certifications.</strong>
+              Instead, LabOS is <strong style={{ color: 'var(--text)' }}>designed to support</strong> these workflows — the features you need are present.
+              Your institution's validation, practices, and policies determine actual compliance.
+            </p>
+          </div>
+
+          {[
+            {
+              standard: 'GLP — Good Laboratory Practice',
+              icon: '🔬', color: '#22c55e',
+              what: 'Framework for non-clinical lab studies submitted to regulatory agencies (FDA, EPA). Ensures data integrity and traceability.',
+              supported: ['Sample and specimen traceability with full chain of custody', 'Instrument calibration and maintenance tracking', 'Reagent lot tracking with expiry management', 'Electronic audit trail for all data changes', 'Protocol version control and approval workflows', 'Personnel training records'],
+              yourJob: 'GLP is a practice standard — your lab must follow GLP procedures. LabOS provides the tools; your SOPs and practices achieve compliance.',
+            },
+            {
+              standard: '21 CFR Part 11 — Electronic Records & Signatures',
+              icon: '📝', color: '#6366f1',
+              what: 'FDA regulation requiring electronic records and signatures to be trustworthy, reliable, and equivalent to paper records.',
+              supported: ['Electronic signature capture with identity verification', 'Audit trail for all electronic records (required under 11.10(e))', 'Access controls limiting record access (required under 11.10(d))', 'Record integrity — changes logged with reason', 'Unique user IDs for all signatories', 'System documentation available for validation'],
+              yourJob: 'You must complete IQ/OQ/PQ validation for your specific deployment. LabOS provides validation support documentation on request.',
+            },
+            {
+              standard: 'HIPAA — Health Insurance Portability and Accountability Act',
+              icon: '🏥', color: '#06b6d4',
+              what: 'US law protecting patient health information (PHI). Applies if your lab handles clinical or patient-linked data.',
+              supported: ['Role-based access control limits PHI exposure', 'Audit logs for all PHI access (required under HIPAA Security Rule)', 'Encrypted transmission via HTTPS/TLS', 'Session timeout after inactivity', 'Unique user identification and authentication', 'Emergency access procedures via admin account'],
+              yourJob: 'Your institution is the HIPAA Covered Entity. No BAA required with LabOS vendor (we never access your data). You must implement technical and administrative safeguards at the infrastructure level.',
+            },
+            {
+              standard: 'GDPR — General Data Protection Regulation',
+              icon: '🇪🇺', color: '#ec4899',
+              what: 'EU regulation for personal data protection. Applies to personal data of EU residents regardless of where you are based.',
+              supported: ['Consent management with granular purpose control', 'Right to erasure request workflow', 'Data portability — self-service JSON export', 'Data minimisation — only necessary data collected', 'Audit trail supports accountability principle', 'Privacy policy versioning and user acknowledgement'],
+              yourJob: 'Your institution is the Data Controller. No DPA required with vendor (we never process your data). You are responsible for establishing legal basis for processing and responding to data subject requests.',
+            },
+          ].map(s => (
+            <div key={s.standard} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: s.color }}>{s.standard}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.5 }}>{s.what}</div>
+                </div>
+              </div>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Features LabOS Provides</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 6 }}>
+                  {s.supported.map(f => (
+                    <div key={f} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                      <span style={{ color: s.color, flexShrink: 0 }}>✓</span> {f}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ padding: '12px 20px', background: `${s.color}08` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: s.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Your Responsibility</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{s.yourJob}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── TAB: Consent ───────────────────────────────────────────────────── */}
       {tab === 'consent' && (
