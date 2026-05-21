@@ -500,9 +500,9 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
           {user && (
             <div className="user-info">
-              <div className="user-avatar">{user.full_name.charAt(0).toUpperCase()}</div>
+              <div className="user-avatar">{(user.full_name ?? user.email ?? '?').charAt(0).toUpperCase()}</div>
               <div className="user-details">
-                <div className="user-name">{user.full_name}</div>
+                <div className="user-name">{user.full_name ?? user.email}</div>
                 <RoleBadge role={user.role} />
               </div>
             </div>
