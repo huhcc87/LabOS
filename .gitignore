@@ -103,6 +103,13 @@ dist-extension/
 # Local override for Claude
 .claude/
 
+# Keep .env.example but never commit real secrets
+!.env.example
+
+# Mobile release keystore — never commit
+*.jks
+release-keystore.jks
+
 # Large datasets / fixtures
 *.xlsx
 *.xls

@@ -1,0 +1,62 @@
+version: "3.9"
+
+# LabOS — full-stack docker-compose
+# Usage:
+#   docker compose up --build            # first run
+#   docker compose up                    # subsequent runs
+#   docker compose down -v               # tear down + remove volumes
+#
+# Override any setting with a .env file in this directory.
+
+services:
+
+  # ── Backend (FastAPI) ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: labos_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///./lab.db}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-min-32-chars!!}
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","http://frontend:80"]'
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      # SMTP (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-labos@lab.local}
+      # OpenAI (optional)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_db:/app
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Frontend (Nginx serving Vite build) ────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: labos_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+
+volumes:
+  backend_uploads:
+  backend_db:

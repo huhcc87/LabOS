@@ -38,7 +38,15 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success('Welcome to LabOS v2!');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Invalid credentials. Please try again.');
+      if (!err.response) {
+        toast.error('Cannot reach the server. Make sure the backend is running on port 8000.');
+      } else if (err.response.status === 401) {
+        toast.error('Invalid email or password.');
+      } else if (err.response.status >= 500) {
+        toast.error('Server error. Please try again or contact your administrator.');
+      } else {
+        toast.error(err.response?.data?.detail || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -5,12 +5,12 @@ const config: CapacitorConfig = {
   appName: 'LabOS',
   webDir: 'dist',
   server: {
-    // During development point to your local Vite server.
-    // For production builds remove the `url` key entirely — the app
-    // will serve the bundled `dist/` folder offline.
-    // url: 'http://192.168.1.XXX:5173',
+    // Dev: set CAPACITOR_DEV_URL=http://<your-machine-ip>:5173 before running
+    // cap sync, then the app will hot-reload against your local Vite server.
+    // Production: leave url commented out so the app serves the dist/ bundle.
+    url: process.env.CAPACITOR_DEV_URL,
     androidScheme: 'https',
-    cleartext: true,          // allow http:// to reach local API server
+    cleartext: true,
   },
   plugins: {
     SplashScreen: {
