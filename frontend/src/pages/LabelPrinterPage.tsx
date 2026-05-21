@@ -592,76 +592,6 @@ export default function LabelPrinterPage() {
             <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>{size.description}</p>
           </div>
 
-          {/* Code options */}
-          <div className="card">
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Code & ID</div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                <input type="checkbox" checked={showQr} onChange={e => setShowQr(e.target.checked)} />
-                QR code
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                <input type="checkbox" checked={showBarcode} onChange={e => setShowBarcode(e.target.checked)} />
-                Code128 barcode
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input value={uid} onChange={e => setUid(e.target.value.toUpperCase())}
-                style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontFamily: 'ui-monospace, monospace' }} />
-              <button onClick={handleNewUid}
-                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-                ↻ New ID
-              </button>
-            </div>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>
-              The ID is encoded in the QR/barcode. Scanning it pulls up this entity in LabOS.
-            </p>
-          </div>
-
-          {/* Fields */}
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Label fields
-              </div>
-              <button onClick={addCustomField}
-                style={{ padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}>
-                + Add field
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
-              {fields.map(f => (
-                <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'auto 90px 1fr', gap: 6, alignItems: 'center' }}>
-                  <input type="checkbox" checked={f.show} onChange={e => updateField(f.key, { show: e.target.checked })} />
-                  <input value={f.label} onChange={e => updateField(f.key, { label: e.target.value })}
-                    style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} />
-                  <input value={f.value} placeholder={`${f.label.toLowerCase()}…`} onChange={e => updateField(f.key, { value: e.target.value })}
-                    style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12 }} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Copies + branding */}
-          <div className="card">
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Print options</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Copies</label>
-                <input type="number" min={1} max={500} value={copies} onChange={e => setCopies(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
-                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Brand text</label>
-                <input value={brand} onChange={e => setBrand(e.target.value)}
-                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
-              </div>
-            </div>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '8px 0 0' }}>
-              Multiple copies get sequential suffixes (-01, -02…) so each label stays uniquely scannable.
-            </p>
-          </div>
-
           {/* Label Style Customisation */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -765,6 +695,77 @@ export default function LabelPrinterPage() {
               </div>
             </div>
           </div>
+
+          {/* Code options */}
+          <div className="card">
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Code & ID</div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                <input type="checkbox" checked={showQr} onChange={e => setShowQr(e.target.checked)} />
+                QR code
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                <input type="checkbox" checked={showBarcode} onChange={e => setShowBarcode(e.target.checked)} />
+                Code128 barcode
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={uid} onChange={e => setUid(e.target.value.toUpperCase())}
+                style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontFamily: 'ui-monospace, monospace' }} />
+              <button onClick={handleNewUid}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
+                ↻ New ID
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+              The ID is encoded in the QR/barcode. Scanning it pulls up this entity in LabOS.
+            </p>
+          </div>
+
+          {/* Fields */}
+          <div className="card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Label fields
+              </div>
+              <button onClick={addCustomField}
+                style={{ padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}>
+                + Add field
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
+              {fields.map(f => (
+                <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'auto 90px 1fr', gap: 6, alignItems: 'center' }}>
+                  <input type="checkbox" checked={f.show} onChange={e => updateField(f.key, { show: e.target.checked })} />
+                  <input value={f.label} onChange={e => updateField(f.key, { label: e.target.value })}
+                    style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} />
+                  <input value={f.value} placeholder={`${f.label.toLowerCase()}…`} onChange={e => updateField(f.key, { value: e.target.value })}
+                    style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Copies + branding */}
+          <div className="card">
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Print options</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Copies</label>
+                <input type="number" min={1} max={500} value={copies} onChange={e => setCopies(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
+                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Brand text</label>
+                <input value={brand} onChange={e => setBrand(e.target.value)}
+                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '8px 0 0' }}>
+              Multiple copies get sequential suffixes (-01, -02…) so each label stays uniquely scannable.
+            </p>
+          </div>
+
         </div>
 
         {/* RIGHT: Live preview + print area */}
