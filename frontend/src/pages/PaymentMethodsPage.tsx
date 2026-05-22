@@ -67,7 +67,7 @@ export default function PaymentMethodsPage() {
       // Stripe Elements integration would go here:
       //   const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
       //   await stripe.confirmCardSetup(clientSecret, { payment_method: { card: elements.getElement('card') }});
-      console.log('Stripe SetupIntent client_secret:', clientSecret);
+      // clientSecret would be used with Stripe.js confirmCardSetup in production
       window.setTimeout(() => { setAddStatus(''); setAdding(false); load(); }, 2000);
     } catch (e: any) {
       setAddStatus('Failed: ' + (e?.response?.data?.detail || e?.message));

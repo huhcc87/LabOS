@@ -1,14 +1,15 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// Dev hot-reload: CAPACITOR_DEV_URL=http://<your-machine-ip>:5173 npx cap sync
+// Production: leave the env var unset — app serves from the dist/ bundle.
+const devUrl = process.env.CAPACITOR_DEV_URL;
+
 const config: CapacitorConfig = {
   appId: 'com.labos.app',
   appName: 'LabOS',
   webDir: 'dist',
   server: {
-    // Dev: set CAPACITOR_DEV_URL=http://<your-machine-ip>:5173 before running
-    // cap sync, then the app will hot-reload against your local Vite server.
-    // Production: leave url commented out so the app serves the dist/ bundle.
-    url: process.env.CAPACITOR_DEV_URL,
+    ...(devUrl ? { url: devUrl } : {}),
     androidScheme: 'https',
     cleartext: true,
   },

@@ -47,5 +47,17 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>LabOS uses the camera to scan barcodes and QR codes on lab samples, reagents, and equipment.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LabOS uses the microphone for lab meeting video calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LabOS accesses your photo library to attach images to experiment records and lab notebooks.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>LabOS saves experiment images and label previews to your photo library.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>LabOS connects to your institution's LabOS server on the local network.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>LabOS uses Face ID for secure, fast sign-in to your lab account.</string>
 </dict>
 </plist>

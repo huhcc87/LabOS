@@ -101,7 +101,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
 
 export default function PrivacyCenterPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'consent'|'rights'|'password'|'policy'|'admin'>('consent');
+  const [tab, setTab] = useState<'overview'|'security'|'onpremise'|'standards'|'consent'|'rights'|'password'|'policy'|'admin'>('overview');
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [policy, setPolicy] = useState<PolicyInfo | null>(null);
   const [erasureRequests, setErasureRequests] = useState<ErasureRequest[]>([]);
