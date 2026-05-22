@@ -1,107 +1,92 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NavigationContext } from './context/NavigationContext';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { CookieConsent } from './components/CookieConsent';
+
+// Always-eager: login + dashboard shown immediately on load
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import ProtocolsPage from './pages/ProtocolsPage';
-import InstrumentsPage from './pages/InstrumentsPage';
-import BookingsPage from './pages/BookingsPage';
-import TasksPage from './pages/TasksPage';
-import TrainingPage from './pages/TrainingPage';
-import InventoryPage from './pages/InventoryPage';
-import SamplesPage from './pages/SamplesPage';
-import SampleEventsPage from './pages/SampleEventsPage';
-import CalendarPage from './pages/CalendarPage';
-import IncidentsPage from './pages/IncidentsPage';
-import WorkspacesPage from './pages/WorkspacesPage';
-import CompliancePage from './pages/CompliancePage';
-import FeedbackPage from './pages/FeedbackPage';
-import RemindersPage from './pages/RemindersPage';
-import NotificationsPage from './pages/NotificationsPage';
-import FilesPage from './pages/FilesPage';
-import AuditPage from './pages/AuditPage';
-import UsersPage from './pages/UsersPage';
-import LabMeetingsPage from './pages/LabMeetingsPage';
-// New pages
-import SOPsPage from './pages/SOPsPage';
-import MaintenancePage from './pages/MaintenancePage';
-import PrintLabelsPage from './pages/PrintLabelsPage';
-import BatchImportPage from './pages/BatchImportPage';
-import TemplatesPage from './pages/TemplatesPage';
-import CostTrackingPage from './pages/CostTrackingPage';
-import ActivityPage from './pages/ActivityPage';
-import IntegrationsPage from './pages/IntegrationsPage';
-import SettingsPage from './pages/SettingsPage';
-// Grant Hub - Unified Grant Module
-import GrantHubPage from './pages/GrantHubPage';
-// Lab Hub - Unified Lab Operations
-import LabHubPage from './pages/LabHubPage';
-// Sample Hub - Unified Sample Management
-import SampleHubPage from './pages/SampleHubPage';
-// Resources Hub - Unified Resources
-import ResourcesHubPage from './pages/ResourcesHubPage';
-// Suppliers & Procurement
-import SuppliersPage from './pages/SuppliersPage';
-// Safety Hub - Quality & Safety
-import SafetyHubPage from './pages/SafetyHubPage';
-// Collaboration Hub - Team Collaboration
-import CollaborationHubPage from './pages/CollaborationHubPage';
-// Admin Hub - Administration
-import AdminHubPage from './pages/AdminHubPage';
-// Equipment Hub - Equipment Management
-import EquipmentHubPage from './pages/EquipmentHubPage';
-// Experiments Hub - Experiment Management
-import ExperimentsHubPage from './pages/ExperimentsHubPage';
-// Reports & Analytics
-import ReportsPage from './pages/ReportsPage';
-// Document Management
-import DocumentsPage from './pages/DocumentsPage';
-import GrantBudgetPage from './pages/GrantBudgetPage';
-// Grant Module - Additional Features
-import FundingOpportunitiesPage from './pages/FundingOpportunitiesPage';
-import ReviewerFeedbackPage from './pages/ReviewerFeedbackPage';
-import CollaboratorNetworkPage from './pages/CollaboratorNetworkPage';
-import ReferenceManagerPage from './pages/ReferenceManagerPage';
-import BiosketchGeneratorPage from './pages/BiosketchGeneratorPage';
-import GrantCalendarPage from './pages/GrantCalendarPage';
-import BudgetCalculatorPage from './pages/BudgetCalculatorPage';
-import ProgressReportsPage from './pages/ProgressReportsPage';
-import SupportLettersPage from './pages/SupportLettersPage';
-import SuccessAnalyticsPage from './pages/SuccessAnalyticsPage';
-import IRBTrackerPage from './pages/IRBTrackerPage';
-import SubcontractManagerPage from './pages/SubcontractManagerPage';
-import ERACommonsPage from './pages/ERACommonsPage';
-import WritingResourcesPage from './pages/WritingResourcesPage';
-import VersionHistoryPage from './pages/VersionHistoryPage';
-import LabNotebookPage from './pages/LabNotebookPage';
-import StorageMapPage from './pages/StorageMapPage';
-import SupplierDirectoryPage from './pages/SupplierDirectoryPage';
-// Tier 1 — AI Research Intelligence
-import ELNPage from './pages/ELNPage';
-import IoTDashboardPage from './pages/IoTDashboardPage';
-import LabelPrinterPage from './pages/LabelPrinterPage';
-import AILabManagerPage from './pages/AILabManagerPage';
-import ReagentCartPage from './pages/ReagentCartPage';
-import PaymentMethodsPage from './pages/PaymentMethodsPage';
-import ProcurementHubPage from './pages/ProcurementHubPage';
-import LabMembersPage from './pages/LabMembersPage';
-// Tier 2 — Clinical & Translational Research
-import ClinicalResearchHubPage from './pages/ClinicalResearchHubPage';
-// Tier 4 — Operational Excellence
-import FreezerBiobankPage from './pages/FreezerBiobankPage';
-import VendorIntelligencePage from './pages/VendorIntelligencePage';
-import TrainingCertPage from './pages/TrainingCertPage';
-import PrivacyCenterPage from './pages/PrivacyCenterPage';
-import SecurityDashboardPage from './pages/SecurityDashboardPage';
-import ReagentHubPage from './pages/ReagentHubPage';
-import CapaPage from './pages/CapaPage';
-import EmailSettingsPage from './pages/EmailSettingsPage';
-import CustomReportBuilderPage from './pages/CustomReportBuilderPage';
-import EquipmentAnalyticsPage from './pages/EquipmentAnalyticsPage';
-import OrgHierarchyPage from './pages/OrgHierarchyPage';
-import { CookieConsent } from './components/CookieConsent';
+
+// All other pages — lazy loaded on first navigation (splits main bundle)
+const LabHubPage             = lazy(() => import('./pages/LabHubPage'));
+const SampleHubPage          = lazy(() => import('./pages/SampleHubPage'));
+const ResourcesHubPage       = lazy(() => import('./pages/ResourcesHubPage'));
+const GrantHubPage           = lazy(() => import('./pages/GrantHubPage'));
+const SafetyHubPage          = lazy(() => import('./pages/SafetyHubPage'));
+const CollaborationHubPage   = lazy(() => import('./pages/CollaborationHubPage'));
+const AdminHubPage           = lazy(() => import('./pages/AdminHubPage'));
+const EquipmentHubPage       = lazy(() => import('./pages/EquipmentHubPage'));
+const ExperimentsHubPage     = lazy(() => import('./pages/ExperimentsHubPage'));
+const ProcurementHubPage     = lazy(() => import('./pages/ProcurementHubPage'));
+const ClinicalResearchHubPage= lazy(() => import('./pages/ClinicalResearchHubPage'));
+const ReagentHubPage         = lazy(() => import('./pages/ReagentHubPage'));
+
+const ProtocolsPage          = lazy(() => import('./pages/ProtocolsPage'));
+const TasksPage              = lazy(() => import('./pages/TasksPage'));
+const CalendarPage           = lazy(() => import('./pages/CalendarPage'));
+const AuditPage              = lazy(() => import('./pages/AuditPage'));
+const LabMeetingsPage        = lazy(() => import('./pages/LabMeetingsPage'));
+const ReportsPage            = lazy(() => import('./pages/ReportsPage'));
+const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
+const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
+const ELNPage                = lazy(() => import('./pages/ELNPage'));
+const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
+const LabelPrinterPage       = lazy(() => import('./pages/LabelPrinterPage'));
+const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
+const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
+const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
+const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
+const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
+const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
+const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
+const PrivacyCenterPage      = lazy(() => import('./pages/PrivacyCenterPage'));
+const SecurityDashboardPage  = lazy(() => import('./pages/SecurityDashboardPage'));
+const CapaPage               = lazy(() => import('./pages/CapaPage'));
+const EmailSettingsPage      = lazy(() => import('./pages/EmailSettingsPage'));
+const CustomReportBuilderPage= lazy(() => import('./pages/CustomReportBuilderPage'));
+const EquipmentAnalyticsPage = lazy(() => import('./pages/EquipmentAnalyticsPage'));
+const OrgHierarchyPage       = lazy(() => import('./pages/OrgHierarchyPage'));
+const GrantBudgetPage        = lazy(() => import('./pages/GrantBudgetPage'));
+const FundingOpportunitiesPage   = lazy(() => import('./pages/FundingOpportunitiesPage'));
+const ReviewerFeedbackPage       = lazy(() => import('./pages/ReviewerFeedbackPage'));
+const CollaboratorNetworkPage    = lazy(() => import('./pages/CollaboratorNetworkPage'));
+const ReferenceManagerPage       = lazy(() => import('./pages/ReferenceManagerPage'));
+const BiosketchGeneratorPage     = lazy(() => import('./pages/BiosketchGeneratorPage'));
+const GrantCalendarPage          = lazy(() => import('./pages/GrantCalendarPage'));
+const BudgetCalculatorPage       = lazy(() => import('./pages/BudgetCalculatorPage'));
+const ProgressReportsPage        = lazy(() => import('./pages/ProgressReportsPage'));
+const SupportLettersPage         = lazy(() => import('./pages/SupportLettersPage'));
+const SuccessAnalyticsPage       = lazy(() => import('./pages/SuccessAnalyticsPage'));
+const IRBTrackerPage             = lazy(() => import('./pages/IRBTrackerPage'));
+const SubcontractManagerPage     = lazy(() => import('./pages/SubcontractManagerPage'));
+const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
+const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
+const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
+const LabNotebookPage            = lazy(() => import('./pages/LabNotebookPage'));
+const StorageMapPage             = lazy(() => import('./pages/StorageMapPage'));
+const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
+
+// Page-level loading fallback
+function PageLoader() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '60vh', flexDirection: 'column', gap: 12,
+      color: 'var(--text-muted)',
+    }}>
+      <div style={{
+        width: 36, height: 36, border: '3px solid var(--border)',
+        borderTopColor: 'var(--accent)', borderRadius: '50%',
+        animation: 'spin 0.7s linear infinite',
+      }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <span style={{ fontSize: 13 }}>Loading…</span>
+    </div>
+  );
+}
 
 function AppInner() {
   const { user, loading } = useAuth();
@@ -244,7 +229,11 @@ function AppInner() {
   return (
     <NavigationContext.Provider value={setPage}>
       <Layout activePage={page} onNavigate={setPage}>
-        {renderPage()}
+        <ErrorBoundary key={page}>
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </ErrorBoundary>
       </Layout>
       <CookieConsent />
     </NavigationContext.Provider>
@@ -253,6 +242,7 @@ function AppInner() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Toaster
         position="top-right"
@@ -272,5 +262,6 @@ export default function App() {
       />
       <AppInner />
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

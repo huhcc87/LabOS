@@ -29,8 +29,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'charts':      ['recharts'],
-          'tiptap':      [
+          // UI & charting
+          'charts':       ['recharts'],
+          // Rich text editor (large)
+          'tiptap':       [
             '@tiptap/react', '@tiptap/core', '@tiptap/starter-kit',
             '@tiptap/extension-highlight', '@tiptap/extension-typography',
             '@tiptap/extension-underline', '@tiptap/extension-task-list',
@@ -39,9 +41,17 @@ export default defineConfig({
             '@tiptap/extension-table-cell', '@tiptap/extension-link',
             '@tiptap/extension-image',
           ],
-          'docx-export': ['docx', 'file-saver'],
-          'pdf-export':  ['jspdf', 'html2canvas'],
+          // Document export (only loaded when user exports)
+          'docx-export':  ['docx', 'file-saver'],
+          'pdf-export':   ['jspdf', 'html2canvas'],
+          // Protocol builder tools
           'protocol-lib': ['reactflow', 'react-qr-code', 'dexie'],
+          // Barcode/QR scanner (large, only on scan pages)
+          'scanner':      ['@zxing/browser', '@zxing/library'],
+          // Vendor (stable, long-cache)
+          'vendor-http':  ['axios'],
+          'vendor-ui':    ['react-hot-toast', 'react-dropzone', 'fuse.js'],
+          'vendor-dates': ['date-fns'],
         },
       },
     },
