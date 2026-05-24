@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from '../context/NavigationContext';
 
 interface FundingOpportunity {
   id: string;
@@ -24,6 +25,7 @@ const GRANT_TYPES = ['All', 'R01', 'R21', 'R03', 'K99/R00', 'CAREER', 'Idea Awar
 const INSTITUTES = ['All', 'NCI', 'NIAID', 'NINDS', 'NHLBI', 'NIGMS', 'NHGRI', 'BIO', 'CDMRP'];
 
 export default function FundingOpportunitiesPage() {
+  const navigate = useNavigate();
   const [opportunities, setOpportunities] = useState<FundingOpportunity[]>(INITIAL_OPPORTUNITIES);
   const [search, setSearch] = useState('');
   const [agency, setAgency] = useState('All');
@@ -344,7 +346,7 @@ export default function FundingOpportunitiesPage() {
               >
                 🔗 View Full FOA
               </a>
-              <button className="btn btn-secondary" onClick={() => window.location.hash = '#grant-compose'}>
+              <button className="btn btn-secondary" onClick={() => navigate('grant-compose')}>
                 📝 Start Application
               </button>
               <button className="btn btn-secondary" onClick={() => toggleSave(selectedOpp.id)}>

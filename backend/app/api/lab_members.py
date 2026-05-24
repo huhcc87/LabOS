@@ -6,7 +6,7 @@ Permission rules (enforced in each endpoint):
 - Any authenticated user can REQUEST to join a lab (creates a pending record).
 - A user can leave a lab they belong to themselves (sets status=revoked).
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -208,7 +208,7 @@ def approve(membership_id: int, db: Session = Depends(get_db), user: User = Depe
     lab = _require_pi(db, user, m.lab_id)
     m.status = LabMembershipStatus.approved
     m.approved_by = user.id
-    m.approved_at = datetime.utcnow()
+    m.approved_at = datetime.now(timezone.utc)
     db.commit()
     return _to_out(m, db)
 
@@ -229,7 +229,7 @@ def accept_invite(membership_id: int, db: Session = Depends(get_db), user: User 
             raise HTTPException(403, "Email does not match invite")
         m.user_id = user.id
     m.status = LabMembershipStatus.approved
-    m.approved_at = datetime.utcnow()
+    m.approved_at = datetime.now(timezone.utc)
     db.commit()
     return _to_out(m, db)
 
@@ -247,7 +247,7 @@ def revoke(membership_id: int, reason: str = "",
     if not (_can_manage_lab(user, lab) or m.user_id == user.id):
         raise HTTPException(403, "Only the PI or the member themselves can revoke")
     m.status = LabMembershipStatus.revoked
-    m.revoked_at = datetime.utcnow()
+    m.revoked_at = datetime.now(timezone.utc)
     m.revoke_reason = reason
     db.commit()
     return _to_out(m, db)

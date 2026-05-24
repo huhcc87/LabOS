@@ -111,7 +111,7 @@ def list_users(
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
 
 
-@router.post("/auth/change-password", status_code=204)
+@router.post("/change-password", status_code=204)
 def change_password(
     body: dict,
     db: Session = Depends(get_db),

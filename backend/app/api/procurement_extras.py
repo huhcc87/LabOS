@@ -13,7 +13,7 @@ Covers:
 """
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -135,7 +135,7 @@ def list_pending_approvals(db: Session = Depends(get_db), user: User = Depends(g
 def approve_items(body: ApproveBody, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if (user.role or "").lower() not in ("admin", "pi", "manager", "staff"):
         raise HTTPException(403, "Approver role required")
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for iid in body.item_ids:
         m = get_or_create_meta(db, iid)
         m.approval_status = "approved"
@@ -147,7 +147,7 @@ def approve_items(body: ApproveBody, db: Session = Depends(get_db), user: User =
 
 @router.post("/approvals/reject")
 def reject_items(body: ApproveBody, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for iid in body.item_ids:
         m = get_or_create_meta(db, iid)
         m.approval_status = "rejected"
@@ -332,7 +332,7 @@ def record_quote(item_id: int, quote_url: str = "", new_price: Optional[float] =
 @router.get("/group-buy")
 def detect_group_buy(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     """Items appearing in >=2 distinct users' carts in the past 14 days."""
-    cutoff = datetime.utcnow() - timedelta(days=14)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=14)
     rows = (
         db.query(ReagentCartItem)
         .filter(ReagentCartItem.captured_at >= cutoff)
@@ -408,7 +408,7 @@ def respond_borrow(bid: int, approve: bool, db: Session = Depends(get_db), user:
         raise HTTPException(404)
     b.status = "approved" if approve else "rejected"
     b.lender_id = user.id
-    b.responded_at = datetime.utcnow()
+    b.responded_at = datetime.now(timezone.utc)
     db.commit()
     return {"ok": True, "status": b.status}
 
@@ -473,7 +473,7 @@ def punchout_bulk(item_ids: str, db: Session = Depends(get_db), _: User = Depend
   </NEW_ITEM-LINE>""")
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <PunchOutOrderMessage>
-  <BuyerCookie>LABOS-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}</BuyerCookie>
+  <BuyerCookie>LABOS-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}</BuyerCookie>
   <PunchOutOrderMessageHeader>
     <Total><Money currency="USD">{sum((i.unit_price or 0) * (i.quantity or 1) for i in items):.2f}</Money></Total>
   </PunchOutOrderMessageHeader>
@@ -495,7 +495,7 @@ def set_recurrence(item_id: int, body: RecurrenceIn, db: Session = Depends(get_d
     m.auto_reorder = body.auto_reorder
     if body.pattern:
         days = {"weekly": 7, "monthly": 30, "biweekly": 14, "quarterly": 90}.get(body.pattern, 30)
-        m.next_reorder_at = datetime.utcnow() + timedelta(days=days)
+        m.next_reorder_at = datetime.now(timezone.utc) + timedelta(days=days)
     else:
         m.next_reorder_at = None
     db.commit()

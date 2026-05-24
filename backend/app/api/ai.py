@@ -1,6 +1,9 @@
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -153,24 +156,64 @@ async def chat(
 ):
     ctx = _gather_lab_context(db)
 
+    system_prompt = (
+        "You are LabOS AI, an intelligent assistant for a biomedical research lab management system. "
+        "You have access to the following real-time lab data:\n"
+        f"- Low stock items: {len(ctx['low_stock_items'])} ({', '.join(i['name'] for i in ctx['low_stock_items'][:5])})\n"
+        f"- Overdue tasks: {ctx['overdue_tasks']}\n"
+        f"- Open tasks: {ctx['open_tasks']}\n"
+        f"- Pending reminders: {ctx['pending_reminders']}\n"
+        f"- Samples in biorepository: {ctx['sample_count']}\n"
+        f"- Protocols: {ctx['protocol_count']}\n"
+        f"- Lab notebook entries: {ctx['notebook_count']}\n"
+        f"- Open CAPA records: {ctx['open_capas']}\n"
+        f"- Open/investigating incidents: {ctx['open_incidents']}\n\n"
+        "Answer the researcher's question concisely and helpfully. Use markdown formatting. "
+        "Be specific with numbers. Suggest next actions when relevant."
+    )
+
+    # Claude (primary)
+    if settings.anthropic_api_key:
+        try:
+            import anthropic
+            client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+            msg = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=600,
+                system=system_prompt,
+                messages=[{"role": "user", "content": body.question}],
+            )
+            return ChatResponse(answer=msg.content[0].text, source="claude")
+        except Exception as exc:
+            logger.error("[AI CHAT] Claude failed: %s", exc)
+
+    # DeepSeek (OpenAI-compatible API)
+    if settings.deepseek_api_key:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=20) as http:
+                resp = await http.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.deepseek_api_key}"},
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": body.question},
+                        ],
+                        "max_tokens": 600,
+                    },
+                )
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+            return ChatResponse(answer=content, source="deepseek")
+        except Exception as exc:
+            logger.error("[AI CHAT] DeepSeek failed: %s", exc)
+
+    # OpenAI (fallback)
     if settings.openai_api_key:
         try:
             import httpx
-            system_prompt = (
-                "You are LabOS AI, an intelligent assistant for a biomedical research lab management system. "
-                "You have access to the following real-time lab data:\n"
-                f"- Low stock items: {len(ctx['low_stock_items'])} ({', '.join(i['name'] for i in ctx['low_stock_items'][:5])})\n"
-                f"- Overdue tasks: {ctx['overdue_tasks']}\n"
-                f"- Open tasks: {ctx['open_tasks']}\n"
-                f"- Pending reminders: {ctx['pending_reminders']}\n"
-                f"- Samples in biorepository: {ctx['sample_count']}\n"
-                f"- Protocols: {ctx['protocol_count']}\n"
-                f"- Lab notebook entries: {ctx['notebook_count']}\n"
-                f"- Open CAPA records: {ctx['open_capas']}\n"
-                f"- Open/investigating incidents: {ctx['open_incidents']}\n\n"
-                "Answer the researcher's question concisely and helpfully. Use markdown formatting. "
-                "Be specific with numbers. Suggest next actions when relevant."
-            )
             async with httpx.AsyncClient(timeout=20) as http:
                 resp = await http.post(
                     "https://api.openai.com/v1/chat/completions",
@@ -188,7 +231,7 @@ async def chat(
             content = resp.json()["choices"][0]["message"]["content"]
             return ChatResponse(answer=content, source="openai")
         except Exception as exc:
-            print(f"[AI CHAT] OpenAI failed: {exc}")
+            logger.error("[AI CHAT] OpenAI failed: %s", exc)
 
     answer, suggestions = _local_answer(body.question, ctx)
     return ChatResponse(answer=answer, source="local", suggestions=suggestions)
@@ -201,7 +244,7 @@ def inventory_predictions(
 ):
     """Return inventory items with predicted depletion dates based on usage."""
     from app.models.models import AuditLog, AuditAction
-    from datetime import timedelta
+    from datetime import timedelta, timezone
     import json
 
     items = db.query(InventoryItem).all()
@@ -209,7 +252,7 @@ def inventory_predictions(
 
     for item in items:
         # Count how many times this item was updated (used) in the last 30 days
-        thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).isoformat()
+        thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
         usage_events = db.query(AuditLog).filter(
             AuditLog.entity_type == "inventory",
             AuditLog.entity_id == item.id,
@@ -255,7 +298,7 @@ def inventory_predictions(
     return {"predictions": predictions, "total": len(predictions)}
 
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # ── Protocol Analysis ─────────────────────────────────────────────────────────
@@ -343,7 +386,7 @@ def anomaly_detection(
     from datetime import timedelta
 
     anomalies = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 1. Inventory: items with quantity = 0
     empty = db.query(InventoryItem).filter(InventoryItem.quantity == 0).all()

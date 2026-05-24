@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -58,7 +58,7 @@ def save_biosketch(body: BiosketchUpdate, db: Session = Depends(get_db), user: U
     p.contributions_json = json.dumps(body.contributions)
     p.products_json = json.dumps(body.products)
     p.research_support_json = json.dumps(body.research_support)
-    p.updated_at = datetime.utcnow()
+    p.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(p)
     return _to_out(p)

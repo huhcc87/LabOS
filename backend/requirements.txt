@@ -43,8 +43,9 @@ pypdf                         # PDF parsing and reading
 # ── IoT / Real-time ──────────────────────────────────────────────────────
 paho-mqtt                     # MQTT client for sensor ingestion
 
-# ── AI (OpenAI optional — falls back to templates when key absent) ───────
-openai                        # GPT-4o for grant writing, ELN summaries, protocol gen
+# ── AI (Claude primary, OpenAI fallback — both optional) ────────────────
+anthropic>=0.40.0             # Claude Sonnet/Opus for chat, grant writing, protocol gen
+openai                        # GPT-4o fallback when ANTHROPIC_API_KEY is absent
 
 # ── Testing ─────────────────────────────────────────────────────────────
 pytest==8.2.0

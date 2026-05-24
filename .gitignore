@@ -70,6 +70,9 @@ dist-ssr/
 *.sqlite3
 lab.db
 lab.db-journal
+test_lab.db
+*.db-shm
+*.db-wal
 
 # Uploads (local file storage)
 backend/uploads/

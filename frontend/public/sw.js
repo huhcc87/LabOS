@@ -1,5 +1,5 @@
-const CACHE_NAME = 'labos-v4';
-const OFFLINE_CACHE = 'labos-offline-v4';
+const CACHE_NAME = 'labos-v5';
+const OFFLINE_CACHE = 'labos-offline-v5';
 const STATIC_ASSETS = ['/', '/index.html'];
 const API_PREFIX = '/api';
 
@@ -80,11 +80,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Cache-first for static assets (JS, CSS, fonts, images)
+  // Skip non-http(s) schemes — chrome-extension:// etc. cannot be cached
   if (
-    request.destination === 'script' ||
-    request.destination === 'style' ||
-    request.destination === 'font' ||
-    request.destination === 'image'
+    (url.protocol === 'http:' || url.protocol === 'https:') &&
+    (request.destination === 'script' ||
+      request.destination === 'style' ||
+      request.destination === 'font' ||
+      request.destination === 'image')
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

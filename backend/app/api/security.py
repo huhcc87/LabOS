@@ -83,7 +83,7 @@ def create_session(
         ip_address=ip,
         user_agent=ua[:500],
         device_hint=_ua_hint(ua),
-        expires_at=datetime.utcnow() + timedelta(hours=ttl_hours),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=ttl_hours),
     )
     db.add(session)
     return session
@@ -110,7 +110,7 @@ def list_my_sessions(
             "created_at": s.created_at.isoformat(),
             "last_active_at": s.last_active_at.isoformat(),
             "expires_at": s.expires_at.isoformat(),
-            "is_expired": datetime.utcnow() > s.expires_at,
+            "is_expired": datetime.now(timezone.utc) > s.expires_at,
         }
         for s in sessions
     ]
@@ -422,7 +422,7 @@ def security_events_summary(
     current_user: User = Depends(require_role(UserRole.manager)),
 ):
     """24-hour summary counts by severity."""
-    since = datetime.utcnow() - timedelta(hours=24)
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
     events = db.query(SecurityEvent).filter(SecurityEvent.timestamp >= since).all()
 
     counts = {"info": 0, "warning": 0, "critical": 0, "total": len(events)}
@@ -477,7 +477,7 @@ def list_all_sessions(
                 "created_at": s.created_at.isoformat(),
                 "last_active_at": s.last_active_at.isoformat(),
                 "expires_at": s.expires_at.isoformat(),
-                "is_expired": datetime.utcnow() > s.expires_at,
+                "is_expired": datetime.now(timezone.utc) > s.expires_at,
             }
             for s in items
         ],

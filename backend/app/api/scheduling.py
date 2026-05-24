@@ -412,7 +412,7 @@ def booking_utilization(
     _: User = Depends(get_current_user),
 ):
     """Return per-instrument utilization heatmap data for the last N days."""
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     bookings = (
         db.query(Booking)
         .filter(Booking.start_time >= cutoff)

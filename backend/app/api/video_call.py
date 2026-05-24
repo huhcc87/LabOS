@@ -3,9 +3,12 @@ WebRTC Video Conferencing Module
 Self-hosted, no external dependencies required
 """
 import json
+import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Set
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -28,7 +31,7 @@ class VideoRoom:
         self.websockets: Dict[str, WebSocket] = {}  # socket_id -> websocket
         self.chat_messages: List[dict] = []
         self.transcriptions: List[dict] = []
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
         self.is_recording = False
         self.whiteboard_state: List[dict] = []
         self.shared_documents: List[dict] = []
@@ -193,7 +196,7 @@ async def video_websocket(
         "is_muted": False,
         "is_video_off": False,
         "is_screen_sharing": False,
-        "joined_at": datetime.utcnow().isoformat(),
+        "joined_at": datetime.now(timezone.utc).isoformat(),
     }
 
     try:
@@ -231,7 +234,7 @@ async def video_websocket(
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        logger.error("WebSocket error: %s", e)
     finally:
         # Cleanup on disconnect
         if socket_id in room.participants:
@@ -309,7 +312,7 @@ async def handle_signaling_message(room: VideoRoom, sender_id: str, data: dict):
             "sender_id": sender_id,
             "sender_name": room.participants.get(sender_id, {}).get("display_name", "Unknown"),
             "message": data.get("message", ""),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         room.chat_messages.append(chat_msg)
         await broadcast_to_room(room, {
@@ -324,7 +327,7 @@ async def handle_signaling_message(room: VideoRoom, sender_id: str, data: dict):
             "speaker_id": sender_id,
             "speaker_name": room.participants.get(sender_id, {}).get("display_name", "Unknown"),
             "text": data.get("text", ""),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "is_final": data.get("is_final", False),
         }
         if data.get("is_final"):

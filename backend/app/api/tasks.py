@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -40,7 +40,7 @@ def list_tasks(
     _: User = Depends(get_current_user),
 ):
     # auto-overdue
-    today = datetime.utcnow().date().isoformat()
+    today = datetime.now(timezone.utc).date().isoformat()
     db.query(Task).filter(
         Task.status.notin_([TaskStatus.completed, TaskStatus.overdue]),
         Task.due_date < today,

@@ -5,6 +5,109 @@ End-to-end recipe for deploying LabOS at **$0** with truly-free tiers, or
 
 ---
 
+## ⚡ QUICK PATH: Neon DB + Railway + Vercel (recommended)
+
+This is the fastest path to a production LabOS. Do these 5 steps in order.
+
+### A. Push to GitHub (one-time)
+
+```bash
+cd /Users/mudasirrashid/Documents/app/lab_management_system_v2
+git init && git add . && git commit -m "v3 production release"
+# Create repo at github.com → New repository → name: labos
+git remote add origin https://github.com/huhcc87/labos.git
+git push -u origin main
+```
+
+---
+
+### B. Neon database (5 min)
+
+1. Go to **https://neon.tech** → Sign up with GitHub (`huhcc87@gmail.com`)
+2. **New Project** → name `labos`, region `US East`
+3. Dashboard → **Connection Details** → enable **Pooled connection** → copy the string:
+   ```
+   postgresql://labos_owner:PASS@ep-xxx.us-east-2.aws.neon.tech/labos?sslmode=require
+   ```
+   Keep this — you paste it into Railway next.
+
+---
+
+### C. Railway backend (10 min)
+
+1. Go to **https://railway.app** → Login with GitHub
+2. **New Project** → **Deploy from GitHub repo** → pick `labos`
+3. Railway asks for **Root Directory** → type `backend`
+4. It auto-detects the Dockerfile ✓
+5. Go to **Variables** tab → Add ALL of these:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string from step B |
+| `SECRET_KEY` | `FlSqBHNoEwQEFIZe57aQL23le1XItn_jTq-jY2cEq2mOvsNxTo8ugWLI_hVmCt2B` |
+| `ENVIRONMENT` | `production` |
+| `CORS_ORIGINS` | `https://YOUR_APP.vercel.app` ← update after step D |
+| `DEEPSEEK_API_KEY` | `sk-c2b1420edb304c53aedfea0e25be3986` |
+| `ANTHROPIC_API_KEY` | your Claude key (optional) |
+| `OPENAI_API_KEY` | your OpenAI key (optional) |
+| `UPLOAD_DIR` | `/data/uploads` |
+
+6. **Volumes** tab → Add Volume → mount path `/data` → 1 GB
+7. Click **Deploy** — Railway runs `alembic upgrade head` then starts uvicorn
+8. Wait for green healthcheck ✓ on `/api/health`
+9. Copy your Railway URL e.g. `https://labos-backend-production.up.railway.app`
+
+---
+
+### D. Update vercel.json with Railway URL
+
+Open `frontend/vercel.json` and replace both occurrences of `RAILWAY_BACKEND_URL` with your actual Railway URL (no trailing slash):
+
+```bash
+# Example — replace with your real Railway URL:
+sed -i '' 's|RAILWAY_BACKEND_URL|labos-backend-production.up.railway.app|g' \
+  /Users/mudasirrashid/Documents/app/lab_management_system_v2/frontend/vercel.json
+git add frontend/vercel.json && git commit -m "chore: wire Railway URL" && git push
+```
+
+---
+
+### E. Vercel frontend (5 min)
+
+1. Go to **https://vercel.com** → Login with GitHub → **New Project**
+2. Import your `labos` repo
+3. **Framework**: Vite | **Root Directory**: `frontend`
+4. **Environment Variables** — leave `VITE_API_BASE_URL` **blank** (Vercel proxy handles /api)
+5. Click **Deploy** (~30 sec)
+6. Copy your Vercel URL e.g. `https://labos-xyz.vercel.app`
+
+---
+
+### F. Final wiring (2 min)
+
+```bash
+# 1. Update CORS on Railway → Variables → change CORS_ORIGINS to your Vercel URL
+#    Railway auto-redeploys on env var save.
+
+# 2. Seed first admin (Railway → your service → Connect → Railway Shell):
+cd /app && python seed.py
+# OR via curl:
+curl -X POST https://YOUR_RAILWAY_URL/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"huhcc87@gmail.com","password":"LabOS2024!","full_name":"Admin","role":"admin"}'
+```
+
+### G. Smoke test
+
+- ✅ `https://YOUR_RAILWAY_URL/api/health` → `{"status":"ok"}`
+- ✅ Vercel URL loads login page
+- ✅ Login with admin credentials
+- ✅ Create a sample, confirm it persists after refresh (Neon working)
+
+---
+
+---
+
 ## 0️⃣ Pick your hosting style — no monthly subscriptions
 
 You said you want pay-as-you-use (like Convex), not flat monthly subscriptions.

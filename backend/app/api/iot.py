@@ -14,7 +14,7 @@ import json
 import logging
 import secrets
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -318,7 +318,7 @@ async def post_reading(
     if not sensor:
         raise HTTPException(401, "Invalid sensor key or API key")
 
-    ts = body.recorded_at or datetime.utcnow()
+    ts = body.recorded_at or datetime.now(timezone.utc)
     reading = IoTReading(sensor_id=sensor.id, value=body.value, recorded_at=ts)
     db.add(reading)
     db.commit()
@@ -370,7 +370,7 @@ def get_history(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
     readings = (
         db.query(IoTReading)
         .filter(IoTReading.sensor_id == sensor_id, IoTReading.recorded_at >= since)
@@ -421,7 +421,7 @@ def acknowledge_alert(
     if not alert:
         raise HTTPException(404, "Alert not found")
     alert.acknowledged = True
-    alert.acknowledged_at = datetime.utcnow()
+    alert.acknowledged_at = datetime.now(timezone.utc)
     db.commit()
     return {"ok": True}
 

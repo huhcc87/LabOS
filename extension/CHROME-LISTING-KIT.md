@@ -8,7 +8,7 @@ asks for it. Copy each block, paste into the matching field, save draft.
 ## 📁 Where the asset files are
 
 ```
-/Users/mudasirrashid/Documents/app/1.. lab_management_system_v2/dist-extension/store-assets/
+/Users/mudasirrashid/Documents/app/lab_management_system_v2/dist-extension/store-assets/
 ├── screenshot-1-hero.png            1280×800   ← Screenshots section, slot 1
 ├── screenshot-2-button.png          1280×800   ← Screenshots section, slot 2
 ├── screenshot-3-cart.png            1280×800   ← Screenshots section, slot 3
@@ -17,7 +17,7 @@ asks for it. Copy each block, paste into the matching field, save draft.
 ├── promo-small-440x280.png          440×280    ← Small promo tile
 └── promo-marquee-1400x560.png       1400×560   ← Marquee promo tile
 
-/Users/mudasirrashid/Documents/app/1.. lab_management_system_v2/extension/icons/
+/Users/mudasirrashid/Documents/app/lab_management_system_v2/extension/icons/
 └── icon128.png                      128×128    ← Store icon
 ```
 

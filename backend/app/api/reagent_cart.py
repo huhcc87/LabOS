@@ -1,7 +1,7 @@
 """Reagent Cart API — receives captures from the browser extension and
 serves them to the LabOS app. Designed to work whether or not Stripe
 is configured."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -92,7 +92,7 @@ def create_item(body: CartItemIn, db: Session = Depends(get_db), user: User = De
         cas=body.cas,
         purity=body.purity,
         notes=body.notes,
-        captured_at=body.captured_at or datetime.utcnow(),
+        captured_at=body.captured_at or datetime.now(timezone.utc),
     )
     db.add(item)
     db.commit()
@@ -156,7 +156,7 @@ def checkout(body: CheckoutIn, db: Session = Depends(get_db), user: User = Depen
         except Exception as e:
             raise HTTPException(402, f"Payment failed: {e}")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for it in items:
         it.status = ReagentCartItemStatus.ordered
         it.ordered_at = now

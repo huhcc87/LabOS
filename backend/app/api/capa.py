@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -79,7 +79,7 @@ def update_capa(
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(record, field, value)
     if body.status == CapaStatus.closed and not record.closed_at:
-        record.closed_at = datetime.utcnow()
+        record.closed_at = datetime.now(timezone.utc)
     write_audit(db, AuditAction.update, "capa", capa_id, current_user, body.model_dump(exclude_none=True))
     db.commit()
     db.refresh(record)
@@ -109,7 +109,7 @@ def capa_stats(
     by_status: dict[str, int] = {}
     by_severity: dict[str, int] = {}
     overdue = 0
-    today = datetime.utcnow().date().isoformat()
+    today = datetime.now(timezone.utc).date().isoformat()
     for r in all_records:
         by_status[r.status] = by_status.get(r.status, 0) + 1
         by_severity[r.severity] = by_severity.get(r.severity, 0) + 1

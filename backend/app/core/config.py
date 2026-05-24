@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     smtp_from: str = "labos@lab.local"
     smtp_tls: bool = True
 
-    # AI (optional — leave blank to use template-based generation)
+    # AI — priority order: Claude → DeepSeek → OpenAI → built-in rules
+    # Set whichever key(s) you have. First available key wins.
+    anthropic_api_key: str = ""
+    deepseek_api_key: str = ""   # DEEPSEEK_API_KEY — deepseek-chat model
     openai_api_key: str = ""
 
     # IoT / MQTT (optional — leave blank to disable MQTT relay)

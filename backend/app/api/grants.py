@@ -1,6 +1,9 @@
+import logging
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 
 from app.core.config import settings
@@ -49,12 +52,37 @@ class SynthesisResponse(BaseModel):
     source: str
 
 
-async def _openai_call(prompt: str, system: str = "", max_tokens: int = 1200) -> str:
+async def _ai_call(prompt: str, system: str = "", max_tokens: int = 1200) -> str:
+    """Call Claude → DeepSeek → OpenAI in priority order for grant-writing tasks."""
     import httpx
+
+    # Claude (primary)
+    if settings.anthropic_api_key:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        kwargs: dict = {"model": "claude-sonnet-4-6", "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
+        if system:
+            kwargs["system"] = system
+        msg = await client.messages.create(**kwargs)
+        return msg.content[0].text
+
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
+
+    # DeepSeek (OpenAI-compatible)
+    if settings.deepseek_api_key:
+        async with httpx.AsyncClient(timeout=45) as http:
+            resp = await http.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.deepseek_api_key}"},
+                json={"model": "deepseek-chat", "messages": messages, "max_tokens": max_tokens},
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+
+    # OpenAI (fallback)
     async with httpx.AsyncClient(timeout=45) as http:
         resp = await http.post(
             "https://api.openai.com/v1/chat/completions",
@@ -63,6 +91,10 @@ async def _openai_call(prompt: str, system: str = "", max_tokens: int = 1200) ->
         )
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
+
+
+# Keep old name as alias so any remaining direct callers still work
+_openai_call = _ai_call
 
 
 def _template_synthesis(req: SynthesisRequest) -> SynthesisResponse:
@@ -270,7 +302,7 @@ async def ai_research_synthesis(
     _: User = Depends(get_current_user),
 ):
     """Multi-stage AI swarm: literature synthesis → gap analysis → novel hypothesis generation."""
-    if not settings.openai_api_key:
+    if not settings.anthropic_api_key and not settings.deepseek_api_key and not settings.openai_api_key:
         return _template_synthesis(body)
 
     import json, re
@@ -483,7 +515,7 @@ async def ai_research_synthesis(
         )
 
     except Exception as exc:
-        print(f"[RESEARCH SYNTHESIS] OpenAI pipeline failed: {exc}")
+        logger.error("[RESEARCH SYNTHESIS] OpenAI pipeline failed: %s", exc)
         return _template_synthesis(body)
 
 SECTION_TEMPLATES: dict[str, str] = {
@@ -660,9 +692,8 @@ async def ai_draft(
 
     ctx_str = f"\nAdditional context: {body.context}" if body.context else ""
 
-    if settings.openai_api_key:
+    if settings.anthropic_api_key or settings.deepseek_api_key or settings.openai_api_key:
         try:
-            import httpx
             prompt = (
                 f"You are an expert NIH/NSF grant writer. Write a polished, detailed "
                 f"{body.section} section for a {body.grant_type} grant application.\n"
@@ -673,21 +704,11 @@ async def ai_draft(
                 f"scientific language, NIH/NSF structure, and persuasive framing. "
                 f"Do not include preamble or meta-commentary — output only the grant section text."
             )
-            async with httpx.AsyncClient(timeout=30) as http:
-                resp = await http.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-                    json={
-                        "model": "gpt-4o-mini",
-                        "messages": [{"role": "user", "content": prompt}],
-                        "max_tokens": 1800,
-                    },
-                )
-            resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
-            return AIDraftResponse(content=content, source="openai")
+            content = await _ai_call(prompt, max_tokens=1800)
+            source = "claude" if settings.anthropic_api_key else "openai"
+            return AIDraftResponse(content=content, source=source)
         except Exception as exc:
-            print(f"[GRANTS AI] OpenAI call failed: {exc}")
+            logger.error("[GRANTS AI] AI call failed: %s", exc)
 
     template = SECTION_TEMPLATES.get(section_key, SECTION_TEMPLATES["approach"])
     content = template.format(

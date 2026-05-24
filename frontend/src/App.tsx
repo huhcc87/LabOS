@@ -49,6 +49,7 @@ const EmailSettingsPage      = lazy(() => import('./pages/EmailSettingsPage'));
 const CustomReportBuilderPage= lazy(() => import('./pages/CustomReportBuilderPage'));
 const EquipmentAnalyticsPage = lazy(() => import('./pages/EquipmentAnalyticsPage'));
 const OrgHierarchyPage       = lazy(() => import('./pages/OrgHierarchyPage'));
+const GrantComposePage       = lazy(() => import('./pages/GrantComposePage'));
 const GrantBudgetPage        = lazy(() => import('./pages/GrantBudgetPage'));
 const FundingOpportunitiesPage   = lazy(() => import('./pages/FundingOpportunitiesPage'));
 const ReviewerFeedbackPage       = lazy(() => import('./pages/ReviewerFeedbackPage'));
@@ -222,6 +223,7 @@ function AppInner() {
       case 'report-builder': return <CustomReportBuilderPage />;
       case 'equipment-analytics': return <EquipmentAnalyticsPage />;
       case 'org-hierarchy': return <OrgHierarchyPage />;
+      case 'grant-compose': return <GrantComposePage />;
       default: return <DashboardPage />;
     }
   };

@@ -7,7 +7,7 @@ GET  /api/signatures/admin/all   — admin: all signatures with filters
 PUT  /api/signatures/{id}/invalidate — admin: invalidate a signature with reason
 """
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -66,7 +66,7 @@ def sign_document(
         ip_address=request.client.host if request.client else "",
         user_agent=request.headers.get("user-agent", "")[:500],
         content_hash=ch,
-        signed_at=datetime.utcnow(),
+        signed_at=datetime.now(timezone.utc),
     )
     db.add(sig)
     write_audit(db, AuditAction.create, "electronic_signature", entity_id, current_user,

@@ -1,0 +1,18 @@
+# ════════════════════════════════════════════════════════════════════════
+# railway.toml — LabOS v3 backend deployment
+#
+# Railway detects the Dockerfile automatically.
+# Set all secrets in Railway → Variables (not here).
+# ════════════════════════════════════════════════════════════════════════
+
+[build]
+  builder = "dockerfile"
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+  # Railway injects PORT automatically; uvicorn reads ${PORT:-8000}
+  startCommand = "sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2'"
+  healthcheckPath = "/api/health"
+  healthcheckTimeout = 30
+  restartPolicyType = "on_failure"
+  restartPolicyMaxRetries = 3

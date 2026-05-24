@@ -78,8 +78,8 @@ def list_upcoming_meetings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from datetime import datetime
-    now = datetime.utcnow().isoformat()
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
     items = (
         db.query(LabMeeting)
         .filter(LabMeeting.scheduled_at >= now)
@@ -98,7 +98,7 @@ def list_past_meetings(
     current_user: User = Depends(get_current_user),
 ):
     from datetime import datetime
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     items = (
         db.query(LabMeeting)
         .filter(LabMeeting.scheduled_at < now)
@@ -240,7 +240,7 @@ def publish_minutes(
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     m.minutes_published = True
-    m.minutes_published_at = datetime.utcnow().isoformat()
+    m.minutes_published_at = datetime.now(timezone.utc).isoformat()
     db.commit()
     db.refresh(m)
     log_action(db, "update", "LabMeeting", m.id, current_user, {"minutes_published": True})

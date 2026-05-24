@@ -48,6 +48,10 @@ export default defineConfig({
           'protocol-lib': ['reactflow', 'react-qr-code', 'dexie'],
           // Barcode/QR scanner (large, only on scan pages)
           'scanner':      ['@zxing/browser', '@zxing/library'],
+          // Barcode label generation (very large, only on label pages)
+          'bwip':         ['bwip-js'],
+          // Spreadsheet import/export
+          'xlsx':         ['xlsx'],
           // Vendor (stable, long-cache)
           'vendor-http':  ['axios'],
           'vendor-ui':    ['react-hot-toast', 'react-dropzone', 'fuse.js'],
@@ -55,7 +59,7 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     port: 5173,
