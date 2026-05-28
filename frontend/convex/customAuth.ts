@@ -17,7 +17,13 @@ function generateToken(): string {
   return token;
 }
 
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (production)
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${local.charAt(0)}***@${domain}`;
+}
+
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours (hardened)
 
 // ── Register ─────────────────────────────────────────────────────────────
 export const register = action({
@@ -28,7 +34,12 @@ export const register = action({
     role: v.optional(v.string()),
   },
   handler: async (ctx, { email, password, full_name, role }): Promise<{ token: string; user_id: string }> => {
-    checkRateLimit(`register:${email}`);
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Invalid email format");
+    if (password.length < 8) throw new Error("Password must be at least 8 characters");
+    if (!/\d/.test(password)) throw new Error("Password must contain at least one digit");
+    if (full_name.trim().length < 2) throw new Error("Name must be at least 2 characters");
+    checkRateLimit(`register:${normalizedEmail}`);
     const bcrypt = await import("bcryptjs");
     const hashed_password = await bcrypt.hash(password, 12);
     const token = generateToken();
@@ -57,21 +68,34 @@ export const login = action({
     if (!user) throw new Error("Invalid email or password");
     if (!user.is_active) throw new Error("Account is disabled");
 
-    // Account lockout check (5 failed attempts → 15 min lock)
+    // Account lockout check (5 failed attempts → 30 min lock)
     const MAX_ATTEMPTS = 5;
-    const LOCKOUT_MS = 15 * 60 * 1000;
+    const LOCKOUT_MS = 30 * 60 * 1000;
     if (user.failed_login_attempts >= MAX_ATTEMPTS && user.locked_until && user.locked_until > Date.now()) {
       const minutes = Math.ceil((user.locked_until - Date.now()) / 60000);
+      await ctx.runMutation(api.customAuth.logSecurityEvent, {
+        user_id: user._id,
+        action: "LOGIN_BLOCKED_LOCKED",
+        severity: "HIGH",
+        details: `Blocked login attempt for locked account ${maskEmail(email)} (${minutes}min remaining)`,
+      });
       throw new Error(`Account locked. Try again in ${minutes} minute(s).`);
     }
 
     const valid = await bcrypt.compare(password, user.hashed_password);
     if (!valid) {
       const attempts = (user.failed_login_attempts ?? 0) + 1;
+      const locked = attempts >= MAX_ATTEMPTS;
       await ctx.runMutation(api.customAuth.trackFailedLogin, {
         user_id: user._id,
         attempts,
-        locked_until: attempts >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : undefined,
+        locked_until: locked ? Date.now() + LOCKOUT_MS : undefined,
+      });
+      await ctx.runMutation(api.customAuth.logSecurityEvent, {
+        user_id: user._id,
+        action: locked ? "ACCOUNT_LOCKED_BRUTE_FORCE" : "LOGIN_FAILED",
+        severity: locked ? "HIGH" : "WARN",
+        details: `Failed login for ${maskEmail(email)} (attempt ${attempts})`,
       });
       throw new Error("Invalid email or password");
     }
@@ -90,6 +114,13 @@ export const login = action({
       user_id: user._id,
       token,
       expires_at: Date.now() + SESSION_TTL_MS,
+    });
+
+    await ctx.runMutation(api.customAuth.logSecurityEvent, {
+      user_id: user._id,
+      action: "LOGIN_SUCCESS",
+      severity: "INFO",
+      details: `Successful login for ${maskEmail(email)} (${user.role})`,
     });
 
     return {
@@ -114,7 +145,16 @@ export const logout = mutation({
       .query("sessions")
       .withIndex("by_token", (q) => q.eq("token", token))
       .first();
-    if (session) await ctx.db.delete(session._id);
+    if (session) {
+      await ctx.db.insert("audit_logs", {
+        user_id: session.user_id,
+        action: "LOGOUT",
+        entity_type: "auth",
+        details: "User logged out",
+        created_at: Date.now(),
+      });
+      await ctx.db.delete(session._id);
+    }
   },
 });
 
@@ -217,5 +257,59 @@ export const createUserAndSession = mutation({
     });
 
     return { token: args.token, user_id: userId };
+  },
+});
+
+// ── Security audit event logging ────────────────────────────────────────
+export const logSecurityEvent = mutation({
+  args: {
+    user_id: v.id("users"),
+    action: v.string(),
+    severity: v.string(),
+    details: v.string(),
+  },
+  handler: async (ctx, { user_id, action, severity, details }) => {
+    await ctx.db.insert("audit_logs", {
+      user_id,
+      action,
+      entity_type: "auth",
+      details: `[${severity}] ${details}`,
+      created_at: Date.now(),
+    });
+  },
+});
+
+// ── Force logout all users (admin) ──────────────────────────────────────
+export const forceLogoutAll = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+    if (!session) throw new Error("Unauthorized");
+    const user = await ctx.db.get(session.user_id);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      throw new Error("Admin access required");
+    }
+
+    const allSessions = await ctx.db.query("sessions").collect();
+    let count = 0;
+    for (const s of allSessions) {
+      if (s._id !== session._id) {
+        await ctx.db.delete(s._id);
+        count++;
+      }
+    }
+
+    await ctx.db.insert("audit_logs", {
+      user_id: session.user_id,
+      action: "ADMIN_FORCE_LOGOUT",
+      entity_type: "auth",
+      details: `[HIGH] Admin force-logged out ${count} session(s)`,
+      created_at: Date.now(),
+    });
+
+    return { cleared: count };
   },
 });
