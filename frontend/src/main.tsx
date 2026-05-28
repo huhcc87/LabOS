@@ -6,13 +6,11 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
-import { initSentry } from './lib/sentry'
 import { initWebVitals } from './lib/webVitals'
 import { initAnalytics } from './lib/analytics'
 import './styles.css'
 
-// Initialize error tracking, performance monitoring & analytics
-initSentry();
+// Initialize performance monitoring & analytics
 initWebVitals();
 initAnalytics();
 

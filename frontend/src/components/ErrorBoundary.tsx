@@ -18,9 +18,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught error:', error, info);
-    }
+    console.error('[LabOS Error]', error.message, '\nStack:', error.stack, '\nComponent:', info.componentStack);
   }
 
   reset = () => this.setState({ hasError: false, error: null });
