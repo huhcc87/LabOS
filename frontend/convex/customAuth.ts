@@ -59,8 +59,8 @@ export const register = action({
 
 // ── Login ─────────────────────────────────────────────────────────────────
 export const login = action({
-  args: { email: v.string(), password: v.string() },
-  handler: async (ctx, { email, password }): Promise<{ token: string; user: Record<string, any> }> => {
+  args: { email: v.string(), password: v.string(), totp_code: v.optional(v.string()) },
+  handler: async (ctx, { email, password, totp_code }): Promise<{ token: string; user: Record<string, any>; totp_required?: boolean }> => {
     checkRateLimit(`login:${email}`);
     const bcrypt = await import("bcryptjs");
 
@@ -98,6 +98,17 @@ export const login = action({
         details: `Failed login for ${maskEmail(email)} (attempt ${attempts})`,
       });
       throw new Error("Invalid email or password");
+    }
+
+    // 2FA check: if TOTP is enabled, verify the code
+    if (user.totp_enabled && user.totp_secret) {
+      if (!totp_code) {
+        return { token: "", user: {}, totp_required: true };
+      }
+      const { verifySync } = await import("otplib");
+      const totpResult = verifySync({ token: totp_code, secret: user.totp_secret });
+      const totpValid = !!(totpResult as any).valid;
+      if (!totpValid) throw new Error("Invalid two-factor code");
     }
 
     // Reset failed attempts on successful login

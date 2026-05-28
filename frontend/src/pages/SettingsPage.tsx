@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { settingsApi } from '../lib/api';
+import { TwoFactorSetup } from '../components/TwoFactorSetup';
 
 interface SettingsSection {
   id: string;
@@ -542,7 +543,9 @@ export default function SettingsPage() {
             <div>
               <h2 style={{ margin: '0 0 24px', fontSize: 18, fontWeight: 600 }}>Security Settings</h2>
 
-              <div style={{ marginBottom: 24 }}>
+              <TwoFactorSetup />
+
+              <div style={{ marginTop: 24, marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 8 }}>Session Timeout (minutes)</label>
                 <input
                   type="number"

@@ -25,9 +25,10 @@ const FEATURES = [
 ];
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, totpRequired, clearTotpRequired } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [totpCode, setTotpCode] = useState('');
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>({
     defaultValues: { email: 'admin@lab.local', password: 'Admin123!' },
   });
@@ -36,7 +37,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(data.email, data.password);
-      toast.success('Welcome to LabOS v2!');
+      if (!totpRequired) toast.success('Welcome to LabOS v2!');
     } catch (err: any) {
       const msg = err?.message ?? '';
       if (msg.includes('Invalid email') || msg.includes('password')) {
@@ -48,6 +49,25 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onTotpSubmit() {
+    if (!totpRequired || !totpCode) return;
+    setLoading(true);
+    try {
+      await login(totpRequired.email, totpRequired.password, totpCode);
+      toast.success('Welcome to LabOS v2!');
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      if (msg.includes('two-factor')) {
+        toast.error('Invalid two-factor code. Please try again.');
+      } else {
+        toast.error(msg || 'Login failed.');
+      }
+    } finally {
+      setLoading(false);
+      setTotpCode('');
     }
   }
 
@@ -105,6 +125,57 @@ export default function LoginPage() {
         {/* ── Right panel: form ── */}
         <div className="login-panel-right">
           <div className="login-form-card">
+            {totpRequired ? (
+              <>
+                <div className="login-form-header">
+                  <div className="login-secure-badge">
+                    <span>🔐</span> Two-Factor Authentication
+                  </div>
+                  <h3 className="login-form-title">Enter verification code</h3>
+                  <p className="login-form-subtitle">Open your authenticator app and enter the 6-digit code</p>
+                </div>
+                <div className="login-form" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="lf-group">
+                    <label className="lf-label">Verification Code</label>
+                    <div className="lf-input-wrap">
+                      <span className="lf-icon">🔢</span>
+                      <input
+                        className="lf-input"
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        autoFocus
+                        maxLength={6}
+                        inputMode="numeric"
+                        style={{ letterSpacing: 8, fontSize: 20, fontWeight: 700, textAlign: 'center' }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && totpCode.length === 6) onTotpSubmit(); }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="login-submit-btn"
+                    disabled={loading || totpCode.length !== 6}
+                    onClick={onTotpSubmit}
+                  >
+                    {loading ? (
+                      <span className="login-btn-loading"><span className="login-spinner" /> Verifying…</span>
+                    ) : 'Verify & Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { clearTotpRequired(); setTotpCode(''); }}
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--text-muted)',
+                      cursor: 'pointer', fontSize: 13, textDecoration: 'underline',
+                    }}
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </>
+            ) : (
+            <>
             <div className="login-form-header">
               <div className="login-secure-badge">
                 <span>🔒</span> Secure Sign In
@@ -188,6 +259,8 @@ export default function LoginPage() {
               <span>·</span>
               <span>Data stays on your server</span>
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

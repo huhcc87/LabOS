@@ -48,6 +48,7 @@ import type * as sops from "../sops.js";
 import type * as suppliers from "../suppliers.js";
 import type * as tasks from "../tasks.js";
 import type * as templates from "../templates.js";
+import type * as totp from "../totp.js";
 import type * as training from "../training.js";
 import type * as users from "../users.js";
 import type * as videoRooms from "../videoRooms.js";
@@ -100,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   suppliers: typeof suppliers;
   tasks: typeof tasks;
   templates: typeof templates;
+  totp: typeof totp;
   training: typeof training;
   users: typeof users;
   videoRooms: typeof videoRooms;

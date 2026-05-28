@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersAdminApi, auditApi } from '../lib/api';
+import { TwoFactorSetup } from '../components/TwoFactorSetup';
 
 // Types
 interface User {
@@ -605,6 +606,9 @@ export default function AdminHubPage() {
       {/* Settings Tab */}
       {activeTab === 'settings' && (
         <div className="card">
+          <div style={{ marginBottom: 24 }}>
+            <TwoFactorSetup />
+          </div>
           <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>System Settings</h3>
           {systemSettings.map(setting => (
             <div key={setting.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>

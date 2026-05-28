@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { initSentry } from './lib/sentry'
@@ -33,6 +35,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ErrorBoundary>
           <App />
         </ErrorBoundary>
+        {import.meta.env.PROD && <Analytics />}
+        {import.meta.env.PROD && <SpeedInsights />}
       </QueryClientProvider>
     </ConvexProvider>
   </React.StrictMode>,

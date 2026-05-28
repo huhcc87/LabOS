@@ -10,7 +10,9 @@ interface AuthContextValue {
   user: any | null;
   loading: boolean;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  totpRequired: { email: string; password: string } | null;
+  login: (email: string, password: string, totp_code?: string) => Promise<void>;
+  clearTotpRequired: () => void;
   logout: () => Promise<void>;
   hasRole: (minRole: UserRole) => boolean;
 }
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
+  const [totpRequired, setTotpRequired] = useState<{ email: string; password: string } | null>(null);
 
   const loginAction = useAction(api.customAuth.login);
   const logoutMutation = useMutation(api.customAuth.logout);
@@ -42,12 +45,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!token) setLoading(false);
   }, [token]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await loginAction({ email, password });
+  const login = useCallback(async (email: string, password: string, totp_code?: string) => {
+    const result = await loginAction({ email, password, totp_code });
+    if (result.totp_required) {
+      setTotpRequired({ email, password });
+      return;
+    }
+    setTotpRequired(null);
     localStorage.setItem(TOKEN_KEY, result.token);
     setToken(result.token);
-    setLoading(true); // will resolve once useQuery returns user
+    setLoading(true);
   }, [loginAction]);
+
+  const clearTotpRequired = useCallback(() => {
+    setTotpRequired(null);
+  }, []);
 
   const logout = useCallback(async () => {
     if (token) {
@@ -68,7 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         token,
         loading,
+        totpRequired,
         login,
+        clearTotpRequired,
         logout,
         hasRole: checkRole,
       }}
