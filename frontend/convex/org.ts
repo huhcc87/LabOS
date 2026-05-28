@@ -1,25 +1,26 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── Organizations ──────────────────────────────────────────────────────────
 
 export const listOrgs = query({
-  args: {},
-  handler: async (ctx) => {
-    await getAuthUserId(ctx);
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return await ctx.db.query("organizations").collect();
   },
 });
 
 export const createOrg = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     const now = Date.now();
     return await ctx.db.insert("organizations", {
       name: args.name,
@@ -32,14 +33,15 @@ export const createOrg = mutation({
 
 export const updateOrg = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("organizations"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
     if (fields.description !== undefined) patch.description = fields.description;
@@ -53,14 +55,15 @@ export const updateOrg = mutation({
 
 export const listSites = query({
   args: {
+    token: v.optional(v.string()),
     org_id: v.optional(v.id("organizations")),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    if (args.org_id !== undefined) {
+  handler: async (ctx, { token, org_id }) => {
+    await requireAuth(ctx, token);
+    if (org_id !== undefined) {
       return await ctx.db
         .query("sites")
-        .withIndex("by_org", (q) => q.eq("organization_id", args.org_id!))
+        .withIndex("by_org", (q) => q.eq("organization_id", org_id!))
         .collect();
     }
     return await ctx.db.query("sites").collect();
@@ -69,6 +72,7 @@ export const listSites = query({
 
 export const createSite = mutation({
   args: {
+    token: v.optional(v.string()),
     organization_id: v.id("organizations"),
     name: v.string(),
     address: v.optional(v.string()),
@@ -76,7 +80,7 @@ export const createSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("sites", {
       organization_id: args.organization_id,
       name: args.name,
@@ -90,6 +94,7 @@ export const createSite = mutation({
 
 export const updateSite = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("sites"),
     name: v.optional(v.string()),
     address: v.optional(v.string()),
@@ -97,8 +102,8 @@ export const updateSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
     if (fields.address !== undefined) patch.address = fields.address;
@@ -113,14 +118,15 @@ export const updateSite = mutation({
 
 export const listLabs = query({
   args: {
+    token: v.optional(v.string()),
     site_id: v.optional(v.id("sites")),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    if (args.site_id !== undefined) {
+  handler: async (ctx, { token, site_id }) => {
+    await requireAuth(ctx, token);
+    if (site_id !== undefined) {
       return await ctx.db
         .query("labs")
-        .withIndex("by_site", (q) => q.eq("site_id", args.site_id!))
+        .withIndex("by_site", (q) => q.eq("site_id", site_id!))
         .collect();
     }
     return await ctx.db.query("labs").collect();
@@ -129,6 +135,7 @@ export const listLabs = query({
 
 export const createLab = mutation({
   args: {
+    token: v.optional(v.string()),
     site_id: v.id("sites"),
     name: v.string(),
     description: v.optional(v.string()),
@@ -136,7 +143,7 @@ export const createLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("labs", {
       site_id: args.site_id,
       name: args.name,
@@ -150,6 +157,7 @@ export const createLab = mutation({
 
 export const updateLab = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("labs"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -157,8 +165,8 @@ export const updateLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
     if (fields.description !== undefined) patch.description = fields.description;

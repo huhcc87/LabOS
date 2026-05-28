@@ -1,13 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List all freezers ─────────────────────────────────────────────────────
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    await getAuthUserId(ctx);
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return await ctx.db.query("freezers").collect();
   },
 });
@@ -16,6 +16,7 @@ export const list = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     location: v.optional(v.string()),
     temperature: v.optional(v.number()),
@@ -24,7 +25,7 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("freezers", {
       name: args.name,
       location: args.location,
@@ -41,22 +42,23 @@ export const create = mutation({
 
 export const remove = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("freezers"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const freezer = await ctx.db.get(args.id);
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    const freezer = await ctx.db.get(id);
     if (!freezer) throw new Error("Freezer not found");
 
     // Remove all associated slots first
     const slots = await ctx.db
       .query("freezer_slots")
-      .withIndex("by_freezer", (q) => q.eq("freezer_id", args.id))
+      .withIndex("by_freezer", (q) => q.eq("freezer_id", id))
       .collect();
 
     await Promise.all(slots.map((s) => ctx.db.delete(s._id)));
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
@@ -64,37 +66,38 @@ export const remove = mutation({
 
 export const getSlots = query({
   args: {
+    token: v.optional(v.string()),
     freezer_id: v.id("freezers"),
     rack: v.optional(v.number()),
     box: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, freezer_id, rack, box }) => {
+    await requireAuth(ctx, token);
 
-    if (args.rack !== undefined && args.box !== undefined) {
+    if (rack !== undefined && box !== undefined) {
       return await ctx.db
         .query("freezer_slots")
         .withIndex("by_freezer_pos", (q) =>
           q
-            .eq("freezer_id", args.freezer_id)
-            .eq("rack", args.rack!)
-            .eq("box", args.box!)
+            .eq("freezer_id", freezer_id)
+            .eq("rack", rack!)
+            .eq("box", box!)
         )
         .collect();
     }
 
-    if (args.rack !== undefined) {
+    if (rack !== undefined) {
       return await ctx.db
         .query("freezer_slots")
         .withIndex("by_freezer_pos", (q) =>
-          q.eq("freezer_id", args.freezer_id).eq("rack", args.rack!)
+          q.eq("freezer_id", freezer_id).eq("rack", rack!)
         )
         .collect();
     }
 
     return await ctx.db
       .query("freezer_slots")
-      .withIndex("by_freezer", (q) => q.eq("freezer_id", args.freezer_id))
+      .withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id))
       .collect();
   },
 });
@@ -103,6 +106,7 @@ export const getSlots = query({
 
 export const upsertSlot = mutation({
   args: {
+    token: v.optional(v.string()),
     freezer_id: v.id("freezers"),
     rack: v.number(),
     box: v.number(),
@@ -115,7 +119,7 @@ export const upsertSlot = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
 
     const existing = await ctx.db
       .query("freezer_slots")
@@ -163,20 +167,21 @@ export const upsertSlot = mutation({
 
 export const getExpiring = query({
   args: {
+    token: v.optional(v.string()),
     days: v.number(),
     freezer_id: v.optional(v.id("freezers")),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, days, freezer_id }) => {
+    await requireAuth(ctx, token);
 
     const now = Date.now();
-    const cutoff = now + args.days * 24 * 60 * 60 * 1000;
+    const cutoff = now + days * 24 * 60 * 60 * 1000;
 
     let slots;
-    if (args.freezer_id !== undefined) {
+    if (freezer_id !== undefined) {
       slots = await ctx.db
         .query("freezer_slots")
-        .withIndex("by_freezer", (q) => q.eq("freezer_id", args.freezer_id!))
+        .withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id!))
         .collect();
     } else {
       slots = await ctx.db.query("freezer_slots").collect();
@@ -195,20 +200,21 @@ export const getExpiring = query({
 
 export const search = query({
   args: {
+    token: v.optional(v.string()),
     query: v.string(),
     freezer_id: v.optional(v.id("freezers")),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, query: queryStr, freezer_id }) => {
+    await requireAuth(ctx, token);
 
-    const term = args.query.toLowerCase().trim();
+    const term = queryStr.toLowerCase().trim();
     if (!term) return [];
 
     let slots;
-    if (args.freezer_id !== undefined) {
+    if (freezer_id !== undefined) {
       slots = await ctx.db
         .query("freezer_slots")
-        .withIndex("by_freezer", (q) => q.eq("freezer_id", args.freezer_id!))
+        .withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id!))
         .collect();
     } else {
       slots = await ctx.db.query("freezer_slots").collect();

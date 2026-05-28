@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── Sensors ───────────────────────────────────────────────────────────────────
 
@@ -19,6 +19,7 @@ export const listSensors = query({
 
 export const createSensor = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     sensor_type: v.string(),
     location: v.optional(v.string()),
@@ -29,8 +30,7 @@ export const createSensor = mutation({
     api_key: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     return await ctx.db.insert("iot_sensors", {
       name: args.name,
@@ -48,6 +48,7 @@ export const createSensor = mutation({
 
 export const updateSensor = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("iot_sensors"),
     name: v.optional(v.string()),
     sensor_type: v.optional(v.string()),
@@ -58,9 +59,8 @@ export const updateSensor = mutation({
     is_active: v.optional(v.boolean()),
     api_key: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    const userId = await requireAuth(ctx, token);
 
     const sensor = await ctx.db.get(id);
     if (!sensor) throw new Error("Sensor not found");
@@ -74,10 +74,9 @@ export const updateSensor = mutation({
 });
 
 export const deleteSensor = mutation({
-  args: { id: v.id("iot_sensors") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("iot_sensors") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const sensor = await ctx.db.get(id);
     if (!sensor) throw new Error("Sensor not found");
@@ -210,10 +209,9 @@ export const listAlerts = query({
 });
 
 export const acknowledgeAlert = mutation({
-  args: { id: v.id("iot_alerts") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("iot_alerts") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const alert = await ctx.db.get(id);
     if (!alert) throw new Error("Alert not found");

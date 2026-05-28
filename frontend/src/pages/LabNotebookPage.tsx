@@ -27,7 +27,7 @@ function joinContent(text: string, canvas: NotebookCanvasValue | null): string {
 }
 
 type Entry = {
-  id: number; title: string; content: string; experiment_type: string; tags: string;
+  id: string | number; title: string; content: string; experiment_type: string; tags: string;
   author_id: number; author_name?: string; signed_at?: string;
   witnessed_by_id?: number; witnessed_at?: string; is_archived: boolean;
   linked_sample_id?: number; linked_protocol_id?: number;
@@ -143,8 +143,13 @@ export default function LabNotebookPage() {
     try {
       const res = await notebookApi.sign(selectedEntry.id);
       toast.success('Entry signed — it is now locked');
-      setSelectedEntry(res.data);
-      setEntries(prev => prev.map(e => e.id === res.data.id ? res.data : e));
+      const updated = res.data as Entry;
+      if (updated.title) {
+        setSelectedEntry(updated);
+        setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+      } else {
+        loadEntries();
+      }
     } catch (e: any) { toast.error(e?.response?.data?.detail || 'Failed to sign'); }
   }
 
@@ -153,8 +158,13 @@ export default function LabNotebookPage() {
     try {
       const res = await notebookApi.witness(selectedEntry.id);
       toast.success('Entry witnessed');
-      setSelectedEntry(res.data);
-      setEntries(prev => prev.map(e => e.id === res.data.id ? res.data : e));
+      const updated = res.data as Entry;
+      if (updated.title) {
+        setSelectedEntry(updated);
+        setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+      } else {
+        loadEntries();
+      }
     } catch (e: any) { toast.error(e?.response?.data?.detail || 'Failed to witness'); }
   }
 

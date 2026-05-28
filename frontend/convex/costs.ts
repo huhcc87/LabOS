@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List cost records (paginated, filter by status) ───────────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     paginationOpts: v.optional(
       v.object({
         numItems: v.number(),
@@ -16,34 +17,35 @@ export const list = query({
     submitted_by: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    const { token, ...rest } = args;
+    await requireAuth(ctx, token);
 
     let results;
 
-    if (args.submitted_by !== undefined) {
+    if (rest.submitted_by !== undefined) {
       results = await ctx.db
         .query("costs")
         .withIndex("by_submitter", (q) =>
-          q.eq("submitted_by", args.submitted_by!)
+          q.eq("submitted_by", rest.submitted_by!)
         )
         .order("desc")
         .collect();
 
-      if (args.status) {
-        results = results.filter((r) => r.status === args.status);
+      if (rest.status) {
+        results = results.filter((r) => r.status === rest.status);
       }
-    } else if (args.status) {
+    } else if (rest.status) {
       results = await ctx.db
         .query("costs")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", rest.status!))
         .order("desc")
         .collect();
     } else {
       results = await ctx.db.query("costs").order("desc").collect();
     }
 
-    const numItems = args.paginationOpts?.numItems ?? 50;
-    const cursor = args.paginationOpts?.cursor;
+    const numItems = rest.paginationOpts?.numItems ?? 50;
+    const cursor = rest.paginationOpts?.cursor;
     const startIdx = cursor ? parseInt(cursor, 10) : 0;
     const page = results.slice(startIdx, startIdx + numItems);
     const nextCursor =
@@ -58,10 +60,10 @@ export const list = query({
 // ── Get a single cost record ──────────────────────────────────────────────
 
 export const get = query({
-  args: { id: v.id("costs") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    return await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("costs") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    return await ctx.db.get(id);
   },
 });
 
@@ -69,6 +71,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     category: v.string(),
     amount: v.number(),
@@ -80,7 +83,7 @@ export const create = mutation({
     grant_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("costs", {
       title: args.title,
       category: args.category,
@@ -100,6 +103,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("costs"),
     title: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -111,8 +115,8 @@ export const update = mutation({
     grant_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const record = await ctx.db.get(id);
     if (!record) throw new Error("Cost record not found");
 
@@ -134,13 +138,13 @@ export const update = mutation({
 // ── Remove a cost record ──────────────────────────────────────────────────
 
 export const remove = mutation({
-  args: { id: v.id("costs") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const record = await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("costs") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    const record = await ctx.db.get(id);
     if (!record) throw new Error("Cost record not found");
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
@@ -148,20 +152,21 @@ export const remove = mutation({
 
 export const approve = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("costs"),
     approved_by: v.id("users"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const record = await ctx.db.get(args.id);
+  handler: async (ctx, { token, id, approved_by }) => {
+    await requireAuth(ctx, token);
+    const record = await ctx.db.get(id);
     if (!record) throw new Error("Cost record not found");
 
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch(id, {
       status: "approved",
-      approved_by: args.approved_by,
+      approved_by: approved_by,
       approved_at: Date.now(),
     });
-    return args.id;
+    return id;
   },
 });
 
@@ -169,19 +174,20 @@ export const approve = mutation({
 
 export const reject = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("costs"),
     approved_by: v.optional(v.id("users")),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const record = await ctx.db.get(args.id);
+  handler: async (ctx, { token, id, approved_by }) => {
+    await requireAuth(ctx, token);
+    const record = await ctx.db.get(id);
     if (!record) throw new Error("Cost record not found");
 
     const patch: Record<string, unknown> = { status: "rejected" };
-    if (args.approved_by !== undefined) patch.approved_by = args.approved_by;
+    if (approved_by !== undefined) patch.approved_by = approved_by;
 
-    await ctx.db.patch(args.id, patch);
-    return args.id;
+    await ctx.db.patch(id, patch);
+    return id;
   },
 });
 
@@ -189,24 +195,25 @@ export const reject = mutation({
 
 export const summary = query({
   args: {
+    token: v.optional(v.string()),
     status: v.optional(v.string()),
     currency: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, status, currency }) => {
+    await requireAuth(ctx, token);
 
     let all;
-    if (args.status) {
+    if (status) {
       all = await ctx.db
         .query("costs")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", status))
         .collect();
     } else {
       all = await ctx.db.query("costs").collect();
     }
 
-    if (args.currency) {
-      all = all.filter((r) => r.currency === args.currency);
+    if (currency) {
+      all = all.filter((r) => r.currency === currency);
     }
 
     // Aggregate totals by category

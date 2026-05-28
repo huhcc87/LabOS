@@ -38,14 +38,13 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success('Welcome to LabOS v2!');
     } catch (err: any) {
-      if (!err.response) {
-        toast.error('Cannot reach the server. Make sure the backend is running on port 8000.');
-      } else if (err.response.status === 401) {
+      const msg = err?.message ?? '';
+      if (msg.includes('Invalid email') || msg.includes('password')) {
         toast.error('Invalid email or password.');
-      } else if (err.response.status >= 500) {
-        toast.error('Server error. Please try again or contact your administrator.');
+      } else if (msg.includes('disabled')) {
+        toast.error('This account has been disabled. Contact your administrator.');
       } else {
-        toast.error(err.response?.data?.detail || 'Login failed. Please try again.');
+        toast.error(msg || 'Login failed. Please try again.');
       }
     } finally {
       setLoading(false);

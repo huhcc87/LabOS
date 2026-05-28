@@ -1,18 +1,19 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List all members of a lab ─────────────────────────────────────────────
 
 export const listForLab = query({
   args: {
+    token: v.optional(v.string()),
     lab_id: v.id("labs"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, lab_id }) => {
+    await requireAuth(ctx, token);
     const memberships = await ctx.db
       .query("lab_memberships")
-      .withIndex("by_lab", (q) => q.eq("lab_id", args.lab_id))
+      .withIndex("by_lab", (q) => q.eq("lab_id", lab_id))
       .collect();
 
     return await Promise.all(
@@ -27,10 +28,9 @@ export const listForLab = query({
 // ── List labs the current user belongs to ────────────────────────────────
 
 export const listMy = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    const userId = await requireAuth(ctx, token);
 
     // Look up our internal users record by the auth identity
     const user = await ctx.db
@@ -61,14 +61,14 @@ export const listMy = query({
 
 export const invite = mutation({
   args: {
+    token: v.optional(v.string()),
     lab_id: v.id("labs"),
     user_id: v.id("users"),
     lab_role: v.string(),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const authId = await getAuthUserId(ctx);
-    if (!authId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, lab_id, user_id, lab_role, notes }) => {
+    const authId = await requireAuth(ctx, token);
 
     // Resolve inviter's internal user record
     const inviter = await ctx.db
@@ -82,19 +82,19 @@ export const invite = mutation({
     // Check for existing membership
     const existing = await ctx.db
       .query("lab_memberships")
-      .withIndex("by_lab", (q) => q.eq("lab_id", args.lab_id))
-      .filter((q) => q.eq(q.field("user_id"), args.user_id))
+      .withIndex("by_lab", (q) => q.eq("lab_id", lab_id))
+      .filter((q) => q.eq(q.field("user_id"), user_id))
       .first();
 
     if (existing) throw new Error("User already has a membership for this lab");
 
     return await ctx.db.insert("lab_memberships", {
-      lab_id: args.lab_id,
-      user_id: args.user_id,
-      lab_role: args.lab_role,
+      lab_id: lab_id,
+      user_id: user_id,
+      lab_role: lab_role,
       status: "invited",
       invited_by: invitedBy,
-      notes: args.notes,
+      notes: notes,
       created_at: Date.now(),
     });
   },
@@ -104,18 +104,19 @@ export const invite = mutation({
 
 export const approve = mutation({
   args: {
+    token: v.optional(v.string()),
     membership_id: v.id("lab_memberships"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const membership = await ctx.db.get(args.membership_id);
+  handler: async (ctx, { token, membership_id }) => {
+    await requireAuth(ctx, token);
+    const membership = await ctx.db.get(membership_id);
     if (!membership) throw new Error("Membership not found");
 
-    await ctx.db.patch(args.membership_id, {
+    await ctx.db.patch(membership_id, {
       status: "active",
       joined_at: Date.now(),
     });
-    return args.membership_id;
+    return membership_id;
   },
 });
 
@@ -123,15 +124,16 @@ export const approve = mutation({
 
 export const revoke = mutation({
   args: {
+    token: v.optional(v.string()),
     membership_id: v.id("lab_memberships"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const membership = await ctx.db.get(args.membership_id);
+  handler: async (ctx, { token, membership_id }) => {
+    await requireAuth(ctx, token);
+    const membership = await ctx.db.get(membership_id);
     if (!membership) throw new Error("Membership not found");
 
-    await ctx.db.patch(args.membership_id, { status: "revoked" });
-    return args.membership_id;
+    await ctx.db.patch(membership_id, { status: "revoked" });
+    return membership_id;
   },
 });
 
@@ -139,26 +141,26 @@ export const revoke = mutation({
 
 export const updateRole = mutation({
   args: {
+    token: v.optional(v.string()),
     membership_id: v.id("lab_memberships"),
     lab_role: v.string(),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const membership = await ctx.db.get(args.membership_id);
+  handler: async (ctx, { token, membership_id, lab_role }) => {
+    await requireAuth(ctx, token);
+    const membership = await ctx.db.get(membership_id);
     if (!membership) throw new Error("Membership not found");
 
-    await ctx.db.patch(args.membership_id, { lab_role: args.lab_role });
-    return args.membership_id;
+    await ctx.db.patch(membership_id, { lab_role: lab_role });
+    return membership_id;
   },
 });
 
 // ── Pending approvals for labs the current user manages ───────────────────
 
 export const pendingApprovals = query({
-  args: {},
-  handler: async (ctx) => {
-    const authId = await getAuthUserId(ctx);
-    if (!authId) return [];
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    const authId = await requireAuth(ctx, token);
 
     // Resolve the current user's internal record
     const currentUser = await ctx.db

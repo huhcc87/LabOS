@@ -31,10 +31,10 @@ interface Transcription {
 
 interface Props {
   roomId: string
-  meetingId?: number
+  meetingId?: string | number
   meetingTitle?: string
   userName: string
-  userId: number
+  userId: string | number
   onLeave: () => void
 }
 

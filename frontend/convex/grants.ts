@@ -1,6 +1,6 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
 
@@ -17,22 +17,22 @@ export const listVersions = query({
 
 export const createVersion = mutation({
   args: {
+    token: v.optional(v.string()),
     grant_id: v.string(),
     title: v.string(),
     section: v.string(),
     content: v.string(),
     version: v.number(),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, grant_id, title, section, content, version }) => {
+    const userId = await requireAuth(ctx, token);
 
     return await ctx.db.insert("grant_versions", {
-      grant_id: args.grant_id,
-      title: args.title,
-      section: args.section,
-      content: args.content,
-      version: args.version,
+      grant_id: grant_id,
+      title: title,
+      section: section,
+      content: content,
+      version: version,
       created_by: userId,
       created_at: Date.now(),
     });
@@ -40,10 +40,9 @@ export const createVersion = mutation({
 });
 
 export const deleteVersion = mutation({
-  args: { id: v.id("grant_versions") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("grant_versions") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     await ctx.db.delete(id);
   },
 });
@@ -88,6 +87,7 @@ export const listSubmissions = query({
 
 export const createSubmission = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     agency: v.optional(v.string()),
     grant_type: v.optional(v.string()),
@@ -97,9 +97,8 @@ export const createSubmission = mutation({
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, ...args }) => {
+    const userId = await requireAuth(ctx, token);
 
     const now = Date.now();
     return await ctx.db.insert("grant_submissions", {
@@ -113,6 +112,7 @@ export const createSubmission = mutation({
 
 export const updateSubmission = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("grant_submissions"),
     title: v.optional(v.string()),
     agency: v.optional(v.string()),
@@ -123,9 +123,8 @@ export const updateSubmission = mutation({
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Submission not found");
@@ -140,10 +139,9 @@ export const updateSubmission = mutation({
 });
 
 export const deleteSubmission = mutation({
-  args: { id: v.id("grant_submissions") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("grant_submissions") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Submission not found");
     await ctx.db.delete(id);

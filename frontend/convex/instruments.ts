@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     status: v.optional(v.string()),
     paginationOpts: v.optional(

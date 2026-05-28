@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     approval_status: v.optional(v.string()),
     paginationOpts: v.optional(
@@ -59,6 +60,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     category: v.optional(v.string()),
     contact_email: v.optional(v.string()),
@@ -69,8 +71,7 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const now = Date.now();
     return await ctx.db.insert("suppliers", {
@@ -90,6 +91,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("suppliers"),
     name: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -100,9 +102,8 @@ export const update = mutation({
     rating: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    const userId = await requireAuth(ctx, token);
 
     const supplier = await ctx.db.get(id);
     if (!supplier) throw new Error("Supplier not found");
@@ -116,10 +117,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("suppliers") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("suppliers") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const supplier = await ctx.db.get(id);
     if (!supplier) throw new Error("Supplier not found");
@@ -177,6 +177,7 @@ export const listOrders = query({
 
 export const createOrder = mutation({
   args: {
+    token: v.optional(v.string()),
     supplier_id: v.optional(v.id("suppliers")),
     total_amount: v.optional(v.number()),
     currency: v.optional(v.string()),
@@ -184,8 +185,7 @@ export const createOrder = mutation({
     items: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const now = Date.now();
     return await ctx.db.insert("purchase_orders", {
@@ -204,6 +204,7 @@ export const createOrder = mutation({
 
 export const updateOrder = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("purchase_orders"),
     supplier_id: v.optional(v.id("suppliers")),
     total_amount: v.optional(v.number()),
@@ -212,9 +213,8 @@ export const updateOrder = mutation({
     items: v.optional(v.string()),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
     if (!order) throw new Error("Purchase order not found");
@@ -236,12 +236,12 @@ export const updateOrder = mutation({
 
 export const approveOrder = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("purchase_orders"),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, notes }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, notes }) => {
+    const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
     if (!order) throw new Error("Purchase order not found");
@@ -269,12 +269,12 @@ export const approveOrder = mutation({
 
 export const receiveOrder = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("purchase_orders"),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, notes }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, notes }) => {
+    const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
     if (!order) throw new Error("Purchase order not found");

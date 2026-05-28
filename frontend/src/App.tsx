@@ -1,10 +1,12 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NavigationContext } from './context/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsent } from './components/CookieConsent';
+import { setupSkipToContent } from './lib/a11y';
+import { trackPageView } from './lib/analytics';
 
 // Always-eager: login + dashboard shown immediately on load
 import LoginPage from './pages/LoginPage';
@@ -92,6 +94,12 @@ function PageLoader() {
 function AppInner() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState('dashboard');
+
+  // A11y: skip-to-content link
+  useEffect(() => { setupSkipToContent(); }, []);
+
+  // Analytics: track page views
+  useEffect(() => { trackPageView(page); }, [page]);
 
   if (loading) {
     return (

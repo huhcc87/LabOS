@@ -1,14 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid, AreaChart, Area,
 } from 'recharts';
-import toast from 'react-hot-toast';
-import { dashboardApi, tasksApi, instrumentsApi, iotApi, freezerApi, grantSubmissionsApi } from '../lib/api';
-import type { DashboardSummary } from '../lib/types';
-import { formatDateTime, statusColor } from '../lib/utils';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from '../context/NavigationContext';
+import { useState } from 'react';
+import { statusColor } from '../lib/utils';
 
 const PIE_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -23,7 +22,7 @@ function todayLabel() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-function computeHealthScore(s: DashboardSummary): number {
+function computeHealthScore(s: any): number {
   let score = 100;
   score -= Math.min((s.overdue_tasks ?? 0) * 8, 24);
   score -= Math.min(((s.incidents_by_severity as any)?.critical ?? 0) * 15, 20);
@@ -69,80 +68,26 @@ const QUICK_ACTIONS = [
   { icon: '⚠', label: 'Report Incident', desc: 'Log a safety event', page: 'incidents', color: '#ef4444' },
 ];
 
+const PULSE_STATS = [
+  { key: 'samples', label: 'Samples', icon: '🧪', color: '#6366f1', page: 'samples' },
+  { key: 'instruments', label: 'Instruments', icon: '🔬', color: '#8b5cf6', page: 'protocols' },
+  { key: 'protocols', label: 'Protocols', icon: '📋', color: '#22c55e', page: 'protocols' },
+  { key: 'tasks_open', label: 'Open Tasks', icon: '✓', color: '#f59e0b', page: 'tasks' },
+  { key: 'inventory_items', label: 'Inventory Items', icon: '📦', color: '#06b6d4', page: 'inventory' },
+  { key: 'training_records', label: 'Training Records', icon: '🎓', color: '#ec4899', page: 'incidents' },
+  { key: 'workspaces', label: 'Workspaces', icon: '🏗', color: '#10b981', page: 'workspaces' },
+  { key: 'calendar_events', label: 'Calendar Events', icon: '🗓', color: '#38bdf8', page: 'calendar' },
+];
+
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [todayTasks, setTodayTasks] = useState<any[]>([]);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-  const [equipmentAtRisk, setEquipmentAtRisk] = useState<any[]>([]);
-  const [expiringItems, setExpiringItems] = useState<any[]>([]);
-  const [grantDeadlines, setGrantDeadlines] = useState<any[]>([]);
-  const [sensorAlerts, setSensorAlerts] = useState<any[]>([]);
-  const [sensorSparkData, setSensorSparkData] = useState<{ name: string; value: number }[]>([]);
 
-  const load = useCallback((showSpinner = false) => {
-    if (showSpinner) setRefreshing(true);
-    const today = new Date().toISOString().slice(0, 10);
-    const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  const summary = useQuery(api.dashboard.summary);
+  const completeTask = useMutation(api.tasks.complete);
 
-    Promise.all([
-      dashboardApi.summary(),
-      tasksApi.list(1, 50, ''),
-      instrumentsApi.list(1, 50, '').catch(() => ({ data: { items: [] } })),
-      iotApi.listAlerts(true).catch(() => ({ data: [] })),
-      freezerApi.getExpiring(14).catch(() => ({ data: [] })),
-      grantSubmissionsApi.list(1, 20).catch(() => ({ data: { items: [] } })),
-    ])
-      .then(([summaryRes, tasksRes, instrRes, alertsRes, expiringRes, grantsRes]) => {
-        setSummary(summaryRes.data);
-        const tasks = (tasksRes.data as any).items || [];
-        setTodayTasks(tasks.filter((t: any) =>
-          t.due_date === today || t.status === 'overdue'
-        ).slice(0, 8));
-        setLastRefreshed(new Date());
-
-        // Equipment at risk: overdue maintenance or critical status
-        const instruments: any[] = (instrRes.data as any).items || [];
-        setEquipmentAtRisk(instruments.filter((i: any) =>
-          i.status === 'maintenance_due' || i.status === 'offline' ||
-          (i.next_maintenance_date && i.next_maintenance_date <= in30)
-        ).slice(0, 4));
-
-        // Sensor alerts (unacknowledged)
-        const alerts: any[] = Array.isArray(alertsRes.data) ? alertsRes.data : [];
-        setSensorAlerts(alerts.slice(0, 5));
-        setSensorSparkData(alerts.slice(0, 20).map((a: any, idx: number) => ({
-          name: String(idx),
-          value: a.level === 'critical' ? 3 : a.level === 'warning' ? 2 : 1,
-        })));
-
-        // Expiring freezer samples
-        const expiring: any[] = Array.isArray(expiringRes.data) ? expiringRes.data : [];
-        setExpiringItems(expiring.slice(0, 4));
-
-        // Grant deadlines within 30 days
-        const grants: any[] = (grantsRes.data as any).items || [];
-        setGrantDeadlines(grants.filter((g: any) =>
-          g.deadline_date && g.deadline_date >= today && g.deadline_date <= in30
-        ).slice(0, 4));
-      })
-      .catch(() => toast.error('Failed to load dashboard'))
-      .finally(() => { setLoading(false); setRefreshing(false); });
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Auto-refresh every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => load(), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [load]);
-
-  if (loading) return (
+  if (summary === undefined) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: 16, color: 'var(--text-muted)' }}>
       <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>⬡</div>
       <div style={{ fontSize: 15 }}>Loading your research command center...</div>
@@ -158,6 +103,16 @@ export default function DashboardPage() {
   const axisStyle = { fill: 'var(--text-muted)', fontSize: 11 };
 
   const criticalCount = (summary.incidents_by_severity as any)?.critical ?? 0;
+  const todayTasks: any[] = (summary as any).today_tasks ?? [];
+  const equipmentAtRisk: any[] = (summary as any).equipment_at_risk ?? [];
+  const sensorAlerts: any[] = (summary as any).sensor_alerts ?? [];
+  const expiringItems: any[] = (summary as any).expiring_items ?? [];
+  const grantDeadlines: any[] = (summary as any).grant_deadlines ?? [];
+
+  const sensorSparkData = sensorAlerts.slice(0, 20).map((a: any, idx: number) => ({
+    name: String(idx),
+    value: a.level === 'critical' ? 3 : a.level === 'warning' ? 2 : 1,
+  }));
 
   type Priority = { icon: string; label: string; count: number; color: string; severity: 'high' | 'medium' | 'low' };
   const priorities: Priority[] = (
@@ -169,17 +124,6 @@ export default function DashboardPage() {
       (summary as any).low_stock_items > 0 ? { icon: '📦', label: 'Low Stock Items', count: (summary as any).low_stock_items, color: '#f59e0b', severity: 'medium' } : null,
     ] as (Priority | null)[]
   ).filter((p): p is Priority => p !== null);
-
-  const PULSE_STATS = [
-    { key: 'samples', label: 'Samples', icon: '🧪', color: '#6366f1', page: 'samples' },
-    { key: 'instruments', label: 'Instruments', icon: '🔬', color: '#8b5cf6', page: 'protocols' },
-    { key: 'protocols', label: 'Protocols', icon: '📋', color: '#22c55e', page: 'protocols' },
-    { key: 'tasks_open', label: 'Open Tasks', icon: '✓', color: '#f59e0b', page: 'tasks' },
-    { key: 'inventory_items', label: 'Inventory Items', icon: '📦', color: '#06b6d4', page: 'inventory' },
-    { key: 'training_records', label: 'Training Records', icon: '🎓', color: '#ec4899', page: 'incidents' },
-    { key: 'workspaces', label: 'Workspaces', icon: '🏗', color: '#10b981', page: 'workspaces' },
-    { key: 'calendar_events', label: 'Calendar Events', icon: '🗓', color: '#38bdf8', page: 'calendar' },
-  ];
 
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
@@ -210,15 +154,8 @@ export default function DashboardPage() {
               : `You have ${priorities.length} item${priorities.length > 1 ? 's' : ''} that need${priorities.length === 1 ? 's' : ''} attention today.`}
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button
-              onClick={() => load(true)}
-              disabled={refreshing}
-              className="btn btn-secondary btn-sm"
-            >
-              {refreshing ? '↻ Refreshing...' : '↻ Refresh'}
-            </button>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              Updated {lastRefreshed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · auto-refreshes every 5 min
+              Live · updates automatically
             </span>
             <button onClick={() => navigate('tasks')} className="btn btn-sm" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13 }}>
               View Tasks
@@ -340,7 +277,7 @@ export default function DashboardPage() {
                 const isOffline = eq.status === 'offline';
                 const color = isOffline ? '#ef4444' : '#f59e0b';
                 return (
-                  <div key={eq.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                  <div key={eq._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{eq.name}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
@@ -380,7 +317,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {expiringItems.slice(0, 3).map((slot: any, i: number) => (
                 <div key={i} style={{ fontSize: 11, color: '#ef4444', background: '#ef444410', borderRadius: 5, padding: '4px 8px' }}>
-                  {slot.sample_label ?? slot.barcode ?? `Slot ${slot.id}`} — expires {slot.expiry_date}
+                  {slot.sample_label ?? slot.barcode ?? `Slot ${slot._id}`} — expires {slot.expiry_date}
                 </div>
               ))}
             </div>
@@ -407,7 +344,7 @@ export default function DashboardPage() {
                 const daysLeft = Math.ceil((new Date(g.deadline_date).getTime() - Date.now()) / 86_400_000);
                 const color = daysLeft <= 7 ? '#ef4444' : daysLeft <= 14 ? '#f59e0b' : '#22c55e';
                 return (
-                  <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}10`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                  <div key={g._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}10`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.title ?? g.grant_type}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{g.deadline_date}</div>
@@ -458,15 +395,15 @@ export default function DashboardPage() {
               {sensorAlerts.slice(0, 4).map((a: any) => {
                 const color = a.level === 'critical' ? '#ef4444' : '#f59e0b';
                 return (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6 }}>
+                  <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', flexShrink: 0 }}>{a.level}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.message ?? a.sensor_name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.message}</span>
                   </div>
                 );
               })}
             </div>
           )}
-          <button onClick={() => navigate('iot')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+          <button onClick={() => navigate('iot-dashboard')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
             IoT Dashboard →
           </button>
         </div>
@@ -579,7 +516,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 360, overflowY: 'auto' }}>
-              {summary.audit_recent.slice(0, 12).map((log) => {
+              {summary.audit_recent.slice(0, 12).map((log: any) => {
                 const actionColors: Record<string, { bg: string; text: string }> = {
                   create: { bg: 'rgba(34,197,94,0.15)', text: '#22c55e' },
                   update: { bg: 'rgba(99,102,241,0.15)', text: '#6366f1' },
@@ -593,11 +530,12 @@ export default function DashboardPage() {
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {log.entity_type} #{log.entity_id}
+                        {log.entity_type} {log.entity_id ? `#${log.entity_id}` : ''}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{log.user_email}</div>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{formatDateTime(log.timestamp)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
+                      {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
                 );
               })}
@@ -617,11 +555,10 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {/* Summary row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 16 }}>
             {[
-              { label: 'Due Today', value: todayTasks.filter(t => t.status !== 'completed').length, color: '#f59e0b', icon: '📅' },
-              { label: 'Overdue', value: todayTasks.filter(t => t.status === 'overdue').length, color: '#ef4444', icon: '⚠' },
+              { label: 'Due Today', value: todayTasks.filter((t: any) => t.status !== 'completed').length, color: '#f59e0b', icon: '📅' },
+              { label: 'Overdue', value: todayTasks.filter((t: any) => t.status === 'overdue').length, color: '#ef4444', icon: '⚠' },
               { label: 'Low Stock', value: (summary as any)?.low_stock_items ?? 0, color: '#06b6d4', icon: '📦' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center', padding: '10px 8px', background: 'var(--surface2)', borderRadius: 8, border: `1px solid ${s.color}30` }}>
@@ -632,7 +569,6 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Task list */}
           {todayTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>✅</div>
@@ -641,13 +577,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 280, overflowY: 'auto' }}>
-              {todayTasks.map(task => {
+              {todayTasks.map((task: any) => {
                 const statusColors: Record<string, string> = { overdue: '#ef4444', pending: '#f59e0b', 'in_progress': '#6366f1', completed: '#22c55e' };
                 const priorityColors: Record<string, string> = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' };
                 const sc = statusColors[task.status] || '#94a3b8';
                 const pc = priorityColors[task.priority] || '#94a3b8';
                 return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--surface2)', borderRadius: 8, borderLeft: `3px solid ${sc}` }}>
+                  <div key={task._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--surface2)', borderRadius: 8, borderLeft: `3px solid ${sc}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</div>
                       <div style={{ display: 'flex', gap: 6, marginTop: 3, alignItems: 'center' }}>
@@ -658,7 +594,7 @@ export default function DashboardPage() {
                     </div>
                     {task.status !== 'completed' && (
                       <button
-                        onClick={() => tasksApi.update(task.id, { status: 'completed' }).then(() => load())}
+                        onClick={() => completeTask({ token: token ?? undefined, id: task._id })}
                         style={{ fontSize: 11, padding: '3px 8px', borderRadius: 5, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         ✓ Done

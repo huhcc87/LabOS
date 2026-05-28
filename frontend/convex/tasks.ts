@@ -1,9 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     status: v.optional(v.string()),
     assigned_to: v.optional(v.id("users")),
     paginationOpts: v.optional(
@@ -57,6 +58,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
     status: v.optional(v.string()),
@@ -66,8 +68,7 @@ export const create = mutation({
     tags: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const now = Date.now();
     return await ctx.db.insert("tasks", {
@@ -87,6 +88,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("tasks"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -97,10 +99,9 @@ export const update = mutation({
     tags: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
-    const { id, ...fields } = args;
+    const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Task not found");
 
@@ -115,45 +116,43 @@ export const update = mutation({
 });
 
 export const complete = mutation({
-  args: { id: v.id("tasks") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("tasks") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Task not found");
 
     const now = Date.now();
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch(id, {
       status: "completed",
       completed_at: now,
       updated_at: now,
     });
-    return args.id;
+    return id;
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("tasks") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("tasks") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Task not found");
 
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
 export const myTasks = query({
   args: {
+    token: v.optional(v.string()),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+  handler: async (ctx, { token, status }) => {
+    const userId = await requireAuth(ctx, token);
 
     let results = await ctx.db
       .query("tasks")
@@ -161,8 +160,8 @@ export const myTasks = query({
       .order("desc")
       .collect();
 
-    if (args.status) {
-      results = results.filter((t) => t.status === args.status);
+    if (status) {
+      results = results.filter((t) => t.status === status);
     }
 
     return results;

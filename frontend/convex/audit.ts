@@ -1,18 +1,19 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List audit logs (paginated, filter by entity_type) ────────────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     entity_type: v.optional(v.string()),
     page: v.optional(v.number()),
     per_page: v.optional(v.number()),
     user_id: v.optional(v.id("users")),
   },
-  handler: async (ctx, { entity_type, page, per_page, user_id }) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, entity_type, page, per_page, user_id }) => {
+    await requireAuth(ctx, token);
 
     let logs;
 
@@ -58,20 +59,21 @@ export const list = query({
 
 export const log = mutation({
   args: {
+    token: v.optional(v.string()),
     action: v.string(),
     entity_type: v.string(),
     entity_id: v.optional(v.string()),
     details: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+  handler: async (ctx, { token, action, entity_type, entity_id, details }) => {
+    const userId = await requireAuth(ctx, token);
 
     return await ctx.db.insert("audit_logs", {
       user_id: userId ?? undefined,
-      action: args.action,
-      entity_type: args.entity_type,
-      entity_id: args.entity_id,
-      details: args.details,
+      action: action,
+      entity_type: entity_type,
+      entity_id: entity_id,
+      details: details,
       created_at: Date.now(),
     });
   },

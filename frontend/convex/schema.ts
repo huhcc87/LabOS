@@ -1,13 +1,19 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  ...authTables,
+  // ── Sessions (custom password auth) ──────────────────────────────────
+  sessions: defineTable({
+    user_id: v.id("users"),
+    token: v.string(),
+    expires_at: v.number(),
+    created_at: v.number(),
+  }).index("by_token", ["token"]),
 
   // ── Users ────────────────────────────────────────────────────────────
   users: defineTable({
     email: v.string(),
+    hashed_password: v.string(),
     full_name: v.string(),
     role: v.union(
       v.literal("superadmin"), v.literal("admin"), v.literal("pi"),
@@ -231,7 +237,7 @@ export default defineSchema({
     updated_at: v.number(),
   })
     .index("by_status", ["status"])
-    .searchIndex("search_title", { searchField: "title" }),
+    .searchIndex("search_title", { searchField: "title", filterFields: ["status"] }),
 
   // ── Maintenance ──────────────────────────────────────────────────────
   maintenance: defineTable({
@@ -407,7 +413,7 @@ export default defineSchema({
     updated_at: v.number(),
   })
     .index("by_author", ["author_id"])
-    .searchIndex("search_title", { searchField: "title" }),
+    .searchIndex("search_title", { searchField: "title", filterFields: ["author_id"] }),
 
   // ── IoT ──────────────────────────────────────────────────────────────
   iot_sensors: defineTable({
@@ -619,4 +625,115 @@ export default defineSchema({
     last_sync: v.optional(v.number()),
     created_at: v.number(),
   }),
+
+  // ── Procurement ─────────────────────────────────────────────────────
+  procurement_rules: defineTable({
+    name: v.string(),
+    condition_field: v.string(),
+    condition_op: v.string(),
+    condition_value: v.string(),
+    action: v.string(),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }),
+
+  procurement_budgets: defineTable({
+    name: v.string(),
+    amount: v.number(),
+    spent: v.number(),
+    period: v.string(),
+    department: v.optional(v.string()),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }),
+
+  restricted_chemicals: defineTable({
+    name: v.string(),
+    cas_number: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    added_by: v.id("users"),
+    created_at: v.number(),
+  }),
+
+  borrow_requests: defineTable({
+    item_name: v.string(),
+    quantity: v.number(),
+    unit: v.optional(v.string()),
+    requester_id: v.id("users"),
+    lender_id: v.optional(v.id("users")),
+    status: v.string(),
+    notes: v.optional(v.string()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_status", ["status"])
+    .index("by_requester", ["requester_id"]),
+
+  // ── Video Rooms ─────────────────────────────────────────────────────
+  video_rooms: defineTable({
+    room_id: v.string(),
+    meeting_id: v.optional(v.id("meetings")),
+    status: v.string(),
+    created_by: v.id("users"),
+    created_at: v.number(),
+    ended_at: v.optional(v.number()),
+  }).index("by_room_id", ["room_id"])
+    .index("by_meeting", ["meeting_id"]),
+
+  video_chat_messages: defineTable({
+    room_id: v.string(),
+    user_id: v.id("users"),
+    message: v.string(),
+    created_at: v.number(),
+  }).index("by_room", ["room_id"]),
+
+  // ── Payments ────────────────────────────────────────────────────────
+  payment_methods: defineTable({
+    user_id: v.id("users"),
+    method_type: v.string(),
+    label: v.string(),
+    last_four: v.optional(v.string()),
+    is_default: v.boolean(),
+    created_at: v.number(),
+  }).index("by_user", ["user_id"]),
+
+  payment_orders: defineTable({
+    user_id: v.id("users"),
+    amount: v.number(),
+    currency: v.string(),
+    status: v.string(),
+    description: v.optional(v.string()),
+    payment_method_id: v.optional(v.id("payment_methods")),
+    created_at: v.number(),
+  }).index("by_user", ["user_id"]),
+
+  // ── Procurement extras ──────────────────────────────────────────────
+  alt_prices: defineTable({
+    purchase_order_id: v.id("purchase_orders"),
+    vendor: v.string(),
+    price: v.number(),
+    url: v.optional(v.string()),
+    created_at: v.number(),
+  }).index("by_order", ["purchase_order_id"]),
+
+  sds_records: defineTable({
+    entity_id: v.string(),
+    url: v.string(),
+    hazards: v.optional(v.string()),
+    created_at: v.number(),
+  }).index("by_entity", ["entity_id"]),
+
+  recurrence_rules: defineTable({
+    entity_id: v.string(),
+    pattern: v.string(),
+    auto_reorder: v.boolean(),
+    created_at: v.number(),
+  }).index("by_entity", ["entity_id"]),
+
+  // ── AI Chat ─────────────────────────────────────────────────────────
+  ai_chat_history: defineTable({
+    user_id: v.id("users"),
+    question: v.string(),
+    answer: v.string(),
+    created_at: v.number(),
+  }).index("by_user", ["user_id"]),
 });

@@ -1,6 +1,5 @@
-import { convexAuth } from "@convex-dev/auth/server";
-import { Password } from "@convex-dev/auth/providers/Password";
-
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Password],
-});
+// Custom password auth — no OAuth providers.
+// We handle auth entirely in customAuth.ts via bcryptjs + sessions table.
+export default {
+  providers: [],
+};

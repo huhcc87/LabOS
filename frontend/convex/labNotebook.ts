@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List ──────────────────────────────────────────────────────────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     author_id: v.optional(v.id("users")),
     paginationOpts: v.optional(
@@ -67,19 +68,19 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     content: v.optional(v.string()),
     tags: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, title, content, tags }) => {
+    const userId = await requireAuth(ctx, token);
 
     const now = Date.now();
     return await ctx.db.insert("lab_notebook", {
-      title: args.title,
-      content: args.content,
-      tags: args.tags,
+      title: title,
+      content: content,
+      tags: tags,
       author_id: userId,
       is_locked: false,
       created_at: now,
@@ -92,14 +93,14 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("lab_notebook"),
     title: v.optional(v.string()),
     content: v.optional(v.string()),
     tags: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
     if (!entry) throw new Error("Notebook entry not found");
@@ -121,10 +122,9 @@ export const update = mutation({
 // ── Remove ────────────────────────────────────────────────────────────────────
 
 export const remove = mutation({
-  args: { id: v.id("lab_notebook") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("lab_notebook") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
     if (!entry) throw new Error("Notebook entry not found");
@@ -146,10 +146,9 @@ export const remove = mutation({
  * cannot be subsequently modified. Only the author (or an admin) should call this.
  */
 export const sign = mutation({
-  args: { id: v.id("lab_notebook") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("lab_notebook") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
     if (!entry) throw new Error("Notebook entry not found");
@@ -174,12 +173,12 @@ export const sign = mutation({
  */
 export const witness = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("lab_notebook"),
     witnessed_by: v.id("users"),
   },
-  handler: async (ctx, { id, witnessed_by }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, witnessed_by }) => {
+    const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
     if (!entry) throw new Error("Notebook entry not found");

@@ -1,40 +1,61 @@
-import React, { createContext, useContext } from 'react';
-import { useQuery } from 'convex/react';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { useConvexAuth } from 'convex/react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { UserRole } from '../lib/types';
 import { hasRole } from '../lib/utils';
 
+const TOKEN_KEY = 'labos_auth_token';
+
 interface AuthContextValue {
   user: any | null;
   loading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (minRole: UserRole) => boolean;
-  // Keep token field for backward compat (null with Convex — auth is cookie-based)
-  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { signIn, signOut } = useAuthActions();
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [loading, setLoading] = useState(true);
 
-  // Fetch the current user's profile from Convex once authenticated
+  const loginAction = useAction(api.customAuth.login);
+  const logoutMutation = useMutation(api.customAuth.logout);
+
+  // Fetch current user by token — skip when no token
   const user = useQuery(
     api.users.getMe,
-    isAuthenticated ? {} : 'skip'
+    token ? { token } : 'skip'
   ) ?? null;
 
-  async function login(email: string, password: string) {
-    await signIn('password', { email, password, flow: 'signIn' });
-  }
+  // Once useQuery has resolved (either a user or null), we're done loading
+  useEffect(() => {
+    if (user !== undefined) {
+      setLoading(false);
+    }
+  }, [user]);
 
-  async function logout() {
-    await signOut();
-  }
+  // If there's no token at all, loading is immediately false
+  useEffect(() => {
+    if (!token) setLoading(false);
+  }, [token]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await loginAction({ email, password });
+    localStorage.setItem(TOKEN_KEY, result.token);
+    setToken(result.token);
+    setLoading(true); // will resolve once useQuery returns user
+  }, [loginAction]);
+
+  const logout = useCallback(async () => {
+    if (token) {
+      try { await logoutMutation({ token }); } catch (_) { /* ignore */ }
+    }
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
+  }, [token, logoutMutation]);
 
   function checkRole(minRole: UserRole): boolean {
     if (!user) return false;
@@ -45,8 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token: null,
-        loading: isLoading,
+        token,
+        loading,
         login,
         logout,
         hasRole: checkRole,

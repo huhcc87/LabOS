@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List maintenance records (paginated, filter by status) ────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     paginationOpts: v.optional(
       v.object({
         numItems: v.number(),
@@ -16,7 +17,7 @@ export const list = query({
     instrument_id: v.optional(v.id("instruments")),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
 
     let results;
 
@@ -55,10 +56,10 @@ export const list = query({
 // ── Get a single maintenance record ──────────────────────────────────────
 
 export const get = query({
-  args: { id: v.id("maintenance") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    return await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("maintenance") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    return await ctx.db.get(id);
   },
 });
 
@@ -66,6 +67,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     instrument_id: v.optional(v.id("instruments")),
     maintenance_type: v.string(),
     status: v.string(),
@@ -76,7 +78,7 @@ export const create = mutation({
     next_due: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("maintenance", {
       instrument_id: args.instrument_id,
       maintenance_type: args.maintenance_type,
@@ -95,6 +97,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("maintenance"),
     instrument_id: v.optional(v.id("instruments")),
     maintenance_type: v.optional(v.string()),
@@ -107,8 +110,8 @@ export const update = mutation({
     next_due: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const record = await ctx.db.get(id);
     if (!record) throw new Error("Maintenance record not found");
 
@@ -132,6 +135,7 @@ export const update = mutation({
 
 export const complete = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("maintenance"),
     performed_by: v.optional(v.id("users")),
     notes: v.optional(v.string()),
@@ -139,7 +143,7 @@ export const complete = mutation({
     next_due: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     const record = await ctx.db.get(args.id);
     if (!record) throw new Error("Maintenance record not found");
 
@@ -160,12 +164,12 @@ export const complete = mutation({
 // ── Remove a maintenance record ───────────────────────────────────────────
 
 export const remove = mutation({
-  args: { id: v.id("maintenance") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const record = await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("maintenance") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    const record = await ctx.db.get(id);
     if (!record) throw new Error("Maintenance record not found");
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });

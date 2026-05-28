@@ -1,15 +1,16 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List Settings ─────────────────────────────────────────────────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     category: v.optional(v.string()),
   },
-  handler: async (ctx, { category }) => {
-    await getAuthUserId(ctx);
+  handler: async (ctx, { token, category }) => {
+    await requireAuth(ctx, token);
 
     if (category) {
       return await ctx.db
@@ -25,9 +26,9 @@ export const list = query({
 // ── Get by Key ────────────────────────────────────────────────────────────────
 
 export const getByKey = query({
-  args: { key: v.string() },
-  handler: async (ctx, { key }) => {
-    await getAuthUserId(ctx);
+  args: { token: v.optional(v.string()), key: v.string() },
+  handler: async (ctx, { token, key }) => {
+    await requireAuth(ctx, token);
 
     return await ctx.db
       .query("settings")
@@ -40,6 +41,7 @@ export const getByKey = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     key: v.string(),
     value: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -47,8 +49,7 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     // Check for duplicate key
     const existing = await ctx.db
@@ -74,12 +75,12 @@ export const create = mutation({
 
 export const updateByKey = mutation({
   args: {
+    token: v.optional(v.string()),
     key: v.string(),
     value: v.string(),
   },
-  handler: async (ctx, { key, value }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, key, value }) => {
+    const userId = await requireAuth(ctx, token);
 
     const setting = await ctx.db
       .query("settings")
@@ -100,6 +101,7 @@ export const updateByKey = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("settings"),
     key: v.optional(v.string()),
     value: v.optional(v.string()),
@@ -107,9 +109,8 @@ export const update = mutation({
     label: v.optional(v.string()),
     description: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, ...fields }) => {
+    const userId = await requireAuth(ctx, token);
 
     const setting = await ctx.db.get(id);
     if (!setting) throw new Error("Setting not found");
@@ -129,10 +130,9 @@ export const update = mutation({
 // ── Remove ────────────────────────────────────────────────────────────────────
 
 export const remove = mutation({
-  args: { id: v.id("settings") },
-  handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("settings") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
     const setting = await ctx.db.get(id);
     if (!setting) throw new Error("Setting not found");
@@ -146,11 +146,11 @@ export const remove = mutation({
 
 export const bulkUpdate = mutation({
   args: {
+    token: v.optional(v.string()),
     settings: v.array(v.object({ key: v.string(), value: v.string() })),
   },
-  handler: async (ctx, { settings }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, settings }) => {
+    const userId = await requireAuth(ctx, token);
 
     const now = Date.now();
     const results: string[] = [];

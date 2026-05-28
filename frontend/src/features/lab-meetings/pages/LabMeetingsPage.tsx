@@ -138,7 +138,7 @@ export default function LabMeetingsPage() {
   const [confirmDelete, setConfirmDelete] = useState<Meeting | null>(null)
 
   // Video call state
-  const [activeVideoCall, setActiveVideoCall] = useState<{ roomId: string; meetingId?: number; meetingTitle?: string } | null>(null)
+  const [activeVideoCall, setActiveVideoCall] = useState<{ roomId: string; meetingId?: string | number; meetingTitle?: string } | null>(null)
   const [joiningCall, setJoiningCall] = useState(false)
 
   // Deep-link: if URL contains ?room=…, auto-join that room
@@ -229,7 +229,7 @@ export default function LabMeetingsPage() {
   async function startVideoCall(meeting?: Meeting) {
     setJoiningCall(true)
     try {
-      const meetingId = meeting ? parseInt(meeting.id) : undefined
+      const meetingId = meeting?.id
       const res = await videoApi.createRoom(meetingId)
       setActiveVideoCall({
         roomId: res.data.room_id,

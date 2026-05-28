@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     status: v.optional(v.string()),
     paginationOpts: v.optional(
@@ -154,5 +155,30 @@ export const createEvent = mutation({
       performed_at: args.performed_at ?? Date.now(),
       notes: args.notes,
     });
+  },
+});
+
+export const updateEvent = mutation({
+  args: {
+    id: v.id("sample_events"),
+    event_type: v.optional(v.string()),
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, ...fields }) => {
+    const patch: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(fields)) {
+      if (val !== undefined) patch[k] = val;
+    }
+    await ctx.db.patch(id, patch);
+    return { success: true };
+  },
+});
+
+export const deleteEvent = mutation({
+  args: { id: v.id("sample_events") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+    return { success: true };
   },
 });

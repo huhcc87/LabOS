@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── Calendar Events ──────────────────────────────────────────────────────────
 
@@ -29,6 +29,7 @@ export const listCalendar = query({
 
 export const createCalendarEvent = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
     start_time: v.number(),
@@ -39,8 +40,7 @@ export const createCalendarEvent = mutation({
     recurrence: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     return await ctx.db.insert("calendar_events", {
       title: args.title,
@@ -59,6 +59,7 @@ export const createCalendarEvent = mutation({
 
 export const updateCalendarEvent = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("calendar_events"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -70,10 +71,9 @@ export const updateCalendarEvent = mutation({
     recurrence: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
-    const { id, ...fields } = args;
+    const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Calendar event not found");
 
@@ -88,16 +88,15 @@ export const updateCalendarEvent = mutation({
 });
 
 export const deleteCalendarEvent = mutation({
-  args: { id: v.id("calendar_events") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("calendar_events") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Calendar event not found");
 
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
@@ -105,6 +104,7 @@ export const deleteCalendarEvent = mutation({
 
 export const listReminders = query({
   args: {
+    token: v.optional(v.string()),
     status: v.optional(v.string()),
     paginationOpts: v.optional(
       v.object({
@@ -113,17 +113,16 @@ export const listReminders = query({
       })
     ),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return { page: [], hasMore: false };
+  handler: async (ctx, { token, status, paginationOpts }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const numItems = args.paginationOpts?.numItems ?? 20;
+    const numItems = paginationOpts?.numItems ?? 20;
 
     let results;
-    if (args.status) {
+    if (status) {
       results = await ctx.db
         .query("reminders")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", status))
         .order("asc")
         .take(numItems + 1);
     } else {
@@ -143,6 +142,7 @@ export const listReminders = query({
 
 export const createReminder = mutation({
   args: {
+    token: v.optional(v.string()),
     entity_type: v.string(),
     entity_id: v.string(),
     message: v.string(),
@@ -150,8 +150,7 @@ export const createReminder = mutation({
     channel: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     return await ctx.db.insert("reminders", {
       entity_type: args.entity_type,
@@ -168,6 +167,7 @@ export const createReminder = mutation({
 
 export const updateReminder = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("reminders"),
     message: v.optional(v.string()),
     due_at: v.optional(v.number()),
@@ -176,10 +176,9 @@ export const updateReminder = mutation({
     sent_at: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
-    const { id, ...fields } = args;
+    const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Reminder not found");
 
@@ -194,24 +193,22 @@ export const updateReminder = mutation({
 });
 
 export const deleteReminder = mutation({
-  args: { id: v.id("reminders") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("reminders") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Reminder not found");
 
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
 export const reminderStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return { pending: 0, overdue: 0 };
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    const userId = await requireAuth(ctx, token);
 
     const now = Date.now();
 

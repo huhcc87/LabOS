@@ -1,9 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     severity: v.optional(v.string()),
     status: v.optional(v.string()),
     paginationOpts: v.optional(
@@ -48,6 +49,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
     severity: v.string(),
@@ -57,8 +59,7 @@ export const create = mutation({
     corrective_action: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const now = Date.now();
     return await ctx.db.insert("incidents", {
@@ -79,6 +80,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("incidents"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -90,10 +92,9 @@ export const update = mutation({
     corrective_action: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
-    const { id, ...fields } = args;
+    const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Incident not found");
 
@@ -109,13 +110,13 @@ export const update = mutation({
 
 export const resolve = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("incidents"),
     root_cause: v.optional(v.string()),
     corrective_action: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const existing = await ctx.db.get(args.id);
     if (!existing) throw new Error("Incident not found");

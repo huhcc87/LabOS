@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 // ── List SOPs (paginated, with search and status filter) ──────────────────
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     paginationOpts: v.optional(
       v.object({
         numItems: v.number(),
@@ -16,7 +17,7 @@ export const list = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
 
     // Full-text search path
     if (args.search && args.search.trim().length > 0) {
@@ -79,10 +80,10 @@ export const list = query({
 // ── Get a single SOP ──────────────────────────────────────────────────────
 
 export const get = query({
-  args: { id: v.id("sops") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    return await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("sops") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    return await ctx.db.get(id);
   },
 });
 
@@ -90,6 +91,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     content: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -99,7 +101,7 @@ export const create = mutation({
     review_date: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
+    await requireAuth(ctx, args.token);
     const now = Date.now();
     return await ctx.db.insert("sops", {
       title: args.title,
@@ -119,6 +121,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("sops"),
     title: v.optional(v.string()),
     content: v.optional(v.string()),
@@ -128,8 +131,8 @@ export const update = mutation({
     review_date: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _token, ...fields } = args;
     const sop = await ctx.db.get(id);
     if (!sop) throw new Error("SOP not found");
 
@@ -149,13 +152,13 @@ export const update = mutation({
 // ── Remove a SOP ──────────────────────────────────────────────────────────
 
 export const remove = mutation({
-  args: { id: v.id("sops") },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const sop = await ctx.db.get(args.id);
+  args: { token: v.optional(v.string()), id: v.id("sops") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
+    const sop = await ctx.db.get(id);
     if (!sop) throw new Error("SOP not found");
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
@@ -163,20 +166,21 @@ export const remove = mutation({
 
 export const approve = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("sops"),
     approved_by: v.id("users"),
   },
-  handler: async (ctx, args) => {
-    await getAuthUserId(ctx);
-    const sop = await ctx.db.get(args.id);
+  handler: async (ctx, { token, id, approved_by }) => {
+    await requireAuth(ctx, token);
+    const sop = await ctx.db.get(id);
     if (!sop) throw new Error("SOP not found");
 
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch(id, {
       status: "approved",
-      approved_by: args.approved_by,
+      approved_by: approved_by,
       approved_at: Date.now(),
       updated_at: Date.now(),
     });
-    return args.id;
+    return id;
   },
 });

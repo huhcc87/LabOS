@@ -8,4 +8,3 @@ export { api };
 
 // Re-export Convex hooks for convenience
 export { useQuery, useMutation, useAction } from "convex/react";
-export { useAuthActions } from "@convex-dev/auth/react";

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { integrationsApi } from '../lib/api';
 
 interface Integration {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
   integration_type: 'lims' | 'storage' | 'communication' | 'analytics' | 'instruments';

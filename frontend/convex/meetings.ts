@@ -1,9 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     meeting_type: v.optional(v.string()),
     status: v.optional(v.string()),
@@ -54,6 +55,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     meeting_type: v.string(),
     scheduled_at: v.number(),
@@ -64,8 +66,7 @@ export const create = mutation({
     recording_url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
     const now = Date.now();
     return await ctx.db.insert("meetings", {
@@ -87,6 +88,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("meetings"),
     title: v.optional(v.string()),
     meeting_type: v.optional(v.string()),
@@ -100,10 +102,9 @@ export const update = mutation({
     recording_url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuth(ctx, args.token);
 
-    const { id, ...fields } = args;
+    const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Meeting not found");
 
@@ -118,16 +119,15 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("meetings") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("meetings") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Meeting not found");
 
-    await ctx.db.delete(args.id);
-    return args.id;
+    await ctx.db.delete(id);
+    return id;
   },
 });
 
@@ -162,43 +162,42 @@ export const past = query({
 });
 
 export const cancel = mutation({
-  args: { id: v.id("meetings") },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  args: { token: v.optional(v.string()), id: v.id("meetings") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Meeting not found");
 
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch(id, {
       status: "cancelled",
       updated_at: Date.now(),
     });
-    return args.id;
+    return id;
   },
 });
 
 export const complete = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("meetings"),
     minutes: v.optional(v.string()),
     recording_url: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, { token, id, minutes, recording_url }) => {
+    const userId = await requireAuth(ctx, token);
 
-    const existing = await ctx.db.get(args.id);
+    const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Meeting not found");
 
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch(id, {
       status: "completed",
       updated_at: Date.now(),
-      ...(args.minutes !== undefined && { minutes: args.minutes }),
-      ...(args.recording_url !== undefined && {
-        recording_url: args.recording_url,
+      ...(minutes !== undefined && { minutes: minutes }),
+      ...(recording_url !== undefined && {
+        recording_url: recording_url,
       }),
     });
-    return args.id;
+    return id;
   },
 });

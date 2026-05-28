@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../lib/types';
 import { RoleBadge } from './RoleBadge';
-import { samplesApi, protocolsApi, instrumentsApi, inventoryApi, schedulingApi, tasksApi } from '../lib/api';
 import { AIChatPanel } from './AIChatPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
@@ -143,13 +144,9 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'dark');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [pendingReminders, setPendingReminders] = useState(0);
-  const [overdueReminders, setOverdueReminders] = useState(0);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('labos_dismissed_notifs') || '[]')); }
     catch { return new Set(); }
@@ -162,6 +159,47 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const notifRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
 
+  // ── Convex: live summary for notifications ────────────────────────────
+  const summary = useQuery(api.dashboard.summary);
+
+  // ── Convex: search (debounced) ────────────────────────────────────────
+  const searchResults = useQuery(
+    api.search.globalSearch,
+    debouncedQ.length >= 2 ? { q: debouncedQ } : 'skip'
+  ) ?? [];
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // ── Derive notifications from live summary ─────────────────────────────
+  const notifications = useMemo<AppNotification[]>(() => {
+    if (!summary) return [];
+    const built: AppNotification[] = [];
+    const now = Date.now();
+    const overdue = (summary as any).overdue_reminders ?? 0;
+    const pending = (summary as any).reminders_pending ?? 0;
+    const quarantine = (summary as any).quarantine_samples ?? 0;
+    const lowStock = (summary as any).low_stock_items ?? 0;
+
+    if (overdue > 0) built.push({ id: 'reminders-overdue', type: 'danger', icon: '⏰', title: `${overdue} overdue reminder${overdue > 1 ? 's' : ''}`, detail: 'Past due — action needed', action: 'View Reminders →', page: 'reminders', ts: now });
+    if (pending > overdue) built.push({ id: 'reminders-pending', type: 'warning', icon: '🔔', title: `${pending - overdue} pending reminder${pending - overdue > 1 ? 's' : ''}`, detail: 'Scheduled — review soon', action: 'View Reminders →', page: 'reminders', ts: now });
+    if (summary.overdue_tasks > 0) built.push({ id: 'tasks-overdue', type: 'danger', icon: '📋', title: `${summary.overdue_tasks} overdue task${summary.overdue_tasks > 1 ? 's' : ''}`, detail: 'Past due — action needed', action: 'Go to Tasks →', page: 'tasks', ts: now });
+    if (quarantine > 0) built.push({ id: 'samples-quarantine', type: 'danger', icon: '🧪', title: `${quarantine} sample${quarantine > 1 ? 's' : ''} in quarantine`, detail: 'Requires immediate review', action: 'View Samples →', page: 'samples', ts: now });
+    if (lowStock > 0) built.push({ id: 'inventory-low', type: 'warning', icon: '📦', title: `${lowStock} item${lowStock > 1 ? 's' : ''} low on stock`, detail: 'Reorder recommended', action: 'View Resources →', page: 'inventory', ts: now });
+
+    const grantDeadlines: any[] = (summary as any).grant_deadlines ?? [];
+    if (grantDeadlines.length > 0) {
+      const soonest = grantDeadlines[0];
+      const daysLeft = soonest.deadline_date ? Math.ceil((new Date(soonest.deadline_date).getTime() - now) / 86400000) : 99;
+      built.push({ id: 'grants-deadline', type: daysLeft <= 7 ? 'danger' : 'warning', icon: '📝', title: `Grant deadline in ${daysLeft}d: ${soonest.title?.slice(0, 30) || 'Untitled'}`, detail: `${grantDeadlines.length} grant${grantDeadlines.length > 1 ? 's' : ''} due within 30 days`, action: 'Grant Hub →', page: 'grants', ts: now });
+    }
+
+    if (built.length === 0) built.push({ id: 'all-clear', type: 'success', icon: '✅', title: 'All clear', detail: 'No pending issues', action: '', page: '', ts: now });
+    return built;
+  }, [summary]);
+
   const FAB_ACTIONS = [
     { icon: '🧪', label: 'New Sample', page: 'samples', color: '#6366f1' },
     { icon: '✓', label: 'Create Task', page: 'tasks', color: '#22c55e' },
@@ -169,158 +207,6 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     { icon: '⚠', label: 'Report Incident', page: 'incidents', color: '#ef4444' },
   ];
 
-  const fetchNotifications = useCallback(async () => {
-    const built: AppNotification[] = [];
-    const today = new Date().toISOString().slice(0, 10);
-    const now = Date.now();
-
-    // 1. Reminder stats
-    try {
-      const res = await schedulingApi.reminderStats();
-      const overdue = res.data.overdue ?? 0;
-      const pending = res.data.pending ?? 0;
-      setPendingReminders(pending);
-      setOverdueReminders(overdue);
-      if (overdue > 0) built.push({
-        id: 'reminders-overdue', type: 'danger', icon: '⏰',
-        title: `${overdue} overdue reminder${overdue > 1 ? 's' : ''}`,
-        detail: 'Past due — action needed',
-        action: 'View Reminders →', page: 'reminders', ts: now,
-      });
-      if (pending > 0) built.push({
-        id: 'reminders-pending', type: 'warning', icon: '🔔',
-        title: `${pending} pending reminder${pending > 1 ? 's' : ''}`,
-        detail: 'Scheduled — review soon',
-        action: 'View Reminders →', page: 'reminders', ts: now,
-      });
-    } catch { /* ignore */ }
-
-    // 2. Overdue tasks
-    try {
-      const res = await tasksApi.list(1, 100, '');
-      const tasks = (res.data as any).items || [];
-      const overdueTasks = tasks.filter((t: any) => t.status === 'overdue' || (t.due_date && t.due_date < today && t.status !== 'completed'));
-      const dueTodayTasks = tasks.filter((t: any) => t.due_date === today && t.status !== 'completed' && t.status !== 'overdue');
-      if (overdueTasks.length > 0) built.push({
-        id: 'tasks-overdue', type: 'danger', icon: '📋',
-        title: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`,
-        detail: overdueTasks.slice(0, 2).map((t: any) => t.title || 'Untitled').join(', ') + (overdueTasks.length > 2 ? '…' : ''),
-        action: 'Go to Tasks →', page: 'tasks', ts: now,
-      });
-      if (dueTodayTasks.length > 0) built.push({
-        id: 'tasks-today', type: 'warning', icon: '✅',
-        title: `${dueTodayTasks.length} task${dueTodayTasks.length > 1 ? 's' : ''} due today`,
-        detail: dueTodayTasks.slice(0, 2).map((t: any) => t.title || 'Untitled').join(', ') + (dueTodayTasks.length > 2 ? '…' : ''),
-        action: 'View Tasks →', page: 'tasks', ts: now,
-      });
-    } catch { /* ignore */ }
-
-    // 3. Quarantined samples
-    try {
-      const res = await samplesApi.list(1, 100, '');
-      const samples = (res.data as any).items || [];
-      const quarantine = samples.filter((s: any) => s.status === 'quarantine');
-      if (quarantine.length > 0) built.push({
-        id: 'samples-quarantine', type: 'danger', icon: '🧪',
-        title: `${quarantine.length} sample${quarantine.length > 1 ? 's' : ''} in quarantine`,
-        detail: quarantine.slice(0, 3).map((s: any) => s.barcode || s.sample_id || `#${s.id}`).join(', '),
-        action: 'View Samples →', page: 'samples', ts: now,
-      });
-    } catch { /* ignore */ }
-
-    // 4. Low-stock inventory
-    try {
-      const res = await inventoryApi.list(1, 100, '');
-      const items = (res.data as any).items || [];
-      const lowStock = items.filter((i: any) => i.quantity !== undefined && i.minimum_quantity !== undefined && i.quantity <= i.minimum_quantity);
-      if (lowStock.length > 0) built.push({
-        id: 'inventory-low', type: 'warning', icon: '📦',
-        title: `${lowStock.length} item${lowStock.length > 1 ? 's' : ''} low on stock`,
-        detail: lowStock.slice(0, 3).map((i: any) => i.name).join(', ') + (lowStock.length > 3 ? '…' : ''),
-        action: 'View Resources →', page: 'inventory', ts: now,
-      });
-    } catch { /* ignore */ }
-
-    // 5. Grant deadlines within 30 days (grants stored in localStorage)
-    try {
-      const grants: any[] = JSON.parse(localStorage.getItem('grantDrafts') || '[]');
-      const urgentGrants = grants.filter((g: any) => {
-        if (!g.deadline || g.status === 'funded' || g.status === 'rejected') return false;
-        const daysLeft = Math.ceil((new Date(g.deadline).getTime() - now) / 86400000);
-        return daysLeft >= 0 && daysLeft <= 30;
-      });
-      if (urgentGrants.length > 0) {
-        const soonest = urgentGrants.sort((a: any, b: any) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())[0];
-        const daysLeft = Math.ceil((new Date(soonest.deadline).getTime() - now) / 86400000);
-        built.push({
-          id: 'grants-deadline', type: daysLeft <= 7 ? 'danger' : 'warning', icon: '📝',
-          title: `Grant deadline in ${daysLeft}d: ${soonest.title?.slice(0, 30) || 'Untitled'}`,
-          detail: `${urgentGrants.length} grant${urgentGrants.length > 1 ? 's' : ''} due within 30 days`,
-          action: 'Grant Hub →', page: 'grants', ts: now,
-        });
-      }
-    } catch { /* ignore */ }
-
-    // 6. All clear
-    if (built.length === 0) built.push({
-      id: 'all-clear', type: 'success', icon: '✅',
-      title: 'All clear', detail: 'No pending issues', action: '', page: '', ts: now,
-    });
-
-    setNotifications(built);
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
-
-  useEffect(() => {
-    if (!searchQuery || searchQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const q = searchQuery;
-        const [sampRes, protoRes, instrRes, invRes] = await Promise.allSettled([
-          samplesApi.list(1, 5, q),
-          protocolsApi.list(1, 5, q),
-          instrumentsApi.list(1, 5, q),
-          inventoryApi.list(1, 5, q),
-        ]);
-        const results: SearchResult[] = [];
-        if (sampRes.status === 'fulfilled') {
-          sampRes.value.data.items?.forEach((s: any) =>
-            results.push({ id: `smp-${s.id}`, type: 'Sample', title: s.barcode || s.name || `Sample #${s.id}`, subtitle: `${s.sample_type || ''} — ${s.status || ''}`.trim(), icon: '🧪', page: 'samples' })
-          );
-        }
-        if (protoRes.status === 'fulfilled') {
-          protoRes.value.data.items?.forEach((p: any) =>
-            results.push({ id: `proto-${p.id}`, type: 'Protocol', title: p.title, subtitle: `v${p.version || '1'} — ${p.status || ''}`.trim(), icon: '📋', page: 'protocols' })
-          );
-        }
-        if (instrRes.status === 'fulfilled') {
-          instrRes.value.data.items?.forEach((i: any) =>
-            results.push({ id: `instr-${i.id}`, type: 'Instrument', title: i.name, subtitle: `${i.model || ''} — ${i.location || ''}`.trim(), icon: '🔬', page: 'instruments' })
-          );
-        }
-        if (invRes.status === 'fulfilled') {
-          invRes.value.data.items?.forEach((it: any) =>
-            results.push({ id: `inv-${it.id}`, type: 'Inventory', title: it.name, subtitle: `${it.quantity ?? ''} ${it.unit || ''} — ${it.storage_location || ''}`.trim(), icon: '📦', page: 'inventory' })
-          );
-        }
-        setSearchResults(results.slice(0, 10));
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const unreadCount = notifications.filter(n => n.id !== 'all-clear' && !dismissedIds.has(n.id)).length;
   const visibleNotifications = notifications.filter(n => !dismissedIds.has(n.id));
@@ -571,7 +457,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                   </div>
                   {searchQuery.length >= 2 && (
                     <div className="search-results">
-                      {searchLoading ? (
+                      {searchResults === undefined ? (
                         <div className="search-no-results">Searching...</div>
                       ) : searchResults.length === 0 ? (
                         <div className="search-no-results">No results found for "{searchQuery}"</div>
@@ -629,7 +515,6 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     </span>
                     <button className="mark-all-read" onClick={() => {
                       notifications.forEach(n => { if (n.id !== 'all-clear') dismissNotification(n.id); });
-                      fetchNotifications();
                     }}>Dismiss all</button>
                   </div>
                   <div className="notifications-list" style={{ maxHeight: 360, overflowY: 'auto' }}>
@@ -668,7 +553,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     ))}
                   </div>
                   <div className="notifications-footer">
-                    <button onClick={() => { fetchNotifications(); }}>↻ Refresh</button>
+                    <button onClick={() => { setDismissedIds(new Set()); localStorage.removeItem('labos_dismissed_notifs'); }}>↻ Refresh</button>
                     <button onClick={() => { onNavigate('reminders'); setNotificationsOpen(false); }}>All reminders →</button>
                   </div>
                 </div>

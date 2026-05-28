@@ -1,26 +1,26 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAuth } from "./authHelper";
 
 export const getMe = query({
-  args: {},
-  handler: async (ctx) => {
-    const authUserId = await getAuthUserId(ctx);
-    if (!authUserId) return null;
-    // authTables links auth identity → users row via email
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const email = identity.email;
-    if (!email) return null;
-    return await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    if (!token) return null;
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+    if (!session || session.expires_at < Date.now()) return null;
+    const user = await ctx.db.get(session.user_id);
+    if (!user || !user.is_active) return null;
+    const { hashed_password: _, ...safeUser } = user;
+    return safeUser;
   },
 });
 
 export const list = query({
   args: {
+    token: v.optional(v.string()),
     search: v.optional(v.string()),
     role: v.optional(
       v.union(
@@ -98,6 +98,7 @@ export const create = mutation({
     const now = Date.now();
     return await ctx.db.insert("users", {
       email: args.email,
+      hashed_password: "!",
       full_name: args.full_name,
       role: args.role,
       department: args.department,
