@@ -264,7 +264,8 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('labos_collapsed_categories');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
+    if (saved) return new Set(JSON.parse(saved));
+    return new Set(NAV_CATEGORIES.map(c => c.category));
   });
 
   const toggleCategory = (category: string) => {

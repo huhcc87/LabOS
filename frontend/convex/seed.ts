@@ -85,7 +85,7 @@ export const insertDemoData = internalMutation({
 
     const users = await ctx.db.query("users").collect();
     if (users.length === 0) return "No users found — run seedDemoUsers first";
-    const admin = users.find(u => u.role === "admin")!;
+    const admin = users.find(u => u.role === "admin" || u.role === "superadmin")!;
     const pi = users.find(u => u.role === "pi")!;
     const manager = users.find(u => u.role === "manager")!;
     const staff = users.find(u => u.role === "staff")!;

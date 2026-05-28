@@ -11,6 +11,12 @@ const MAX_ATTEMPTS = 10; // max per window
 
 export function checkRateLimit(key: string): void {
   const now = Date.now();
+
+  // Inline cleanup of stale entries
+  for (const [k, v] of attempts) {
+    if (v.resetAt < now) attempts.delete(k);
+  }
+
   const entry = attempts.get(key);
 
   if (!entry || entry.resetAt < now) {
@@ -24,11 +30,3 @@ export function checkRateLimit(key: string): void {
     throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
   }
 }
-
-// Cleanup stale entries periodically (runs on import, every 5 min)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of attempts) {
-    if (entry.resetAt < now) attempts.delete(key);
-  }
-}, 5 * 60 * 1000);
