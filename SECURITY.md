@@ -133,7 +133,7 @@ style-src 'self' 'unsafe-inline'
 img-src 'self' data: blob: https:
 font-src 'self' data:
 connect-src 'self' https://*.convex.cloud https://*.convex.site
-           wss://*.convex.cloud https://*.sentry.io https://*.posthog.com
+           wss://*.convex.cloud https://*.posthog.com
 frame-ancestors 'none'
 ```
 

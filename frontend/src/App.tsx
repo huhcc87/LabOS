@@ -245,7 +245,7 @@ function AppInner() {
           </Suspense>
         </ErrorBoundary>
       </Layout>
-      <CookieConsent />
+      <ErrorBoundary fallback={() => null}><CookieConsent /></ErrorBoundary>
     </NavigationContext.Provider>
   );
 }

@@ -119,7 +119,11 @@ release-keystore.jks
 # Large datasets / fixtures
 *.xlsx
 *.xls
+*.docx
 biomedical_suppliers_master_150.xlsx
+
+# iOS Swift Package Manager
+frontend/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
 # Stale Grant module
 grant-writing-port/

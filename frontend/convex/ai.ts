@@ -71,25 +71,25 @@ async function callDeepSeek(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
-/** Try Anthropic first, fall back to DeepSeek, fall back to rule-based. */
+/** Try DeepSeek first (primary), fall back to Anthropic, fall back to rule-based. */
 async function callAI(
   messages: { role: string; content: string }[],
   systemPrompt: string,
   maxTokens = 1024
 ): Promise<{ text: string; source: string }> {
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      const text = await callAnthropic(messages, systemPrompt, maxTokens);
-      return { text, source: "anthropic" };
-    } catch (_e) {
-      // fall through to DeepSeek
-    }
-  }
-
   if (process.env.DEEPSEEK_API_KEY) {
     try {
       const text = await callDeepSeek(messages, systemPrompt, maxTokens);
       return { text, source: "deepseek" };
+    } catch (_e) {
+      // fall through to Anthropic
+    }
+  }
+
+  if (process.env.ANTHROPIC_API_KEY) {
+    try {
+      const text = await callAnthropic(messages, systemPrompt, maxTokens);
+      return { text, source: "anthropic" };
     } catch (_e) {
       // fall through to rule-based
     }

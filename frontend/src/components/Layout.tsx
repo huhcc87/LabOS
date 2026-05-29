@@ -7,6 +7,7 @@ import { RoleBadge } from './RoleBadge';
 import { AIChatPanel } from './AIChatPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { ErrorBoundary } from './ErrorBoundary';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -306,7 +307,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
   return (
     <div className="app-shell">
-      <PWAInstallPrompt />
+      <ErrorBoundary fallback={() => null}><PWAInstallPrompt /></ErrorBoundary>
       {/* Sidebar Overlay for mobile */}
       {sidebarOpen && (
         <div
