@@ -1,0 +1,40 @@
+# ────────────────────────────────────────────────────────────────────────────
+# LabOS — Dependabot configuration
+# Scans npm dependencies for security vulnerabilities and opens PRs weekly.
+# https://docs.github.com/en/code-security/dependabot
+# ────────────────────────────────────────────────────────────────────────────
+version: 2
+
+updates:
+  # Frontend (React + Vite + Convex)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "huhcc87"
+    labels:
+      - "dependencies"
+      - "security"
+    # Group minor/patch updates into one PR to reduce noise
+    groups:
+      production-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"

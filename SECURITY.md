@@ -128,12 +128,14 @@ LabOS v3 uses a modern cloud-native architecture:
 ### Content Security Policy (CSP)
 ```
 default-src 'self'
-script-src 'self' 'unsafe-inline' 'unsafe-eval'
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com
 style-src 'self' 'unsafe-inline'
 img-src 'self' data: blob: https:
-font-src 'self' data:
+font-src 'self' data: https://js.stripe.com
 connect-src 'self' https://*.convex.cloud https://*.convex.site
            wss://*.convex.cloud https://*.posthog.com
+           https://va.vercel-scripts.com https://api.stripe.com
+frame-src https://js.stripe.com https://hooks.stripe.com
 frame-ancestors 'none'
 ```
 
@@ -419,15 +421,16 @@ All responses from Vercel include these 9 security headers:
 | Password Exclusion from API | Active | convex/customAuth.ts |
 | HSTS with Preload | Active | vercel.json |
 | COOP + CORP Headers | Active | vercel.json |
+| 2FA/TOTP | Active | convex/totp.ts, TwoFactorSetup.tsx |
+| Stripe PCI Compliance | Active | convex/stripe.ts, Stripe Elements |
+| Dependency Scanning (Dependabot) | Active | .github/dependabot.yml |
 
 ### Recommended Enhancements
 
 | Priority | Recommendation | Description |
 |----------|----------------|-------------|
-| Medium | **Enable 2FA/TOTP** | Schema supports `totp_secret` + `totp_enabled` — implement UI flow |
 | Medium | **Database Backups** | Configure Convex automated backups (available on Pro plan) |
 | Medium | **WAF** | Add Vercel Firewall rules for additional DDoS protection |
-| Low | **Dependency Scanning** | Enable GitHub Dependabot for npm vulnerability alerts |
 | Low | **Phone PII Masking** | Add `maskPhone()` function for phone fields in audit logs |
 | Low | **Hash-Chain Audit Logs** | SHA-256 linked chain for tamper-evident audit log integrity |
 | Low | **Session Device Tracking** | Log user-agent and approximate location per session |
@@ -440,6 +443,7 @@ All responses from Vercel include these 9 security headers:
 |---------|------|---------|
 | 1.0 | 2026-01-01 | Initial security documentation (on-premise architecture) |
 | 2.0 | 2026-05-28 | Complete rewrite for Convex + Vercel architecture. Added: COOP/CORP headers, PII masking, login audit events, force logout, 8h session TTL, 30min lockout, server-side input validation |
+| 2.1 | 2026-05-29 | Added: 2FA/TOTP, Stripe PCI-compliant payments, Dependabot dependency scanning, CSP for Stripe domains |
 
 ---
 

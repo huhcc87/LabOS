@@ -28,6 +28,7 @@ export default defineSchema({
     failed_login_attempts: v.number(),
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
+    stripe_customer_id: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
   })

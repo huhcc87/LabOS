@@ -970,9 +970,10 @@ export const paymentsApi = {
     return { data: (result ?? []).map(adapt) };
   },
   createSetupIntent: async () => {
-    // In production, this would create a Stripe SetupIntent.
-    // For now, return a placeholder that the UI can handle.
-    return { data: { client_secret: "setup_intent_placeholder" } };
+    const token = getToken();
+    if (!token) return { data: { client_secret: "" } };
+    const result = await client.action(api.stripe.createSetupIntent, { token });
+    return { data: result };
   },
   deleteMethod: async (id: IdLike) => {
     const token = getToken();

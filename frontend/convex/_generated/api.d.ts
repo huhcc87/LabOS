@@ -45,6 +45,7 @@ import type * as seed from "../seed.js";
 import type * as seedProdAdmin from "../seedProdAdmin.js";
 import type * as settings from "../settings.js";
 import type * as sops from "../sops.js";
+import type * as stripe from "../stripe.js";
 import type * as suppliers from "../suppliers.js";
 import type * as tasks from "../tasks.js";
 import type * as templates from "../templates.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   seedProdAdmin: typeof seedProdAdmin;
   settings: typeof settings;
   sops: typeof sops;
+  stripe: typeof stripe;
   suppliers: typeof suppliers;
   tasks: typeof tasks;
   templates: typeof templates;
