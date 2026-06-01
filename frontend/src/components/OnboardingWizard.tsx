@@ -4,7 +4,7 @@ import { useNavigate } from '../context/NavigationContext';
 const STEPS = [
   {
     icon: '🎉',
-    title: 'Welcome to LabOS v2',
+    title: 'Welcome to LabOS v3',
     subtitle: 'The all-in-one research lab management system built for scientists',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

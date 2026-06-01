@@ -1,5 +1,6 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -161,9 +162,12 @@ function ruleBasedChatResponse(question: string): string {
  * Tries Anthropic → DeepSeek → rule-based fallback.
  */
 export const chat = action({
-  args: { question: v.string() },
+  args: { token: v.optional(v.string()), question: v.string() },
   returns: v.object({ answer: v.string(), source: v.string() }),
-  handler: async (_ctx, { question }) => {
+  handler: async (ctx, { token, question }) => {
+    if (!token) throw new Error("Unauthorized");
+    const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
+    if (!session || session.expires_at < Date.now()) throw new Error("Unauthorized");
     const systemPrompt =
       "You are LabOS AI, an expert assistant for scientific laboratory management. " +
       "You help researchers and lab managers with inventory, equipment, protocols, " +
@@ -190,6 +194,7 @@ export const chat = action({
  */
 export const inventoryPredictions = action({
   args: {
+    token: v.optional(v.string()),
     items: v.array(
       v.object({
         name: v.string(),
@@ -211,7 +216,10 @@ export const inventoryPredictions = action({
       days_until_stockout: v.optional(v.number()),
     })
   ),
-  handler: async (_ctx, { items }) => {
+  handler: async (ctx, { token, items }) => {
+    if (!token) throw new Error("Unauthorized");
+    const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
+    if (!session || session.expires_at < Date.now()) throw new Error("Unauthorized");
     const now = Date.now();
 
     // Build a concise inventory snapshot for the prompt

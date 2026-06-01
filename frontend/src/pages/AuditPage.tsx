@@ -24,8 +24,10 @@ export default function AuditPage() {
 
   const verifyChain = async () => {
     setVerifying(true);
-    const r = await fetch(`${API}/audit/chain/verify`, { headers: authHeaders() });
-    if (r.ok) setChainResult(await r.json());
+    try {
+      const r = await fetch(`${API}/audit/chain/verify`, { headers: authHeaders() });
+      if (r.ok) setChainResult(await r.json());
+    } catch { /* endpoint not available */ }
     setVerifying(false);
   };
   const { items, total, pages, page, setPage, perPage, setPerPage, search, setSearch, loading } = usePagedApi<AuditLog>(

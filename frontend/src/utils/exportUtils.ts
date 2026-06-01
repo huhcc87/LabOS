@@ -1,5 +1,5 @@
 /**
- * Export utilities for LabOS v2
+ * Export utilities for LabOS v3
  * Supports Excel (CSV), PDF, and JSON export formats
  */
 
@@ -141,13 +141,13 @@ function generatePrintableHTML<T extends Record<string, unknown>>(
     </head>
     <body>
       <h1>${title}</h1>
-      <div class="subtitle">Generated from LabOS v2 on ${new Date().toLocaleString()}</div>
+      <div class="subtitle">Generated from LabOS v3 on ${new Date().toLocaleString()}</div>
       <table>
         <thead><tr>${headerRow}</tr></thead>
         <tbody>${dataRows}</tbody>
       </table>
       <div class="footer">
-        LabOS v2 - Laboratory Operations System<br>
+        LabOS v3 - Laboratory Operations System<br>
         Total Records: ${data.length}
       </div>
     </body>

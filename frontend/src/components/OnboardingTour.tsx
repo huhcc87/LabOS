@@ -19,7 +19,7 @@ interface OnboardingTourProps {
 const DEFAULT_TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to LabOS v2!',
+    title: 'Welcome to LabOS v3!',
     content: 'Your comprehensive Laboratory Operations System. Let\'s take a quick tour to get you started.',
     position: 'center',
   },

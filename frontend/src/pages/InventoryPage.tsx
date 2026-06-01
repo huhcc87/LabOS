@@ -428,12 +428,7 @@ export default function InventoryPage() {
     requestedBy?: string;
     requestDate?: string;
   }
-  const [sharedMaterials, setSharedMaterials] = useState<SharedMaterial[]>([
-    { id: 1, itemName: 'Anti-CD45 Antibody', quantity: 50, unit: 'µL', fromLab: 'Chen Lab', toLab: '', status: 'available', expiresOn: '2024-08-15' },
-    { id: 2, itemName: 'CRISPR Cas9 Protein', quantity: 10, unit: 'µg', fromLab: 'Smith Lab', toLab: 'Your Lab', status: 'requested', expiresOn: '2024-06-20', requestedBy: 'Dr. Johnson', requestDate: '2024-04-10' },
-    { id: 3, itemName: 'GFP Plasmid', quantity: 5, unit: 'µg', fromLab: 'Your Lab', toLab: 'Park Lab', status: 'approved', expiresOn: '2024-12-01' },
-    { id: 4, itemName: 'RNA Extraction Kit', quantity: 1, unit: 'kit', fromLab: 'Wong Lab', toLab: '', status: 'available', expiresOn: '2024-09-30' },
-  ]);
+  const [sharedMaterials, setSharedMaterials] = useState<SharedMaterial[]>([]);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // AI Substitution Suggestions
@@ -473,12 +468,7 @@ export default function InventoryPage() {
     reason?: string;
     ipAddress: string;
   }
-  const [auditEntries] = useState<AuditEntry[]>([
-    { id: 1, timestamp: '2024-04-10 14:32:15', user: 'Dr. Sarah Chen', action: 'UPDATE', entity: 'Inventory', entityId: 'INV-001', oldValue: 'Qty: 50', newValue: 'Qty: 45', signature: 'eSig-SC-2024-001', reason: 'Used for experiment EXP-2024-042', ipAddress: '192.168.1.100' },
-    { id: 2, timestamp: '2024-04-10 13:15:42', user: 'Lab Tech Mike', action: 'CREATE', entity: 'Sample', entityId: 'SMP-456', newValue: 'Blood sample - Patient 1042', signature: 'eSig-MT-2024-089', ipAddress: '192.168.1.105' },
-    { id: 3, timestamp: '2024-04-10 11:08:33', user: 'Dr. Emily Park', action: 'APPROVE', entity: 'Protocol', entityId: 'PROT-012', newValue: 'PCR Protocol v2.1 approved', signature: 'eSig-EP-2024-023', reason: 'Reviewed and validated', ipAddress: '192.168.1.110' },
-    { id: 4, timestamp: '2024-04-09 16:45:00', user: 'Admin', action: 'DELETE', entity: 'Inventory', entityId: 'INV-089', oldValue: 'Expired reagent - Lot 2023-001', signature: 'eSig-AD-2024-015', reason: 'Expired material disposal', ipAddress: '192.168.1.101' },
-  ]);
+  const [auditEntries] = useState<AuditEntry[]>([]);
 
   // Vendor Scorecards
   const [vendorScoreModalOpen, setVendorScoreModalOpen] = useState(false);

@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
@@ -61,6 +62,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -73,9 +75,11 @@ export const create = mutation({
     estimated_duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
+    const { token: _, ...fields } = args;
     const now = Date.now();
     return await ctx.db.insert("protocols", {
-      ...args,
+      ...fields,
       created_at: now,
       updated_at: now,
     });
@@ -84,6 +88,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("protocols"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -96,7 +101,8 @@ export const update = mutation({
     estimated_duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -107,9 +113,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("protocols") },
+  args: { token: v.optional(v.string()), id: v.id("protocols") },
   handler: async (ctx, args) => {
-    // Delete all versions first
+    await requireAuth(ctx, args.token);
     const versions = await ctx.db
       .query("protocol_versions")
       .withIndex("by_protocol", (q) => q.eq("protocol_id", args.id))
@@ -135,6 +141,7 @@ export const listVersions = query({
 
 export const createVersion = mutation({
   args: {
+    token: v.optional(v.string()),
     protocol_id: v.id("protocols"),
     version: v.string(),
     content: v.optional(v.string()),
@@ -142,6 +149,7 @@ export const createVersion = mutation({
     created_by: v.id("users"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const id = await ctx.db.insert("protocol_versions", {
       protocol_id: args.protocol_id,
       version: args.version,

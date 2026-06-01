@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from '../context/NavigationContext';
+import { comingSoon } from '../lib/comingSoon';
 
 interface FundingOpportunity {
   id: string;
@@ -71,9 +72,9 @@ export default function FundingOpportunitiesPage() {
           <p className="page-subtitle">Search NIH, NSF, DoD, and foundation funding opportunities</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import from Grants.gov</button>
-          <button className="btn btn-secondary">🔔 Set Alerts</button>
-          <button className="btn btn-primary">🔄 Refresh Database</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Grants.gov Import')}>📥 Import from Grants.gov</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Funding Alerts')}>🔔 Set Alerts</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Refresh Database')}>🔄 Refresh Database</button>
         </div>
       </div>
 

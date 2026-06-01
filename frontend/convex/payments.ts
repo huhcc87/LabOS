@@ -48,7 +48,11 @@ export const createMethod = mutation({
 export const deleteMethod = mutation({
   args: { token: v.optional(v.string()), id: v.id("payment_methods") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
+    const method = await ctx.db.get(id);
+    if (!method || method.user_id !== userId) {
+      throw new Error("Forbidden: payment method not found or not yours");
+    }
     await ctx.db.delete(id);
     return { success: true };
   },

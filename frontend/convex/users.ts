@@ -73,12 +73,16 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const user = await ctx.db.get(args.id);
+    if (!user) return null;
+    const { hashed_password: _, ...safeUser } = user;
+    return safeUser;
   },
 });
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     email: v.string(),
     full_name: v.string(),
     role: v.union(
@@ -95,6 +99,11 @@ export const create = mutation({
     data_classification_clearance: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const callerId = await requireAuth(ctx, args.token);
+    const caller = await ctx.db.get(callerId);
+    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
+      throw new Error("Forbidden: admin role required");
+    }
     const now = Date.now();
     return await ctx.db.insert("users", {
       email: args.email,
@@ -116,6 +125,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("users"),
     full_name: v.optional(v.string()),
     role: v.optional(
@@ -138,7 +148,12 @@ export const update = mutation({
     data_classification_clearance: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    const callerId = await requireAuth(ctx, args.token);
+    const caller = await ctx.db.get(callerId);
+    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
+      throw new Error("Forbidden: admin role required");
+    }
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -149,8 +164,13 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("users") },
+  args: { token: v.optional(v.string()), id: v.id("users") },
   handler: async (ctx, args) => {
+    const callerId = await requireAuth(ctx, args.token);
+    const caller = await ctx.db.get(callerId);
+    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
+      throw new Error("Forbidden: admin role required");
+    }
     await ctx.db.patch(args.id, {
       is_active: false,
       updated_at: Date.now(),

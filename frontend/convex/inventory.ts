@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
@@ -61,6 +62,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     catalog_number: v.optional(v.string()),
     supplier: v.optional(v.string()),
@@ -78,9 +80,11 @@ export const create = mutation({
     created_by: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
+    const { token: _, ...fields } = args;
     const now = Date.now();
     return await ctx.db.insert("inventory", {
-      ...args,
+      ...fields,
       created_at: now,
       updated_at: now,
     });
@@ -89,6 +93,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("inventory"),
     name: v.optional(v.string()),
     catalog_number: v.optional(v.string()),
@@ -106,7 +111,8 @@ export const update = mutation({
     hazards: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -117,8 +123,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("inventory") },
+  args: { token: v.optional(v.string()), id: v.id("inventory") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     await ctx.db.delete(args.id);
     return { success: true };
   },

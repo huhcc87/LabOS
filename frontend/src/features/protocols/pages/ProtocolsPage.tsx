@@ -20,8 +20,9 @@ import MicroscopyViewer from '../viewers/MicroscopyViewer'
 import type { Protocol } from '../types/protocol.types'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { useSwarm, SwarmDashboard } from '../ai-swarm'
 
-type MainTab = 'library' | 'editor' | 'ai' | 'workflow' | 'viewers' | 'analytics'
+type MainTab = 'library' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
 type ViewerTab = 'genomics' | 'protein' | 'microscopy'
 
 const BIOSAFETY_COLORS: Record<string, string> = {
@@ -41,6 +42,7 @@ export default function ProtocolsPage() {
   const store = useProtocols()
   const importHook = useProtocolImport(store.addProtocol)
   const genHook = useProtocolGeneration(store.addProtocol)
+  const swarm = useSwarm()
   const [activeSubcategory, setActiveSubcategory] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [mainTab, setMainTab] = useState<MainTab>('library')
@@ -94,6 +96,7 @@ export default function ProtocolsPage() {
   const MAIN_TABS: { id: MainTab; label: string; icon: string }[] = [
     { id: 'library', label: 'Library', icon: '📚' },
     { id: 'editor', label: 'Editor', icon: '✏️' },
+    { id: 'ai-swarm', label: 'AI Swarm', icon: '🧬' },
     { id: 'ai', label: 'AI Assistant', icon: '🤖' },
     { id: 'workflow', label: 'Workflows', icon: '🔀' },
     { id: 'viewers', label: 'Viewers', icon: '🔬' },
@@ -107,7 +110,7 @@ export default function ProtocolsPage() {
         <div>
           <h1 style={{ color: 'var(--text)', fontSize: 26, fontWeight: 700, margin: 0 }}>Biomedical Protocol Library</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
-            {store.allProtocols.length} protocols · 20 categories · Advanced Biomedical SOP Management
+            {store.allProtocols.length} protocols · {PROTOCOL_CATEGORIES.length} categories · AI Swarm Protocol Intelligence
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -264,6 +267,11 @@ export default function ProtocolsPage() {
             onCancel={() => { setEditingProtocol(null); setMainTab('library') }}
           />
         </div>
+      )}
+
+      {/* ── AI Swarm Tab ── */}
+      {mainTab === 'ai-swarm' && (
+        <SwarmDashboard swarm={swarm} />
       )}
 
       {/* ── AI Assistant Tab ── */}

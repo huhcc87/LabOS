@@ -52,19 +52,21 @@ export default function ReferenceManagerPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ per_page: '200' });
-    if (folder !== 'All') params.set('folder', folder);
-    if (search) params.set('search', search);
-    const [r1, r2] = await Promise.all([
-      fetch(`${API}/references?${params}`, { headers: authHeaders() }),
-      fetch(`${API}/references/folders/list`, { headers: authHeaders() }),
-    ]);
-    if (r1.ok) setReferences((await r1.json()).items ?? []);
-    if (r2.ok) {
-      const data = await r2.json();
-      const combined = Array.from(new Set(['All', ...DEFAULT_FOLDERS.slice(1), ...data.folders]));
-      setFolders(combined);
-    }
+    try {
+      const params = new URLSearchParams({ per_page: '200' });
+      if (folder !== 'All') params.set('folder', folder);
+      if (search) params.set('search', search);
+      const [r1, r2] = await Promise.all([
+        fetch(`${API}/references?${params}`, { headers: authHeaders() }),
+        fetch(`${API}/references/folders/list`, { headers: authHeaders() }),
+      ]);
+      if (r1.ok) setReferences((await r1.json()).items ?? []);
+      if (r2.ok) {
+        const data = await r2.json();
+        const combined = Array.from(new Set(['All', ...DEFAULT_FOLDERS.slice(1), ...data.folders]));
+        setFolders(combined);
+      }
+    } catch { /* endpoint not available */ }
     setLoading(false);
   }, [folder, search]);
 
@@ -74,23 +76,27 @@ export default function ReferenceManagerPage() {
   }, [load]);
 
   const toggleFavorite = async (ref: Reference) => {
-    const res = await fetch(`${API}/references/${ref.id}`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify({ is_favorite: !ref.is_favorite }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setReferences(rs => rs.map(r => r.id === ref.id ? updated : r));
-      if (selectedRef?.id === ref.id) setSelectedRef(updated);
-    }
+    try {
+      const res = await fetch(`${API}/references/${ref.id}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ is_favorite: !ref.is_favorite }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setReferences(rs => rs.map(r => r.id === ref.id ? updated : r));
+        if (selectedRef?.id === ref.id) setSelectedRef(updated);
+      }
+    } catch { /* endpoint not available */ }
   };
 
   const deleteRef = async (id: number) => {
     if (!confirm('Remove this reference from your library?')) return;
-    await fetch(`${API}/references/${id}`, { method: 'DELETE', headers: authHeaders() });
-    setReferences(rs => rs.filter(r => r.id !== id));
-    if (selectedRef?.id === id) setSelectedRef(null);
+    try {
+      await fetch(`${API}/references/${id}`, { method: 'DELETE', headers: authHeaders() });
+      setReferences(rs => rs.filter(r => r.id !== id));
+      if (selectedRef?.id === id) setSelectedRef(null);
+    } catch { /* endpoint not available */ }
   };
 
   const addReference = async (data: typeof EMPTY_FORM) => {
@@ -109,10 +115,12 @@ export default function ReferenceManagerPage() {
       folder: data.folder || 'Unfiled',
       notes: data.notes,
     };
-    const res = await fetch(`${API}/references`, {
-      method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
-    });
-    if (res.ok) { setShowAddForm(false); setForm({ ...EMPTY_FORM }); load(); }
+    try {
+      const res = await fetch(`${API}/references`, {
+        method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
+      });
+      if (res.ok) { setShowAddForm(false); setForm({ ...EMPTY_FORM }); load(); }
+    } catch { /* endpoint not available */ }
     setSaving(false);
   };
 
@@ -125,10 +133,12 @@ export default function ReferenceManagerPage() {
       year: result.year ?? null,
       folder: 'Unfiled',
     };
-    const res = await fetch(`${API}/references`, {
-      method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
-    });
-    if (res.ok) { load(); }
+    try {
+      const res = await fetch(`${API}/references`, {
+        method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
+      });
+      if (res.ok) { load(); }
+    } catch { /* endpoint not available */ }
   };
 
   const handlePubMedSearch = async () => {

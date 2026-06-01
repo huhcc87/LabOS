@@ -9,9 +9,9 @@
  * Environment variables required in Convex:
  *   STRIPE_SECRET_KEY — sk_live_… or sk_test_…
  */
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,11 +32,9 @@ async function requireSession(ctx: any, token: string) {
 
 export const isConfigured = query({
   args: {},
-  handler: async () => {
-    // This runs in a query so we can't access env vars directly,
-    // but we can check a table flag or just let the action fail gracefully.
-    // For the status endpoint, we'll use the payments.status query which already exists.
-    return { configured: true };
+  handler: async (ctx) => {
+    const settings = await ctx.db.query("settings").first();
+    return { configured: !!(settings as any)?.stripe_configured };
   },
 });
 
@@ -49,7 +47,7 @@ export const createSetupIntent = action({
     const stripe = await getStripe();
 
     // Get or create a Stripe customer for this user
-    const user = await ctx.runQuery(api.totp.getUser, { user_id: session.user_id });
+    const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user) throw new Error("User not found");
 
     let customerId = (user as any).stripe_customer_id;
@@ -61,7 +59,7 @@ export const createSetupIntent = action({
         metadata: { labos_user_id: session.user_id },
       });
       customerId = customer.id;
-      await ctx.runMutation(api.stripe.saveCustomerId, {
+      await ctx.runMutation(internal.stripe.saveCustomerId, {
         user_id: session.user_id,
         stripe_customer_id: customerId,
       });
@@ -87,10 +85,13 @@ export const createPaymentIntent = action({
     payment_method_id: v.optional(v.string()), // Stripe PM id
   },
   handler: async (ctx, { token, amount, currency, description, payment_method_id }) => {
+    if (!Number.isInteger(amount) || amount < 50 || amount > 99999999) {
+      throw new Error("Invalid amount: must be between 50 and 99999999 cents");
+    }
     const session = await requireSession(ctx, token);
     const stripe = await getStripe();
 
-    const user = await ctx.runQuery(api.totp.getUser, { user_id: session.user_id });
+    const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user) throw new Error("User not found");
 
     const customerId = (user as any).stripe_customer_id;
@@ -128,7 +129,7 @@ export const listPaymentMethods = action({
     const session = await requireSession(ctx, token);
     const stripe = await getStripe();
 
-    const user = await ctx.runQuery(api.totp.getUser, { user_id: session.user_id });
+    const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user) throw new Error("User not found");
 
     const customerId = (user as any).stripe_customer_id;
@@ -154,8 +155,18 @@ export const listPaymentMethods = action({
 export const detachPaymentMethod = action({
   args: { token: v.string(), payment_method_id: v.string() },
   handler: async (ctx, { token, payment_method_id }) => {
-    await requireSession(ctx, token);
+    const session = await requireSession(ctx, token);
     const stripe = await getStripe();
+
+    const user = await ctx.runQuery(api.totp.getSession, { token });
+    if (!user) throw new Error("User not found");
+
+    const pm = await stripe.paymentMethods.retrieve(payment_method_id);
+    const dbUser = await ctx.runQuery(api.customAuth.me, { token });
+    if (!dbUser || !dbUser.stripe_customer_id || pm.customer !== dbUser.stripe_customer_id) {
+      throw new Error("Payment method does not belong to this account");
+    }
+
     await stripe.paymentMethods.detach(payment_method_id);
     return { success: true };
   },
@@ -163,7 +174,7 @@ export const detachPaymentMethod = action({
 
 // ── Internal Mutations ───────────────────────────────────────────────────────
 
-export const saveCustomerId = mutation({
+export const saveCustomerId = internalMutation({
   args: { user_id: v.id("users"), stripe_customer_id: v.string() },
   handler: async (ctx, { user_id, stripe_customer_id }) => {
     await ctx.db.patch(user_id, {

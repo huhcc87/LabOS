@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Resource {
   id: number;
@@ -524,7 +525,7 @@ export default function WritingResourcesPage() {
                 )}
 
                 {selectedResource.content && (
-                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }}>
+                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={() => comingSoon('Copy to Clipboard')}>
                     Copy to Clipboard
                   </button>
                 )}

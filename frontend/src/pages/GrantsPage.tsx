@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Grant {
   id: number;
@@ -182,7 +183,7 @@ export default function GrantsPage() {
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   Deadline: {new Date(grant.deadline).toLocaleDateString()}
                 </span>
-                <button className="btn btn-sm btn-secondary">Open →</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Open Grant')}>Open →</button>
               </div>
             </div>
           ))}
@@ -204,16 +205,16 @@ export default function GrantsPage() {
       <div style={{ marginTop: 32 }}>
         <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Quick Actions</h3>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => comingSoon('Browse NIH FOAs')}>
             📋 Browse NIH FOAs
           </button>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => comingSoon('Funding Analytics')}>
             📊 Funding Analytics
           </button>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => comingSoon('Reference Library')}>
             📚 Reference Library
           </button>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => comingSoon('Collaborator Network')}>
             👥 Collaborator Network
           </button>
         </div>

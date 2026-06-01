@@ -1,6 +1,6 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const setupTotp = action({
   args: { token: v.string() },
@@ -12,7 +12,7 @@ export const setupTotp = action({
     const secret = generateSecret();
     const otpauth_url = generateURI({ issuer: "LabOS", label: session.email, secret });
 
-    await ctx.runMutation(api.totp.storePendingSecret, {
+    await ctx.runMutation(internal.totp.storePendingSecret, {
       user_id: session.user_id,
       secret,
     });
@@ -27,14 +27,14 @@ export const verifyAndEnable = action({
     const session = await ctx.runQuery(api.totp.getSession, { token });
     if (!session) throw new Error("Unauthorized");
 
-    const user = await ctx.runQuery(api.totp.getUser, { user_id: session.user_id });
+    const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user || !user.totp_secret) throw new Error("TOTP not set up");
 
     const { verifySync } = await import("otplib");
-    const result = verifySync({ token: code, secret: user.totp_secret });
-    if (!(result as any).valid) throw new Error("Invalid verification code");
+    const isValid = verifySync({ secret: user.totp_secret, token: code }).valid;
+    if (!isValid) throw new Error("Invalid verification code");
 
-    await ctx.runMutation(api.totp.enableTotp, { user_id: session.user_id });
+    await ctx.runMutation(internal.totp.enableTotp, { user_id: session.user_id });
     return { success: true };
   },
 });
@@ -45,14 +45,14 @@ export const disable = action({
     const session = await ctx.runQuery(api.totp.getSession, { token });
     if (!session) throw new Error("Unauthorized");
 
-    const user = await ctx.runQuery(api.totp.getUser, { user_id: session.user_id });
+    const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user) throw new Error("Unauthorized");
 
     const bcrypt = await import("bcryptjs");
     const valid = await bcrypt.compare(password, user.hashed_password);
     if (!valid) throw new Error("Invalid password");
 
-    await ctx.runMutation(api.totp.disableTotp, { user_id: session.user_id });
+    await ctx.runMutation(internal.totp.disableTotp, { user_id: session.user_id });
     return { success: true };
   },
 });
@@ -60,14 +60,14 @@ export const disable = action({
 export const verifyLogin = action({
   args: { email: v.string(), code: v.string() },
   handler: async (ctx, { email, code }): Promise<{ valid: boolean }> => {
-    const user = await ctx.runQuery(api.customAuth.getUserByEmail, { email });
+    const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
     if (!user || !user.totp_secret || !user.totp_enabled) {
       throw new Error("TOTP not enabled");
     }
 
     const { verifySync } = await import("otplib");
-    const result = verifySync({ token: code, secret: user.totp_secret });
-    return { valid: !!(result as any).valid };
+    const valid = verifySync({ secret: user.totp_secret, token: code }).valid;
+    return { valid };
   },
 });
 
@@ -86,14 +86,14 @@ export const getSession = query({
   },
 });
 
-export const getUser = query({
+export const getUser = internalQuery({
   args: { user_id: v.id("users") },
   handler: async (ctx, { user_id }) => {
     return await ctx.db.get(user_id);
   },
 });
 
-export const storePendingSecret = mutation({
+export const storePendingSecret = internalMutation({
   args: { user_id: v.id("users"), secret: v.string() },
   handler: async (ctx, { user_id, secret }) => {
     await ctx.db.patch(user_id, {
@@ -104,7 +104,7 @@ export const storePendingSecret = mutation({
   },
 });
 
-export const enableTotp = mutation({
+export const enableTotp = internalMutation({
   args: { user_id: v.id("users") },
   handler: async (ctx, { user_id }) => {
     await ctx.db.patch(user_id, {
@@ -121,7 +121,7 @@ export const enableTotp = mutation({
   },
 });
 
-export const disableTotp = mutation({
+export const disableTotp = internalMutation({
   args: { user_id: v.id("users") },
   handler: async (ctx, { user_id }) => {
     await ctx.db.patch(user_id, {

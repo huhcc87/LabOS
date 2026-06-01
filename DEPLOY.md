@@ -3,11 +3,122 @@
 End-to-end recipe for deploying LabOS at **$0** with truly-free tiers, or
 **pay-as-you-go** (no monthly subscription) at scale.
 
+> **Architecture note:** LabOS uses **Convex** as its primary real-time backend
+> (all mutations, queries, auth, AI). The FastAPI backend is a secondary REST
+> layer for legacy endpoints, file uploads, and SMTP email. You must deploy
+> Convex first.
+
 ---
 
-## ⚡ QUICK PATH: Neon DB + Railway + Vercel (recommended)
+## ⚡ QUICK PATH: Convex + Vercel (recommended)
 
-This is the fastest path to a production LabOS. Do these 5 steps in order.
+This is the fastest path to a production LabOS. Do these steps in order.
+
+### 0. Prerequisites
+
+```bash
+cd /Users/mudasirrashid/Documents/app/lab_management_system_v2/frontend
+npm install        # if not already done
+npx convex login   # authenticate with your Convex account
+```
+
+### A. Create a Convex production deployment
+
+```bash
+# From the frontend directory (where convex/ lives)
+cd /Users/mudasirrashid/Documents/app/lab_management_system_v2/frontend
+
+# Deploy to production (pushes schema + all functions)
+npx convex deploy
+```
+
+When prompted:
+- **Project**: select your existing project or create a new one
+- **Team**: select your team
+- Convex will create a production deployment URL like:
+  `https://your-project-name.convex.cloud`
+
+### B. Set Convex server-side environment variables
+
+These are secrets used by Convex server functions (ai.ts, grants.ts, stripe.ts).
+Set them via CLI or in the Convex dashboard → Settings → Environment Variables.
+
+```bash
+# AI providers (at least one needed for AI features)
+npx convex env set ANTHROPIC_API_KEY "sk-ant-..."
+npx convex env set DEEPSEEK_API_KEY "sk-..."
+
+# Stripe (optional — for payment processing)
+npx convex env set STRIPE_SECRET_KEY "sk_live_..."
+```
+
+### C. Seed the production admin account
+
+```bash
+npx convex run seedProdAdmin:createAdmin \
+  '{"email":"your-email@domain.com","password":"YourSecurePassword123!","full_name":"Your Name"}'
+```
+
+> ⚠️ **Change the password immediately after first login.**
+> If you omit args, defaults to `admin@labos.app` / `ChangeMeImmediately!2024`.
+
+### D. Deploy frontend to Vercel
+
+1. Push code to GitHub (if not already):
+   ```bash
+   cd /Users/mudasirrashid/Documents/app/lab_management_system_v2
+   git add . && git commit -m "production release"
+   git push origin main
+   ```
+
+2. Go to **https://vercel.com** → Import your repo
+3. **Root Directory**: `frontend`
+4. **Environment Variables**:
+
+   | Key | Value |
+   |---|---|
+   | `VITE_CONVEX_URL` | `https://your-project.convex.cloud` (production URL from step A) |
+   | `VITE_CONVEX_SITE_URL` | `https://your-project.convex.site` |
+   | `VITE_APP_NAME` | `LabOS` |
+   | `VITE_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` (optional) |
+
+5. Click **Deploy** (~30 sec)
+
+### E. Smoke test
+
+- ✅ Vercel URL loads login page
+- ✅ Log in with admin credentials from step C
+- ✅ Dashboard loads with real-time Convex data
+- ✅ Create a sample → confirm it persists after refresh
+- ✅ AI chat works (if API keys set in step B)
+
+### F. Ongoing deployments
+
+```bash
+# Deploy updated Convex functions
+cd frontend && npx convex deploy
+
+# Frontend auto-deploys on git push to main (Vercel)
+git push origin main
+```
+
+---
+
+## 📦 Optional: FastAPI REST backend
+
+The REST backend (`backend/`) is needed only for:
+- Legacy REST endpoints (some analytics pages)
+- File uploads to disk/R2
+- SMTP email delivery
+- IoT MQTT sensor ingestion
+
+If you don't need these yet, skip to the cost estimate section below.
+
+---
+
+## REST Backend: Neon DB + Railway + Vercel
+
+This is the setup for the secondary FastAPI backend.
 
 ### A. Push to GitHub (one-time)
 
@@ -576,16 +687,21 @@ Users can also self-request access via the same page — PI sees them in **"Pend
 
 ---
 
-## 🔟 Optional Convex integration
+## 🔟 Convex (primary backend)
 
-Convex (https://convex.dev) is a real-time backend-as-a-service. LabOS doesn't depend on it, but if you want to add real-time features (live cart sync across users, live IoT sensor updates, etc.), you'd:
+Convex (https://convex.dev) is the primary real-time backend for LabOS. All
+authentication, mutations, queries, AI features, and real-time subscriptions
+run through Convex. See the Quick Path section at the top for deployment steps.
 
-1. `npm install convex` in `frontend/`
-2. `npx convex dev` → creates a `convex/` folder
-3. Add Convex schemas for the real-time stuff
-4. The frontend subscribes to Convex queries via `useQuery()` hooks
-
-For now this isn't wired in — LabOS uses polling (5-second refresh) for cart sync, which is simpler and works fine at lab scale. Tell me if you want Convex added.
+Key Convex commands:
+```bash
+npx convex dev          # Local development (watches for changes)
+npx convex deploy       # Deploy functions + schema to production
+npx convex env list     # List production environment variables
+npx convex env set K V  # Set a production environment variable
+npx convex logs         # Stream production function logs
+npx convex dashboard    # Open the Convex dashboard in browser
+```
 
 ---
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface ProgressReport {
   id: number;
@@ -76,9 +77,9 @@ export default function ProgressReportsPage() {
           <p className="page-subtitle">Create and manage NIH Research Performance Progress Reports</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import Data</button>
-          <button className="btn btn-secondary">📤 Export PDF</button>
-          <button className="btn btn-primary">✅ Submit to eRA Commons</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Data')}>📥 Import Data</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('PDF Export')}>📤 Export PDF</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('eRA Commons Submit')}>✅ Submit to eRA Commons</button>
         </div>
       </div>
 

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
+import { EmptyState } from '../components/EmptyState';
 
 interface LetterTemplate {
   id: number;
@@ -96,7 +98,7 @@ export default function SupportLettersPage() {
   const [activeTab, setActiveTab] = useState<'templates' | 'saved'>('templates');
   const [showGenerator, setShowGenerator] = useState(false);
   const [generatorData, setGeneratorData] = useState({
-    piName: 'Dr. Sarah Chen',
+    piName: '',
     grantTitle: '',
     fundingAgency: 'NIH',
     recipientName: '',
@@ -132,7 +134,7 @@ export default function SupportLettersPage() {
           <p className="page-subtitle">Generate and manage letters of support for grant applications</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import Letter</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Letter')}>📥 Import Letter</button>
           <button className="btn btn-primary" onClick={() => setShowGenerator(true)}>+ Generate New Letter</button>
         </div>
       </div>
@@ -225,6 +227,14 @@ export default function SupportLettersPage() {
         </div>
       ) : (
         /* Saved Letters */
+        savedLetters.length === 0 ? (
+          <EmptyState
+            icon="📝"
+            title="No saved letters yet"
+            description="Generate a support letter from a template to get started. Letters are saved here for tracking and signature management."
+            action={{ label: '+ Generate New Letter', onClick: () => setShowGenerator(true) }}
+          />
+        ) : (
         <div className="card">
           <div className="table-wrapper">
             <table className="data-table">
@@ -268,8 +278,8 @@ export default function SupportLettersPage() {
                       <td>
                         <div className="table-actions">
                           <button className="btn-icon" title="Edit">✏️</button>
-                          <button className="btn-icon" title="Download">📥</button>
-                          <button className="btn-icon" title="Send for Signature">✉️</button>
+                          <button className="btn-icon" title="Download" onClick={() => comingSoon('Download')}>📥</button>
+                          <button className="btn-icon" title="Send for Signature" onClick={() => comingSoon('Send for Signature')}>✉️</button>
                           <button className="btn-icon" title="Delete">🗑️</button>
                         </div>
                       </td>
@@ -280,6 +290,7 @@ export default function SupportLettersPage() {
             </table>
           </div>
         </div>
+        )
       )}
 
       {/* Letter Generator Modal */}
@@ -370,7 +381,7 @@ export default function SupportLettersPage() {
                     placeholder="MIT"
                   />
                 </div>
-                <button className="btn btn-primary btn-full">✨ Generate with AI</button>
+                <button className="btn btn-primary btn-full" onClick={() => comingSoon('AI Generation')}>✨ Generate with AI</button>
               </div>
 
               {/* Letter Preview */}
@@ -391,7 +402,7 @@ export default function SupportLettersPage() {
             <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => setShowGenerator(false)}>Cancel</button>
               <button className="btn btn-secondary">💾 Save as Draft</button>
-              <button className="btn btn-primary">📤 Export as DOCX</button>
+              <button className="btn btn-primary" onClick={() => comingSoon('DOCX Export')}>📤 Export as DOCX</button>
             </div>
           </div>
         </div>

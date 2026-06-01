@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Collaborator {
   id: number;
@@ -66,8 +67,8 @@ export default function CollaboratorNetworkPage() {
           <p className="page-subtitle">Manage co-investigators, share documents, and build your research network</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import from ORCID</button>
-          <button className="btn btn-secondary">🔍 Find Experts</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}>📥 Import from ORCID</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Find Experts')}>🔍 Find Experts</button>
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ Add Collaborator</button>
         </div>
       </div>

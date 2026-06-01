@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Template {
   id: number;
@@ -109,7 +110,7 @@ export default function GrantTemplatesPage() {
           <h1 className="page-title">Grant Templates</h1>
           <p className="page-subtitle">Pre-configured templates for major funding agencies</p>
         </div>
-        <button className="btn btn-primary">+ Create Custom Template</button>
+        <button className="btn btn-primary" onClick={() => comingSoon('Create Template')}>+ Create Custom Template</button>
       </div>
 
       {/* Filters */}
@@ -190,7 +191,7 @@ export default function GrantTemplatesPage() {
                 <span style={{ marginRight: 12 }}>📊 {template.popularity}% popularity</span>
                 <span>📅 Last used: {new Date(template.lastUsed).toLocaleDateString()}</span>
               </div>
-              <button className="btn btn-sm btn-primary">Use Template →</button>
+              <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Use Template')}>Use Template →</button>
             </div>
           </div>
         ))}

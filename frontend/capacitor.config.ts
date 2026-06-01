@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   server: {
     ...(devUrl ? { url: devUrl } : {}),
     androidScheme: 'https',
-    cleartext: true,
+    cleartext: !!devUrl,
   },
   plugins: {
     SplashScreen: {

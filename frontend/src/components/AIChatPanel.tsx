@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { aiApi } from '../lib/api';
 
 type Msg = { role: 'user' | 'assistant'; text: string; suggestions?: string[]; source?: string };
@@ -92,7 +93,7 @@ export function AIChatPanel({ onClose }: { onClose: () => void }) {
               color: msg.role === 'user' ? '#fff' : 'var(--text)',
               fontSize: 13, lineHeight: 1.6,
             }}>
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdownInline(msg.text) }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownInline(msg.text)) }} />
               {msg.source && (
                 <div style={{ marginTop: 6, fontSize: 10, color: msg.role === 'user' ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', fontStyle: 'italic' }}>
                   via {msg.source === 'openai' ? 'OpenAI GPT-4o' : 'local intelligence'}

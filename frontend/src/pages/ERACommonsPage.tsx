@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Application {
   id: number;
@@ -81,7 +82,7 @@ export default function ERACommonsPage() {
           <p className="page-subtitle">Track NIH application status and funding decisions</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">Sync Status</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('eRA Commons Sync')}>Sync Status</button>
           <button className="btn btn-primary" onClick={() => window.open('https://commons.era.nih.gov', '_blank')}>
             Open eRA Commons
           </button>
@@ -123,7 +124,7 @@ export default function ERACommonsPage() {
                 {applications.filter(a => a.justInTimeStatus === 'requested').length} application(s) require JIT submission.
               </div>
             </div>
-            <button className="btn btn-sm btn-primary" style={{ marginLeft: 'auto' }}>Submit JIT</button>
+            <button className="btn btn-sm btn-primary" style={{ marginLeft: 'auto' }} onClick={() => comingSoon('Submit JIT')}>Submit JIT</button>
           </div>
         </div>
       )}
@@ -371,14 +372,14 @@ export default function ERACommonsPage() {
             {/* Actions */}
             {selectedApp.justInTimeStatus === 'requested' && (
               <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary" style={{ flex: 1 }}>Submit JIT Documents</button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => comingSoon('Submit JIT Documents')}>Submit JIT Documents</button>
               </div>
             )}
 
             {selectedApp.fundingDecision === 'not_funded' && (
               <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary" style={{ flex: 1 }}>View Summary Statement</button>
-                <button className="btn btn-primary" style={{ flex: 1 }}>Start Resubmission</button>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => comingSoon('View Summary')}>View Summary Statement</button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => comingSoon('Start Resubmission')}>Start Resubmission</button>
               </div>
             )}
           </div>

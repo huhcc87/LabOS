@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
@@ -61,6 +62,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     name: v.string(),
     model: v.optional(v.string()),
     serial_number: v.optional(v.string()),
@@ -71,9 +73,11 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
+    const { token: _, ...fields } = args;
     const now = Date.now();
     return await ctx.db.insert("instruments", {
-      ...args,
+      ...fields,
       created_at: now,
       updated_at: now,
     });
@@ -82,6 +86,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("instruments"),
     name: v.optional(v.string()),
     model: v.optional(v.string()),
@@ -93,7 +98,8 @@ export const update = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -104,8 +110,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("instruments") },
+  args: { token: v.optional(v.string()), id: v.id("instruments") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     await ctx.db.delete(args.id);
     return { success: true };
   },
@@ -156,6 +163,7 @@ export const listBookings = query({
 
 export const createBooking = mutation({
   args: {
+    token: v.optional(v.string()),
     instrument_id: v.id("instruments"),
     user_id: v.id("users"),
     start_time: v.number(),
@@ -165,6 +173,7 @@ export const createBooking = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("bookings", {
       instrument_id: args.instrument_id,
       user_id: args.user_id,
@@ -180,6 +189,7 @@ export const createBooking = mutation({
 
 export const updateBooking = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("bookings"),
     start_time: v.optional(v.number()),
     end_time: v.optional(v.number()),
@@ -188,7 +198,8 @@ export const updateBooking = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -199,8 +210,9 @@ export const updateBooking = mutation({
 });
 
 export const cancelBooking = mutation({
-  args: { id: v.id("bookings") },
+  args: { token: v.optional(v.string()), id: v.id("bookings") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     await ctx.db.patch(args.id, { status: "cancelled" });
     return await ctx.db.get(args.id);
   },

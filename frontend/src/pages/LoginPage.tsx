@@ -8,13 +8,13 @@ interface LoginForm {
   password: string;
 }
 
-const DEMO_USERS = [
+const DEMO_USERS = import.meta.env.DEV ? [
   { label: 'Admin', email: 'admin@lab.local', password: 'Admin123!', color: '#ef4444' },
   { label: 'PI', email: 'pi@lab.local', password: 'Pi123!', color: '#8b5cf6' },
   { label: 'Manager', email: 'manager@lab.local', password: 'Manager123!', color: '#0071bc' },
   { label: 'Staff', email: 'staff@lab.local', password: 'Staff123!', color: '#22c55e' },
   { label: 'Trainee', email: 'trainee@lab.local', password: 'Trainee123!', color: '#f59e0b' },
-];
+] : [];
 
 const FEATURES = [
   { icon: '🔬', title: 'Lab Hub', desc: 'Protocols, instruments & bookings' },
@@ -30,14 +30,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>({
-    defaultValues: { email: 'admin@lab.local', password: 'Admin123!' },
+    defaultValues: { email: '', password: '' },
   });
 
   async function onSubmit(data: LoginForm) {
     setLoading(true);
     try {
       await login(data.email, data.password);
-      if (!totpRequired) toast.success('Welcome to LabOS v2!');
+      if (!totpRequired) toast.success('Welcome to LabOS v3!');
     } catch (err: any) {
       const msg = err?.message ?? '';
       if (msg.includes('Invalid email') || msg.includes('password')) {
@@ -57,7 +57,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(totpRequired.email, totpRequired.password, totpCode);
-      toast.success('Welcome to LabOS v2!');
+      toast.success('Welcome to LabOS v3!');
     } catch (err: any) {
       const msg = err?.message ?? '';
       if (msg.includes('two-factor')) {
@@ -84,7 +84,7 @@ export default function LoginPage() {
             <div className="login-brand-row">
               <div className="login-logo-box">⬡</div>
               <div>
-                <div className="login-brand-name">LabOS <span className="login-brand-v">v2</span></div>
+                <div className="login-brand-name">LabOS <span className="login-brand-v">v3</span></div>
                 <div className="login-brand-sub">Laboratory Operations System</div>
               </div>
             </div>
@@ -234,8 +234,8 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo accounts */}
-            <div className="login-demo-section">
+            {/* Demo accounts — dev only */}
+            {DEMO_USERS.length > 0 && <div className="login-demo-section">
               <div className="login-demo-divider">
                 <span>Quick demo access</span>
               </div>
@@ -252,7 +252,7 @@ export default function LoginPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
 
             <div className="login-form-footer">
               <span>🔒 256-bit SSL encrypted</span>

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { EmptyState } from '../components/EmptyState';
+import { comingSoon } from '../lib/comingSoon';
 
 // ─── Shared ──────────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
@@ -62,29 +64,11 @@ interface AdverseEvent {
   resolved: boolean;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_IRB: IRBProtocol[] = [
-  { id: 1, title: 'KRAS G12D Targeting in Colorectal Cancer — Phase I/II Clinical Study', pi: 'Dr. Chen', status: 'approved', irbNumber: 'IRB-2024-0342', submittedDate: '2024-01-15', approvedDate: '2024-03-01', expiryDate: '2025-03-01', amendments: 2, riskLevel: 'greater_than_minimal', description: 'First-in-human study of KRAS G12D inhibitor in locally advanced CRC patients.' },
-  { id: 2, title: 'Biomarker Discovery in Triple-Negative Breast Cancer', pi: 'Dr. Patel', status: 'submitted', irbNumber: 'IRB-2026-0041', submittedDate: '2026-04-20', amendments: 0, riskLevel: 'minimal', description: 'Observational biomarker study using archival TNBC tissue samples.' },
-  { id: 3, title: 'PD-L1 Expression Correlation with Immunotherapy Response', pi: 'Dr. Kim', status: 'drafting', irbNumber: 'DRAFT-2026-05', submittedDate: '—', amendments: 0, riskLevel: 'minimal', description: 'Retrospective chart review and tissue analysis study.' },
-];
-
-const MOCK_COHORTS: Cohort[] = [
-  { id: 1, name: 'CRC KRAS Cohort', disease: 'Colorectal Cancer', n: 120, enrolled: 87, irbRef: 'IRB-2024-0342', inclusionCriteria: 'Stage III/IV CRC; KRAS G12D confirmed; Age ≥18; ECOG 0-2', exclusionCriteria: 'Prior KRAS inhibitor therapy; Active autoimmune disease; Pregnancy', biobank: true, consentRate: 94 },
-  { id: 2, name: 'TNBC Biomarker Cohort', disease: 'Triple-Negative Breast Cancer', n: 200, enrolled: 142, irbRef: 'IRB-2026-0041', inclusionCriteria: 'Confirmed TNBC diagnosis; Available archival tissue; Stage II-IV', exclusionCriteria: 'Insufficient tissue; Missing clinical data', biobank: true, consentRate: 89 },
-  { id: 3, name: 'Healthy Volunteer Controls', disease: 'None (Control)', n: 50, enrolled: 50, irbRef: 'IRB-2024-0342', inclusionCriteria: 'Healthy adults; Age 18-65; No active malignancy', exclusionCriteria: 'Chronic illness; Immunosuppression; Pregnancy', biobank: false, consentRate: 100 },
-];
-
-const MOCK_TRIALS: ClinicalTrial[] = [
-  { id: 1, title: 'KRAS G12D Inhibitor — Phase I Dose Escalation', nctId: 'NCT05123456', phase: 'I', status: 'Recruiting', pi: 'Dr. Chen', targetEnrollment: 48, enrolled: 18, sites: 3, startDate: '2024-06', primaryCompletion: '2026-12' },
-  { id: 2, title: 'Anti-PD-L1 + Chemotherapy in TNBC', nctId: 'NCT04987654', phase: 'II', status: 'Active, not recruiting', pi: 'Dr. Patel', targetEnrollment: 120, enrolled: 120, sites: 5, startDate: '2023-09', primaryCompletion: '2026-06' },
-];
-
-const MOCK_AE: AdverseEvent[] = [
-  { id: 1, patientId: 'PT-001', trialId: 1, event: 'Grade 2 Nausea', severity: 'moderate', date: '2026-04-15', reported: true, resolved: true },
-  { id: 2, patientId: 'PT-003', trialId: 1, event: 'Grade 3 Hepatotoxicity', severity: 'serious', date: '2026-05-02', reported: true, resolved: false },
-  { id: 3, patientId: 'PT-007', trialId: 1, event: 'Grade 1 Fatigue', severity: 'mild', date: '2026-05-08', reported: false, resolved: false },
-];
+// ─── Initial data (empty — populate from your database) ──────────────────────
+const MOCK_IRB: IRBProtocol[] = [];
+const MOCK_COHORTS: Cohort[] = [];
+const MOCK_TRIALS: ClinicalTrial[] = [];
+const MOCK_AE: AdverseEvent[] = [];
 
 const IRB_STATUS_META: Record<IRBStatus, { label: string; color: string; bg: string }> = {
   drafting:  { label: 'Drafting',   color: '#9ca3af', bg: 'rgba(107,114,128,0.15)' },
@@ -211,6 +195,13 @@ export default function ClinicalResearchHubPage() {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {protocols.length === 0 && (
+              <EmptyState
+                icon="🏥"
+                title="No clinical protocols yet"
+                description="Add IRB protocols to track approvals, cohorts, trials, and adverse events for your clinical research."
+              />
+            )}
             {protocols.map(p => {
               const sm = IRB_STATUS_META[p.status];
               const isSelected = selectedIRB?.id === p.id;
@@ -256,7 +247,7 @@ export default function ClinicalResearchHubPage() {
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Patient Cohorts (De-identified)</h3>
             <div style={{ display: 'flex', gap: 8 }}>
               <span style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', fontSize: 12, fontWeight: 600 }}>🔒 HIPAA Protected</span>
-              <button className="btn btn-primary">+ New Cohort</button>
+              <button className="btn btn-primary" onClick={() => comingSoon('New Cohort')}>+ New Cohort</button>
             </div>
           </div>
 
@@ -317,7 +308,7 @@ export default function ClinicalResearchHubPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Clinical Trial Tracker</h3>
-            <button className="btn btn-primary">+ Register Trial</button>
+            <button className="btn btn-primary" onClick={() => comingSoon('Register Trial')}>+ Register Trial</button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

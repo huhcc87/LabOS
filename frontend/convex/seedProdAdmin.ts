@@ -19,6 +19,11 @@ export const createAdmin = internalAction({
     const password = args.password ?? "ChangeMeImmediately!2024";
     const fullName = args.full_name ?? "System Administrator";
 
+    // Enforce minimum password strength for production admin
+    if (password.length < 12) {
+      throw new Error("Admin password must be at least 12 characters");
+    }
+
     const bcrypt = await import("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 12);
 

@@ -62,7 +62,7 @@ function makeBoxCells(freezerId: string, rack: number, box: number): BoxCell[] {
         const typeIdx = (seed + idx) % sampleTypes.length;
         const daysAgo = (seed + idx * 3) % 730;
         const expDays = (seed + idx * 7) % 365 - 100;
-        const owners = ['Dr. Chen', 'Dr. Patel', 'Dr. Kim', 'Dr. Lee', 'Dr. Martinez'];
+        const owners = ['Lab Member 1', 'Lab Member 2', 'Lab Member 3', 'Lab Member 4', 'Lab Member 5'];
         cells.push({
           row: r, col: c,
           sampleId: `S${String(seed + idx).slice(-5)}`,
@@ -80,11 +80,7 @@ function makeBoxCells(freezerId: string, rack: number, box: number): BoxCell[] {
   return cells;
 }
 
-const MOCK_EXPIRING: Sample[] = [
-  { id: 'S41233', type: 'RNA', date: '2025-11-10', owner: 'Dr. Patel', expiry: '2026-05-15', volume: '200 µL', status: 'expiring_soon', freezer: 'ULT Freezer 1', rack: 'Rack 2', box: 'Box 4', position: 'B3' },
-  { id: 'S38812', type: 'Serum', date: '2024-08-22', owner: 'Dr. Chen', expiry: '2026-05-20', volume: '500 µL', status: 'expiring_soon', freezer: 'ULT Freezer 1', rack: 'Rack 1', box: 'Box 7', position: 'E6' },
-  { id: 'S29901', type: 'DNA', date: '2023-06-01', owner: 'Dr. Kim', expiry: '2026-04-30', volume: '100 µL', status: 'expired', freezer: '-20°C Freezer', rack: 'Rack 2', box: 'Box 2', position: 'A1' },
-];
+const MOCK_EXPIRING: Sample[] = [];
 
 const INP: React.CSSProperties = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { ExportMenu } from '../components/ExportMenu';
+import { comingSoon } from '../lib/comingSoon';
 
 type TabType = 'experiments' | 'results' | 'timeline' | 'files';
 
@@ -74,138 +75,10 @@ interface ExperimentFile {
   uploadedAt: string;
 }
 
-const INITIAL_EXPERIMENTS: Experiment[] = [
-  {
-    id: 'EXP-001',
-    title: 'CRISPR Gene Editing - Target A',
-    description: 'Gene knockout experiment using CRISPR-Cas9 system targeting gene A in HEK293 cells',
-    protocol: 'PROT-CRISPR-001',
-    status: 'active',
-    priority: 'high',
-    startDate: '2024-01-15',
-    leadResearcher: 'Dr. Sarah Chen',
-    team: [
-      { id: '1', name: 'Dr. Sarah Chen', role: 'Lead' },
-      { id: '2', name: 'John Smith', role: 'Researcher' },
-      { id: '3', name: 'Emily Davis', role: 'Technician' },
-    ],
-    steps: [
-      { id: 's1', name: 'Cell Culture Preparation', description: 'Prepare HEK293 cells', status: 'completed', startedAt: '2024-01-15', completedAt: '2024-01-16' },
-      { id: 's2', name: 'gRNA Design & Synthesis', description: 'Design and order guide RNAs', status: 'completed', startedAt: '2024-01-16', completedAt: '2024-01-18' },
-      { id: 's3', name: 'Transfection', description: 'Transfect cells with CRISPR complex', status: 'in-progress', startedAt: '2024-01-20' },
-      { id: 's4', name: 'Selection', description: 'Select transfected cells', status: 'pending' },
-      { id: 's5', name: 'Validation', description: 'Validate knockout by sequencing', status: 'pending' },
-    ],
-    samples: ['SMP-001', 'SMP-002', 'SMP-003'],
-    tags: ['CRISPR', 'Gene Editing', 'HEK293'],
-    createdAt: '2024-01-14',
-    updatedAt: '2024-01-20',
-  },
-  {
-    id: 'EXP-002',
-    title: 'Protein Expression Analysis',
-    description: 'Western blot analysis of protein expression levels after treatment',
-    protocol: 'PROT-WB-003',
-    status: 'completed',
-    priority: 'medium',
-    startDate: '2024-01-10',
-    endDate: '2024-01-18',
-    leadResearcher: 'Dr. Michael Brown',
-    team: [
-      { id: '4', name: 'Dr. Michael Brown', role: 'Lead' },
-      { id: '5', name: 'Lisa Wang', role: 'Researcher' },
-    ],
-    steps: [
-      { id: 's1', name: 'Sample Preparation', description: 'Lyse cells and extract proteins', status: 'completed', startedAt: '2024-01-10', completedAt: '2024-01-11' },
-      { id: 's2', name: 'Gel Electrophoresis', description: 'Run SDS-PAGE', status: 'completed', startedAt: '2024-01-12', completedAt: '2024-01-12' },
-      { id: 's3', name: 'Transfer & Blotting', description: 'Transfer to membrane and probe', status: 'completed', startedAt: '2024-01-13', completedAt: '2024-01-15' },
-      { id: 's4', name: 'Imaging & Analysis', description: 'Image and quantify bands', status: 'completed', startedAt: '2024-01-16', completedAt: '2024-01-18' },
-    ],
-    samples: ['SMP-010', 'SMP-011'],
-    tags: ['Western Blot', 'Protein', 'Analysis'],
-    createdAt: '2024-01-09',
-    updatedAt: '2024-01-18',
-  },
-  {
-    id: 'EXP-003',
-    title: 'Drug Screening - Compound Library',
-    description: 'High-throughput screening of 500 compounds for cytotoxicity',
-    protocol: 'PROT-HTS-002',
-    status: 'draft',
-    priority: 'critical',
-    startDate: '2024-02-01',
-    leadResearcher: 'Dr. Amanda Lee',
-    team: [
-      { id: '6', name: 'Dr. Amanda Lee', role: 'Lead' },
-    ],
-    steps: [
-      { id: 's1', name: 'Plate Preparation', description: 'Prepare compound plates', status: 'pending' },
-      { id: 's2', name: 'Cell Seeding', description: 'Seed cells in 384-well plates', status: 'pending' },
-      { id: 's3', name: 'Treatment', description: 'Add compounds to cells', status: 'pending' },
-      { id: 's4', name: 'Viability Assay', description: 'Measure cell viability', status: 'pending' },
-      { id: 's5', name: 'Data Analysis', description: 'Analyze screening results', status: 'pending' },
-    ],
-    samples: [],
-    tags: ['HTS', 'Drug Screening', 'Cytotoxicity'],
-    createdAt: '2024-01-22',
-    updatedAt: '2024-01-22',
-  },
-];
-
-const INITIAL_RESULTS: Result[] = [
-  {
-    id: 'RES-001',
-    experimentId: 'EXP-001',
-    experimentTitle: 'CRISPR Gene Editing - Target A',
-    title: 'Transfection Efficiency',
-    type: 'measurement',
-    value: '78',
-    unit: '%',
-    notes: 'GFP-positive cells counted by flow cytometry. Good efficiency achieved.',
-    attachments: ['flow_data.fcs', 'analysis_report.pdf'],
-    recordedBy: 'John Smith',
-    recordedAt: '2024-01-21',
-  },
-  {
-    id: 'RES-002',
-    experimentId: 'EXP-002',
-    experimentTitle: 'Protein Expression Analysis',
-    title: 'Target Protein Knockdown',
-    type: 'analysis',
-    value: '85% reduction',
-    notes: 'Significant knockdown observed compared to control. Band intensity normalized to actin.',
-    attachments: ['western_image.tif'],
-    recordedBy: 'Dr. Michael Brown',
-    recordedAt: '2024-01-18',
-  },
-  {
-    id: 'RES-003',
-    experimentId: 'EXP-002',
-    experimentTitle: 'Protein Expression Analysis',
-    title: 'Final Conclusion',
-    type: 'conclusion',
-    value: 'Treatment effective',
-    notes: 'The treatment successfully reduced target protein levels by 85%. Recommend proceeding to in vivo studies.',
-    attachments: ['final_report.pdf'],
-    recordedBy: 'Dr. Michael Brown',
-    recordedAt: '2024-01-18',
-  },
-];
-
-const INITIAL_TIMELINE: TimelineEvent[] = [
-  { id: 't1', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', type: 'created', description: 'Experiment created', user: 'Dr. Sarah Chen', timestamp: '2024-01-14 09:00' },
-  { id: 't2', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', type: 'started', description: 'Experiment started', user: 'Dr. Sarah Chen', timestamp: '2024-01-15 10:30' },
-  { id: 't3', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', type: 'step_completed', description: 'Step "Cell Culture Preparation" completed', user: 'Emily Davis', timestamp: '2024-01-16 16:00' },
-  { id: 't4', experimentId: 'EXP-002', experimentTitle: 'Protein Expression', type: 'completed', description: 'Experiment completed successfully', user: 'Dr. Michael Brown', timestamp: '2024-01-18 17:30' },
-  { id: 't5', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', type: 'result_added', description: 'New result recorded: Transfection Efficiency', user: 'John Smith', timestamp: '2024-01-21 14:15' },
-];
-
-const INITIAL_FILES: ExperimentFile[] = [
-  { id: 'f1', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', name: 'CRISPR_Protocol_v2.pdf', type: 'pdf', size: '2.4 MB', category: 'protocol', uploadedBy: 'Dr. Sarah Chen', uploadedAt: '2024-01-14' },
-  { id: 'f2', experimentId: 'EXP-001', experimentTitle: 'CRISPR Gene Editing', name: 'gRNA_sequences.xlsx', type: 'xlsx', size: '156 KB', category: 'data', uploadedBy: 'John Smith', uploadedAt: '2024-01-16' },
-  { id: 'f3', experimentId: 'EXP-002', experimentTitle: 'Protein Expression', name: 'western_blot_raw.tif', type: 'tif', size: '8.7 MB', category: 'image', uploadedBy: 'Lisa Wang', uploadedAt: '2024-01-15' },
-  { id: 'f4', experimentId: 'EXP-002', experimentTitle: 'Protein Expression', name: 'Final_Report.pdf', type: 'pdf', size: '1.2 MB', category: 'report', uploadedBy: 'Dr. Michael Brown', uploadedAt: '2024-01-18' },
-];
+const INITIAL_EXPERIMENTS: Experiment[] = [];
+const INITIAL_RESULTS: Result[] = [];
+const INITIAL_TIMELINE: TimelineEvent[] = [];
+const INITIAL_FILES: ExperimentFile[] = [];
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   draft: { bg: '#374151', text: '#9ca3af' },
@@ -870,7 +743,7 @@ export default function ExperimentsHubPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 12px', fontSize: 12 }}>Download</button>
+                    <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 12px', fontSize: 12 }} onClick={() => comingSoon('Download')}>Download</button>
                     <button onClick={() => handleDeleteFile(file.id)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444' }}>Delete</button>
                   </div>
                 </div>

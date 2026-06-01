@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface ReviewerComment {
   id: number;
@@ -82,9 +83,9 @@ export default function ReviewerFeedbackPage() {
           <p className="page-subtitle">Track reviewer comments and prepare your response to reviewers</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import Summary Statement</button>
-          <button className="btn btn-secondary">📤 Export Response</button>
-          <button className="btn btn-primary">✨ AI Draft Responses</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Summary')}>📥 Import Summary Statement</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Response')}>📤 Export Response</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('AI Draft')}>✨ AI Draft Responses</button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Protocol {
   id: number;
@@ -90,8 +91,8 @@ export default function IRBTrackerPage() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowNewProtocol(true)}>+ New Protocol</button>
-          <button className="btn btn-secondary">+ New Amendment</button>
-          <button className="btn btn-primary">Export Report</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('New Amendment')}>+ New Amendment</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Export Report')}>Export Report</button>
         </div>
       </div>
 

@@ -1,34 +1,41 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 
+// Safety cap — prevents unbounded scans on tables that grow over time.
+// Convex has no native count() API, so .take(N) + .length is the pragmatic
+// ceiling. If any table exceeds this, the dashboard count will plateau at
+// MAX_ROWS rather than OOM the function.
+const MAX_ROWS = 5000;
+
 export const summary = query({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
     const in30 = now + 30 * 86_400_000;
     const in14 = now + 14 * 86_400_000;
-    const sevenWeeksAgo = now - 56 * 86_400_000;
 
     // ── Basic counts ──────────────────────────────────────────────────────
+    // Tables that need filtering/grouping get full (capped) collection.
+    // Tables only used for .length still need .collect() in Convex but are capped.
     const [
       protocols, instruments, bookings, tasks, training,
       inventory, incidents, workspaces, samples, sampleEvents,
       calendarEvents, reminders, feedback, compliance,
     ] = await Promise.all([
-      ctx.db.query("protocols").collect(),
-      ctx.db.query("instruments").collect(),
-      ctx.db.query("bookings").collect(),
-      ctx.db.query("tasks").collect(),
-      ctx.db.query("training").collect(),
-      ctx.db.query("inventory").collect(),
-      ctx.db.query("incidents").collect(),
-      ctx.db.query("workspaces").collect(),
-      ctx.db.query("samples").collect(),
-      ctx.db.query("sample_events").collect(),
-      ctx.db.query("calendar_events").collect(),
-      ctx.db.query("reminders").collect(),
-      ctx.db.query("feedback").collect(),
-      ctx.db.query("compliance").collect(),
+      ctx.db.query("protocols").take(MAX_ROWS),
+      ctx.db.query("instruments").take(MAX_ROWS),
+      ctx.db.query("bookings").take(MAX_ROWS),
+      ctx.db.query("tasks").take(MAX_ROWS),
+      ctx.db.query("training").take(MAX_ROWS),
+      ctx.db.query("inventory").take(MAX_ROWS),
+      ctx.db.query("incidents").take(MAX_ROWS),
+      ctx.db.query("workspaces").take(MAX_ROWS),
+      ctx.db.query("samples").take(MAX_ROWS),
+      ctx.db.query("sample_events").take(MAX_ROWS),
+      ctx.db.query("calendar_events").take(MAX_ROWS),
+      ctx.db.query("reminders").take(MAX_ROWS),
+      ctx.db.query("feedback").take(MAX_ROWS),
+      ctx.db.query("compliance").take(MAX_ROWS),
     ]);
 
     // ── Task stats ────────────────────────────────────────────────────────
@@ -63,7 +70,7 @@ export const summary = query({
     }
 
     // ── Upcoming maintenance ──────────────────────────────────────────────
-    const maintenanceRecs = await ctx.db.query("maintenance").collect();
+    const maintenanceRecs = await ctx.db.query("maintenance").take(MAX_ROWS);
     const upcoming_maintenance = maintenanceRecs.filter(m =>
       m.next_due && m.next_due > now && m.next_due < in30 && m.status !== "completed"
     ).length;
@@ -124,7 +131,7 @@ export const summary = query({
     }));
 
     // ── IoT sensor alerts ─────────────────────────────────────────────────
-    const iotAlerts = await ctx.db.query("iot_alerts").collect();
+    const iotAlerts = await ctx.db.query("iot_alerts").take(MAX_ROWS);
     const sensor_alerts = iotAlerts.filter(a => !a.is_acknowledged).slice(0, 8).map(a => ({
       _id: a._id,
       message: a.message,
@@ -132,7 +139,7 @@ export const summary = query({
     }));
 
     // ── Expiring freezer slots ─────────────────────────────────────────────
-    const freezerSlots = await ctx.db.query("freezer_slots").collect();
+    const freezerSlots = await ctx.db.query("freezer_slots").take(MAX_ROWS);
     const expiring_items = freezerSlots.filter(s =>
       s.expiry_date && s.expiry_date > now && s.expiry_date < in14
     ).slice(0, 4).map(s => ({
@@ -143,7 +150,7 @@ export const summary = query({
     }));
 
     // ── Grant deadlines (next 30 days) ────────────────────────────────────
-    const submissions = await ctx.db.query("grant_submissions").collect();
+    const submissions = await ctx.db.query("grant_submissions").take(MAX_ROWS);
     const grant_deadlines = submissions.filter(g =>
       g.submission_date && g.submission_date > now && g.submission_date < in30
     ).slice(0, 4).map(g => ({
@@ -160,7 +167,7 @@ export const summary = query({
       bookings: bookings.length,
       tasks_open,
       compliance_logs: compliance.length,
-      feedback_open: feedback.filter(f => (f as any).status === "open").length,
+      feedback_open: feedback.length,
       upcoming_maintenance,
       overdue_tasks,
       training_records: training.length,

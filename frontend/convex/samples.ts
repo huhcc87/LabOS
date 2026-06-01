@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: {
@@ -62,6 +63,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    token: v.optional(v.string()),
     sample_id: v.string(),
     name: v.string(),
     type: v.optional(v.string()),
@@ -74,9 +76,11 @@ export const create = mutation({
     metadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
+    const { token: _, ...fields } = args;
     const now = Date.now();
     return await ctx.db.insert("samples", {
-      ...args,
+      ...fields,
       created_at: now,
       updated_at: now,
     });
@@ -85,6 +89,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("samples"),
     name: v.optional(v.string()),
     type: v.optional(v.string()),
@@ -97,7 +102,8 @@ export const update = mutation({
     metadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireAuth(ctx, args.token);
+    const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
@@ -108,8 +114,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("samples") },
+  args: { token: v.optional(v.string()), id: v.id("samples") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     await ctx.db.delete(args.id);
     return { success: true };
   },
@@ -139,6 +146,7 @@ export const listEvents = query({
 
 export const createEvent = mutation({
   args: {
+    token: v.optional(v.string()),
     sample_id: v.id("samples"),
     event_type: v.string(),
     description: v.optional(v.string()),
@@ -147,6 +155,7 @@ export const createEvent = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.insert("sample_events", {
       sample_id: args.sample_id,
       event_type: args.event_type,
@@ -160,12 +169,14 @@ export const createEvent = mutation({
 
 export const updateEvent = mutation({
   args: {
+    token: v.optional(v.string()),
     id: v.id("sample_events"),
     event_type: v.optional(v.string()),
     description: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
+  handler: async (ctx, { token, id, ...fields }) => {
+    await requireAuth(ctx, token);
     const patch: Record<string, unknown> = {};
     for (const [k, val] of Object.entries(fields)) {
       if (val !== undefined) patch[k] = val;
@@ -176,8 +187,9 @@ export const updateEvent = mutation({
 });
 
 export const deleteEvent = mutation({
-  args: { id: v.id("sample_events") },
-  handler: async (ctx, { id }) => {
+  args: { token: v.optional(v.string()), id: v.id("sample_events") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     await ctx.db.delete(id);
     return { success: true };
   },

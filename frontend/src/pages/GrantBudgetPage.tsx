@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
+import { EmptyState } from '../components/EmptyState';
 
 interface BudgetCategory {
   id: string;
@@ -42,12 +44,20 @@ export default function GrantBudgetPage() {
           <p className="page-subtitle">Track spending across grants, projects, and funding sources</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📊 Export Report</button>
-          <button className="btn btn-primary">+ Log Expense</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}>📊 Export Report</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Log Expense')}>+ Log Expense</button>
         </div>
       </div>
 
       {/* Grant Selector */}
+      {INITIAL_GRANTS.length === 0 && (
+        <EmptyState
+          icon="💰"
+          title="No grants tracked yet"
+          description="Add grants to track budgets, spending, and transactions across your research funding sources."
+          action={{ label: '+ Log Expense', onClick: () => comingSoon('Log Expense') }}
+        />
+      )}
       <div style={{ display: 'flex', gap: 16, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
         {INITIAL_GRANTS.map(grant => (
           <button
@@ -225,7 +235,7 @@ export default function GrantBudgetPage() {
             <span style={{ fontSize: 20 }}>📅</span>
             <div>
               <div style={{ fontWeight: 600, color: '#60a5fa', fontSize: 13 }}>Q2 Report Due</div>
-              <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>Quarterly financial report for R01-CA123456 due in 15 days.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>Quarterly financial report due in 15 days.</div>
             </div>
           </div>
         </div>

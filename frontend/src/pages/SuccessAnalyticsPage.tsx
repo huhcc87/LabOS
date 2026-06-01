@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 import { grantSubmissionsApi } from '../lib/api';
 
 interface SuccessRate {
@@ -115,8 +116,8 @@ export default function SuccessAnalyticsPage() {
           <p className="page-subtitle">NIH funding rates, trends, and your personal statistics</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📊 Export Report</button>
-          <button className="btn btn-secondary">🔄 Refresh Data</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}>📊 Export Report</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Refresh Data')}>🔄 Refresh Data</button>
         </div>
       </div>
 

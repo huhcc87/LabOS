@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 import { notebookApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -364,7 +365,7 @@ export default function LabNotebookPage() {
                 ) : preview || isSigned ? (
                   <div
                     style={{ lineHeight: 1.7, fontSize: 14, color: 'var(--text)' }}
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(split.text) }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(split.text)) }}
                   />
                 ) : editMode ? (
                   <textarea
@@ -377,7 +378,7 @@ export default function LabNotebookPage() {
                 ) : (
                   <div
                     style={{ lineHeight: 1.7, fontSize: 14, color: 'var(--text)', cursor: 'text' }}
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(split.text) || '<span style="color:var(--text-muted)">No content yet. Click Edit to start writing.</span>' }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(split.text)) || '<span style="color:var(--text-muted)">No content yet. Click Edit to start writing.</span>' }}
                     onClick={() => setEditMode(true)}
                   />
                 )}

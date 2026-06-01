@@ -216,23 +216,28 @@ export default function EmailSettingsPage() {
   useEffect(() => {
     fetch(`${API}/email/smtp-status`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
-      .then(d => setStatus(d));
+      .then(d => { if (d) setStatus(d); })
+      .catch(() => { /* endpoint not available */ });
   }, []);
 
   const sendTest = async () => {
     if (!testTo) return;
     setSending(true);
     setResult(null);
-    const res = await fetch(`${API}/email/test`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ to: testTo, message: testMsg }),
-    });
-    if (res.ok) {
-      setResult({ ok: true, msg: `Test email sent to ${testTo}` });
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setResult({ ok: false, msg: err.detail ?? 'Failed to send' });
+    try {
+      const res = await fetch(`${API}/email/test`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ to: testTo, message: testMsg }),
+      });
+      if (res.ok) {
+        setResult({ ok: true, msg: `Test email sent to ${testTo}` });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setResult({ ok: false, msg: err.detail ?? 'Failed to send' });
+      }
+    } catch {
+      setResult({ ok: false, msg: 'Email service not configured' });
     }
     setSending(false);
   };

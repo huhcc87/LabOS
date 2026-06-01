@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface CalendarEvent {
   id: number;
@@ -69,9 +70,9 @@ export default function GrantCalendarPage() {
           <p className="page-subtitle">Track deadlines, milestones, and important dates</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Sync with Google Calendar</button>
-          <button className="btn btn-secondary">🔔 Manage Reminders</button>
-          <button className="btn btn-primary">+ Add Event</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Google Calendar Sync')}>📥 Sync with Google Calendar</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Manage Reminders')}>🔔 Manage Reminders</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Add Event')}>+ Add Event</button>
         </div>
       </div>
 
@@ -311,8 +312,8 @@ export default function GrantCalendarPage() {
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-soft)', marginBottom: 16 }}>{selectedEvent.description}</p>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-sm btn-primary">✏️ Edit</button>
-                <button className="btn btn-sm btn-secondary">🔔 Set Reminder</button>
+                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Edit Event')}>✏️ Edit</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Set Reminder')}>🔔 Set Reminder</button>
               </div>
             </div>
           )}
@@ -353,9 +354,9 @@ export default function GrantCalendarPage() {
           <div className="card">
             <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Quick Add</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button className="btn btn-sm btn-secondary btn-full">📅 Add Deadline</button>
-              <button className="btn btn-sm btn-secondary btn-full">👥 Schedule Meeting</button>
-              <button className="btn btn-sm btn-secondary btn-full">🎯 Add Milestone</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Deadline')}>📅 Add Deadline</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Schedule Meeting')}>👥 Schedule Meeting</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Milestone')}>🎯 Add Milestone</button>
             </div>
           </div>
         </div>

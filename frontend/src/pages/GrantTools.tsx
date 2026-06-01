@@ -483,10 +483,7 @@ const LETTER_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export function SupportLetters({ onBack }: { onBack: () => void }) {
-  const [letters, setLetters] = useState<SupportLetter[]>([
-    { id: '1', name: 'Dr. Jane Smith', title: 'Professor', institution: 'Mayo Clinic', email: 'j.smith@mayo.edu', type: 'collaboration', status: 'received', requestedDate: '2026-03-01', receivedDate: '2026-03-15', notes: 'Collaboration on Aim 2 patient samples' },
-    { id: '2', name: 'Dr. Robert Chen', title: 'Chief, Oncology Division', institution: 'MD Anderson', email: 'r.chen@mdanderson.org', type: 'support', status: 'requested', requestedDate: '2026-04-10', receivedDate: '', notes: 'Letter of support for clinical component' },
-  ]);
+  const [letters, setLetters] = useState<SupportLetter[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [template, setTemplate] = useState<SupportLetter | null>(null);
   const [form, setForm] = useState<Partial<SupportLetter>>({ type: 'support', status: 'pending', requestedDate: new Date().toISOString().slice(0, 10), receivedDate: '' });
@@ -845,10 +842,7 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export function CollaboratorsManager({ onBack }: { onBack: () => void }) {
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    { id: '1', name: 'Dr. Lisa Zhang', title: 'Professor', institution: 'Stanford University', email: 'l.zhang@stanford.edu', phone: '', role: 'Co-Investigator', department: 'Genetics', expertise: 'CRISPR, functional genomics', contribution: 'Leads Aim 2 CRISPR screens', budget: 75000, status: 'active' },
-    { id: '2', name: 'Dr. James Okafor', title: 'Associate Professor', institution: 'Weill Cornell Medicine', email: 'j.okafor@weill.cornell.edu', phone: '', role: 'Collaborator', department: 'Biostatistics', expertise: 'Clinical trial design, biomarker analysis', contribution: 'Statistical analysis and trial design for Aim 3', budget: 30000, status: 'active' },
-  ]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<Partial<Collaborator>>({ role: 'Collaborator', status: 'active', budget: 0 });
   const [letterTarget, setLetterTarget] = useState<Collaborator | null>(null);

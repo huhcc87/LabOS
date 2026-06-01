@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Personnel {
   id: number;
@@ -91,9 +92,9 @@ export default function BudgetCalculatorPage() {
           <p className="page-subtitle">Calculate grant budgets with salary, fringe, and F&A rates</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import Template</button>
-          <button className="btn btn-secondary">📊 Export to Excel</button>
-          <button className="btn btn-primary">💾 Save Budget</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Template')}>📥 Import Template</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export to Excel')}>📊 Export to Excel</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Save Budget')}>💾 Save Budget</button>
         </div>
       </div>
 

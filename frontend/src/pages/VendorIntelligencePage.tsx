@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { suppliersApi, inventoryApi } from '../lib/api';
+import { EmptyState } from '../components/EmptyState';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface VendorItem {
@@ -33,28 +34,10 @@ interface VendorScore {
   onTimeRate: number;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const ITEMS: VendorItem[] = [
-  { id: 'i1', name: 'DMEM High Glucose Media', catalog: 'D5796', category: 'Cell Culture', unit: '500mL', vendors: [{ name: 'Sigma-Aldrich', price: 28.50, leadDays: 2, inStock: true, lastOrdered: '2026-04-01' }, { name: 'Thermo Fisher', price: 31.20, leadDays: 3, inStock: true }, { name: 'VWR', price: 29.80, leadDays: 4, inStock: false }] },
-  { id: 'i2', name: 'FBS (Fetal Bovine Serum)', catalog: '10082147', category: 'Cell Culture', unit: '500mL', vendors: [{ name: 'Thermo Fisher', price: 142.00, leadDays: 5, inStock: true, lastOrdered: '2026-03-15' }, { name: 'Sigma-Aldrich', price: 138.50, leadDays: 3, inStock: true }, { name: 'Corning', price: 155.00, leadDays: 7, inStock: true }] },
-  { id: 'i3', name: 'Anti-KRAS antibody (G12D)', catalog: 'ab224563', category: 'Antibody', unit: '100µg', vendors: [{ name: 'Abcam', price: 385.00, leadDays: 7, inStock: true, lastOrdered: '2026-02-10' }, { name: 'CST', price: 410.00, leadDays: 5, inStock: true }, { name: 'Santa Cruz', price: 298.00, leadDays: 14, inStock: false }] },
-  { id: 'i4', name: 'TRIzol Reagent', catalog: '15596026', category: 'RNA/DNA', unit: '100mL', vendors: [{ name: 'Thermo Fisher', price: 89.00, leadDays: 2, inStock: true, lastOrdered: '2026-04-20' }, { name: 'Sigma-Aldrich', price: 92.50, leadDays: 3, inStock: true }] },
-  { id: 'i5', name: 'Protein A/G Agarose Beads', catalog: 'sc-2003', category: 'IP/ChIP', unit: '2mL', vendors: [{ name: 'Santa Cruz', price: 245.00, leadDays: 10, inStock: true }, { name: 'Millipore', price: 228.00, leadDays: 7, inStock: true, lastOrdered: '2026-01-08' }, { name: 'Thermo Fisher', price: 260.00, leadDays: 3, inStock: false }] },
-];
-
-const ORDERS: PurchaseOrder[] = [
-  { id: 'PO-2026-042', vendor: 'Thermo Fisher', items: [{ name: 'TRIzol Reagent', qty: 5, price: 89 }, { name: 'FBS', qty: 2, price: 142 }], status: 'delivered', grantCode: 'NIH-R01-CA123456', total: 729, createdDate: '2026-04-22', eta: '2026-04-25' },
-  { id: 'PO-2026-041', vendor: 'Abcam', items: [{ name: 'Anti-KRAS antibody', qty: 1, price: 385 }], status: 'ordered', grantCode: 'NIH-R01-CA123456', total: 385, createdDate: '2026-05-01', eta: '2026-05-10' },
-  { id: 'PO-2026-043', vendor: 'Sigma-Aldrich', items: [{ name: 'DMEM Media', qty: 10, price: 28.50 }, { name: 'FBS', qty: 3, price: 138.50 }], status: 'pending_approval', grantCode: 'NSF-CAREER-789012', total: 700.50, createdDate: '2026-05-09', eta: undefined },
-];
-
-const VENDOR_SCORES: VendorScore[] = [
-  { name: 'Thermo Fisher', logo: '🔵', deliveryScore: 94, qualityScore: 92, priceScore: 75, supportScore: 88, orders: 142, onTimeRate: 94 },
-  { name: 'Sigma-Aldrich', logo: '🔴', deliveryScore: 88, qualityScore: 95, priceScore: 85, supportScore: 82, orders: 98, onTimeRate: 88 },
-  { name: 'Abcam', logo: '🟢', deliveryScore: 79, qualityScore: 97, priceScore: 68, supportScore: 91, orders: 55, onTimeRate: 79 },
-  { name: 'VWR', logo: '🟡', deliveryScore: 82, qualityScore: 84, priceScore: 88, supportScore: 78, orders: 67, onTimeRate: 82 },
-  { name: 'Santa Cruz', logo: '🟠', deliveryScore: 71, qualityScore: 82, priceScore: 92, supportScore: 72, orders: 34, onTimeRate: 71 },
-];
+// ─── Data (empty — populate from your database) ──────────────────────────────
+const ITEMS: VendorItem[] = [];
+const ORDERS: PurchaseOrder[] = [];
+const VENDOR_SCORES: VendorScore[] = [];
 
 const STATUS_META: Record<PurchaseOrder['status'], { label: string; color: string; bg: string }> = {
   draft:            { label: 'Draft',            color: '#9ca3af', bg: 'rgba(107,114,128,0.15)' },
@@ -223,6 +206,13 @@ export default function VendorIntelligencePage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {filtered.length === 0 && (
+              <EmptyState
+                icon="🏪"
+                title="No vendor items yet"
+                description="Add inventory items with vendor pricing to compare suppliers and find the best deals."
+              />
+            )}
             {filtered.map(item => {
               const sorted = [...item.vendors].sort((a, b) => a.price - b.price);
               const bestPrice = sorted[0].price;

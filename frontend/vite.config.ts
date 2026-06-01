@@ -13,6 +13,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
+      'react', 'react-dom',
+      'react-hot-toast', 'goober',
       'docx', 'file-saver',
       'recharts',
       '@tiptap/react', '@tiptap/starter-kit',

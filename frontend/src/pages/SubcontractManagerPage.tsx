@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 
 interface Subcontract {
   id: number;
@@ -81,7 +82,7 @@ export default function SubcontractManagerPage() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowNewSubcontract(true)}>+ New Subcontract</button>
-          <button className="btn btn-primary">Export All</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Export All')}>Export All</button>
         </div>
       </div>
 
@@ -319,7 +320,7 @@ export default function SubcontractManagerPage() {
                           {status}
                         </span>
                         {status !== 'approved' && (
-                          <button className="btn btn-sm btn-secondary">Upload</button>
+                          <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Upload Document')}>Upload</button>
                         )}
                       </div>
                     </div>
@@ -327,8 +328,8 @@ export default function SubcontractManagerPage() {
                 </div>
 
                 <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }}>Download All</button>
-                  <button className="btn btn-sm btn-primary" style={{ flex: 1 }}>Request Documents</button>
+                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => comingSoon('Download All')}>Download All</button>
+                  <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => comingSoon('Request Documents')}>Request Documents</button>
                 </div>
               </div>
             )}
@@ -337,7 +338,7 @@ export default function SubcontractManagerPage() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ fontSize: 12, fontWeight: 600 }}>Invoice History</div>
-                  <button className="btn btn-sm btn-primary">+ Add Invoice</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Invoice')}>+ Add Invoice</button>
                 </div>
 
                 {selectedSubcontract.invoices.length > 0 ? (
@@ -473,7 +474,7 @@ export default function SubcontractManagerPage() {
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-secondary" onClick={() => setShowNewSubcontract(false)} style={{ flex: 1 }}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 1 }}>Create Subcontract</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => comingSoon('Create Subcontract')}>Create Subcontract</button>
             </div>
           </div>
         </div>

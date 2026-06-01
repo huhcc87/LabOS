@@ -33,8 +33,10 @@ export default function OrgHierarchyPage() {
 
   const load = async () => {
     setLoading(true);
-    const r = await fetch(`${API}/org/tree`, { headers: authHeaders() });
-    if (r.ok) setTree((await r.json()).organizations ?? []);
+    try {
+      const r = await fetch(`${API}/org/tree`, { headers: authHeaders() });
+      if (r.ok) setTree((await r.json()).organizations ?? []);
+    } catch { /* endpoint not available */ }
     setLoading(false);
   };
 
@@ -44,38 +46,44 @@ export default function OrgHierarchyPage() {
 
   const createOrg = async () => {
     setSaving(true);
-    const r = await fetch(`${API}/org/organizations`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(orgForm) });
-    if (r.ok) { setModal(null); setOrgForm({ ...emptyOrg }); load(); }
+    try {
+      const r = await fetch(`${API}/org/organizations`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(orgForm) });
+      if (r.ok) { setModal(null); setOrgForm({ ...emptyOrg }); load(); }
+    } catch { /* endpoint not available */ }
     setSaving(false);
   };
 
   const createSite = async () => {
     setSaving(true);
-    const r = await fetch(`${API}/org/sites`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(siteForm) });
-    if (r.ok) { setModal(null); setSiteForm({ ...emptySite }); load(); }
+    try {
+      const r = await fetch(`${API}/org/sites`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(siteForm) });
+      if (r.ok) { setModal(null); setSiteForm({ ...emptySite }); load(); }
+    } catch { /* endpoint not available */ }
     setSaving(false);
   };
 
   const createLab = async () => {
     setSaving(true);
-    const r = await fetch(`${API}/org/labs`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(labForm) });
-    if (r.ok) { setModal(null); setLabForm({ ...emptyLab }); load(); }
+    try {
+      const r = await fetch(`${API}/org/labs`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(labForm) });
+      if (r.ok) { setModal(null); setLabForm({ ...emptyLab }); load(); }
+    } catch { /* endpoint not available */ }
     setSaving(false);
   };
 
   const deleteOrg = async (id: number) => {
     if (!confirm('Delete this organization? All sites and labs will also be deleted.')) return;
-    await fetch(`${API}/org/organizations/${id}`, { method: 'DELETE', headers: authHeaders() });
+    try { await fetch(`${API}/org/organizations/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch { /* */ }
     load();
   };
   const deleteSite = async (id: number) => {
     if (!confirm('Delete this site?')) return;
-    await fetch(`${API}/org/sites/${id}`, { method: 'DELETE', headers: authHeaders() });
+    try { await fetch(`${API}/org/sites/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch { /* */ }
     load();
   };
   const deleteLab = async (id: number) => {
     if (!confirm('Delete this lab unit?')) return;
-    await fetch(`${API}/org/labs/${id}`, { method: 'DELETE', headers: authHeaders() });
+    try { await fetch(`${API}/org/labs/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch { /* */ }
     load();
   };
 

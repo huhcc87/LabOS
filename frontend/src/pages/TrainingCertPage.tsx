@@ -104,12 +104,7 @@ const MY_CERTS: MyCert[] = [
   { moduleId: 'equipment_cryostat', status: 'expired', completedDate: '2023-11-01', expiryDate: '2025-11-01', score: 90, attempts: 1 },
 ];
 
-const TEAM: TeamMember[] = [
-  { name: 'Dr. Chen', role: 'PI', certs: { biosafety: 'completed', chemical: 'completed', iacuc: 'completed', radiation: 'completed', hipaa: 'completed', equipment_cryostat: 'completed' } },
-  { name: 'Dr. Patel', role: 'Postdoc', certs: { biosafety: 'completed', chemical: 'expiring_soon', iacuc: 'completed', radiation: 'not_started', hipaa: 'in_progress', equipment_cryostat: 'completed' } },
-  { name: 'Jamie K.', role: 'Grad Student', certs: { biosafety: 'completed', chemical: 'completed', iacuc: 'in_progress', radiation: 'not_started', hipaa: 'not_started', equipment_cryostat: 'expired' } },
-  { name: 'Sam L.', role: 'Lab Technician', certs: { biosafety: 'expiring_soon', chemical: 'completed', iacuc: 'not_started', radiation: 'not_started', hipaa: 'not_started', equipment_cryostat: 'not_started' } },
-];
+const TEAM: TeamMember[] = [];
 
 const STATUS_META: Record<CertStatus, { label: string; color: string; bg: string; icon: string }> = {
   not_started:    { label: 'Not Started',    color: '#9ca3af', bg: 'rgba(107,114,128,0.12)', icon: '○' },

@@ -3,6 +3,10 @@ import NotebookCanvas from '../components/NotebookCanvas';
 import type { NotebookCanvasValue } from '../components/NotebookCanvas';
 import { SignaturePanel } from '../components/ElectronicSignatureDialog';
 import { ExperimentResultsPanel, type ResultPoint } from '../components/ExperimentResultsPanel';
+import { useAuth } from '../context/AuthContext';
+import { useELNSwarm } from '../features/eln-swarm/useELNSwarm';
+import ELNSwarmPanel from '../features/eln-swarm/ELNSwarmPanel';
+import type { EntryContext } from '../features/eln-swarm/elnSwarmEngine';
 
 const RichELNEditor = lazy(() =>
   import('../components/RichELNEditor').then(m => ({ default: m.RichELNEditor }))
@@ -134,39 +138,7 @@ const FAIR_META: Record<FAIRTag, { label: string; color: string }> = {
   reusable: { label: 'R', color: '#ec4899' },
 };
 
-const MOCK_ENTRIES: ExperimentEntry[] = [
-  {
-    id: 1, title: 'KRAS G12D knockdown PCR validation', template: 'pcr',
-    date: '2026-05-08', author: 'Dr. Chen', status: 'signed',
-    tags: ['KRAS', 'colorectal', 'validation'], fairTags: ['findable', 'accessible', 'reusable'],
-    protocol: 'Protocol v3.2 — KRAS knockdown',
-    data: { gene_target: 'KRAS G12D', primer_forward: 'GAATATGATCCCACTATA', primer_reverse: 'CTATTGTTGGATCATATT', cycles: '40', annealing_temp: '58', extension_time: '30', results: 'Ct = 18.3 (treated), 24.1 (control). ~64-fold knockdown confirmed.' },
-    notes: 'Samples from passage 12 cells. Ran in triplicate. High confidence.',
-    results: [
-      { label: 'Treated Rep1', value: 18.3, unit: 'Ct', series: 'Treated' },
-      { label: 'Treated Rep2', value: 18.7, unit: 'Ct', series: 'Treated' },
-      { label: 'Treated Rep3', value: 18.1, unit: 'Ct', series: 'Treated' },
-      { label: 'Control Rep1', value: 24.1, unit: 'Ct', series: 'Control' },
-      { label: 'Control Rep2', value: 24.4, unit: 'Ct', series: 'Control' },
-      { label: 'Control Rep3', value: 23.8, unit: 'Ct', series: 'Control' },
-    ],
-    figures: [], version: 3, signedBy: 'Dr. Chen', signedAt: '2026-05-09T14:22:00',
-  },
-  {
-    id: 2, title: 'Anti-PD-L1 expression Western Blot', template: 'western',
-    date: '2026-05-10', author: 'Dr. Patel', status: 'in_review',
-    tags: ['PD-L1', 'immunotherapy', 'western'], fairTags: ['findable', 'interoperable'],
-    data: { antibody_primary: 'Anti-PD-L1 (ab205921)', antibody_secondary: 'HRP Goat anti-Rabbit', blocking: '5% BSA in TBST', dilution_primary: '1:1000', dilution_secondary: '1:5000', exposure_time: '30 sec', band_size: '33-35', results: 'Strong band at 33kDa in treated cells. Minimal in untreated control.' },
-    notes: 'Repeat run — first blot had high background.',
-    results: [
-      { label: 'Untreated', value: 0.12, unit: 'AU', series: 'PD-L1 expression' },
-      { label: 'IFN-γ 24h', value: 1.85, unit: 'AU', series: 'PD-L1 expression' },
-      { label: 'IFN-γ 48h', value: 3.40, unit: 'AU', series: 'PD-L1 expression' },
-      { label: 'Anti-PD-L1', value: 0.32, unit: 'AU', series: 'PD-L1 expression' },
-    ],
-    figures: [], version: 2,
-  },
-];
+const MOCK_ENTRIES: ExperimentEntry[] = [];
 
 // ─── Input styles ────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
@@ -174,12 +146,16 @@ const TA: React.CSSProperties = { ...INP, resize: 'vertical', minHeight: 80, fon
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function ELNPage() {
+  const { user } = useAuth();
+  const authorName = user?.full_name || 'Unknown User';
   const [view, setView] = useState<'list' | 'compose' | 'detail'>('list');
   const [entries, setEntries] = useState<ExperimentEntry[]>(MOCK_ENTRIES);
   const [selected, setSelected] = useState<ExperimentEntry | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTemplate, setFilterTemplate] = useState('all');
+  const [showSwarm, setShowSwarm] = useState(false);
+  const swarm = useELNSwarm();
 
   // Compose state
   const [newTitle, setNewTitle] = useState('');
@@ -221,24 +197,42 @@ export default function ELNPage() {
     }, 1800);
   };
 
+  // Convert ExperimentEntry to EntryContext for swarm
+  const toEntryContext = (e: ExperimentEntry): EntryContext => ({
+    title: e.title,
+    template: e.template,
+    status: e.status,
+    tags: e.tags,
+    data: e.data,
+    notes: e.notes,
+  });
+
   const handleSave = (status: EntryStatus = 'draft') => {
     if (!newTitle || !newTemplate) return;
     const entry: ExperimentEntry = {
       id: Date.now(), title: newTitle, template: newTemplate,
-      date: new Date().toISOString().slice(0, 10), author: 'Dr. User',
+      date: new Date().toISOString().slice(0, 10), author: authorName,
       status, tags: newTags.split(',').map(t => t.trim()).filter(Boolean),
       fairTags: newFair, data: newData, notes: newNotes, handwriting: newHandwriting, figures: [], version: 1,
     };
     setEntries(prev => [entry, ...prev]);
-    setView('list');
+    // Auto-trigger AI review when submitting for review
+    if (status === 'in_review') {
+      setSelected(entry);
+      setView('detail');
+      setShowSwarm(true);
+      swarm.runReview(toEntryContext(entry));
+    } else {
+      setView('list');
+    }
     setNewTitle(''); setNewTemplate(''); setNewData({}); setNewNotes(''); setNewTags(''); setNewFair([]);
   };
 
   const handleSign = (entry: ExperimentEntry) => {
     setEntries(prev => prev.map(e => e.id === entry.id
-      ? { ...e, status: 'signed', signedBy: 'Dr. User', signedAt: new Date().toISOString() }
+      ? { ...e, status: 'signed', signedBy: authorName, signedAt: new Date().toISOString() }
       : e));
-    setSelected(prev => prev ? { ...prev, status: 'signed', signedBy: 'Dr. User', signedAt: new Date().toISOString() } : null);
+    setSelected(prev => prev ? { ...prev, status: 'signed', signedBy: authorName, signedAt: new Date().toISOString() } : null);
   };
 
   const exportEntry = (entry: ExperimentEntry) => {
@@ -389,8 +383,9 @@ export default function ELNPage() {
   if (view === 'detail' && selected) {
     const tplDef = TEMPLATES.find(t => t.key === selected.template);
     const sm = STATUS_META[selected.status];
+    const entryCtx = toEntryContext(selected);
     return (
-      <div className="page" style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div className="page" style={{ maxWidth: showSwarm ? 1400 : 900, margin: '0 auto', transition: 'max-width 0.3s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -400,119 +395,135 @@ export default function ELNPage() {
             <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{tplDef?.icon} {tplDef?.label} · {selected.author} · {selected.date} · v{selected.version}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setShowSwarm(!showSwarm); if (!showSwarm) swarm.loadSuggestions(selected.template); }}
+              style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: showSwarm ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'rgba(99,102,241,0.1)', color: showSwarm ? '#fff' : '#6366f1', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              🧠 AI Swarm
+            </button>
             <button onClick={() => exportEntry(selected)} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>⬇ Export</button>
             {selected.status === 'in_review' && (
               <button onClick={() => handleSign(selected)} style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: '#22c55e', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✍ Sign Entry</button>
             )}
-            <button onClick={() => setView('list')} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>← Back</button>
+            <button onClick={() => { setView('list'); setShowSwarm(false); }} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>← Back</button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: showSwarm ? '1fr 420px' : '2fr 1fr', gap: 16, transition: 'grid-template-columns 0.3s ease' }}>
           <div>
-            <div className="card" style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Experimental Data</h3>
-              {tplDef?.fields.map(f => (
-                <div key={f.key} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</div>
-                  <div style={{ fontSize: 14, color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selected.data[f.key] || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not recorded</span>}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: showSwarm ? '1fr' : '2fr 1fr', gap: 16 }}>
+              <div>
+                <div className="card" style={{ marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Experimental Data</h3>
+                  {tplDef?.fields.map(f => (
+                    <div key={f.key} style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</div>
+                      <div style={{ fontSize: 14, color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selected.data[f.key] || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not recorded</span>}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes</h3>
-                <div style={{ display: 'inline-flex', gap: 4, padding: 3, background: 'var(--surface2)', borderRadius: 8 }}>
-                  <button type="button" onClick={() => setDetailView('text')}
-                    style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      background: detailView === 'text' ? 'var(--primary)' : 'transparent',
-                      color: detailView === 'text' ? '#fff' : 'var(--text)' }}>
-                    📝 Text
-                  </button>
-                  <button type="button" onClick={() => setDetailView('handwrite')}
-                    style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      background: detailView === 'handwrite' ? 'var(--primary)' : 'transparent',
-                      color: detailView === 'handwrite' ? '#fff' : 'var(--text)' }}>
-                    ✍️ Handwrite{selected.handwriting && selected.handwriting.pages?.some(p => p.strokes.length > 0) && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
-                  </button>
+                <div className="card">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes</h3>
+                    <div style={{ display: 'inline-flex', gap: 4, padding: 3, background: 'var(--surface2)', borderRadius: 8 }}>
+                      <button type="button" onClick={() => setDetailView('text')}
+                        style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                          background: detailView === 'text' ? 'var(--primary)' : 'transparent',
+                          color: detailView === 'text' ? '#fff' : 'var(--text)' }}>
+                        📝 Text
+                      </button>
+                      <button type="button" onClick={() => setDetailView('handwrite')}
+                        style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                          background: detailView === 'handwrite' ? 'var(--primary)' : 'transparent',
+                          color: detailView === 'handwrite' ? '#fff' : 'var(--text)' }}>
+                        ✍️ Handwrite{selected.handwriting && selected.handwriting.pages?.some(p => p.strokes.length > 0) && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
+                      </button>
+                    </div>
+                  </div>
+                  {detailView === 'text' ? (
+                    <Suspense fallback={<div style={{minHeight:200,border:'1px solid #e2e8f0',borderRadius:8,padding:16,color:'#94a3b8'}}>Loading editor…</div>}>
+                      <RichELNEditor
+                        initialContent={selected.notes ?? ''}
+                        onChange={html => {
+                          setSelected(prev => prev ? { ...prev, notes: html } : null);
+                          setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, notes: html } : e));
+                        }}
+                        readOnly={selected.status === 'locked' || selected.status === 'signed'}
+                      />
+                    </Suspense>
+                  ) : (
+                    <NotebookCanvas
+                      value={selected.handwriting}
+                      onChange={hw => {
+                        setSelected(prev => prev ? { ...prev, handwriting: hw } : null);
+                        setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, handwriting: hw } : e));
+                      }}
+                      readOnly={selected.status === 'locked' || selected.status === 'signed'}
+                    />
+                  )}
+                </div>
+
+                {/* Results chart */}
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantitative Results</h3>
+                  <ExperimentResultsPanel
+                    results={selected.results ?? []}
+                    readOnly={selected.status === 'locked' || selected.status === 'signed'}
+                    onChange={pts => {
+                      setSelected(prev => prev ? { ...prev, results: pts } : null);
+                      setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, results: pts } : e));
+                    }}
+                  />
+                </div>
+
+                {/* Signatures */}
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Signatures</h3>
+                  <SignaturePanel
+                    entityType="notebook_entry"
+                    entityId={selected.id}
+                    entityTitle={selected.title}
+                    content={selected.notes}
+                  />
                 </div>
               </div>
-              {detailView === 'text' ? (
-                <Suspense fallback={<div style={{minHeight:200,border:'1px solid #e2e8f0',borderRadius:8,padding:16,color:'#94a3b8'}}>Loading editor…</div>}>
-                  <RichELNEditor
-                    initialContent={selected.notes ?? ''}
-                    onChange={html => {
-                      setSelected(prev => prev ? { ...prev, notes: html } : null);
-                      setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, notes: html } : e));
-                    }}
-                    readOnly={selected.status === 'locked' || selected.status === 'signed'}
-                  />
-                </Suspense>
-              ) : (
-                <NotebookCanvas
-                  value={selected.handwriting}
-                  onChange={hw => {
-                    setSelected(prev => prev ? { ...prev, handwriting: hw } : null);
-                    setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, handwriting: hw } : e));
-                  }}
-                  readOnly={selected.status === 'locked' || selected.status === 'signed'}
-                />
+              {!showSwarm && (
+                <div>
+                  <div className="card" style={{ marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Tags</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selected.tags.map(t => <span key={t} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>{t}</span>)}
+                    </div>
+                  </div>
+                  <div className="card" style={{ marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>FAIR Data Compliance</h3>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {(['findable', 'accessible', 'interoperable', 'reusable'] as FAIRTag[]).map(tag => {
+                        const active = selected.fairTags.includes(tag);
+                        return (
+                          <div key={tag} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: active ? 1 : 0.3 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 8, background: active ? FAIR_META[tag].color : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>{FAIR_META[tag].label}</div>
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{tag}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {selected.signedBy && (
+                    <div className="card" style={{ borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.05)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 4 }}>✍ Digitally Signed</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>By {selected.signedBy}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selected.signedAt ? new Date(selected.signedAt).toLocaleString() : ''}</div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* Results chart */}
-            <div className="card" style={{ marginTop: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantitative Results</h3>
-              <ExperimentResultsPanel
-                results={selected.results ?? []}
-                readOnly={selected.status === 'locked' || selected.status === 'signed'}
-                onChange={pts => {
-                  setSelected(prev => prev ? { ...prev, results: pts } : null);
-                  setEntries(prev => prev.map(e => e.id === selected.id ? { ...e, results: pts } : e));
-                }}
-              />
-            </div>
-
-            {/* Signatures */}
-            <div className="card" style={{ marginTop: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Signatures</h3>
-              <SignaturePanel
-                entityType="notebook_entry"
-                entityId={selected.id}
-                entityTitle={selected.title}
-                content={selected.notes}
-              />
-            </div>
           </div>
-          <div>
-            <div className="card" style={{ marginBottom: 12 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Tags</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {selected.tags.map(t => <span key={t} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>{t}</span>)}
-              </div>
+          {/* AI Swarm Panel */}
+          {showSwarm && (
+            <div style={{ position: 'sticky', top: 16, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+              <ELNSwarmPanel swarm={swarm} entry={entryCtx} />
             </div>
-            <div className="card" style={{ marginBottom: 12 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>FAIR Data Compliance</h3>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {(['findable', 'accessible', 'interoperable', 'reusable'] as FAIRTag[]).map(tag => {
-                  const active = selected.fairTags.includes(tag);
-                  return (
-                    <div key={tag} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: active ? 1 : 0.3 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: active ? FAIR_META[tag].color : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>{FAIR_META[tag].label}</div>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{tag}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            {selected.signedBy && (
-              <div className="card" style={{ borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.05)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 4 }}>✍ Digitally Signed</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>By {selected.signedBy}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selected.signedAt ? new Date(selected.signedAt).toLocaleString() : ''}</div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     );
@@ -531,7 +542,13 @@ export default function ELNPage() {
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Electronic Lab Notebook</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>FAIR-compliant, AI-assisted, digitally signed experiment records</p>
         </div>
-        <button onClick={() => setView('compose')} className="btn btn-primary">+ New Entry</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { swarm.setSwarmTab('generator'); setShowSwarm(true); setView('detail'); setSelected(entries[0] || { id: 0, title: 'New Experiment', template: 'custom', date: new Date().toISOString().slice(0, 10), author: authorName, status: 'draft' as EntryStatus, tags: [], fairTags: [] as FAIRTag[], data: {}, notes: '', figures: [], version: 1 }); }}
+            style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+            ✨ Generate Experiment
+          </button>
+          <button onClick={() => setView('compose')} className="btn btn-primary">+ New Entry</button>
+        </div>
       </div>
 
       {/* Stats */}

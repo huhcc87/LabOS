@@ -2,19 +2,15 @@
  * Custom password authentication — no OAuth, no rotating secrets.
  * Uses bcryptjs for hashing + a sessions table for token storage.
  */
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
-import { checkRateLimit } from "./rateLimit";
+import { api, internal } from "./_generated/api";
 
 // ── Token helpers ─────────────────────────────────────────────────────────
 function generateToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let token = "";
-  for (let i = 0; i < 64; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  const bytes = new Uint8Array(48);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 64);
 }
 
 function maskEmail(email: string): string {
@@ -39,12 +35,11 @@ export const register = action({
     if (password.length < 8) throw new Error("Password must be at least 8 characters");
     if (!/\d/.test(password)) throw new Error("Password must contain at least one digit");
     if (full_name.trim().length < 2) throw new Error("Name must be at least 2 characters");
-    checkRateLimit(`register:${normalizedEmail}`);
     const bcrypt = await import("bcryptjs");
     const hashed_password = await bcrypt.hash(password, 12);
     const token = generateToken();
 
-    const result = await ctx.runMutation(api.customAuth.createUserAndSession, {
+    const result = await ctx.runMutation(internal.customAuth.createUserAndSession, {
       email,
       hashed_password,
       full_name,
@@ -61,10 +56,9 @@ export const register = action({
 export const login = action({
   args: { email: v.string(), password: v.string(), totp_code: v.optional(v.string()) },
   handler: async (ctx, { email, password, totp_code }): Promise<{ token: string; user: Record<string, any>; totp_required?: boolean }> => {
-    checkRateLimit(`login:${email}`);
     const bcrypt = await import("bcryptjs");
 
-    const user = await ctx.runQuery(api.customAuth.getUserByEmail, { email });
+    const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
     if (!user) throw new Error("Invalid email or password");
     if (!user.is_active) throw new Error("Account is disabled");
 
@@ -73,7 +67,7 @@ export const login = action({
     const LOCKOUT_MS = 30 * 60 * 1000;
     if (user.failed_login_attempts >= MAX_ATTEMPTS && user.locked_until && user.locked_until > Date.now()) {
       const minutes = Math.ceil((user.locked_until - Date.now()) / 60000);
-      await ctx.runMutation(api.customAuth.logSecurityEvent, {
+      await ctx.runMutation(internal.customAuth.logSecurityEvent, {
         user_id: user._id,
         action: "LOGIN_BLOCKED_LOCKED",
         severity: "HIGH",
@@ -86,12 +80,12 @@ export const login = action({
     if (!valid) {
       const attempts = (user.failed_login_attempts ?? 0) + 1;
       const locked = attempts >= MAX_ATTEMPTS;
-      await ctx.runMutation(api.customAuth.trackFailedLogin, {
+      await ctx.runMutation(internal.customAuth.trackFailedLogin, {
         user_id: user._id,
         attempts,
         locked_until: locked ? Date.now() + LOCKOUT_MS : undefined,
       });
-      await ctx.runMutation(api.customAuth.logSecurityEvent, {
+      await ctx.runMutation(internal.customAuth.logSecurityEvent, {
         user_id: user._id,
         action: locked ? "ACCOUNT_LOCKED_BRUTE_FORCE" : "LOGIN_FAILED",
         severity: locked ? "HIGH" : "WARN",
@@ -106,14 +100,13 @@ export const login = action({
         return { token: "", user: {}, totp_required: true };
       }
       const { verifySync } = await import("otplib");
-      const totpResult = verifySync({ token: totp_code, secret: user.totp_secret });
-      const totpValid = !!(totpResult as any).valid;
+      const totpValid = verifySync({ secret: user.totp_secret, token: totp_code }).valid;
       if (!totpValid) throw new Error("Invalid two-factor code");
     }
 
     // Reset failed attempts on successful login
     if (user.failed_login_attempts > 0) {
-      await ctx.runMutation(api.customAuth.trackFailedLogin, {
+      await ctx.runMutation(internal.customAuth.trackFailedLogin, {
         user_id: user._id,
         attempts: 0,
         locked_until: undefined,
@@ -121,13 +114,13 @@ export const login = action({
     }
 
     const token = generateToken();
-    await ctx.runMutation(api.customAuth.createSession, {
+    await ctx.runMutation(internal.customAuth.createSession, {
       user_id: user._id,
       token,
       expires_at: Date.now() + SESSION_TTL_MS,
     });
 
-    await ctx.runMutation(api.customAuth.logSecurityEvent, {
+    await ctx.runMutation(internal.customAuth.logSecurityEvent, {
       user_id: user._id,
       action: "LOGIN_SUCCESS",
       severity: "INFO",
@@ -187,7 +180,17 @@ export const me = query({
 });
 
 // ── Internal mutations (called by actions above) ──────────────────────────
-export const getUserByEmail = query({
+export const getSessionByToken = internalQuery({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    return await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .first();
+  },
+});
+
+export const getUserByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
     return await ctx.db
@@ -197,7 +200,7 @@ export const getUserByEmail = query({
   },
 });
 
-export const trackFailedLogin = mutation({
+export const trackFailedLogin = internalMutation({
   args: {
     user_id: v.id("users"),
     attempts: v.number(),
@@ -212,7 +215,7 @@ export const trackFailedLogin = mutation({
   },
 });
 
-export const createSession = mutation({
+export const createSession = internalMutation({
   args: {
     user_id: v.id("users"),
     token: v.string(),
@@ -228,7 +231,7 @@ export const createSession = mutation({
   },
 });
 
-export const createUserAndSession = mutation({
+export const createUserAndSession = internalMutation({
   args: {
     email: v.string(),
     hashed_password: v.string(),
@@ -272,7 +275,7 @@ export const createUserAndSession = mutation({
 });
 
 // ── Security audit event logging ────────────────────────────────────────
-export const logSecurityEvent = mutation({
+export const logSecurityEvent = internalMutation({
   args: {
     user_id: v.id("users"),
     action: v.string(),

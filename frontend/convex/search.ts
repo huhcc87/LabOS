@@ -1,15 +1,19 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
+
+const MAX_PER_TABLE = 500;
+const MAX_RESULTS = 12;
 
 export const globalSearch = query({
-  args: { q: v.string() },
-  handler: async (ctx, { q }) => {
+  args: { token: v.optional(v.string()), q: v.string() },
+  handler: async (ctx, { token, q }) => {
+    await requireAuth(ctx, token);
     if (!q || q.length < 2) return [];
     const term = q.toLowerCase();
     const results: { id: string; type: string; title: string; subtitle: string; icon: string; page: string }[] = [];
 
-    // Samples
-    const samples = await ctx.db.query("samples").collect();
+    const samples = await ctx.db.query("samples").take(MAX_PER_TABLE);
     for (const s of samples) {
       if (
         s.name.toLowerCase().includes(term) ||
@@ -24,11 +28,11 @@ export const globalSearch = query({
           icon: "🧪",
           page: "samples",
         });
+        if (results.length >= MAX_RESULTS) return results;
       }
     }
 
-    // Protocols
-    const protocols = await ctx.db.query("protocols").collect();
+    const protocols = await ctx.db.query("protocols").take(MAX_PER_TABLE);
     for (const p of protocols) {
       if (p.title.toLowerCase().includes(term)) {
         results.push({
@@ -39,11 +43,11 @@ export const globalSearch = query({
           icon: "📋",
           page: "protocols",
         });
+        if (results.length >= MAX_RESULTS) return results;
       }
     }
 
-    // Instruments
-    const instruments = await ctx.db.query("instruments").collect();
+    const instruments = await ctx.db.query("instruments").take(MAX_PER_TABLE);
     for (const i of instruments) {
       if (
         i.name.toLowerCase().includes(term) ||
@@ -57,11 +61,11 @@ export const globalSearch = query({
           icon: "🔬",
           page: "equipment",
         });
+        if (results.length >= MAX_RESULTS) return results;
       }
     }
 
-    // Inventory
-    const inventory = await ctx.db.query("inventory").collect();
+    const inventory = await ctx.db.query("inventory").take(MAX_PER_TABLE);
     for (const it of inventory) {
       if (
         it.name.toLowerCase().includes(term) ||
@@ -75,11 +79,11 @@ export const globalSearch = query({
           icon: "📦",
           page: "inventory",
         });
+        if (results.length >= MAX_RESULTS) return results;
       }
     }
 
-    // Tasks
-    const tasks = await ctx.db.query("tasks").collect();
+    const tasks = await ctx.db.query("tasks").take(MAX_PER_TABLE);
     for (const t of tasks) {
       if (t.title.toLowerCase().includes(term)) {
         results.push({
@@ -90,9 +94,10 @@ export const globalSearch = query({
           icon: "✓",
           page: "tasks",
         });
+        if (results.length >= MAX_RESULTS) return results;
       }
     }
 
-    return results.slice(0, 12);
+    return results;
   },
 });

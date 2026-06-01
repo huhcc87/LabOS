@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import ResearchAITab from './ResearchAITab';
 import { BudgetCalculator, BiosketschGenerator, SupportLetters, TemplatesLibrary, CollaboratorsManager } from './GrantTools';
+import { comingSoon } from '../lib/comingSoon';
 
 // ============ TYPES ============
 interface Grant {
@@ -93,13 +94,7 @@ export default function GrantHubPage() {
   const [newGrant, setNewGrant] = useState({ title: '', type: 'r01', agency: '', deadline: '', amount: '', pi: '' });
 
   // Tracker state
-  const [trackerGrants, setTrackerGrants] = useState<Grant[]>([
-    { id: 101, title: 'Targeting KRAS in Colorectal Cancer', type: 'NIH R01', status: 'funded', fundingAgency: 'NIH/NCI', deadline: '2024-02-05', amount: 2100000, pi: 'Dr. Chen', progress: 100, submittedDate: '2024-02-05', reviewDate: '2024-06-10', score: '8th percentile', decisionDate: '2024-09-15', programOfficer: 'Dr. Williams', studySection: 'ONC', notes: 'Funded for 5 years starting January 2025.' },
-    { id: 102, title: 'Immunotherapy Resistance Mechanisms', type: 'NIH R21', status: 'rejected', fundingAgency: 'NIH/NCI', deadline: '2024-05-07', amount: 275000, pi: 'Dr. Patel', progress: 100, submittedDate: '2024-05-07', reviewDate: '2024-09-20', score: '42nd percentile', decisionDate: '2024-12-01', programOfficer: 'Dr. Johnson', studySection: 'IMDI', notes: 'Reviewers requested stronger preliminary data. Revising for resubmission.' },
-    { id: 103, title: 'Single-Cell Atlas of Tumor Microenvironment', type: 'NIH R01', status: 'submitted', fundingAgency: 'NIH/NCI', deadline: '2024-10-05', amount: 1800000, pi: 'Dr. Kim', progress: 100, submittedDate: '2024-10-05', reviewDate: '2025-02-15', score: undefined, decisionDate: undefined, programOfficer: 'Dr. Brown', studySection: 'GGG', notes: 'Under review. Study section meeting Feb 2025.' },
-    { id: 104, title: 'Metabolic Reprogramming in Pancreatic Cancer', type: 'NSF CAREER', status: 'in_progress', fundingAgency: 'NSF', deadline: '2025-07-17', amount: 500000, pi: 'Dr. Lee', progress: 45, submittedDate: undefined, reviewDate: undefined, score: undefined, decisionDate: undefined, programOfficer: 'Dr. Garcia', studySection: undefined, notes: 'Drafting specific aims. Targeting July 2025 deadline.' },
-    { id: 105, title: 'Novel Biomarkers for Early Detection', type: 'NIH R03', status: 'submitted', fundingAgency: 'NIH/NCI', deadline: '2025-01-07', amount: 150000, pi: 'Dr. Martinez', progress: 100, submittedDate: '2025-01-07', reviewDate: '2025-05-08', score: undefined, decisionDate: undefined, programOfficer: 'Dr. Taylor', studySection: 'CBSS', notes: 'First submission. Awaiting review.' },
-  ]);
+  const [trackerGrants, setTrackerGrants] = useState<Grant[]>([]);
   const [editingTracker, setEditingTracker] = useState<Grant | null>(null);
   const [trackerFilter, setTrackerFilter] = useState<string>('all');
 
@@ -672,7 +667,7 @@ export default function GrantHubPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600 }}>Progress Reports</h3>
-            <button className="btn btn-primary">+ New Report</button>
+            <button className="btn btn-primary" onClick={() => comingSoon('New Report')}>+ New Report</button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -701,7 +696,7 @@ export default function GrantHubPage() {
                   }}>
                     {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                   </span>
-                  <button className="btn btn-sm btn-secondary">Edit</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Edit Report')}>Edit</button>
                 </div>
               </div>
             ))}
@@ -714,7 +709,7 @@ export default function GrantHubPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600 }}>IRB/IACUC Protocols</h3>
-            <button className="btn btn-primary">+ New Protocol</button>
+            <button className="btn btn-primary" onClick={() => comingSoon('New Protocol')}>+ New Protocol</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -731,12 +726,7 @@ export default function GrantHubPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {[
-              { id: 1, protocol: 'IRB-2024-0123', title: 'Human Subjects Study - Cancer Biomarkers', type: 'IRB', status: 'approved', expires: '2025-06-15' },
-              { id: 2, protocol: 'IACUC-2024-0045', title: 'Mouse Model - Tumor Growth Study', type: 'IACUC', status: 'approved', expires: '2025-03-20' },
-              { id: 3, protocol: 'IRB-2024-0156', title: 'Patient Survey - Quality of Life', type: 'IRB', status: 'pending', expires: null },
-              { id: 4, protocol: 'IACUC-2024-0067', title: 'Zebrafish Model - Drug Screening', type: 'IACUC', status: 'approved', expires: '2024-12-01' },
-            ].map(item => (
+            {([] as { id: number; protocol: string; title: string; type: string; status: string; expires: string | null }[]).map(item => (
               <div key={item.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{
@@ -764,7 +754,7 @@ export default function GrantHubPage() {
                   }}>
                     {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                   </span>
-                  <button className="btn btn-sm btn-secondary">View</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('View Protocol')}>View</button>
                 </div>
               </div>
             ))}

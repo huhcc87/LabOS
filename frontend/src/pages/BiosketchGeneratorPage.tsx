@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { comingSoon } from '../lib/comingSoon';
 import { biosketchApi } from '../lib/api';
 
 interface PersonalInfo {
@@ -136,9 +137,9 @@ export default function BiosketchGeneratorPage() {
           <p className="page-subtitle">Create NIH, NSF, and custom biosketches</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary">📥 Import from ORCID</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}>📥 Import from ORCID</button>
           <button className="btn btn-secondary" onClick={() => setShowPreview(true)}>👁️ Preview</button>
-          <button className="btn btn-primary">📤 Export PDF</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('PDF Export')}>📤 Export PDF</button>
         </div>
       </div>
 
@@ -245,7 +246,7 @@ export default function BiosketchGeneratorPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600 }}>🎓 Education & Training</h3>
-                <button className="btn btn-sm btn-primary">+ Add Entry</button>
+                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Entry')}>+ Add Entry</button>
               </div>
               <div className="table-wrapper">
                 <table className="data-table">
@@ -284,7 +285,7 @@ export default function BiosketchGeneratorPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600 }}>💼 Positions & Employment</h3>
-                <button className="btn btn-sm btn-primary">+ Add Position</button>
+                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Position')}>+ Add Position</button>
               </div>
               <div className="table-wrapper">
                 <table className="data-table">
@@ -323,7 +324,7 @@ export default function BiosketchGeneratorPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600 }}>📝 Personal Statement</h3>
-                <button className="btn btn-sm btn-secondary">✨ AI Assist</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('AI Assist')}>✨ AI Assist</button>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
                 Describe your qualifications and experience relevant to this application. NIH recommends addressing:
@@ -364,7 +365,7 @@ export default function BiosketchGeneratorPage() {
                   }}>
                     {selectedPubCount}/4 selected
                   </span>
-                  <button className="btn btn-sm btn-secondary">+ Add Publication</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Add Publication')}>+ Add Publication</button>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -405,7 +406,7 @@ export default function BiosketchGeneratorPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600 }}>💰 Research Support</h3>
-                <button className="btn btn-sm btn-primary">+ Add Grant</button>
+                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Grant')}>+ Add Grant</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {grants.map(grant => (

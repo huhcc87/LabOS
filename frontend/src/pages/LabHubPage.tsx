@@ -245,11 +245,7 @@ export default function LabHubPage() {
     { id: 4, name: 'Spectrophotometer', location: 'Room 101', status: 'maintenance', type: 'Spectrophotometer' },
   ]);
 
-  const [bookings, setBookings] = useState<Booking[]>([
-    { id: 1, instrument: 'Flow Cytometer', user: 'Dr. Smith', date: '2024-03-20', time: '09:00-12:00', status: 'confirmed', purpose: 'Cell sorting' },
-    { id: 2, instrument: 'PCR Thermocycler', user: 'J. Chen', date: '2024-03-20', time: '14:00-16:00', status: 'pending', purpose: 'Gene amplification' },
-    { id: 3, instrument: 'Centrifuge XR-500', user: 'M. Johnson', date: '2024-03-21', time: '10:00-11:00', status: 'confirmed', purpose: 'Sample prep' },
-  ]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([
     { id: 1, instrument: 'Spectrophotometer', type: 'Calibration', date: '2024-03-19', status: 'scheduled' },

@@ -40,15 +40,19 @@ export default function EquipmentAnalyticsPage() {
 
   const loadConflicts = async () => {
     setLoadingConflicts(true);
-    const r = await fetch(`${API}/scheduling/bookings/conflicts`, { headers: authHeaders() });
-    if (r.ok) setConflicts((await r.json()).conflicts ?? []);
+    try {
+      const r = await fetch(`${API}/scheduling/bookings/conflicts`, { headers: authHeaders() });
+      if (r.ok) setConflicts((await r.json()).conflicts ?? []);
+    } catch { /* endpoint not available */ }
     setLoadingConflicts(false);
   };
 
   const loadUtilization = async () => {
     setLoadingUtil(true);
-    const r = await fetch(`${API}/scheduling/bookings/utilization?days=${days}`, { headers: authHeaders() });
-    if (r.ok) setUtilization(await r.json());
+    try {
+      const r = await fetch(`${API}/scheduling/bookings/utilization?days=${days}`, { headers: authHeaders() });
+      if (r.ok) setUtilization(await r.json());
+    } catch { /* endpoint not available */ }
     setLoadingUtil(false);
   };
 
