@@ -19,6 +19,18 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[LabOS Error]', error.message, '\nStack:', error.stack, '\nComponent:', info.componentStack);
+
+    // Auto-reload on stale chunk errors (happens after redeployment)
+    const isChunkError =
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('Loading CSS chunk') ||
+      error.message.includes('dynamically imported module');
+
+    if (isChunkError && !sessionStorage.getItem('chunk_reload')) {
+      sessionStorage.setItem('chunk_reload', '1');
+      window.location.reload();
+    }
   }
 
   reset = () => this.setState({ hasError: false, error: null });
