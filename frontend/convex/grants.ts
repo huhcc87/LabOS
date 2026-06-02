@@ -357,3 +357,297 @@ function generateFallbackGrantContent(
     `required for this section by the funding agency.]`
   );
 }
+
+// ── Research AI Swarm — multi-model synthesis ────────────────────────────────
+//
+// Real AI synthesis engine. Takes ingested literature (texts) and produces a
+// structured research package: per-paper summaries, field overview, research
+// gaps, novel hypotheses, NIH-style specific aims, objectives and drafted grant
+// sections. Tries multiple LLM providers in a configurable order, then falls
+// back to a structured template so the UI never receives an empty result.
+
+type SwarmModel = "claude-sonnet" | "claude-haiku" | "gpt-4o" | "deepseek" | "auto";
+
+const MODEL_LABELS: Record<string, string> = {
+  "claude-sonnet": "Claude 3.5 Sonnet",
+  "claude-haiku": "Claude 3.5 Haiku",
+  "gpt-4o": "GPT-4o",
+  "deepseek": "DeepSeek V3",
+  "template": "Template Engine",
+};
+
+function extractJson(raw: string): any | null {
+  if (!raw) return null;
+  // Strip ```json fences if present
+  let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+  // Grab the outermost { … } block
+  const start = s.indexOf("{");
+  const end = s.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  s = s.slice(start, end + 1);
+  try {
+    return JSON.parse(s);
+  } catch {
+    // Best-effort: remove trailing commas
+    try {
+      return JSON.parse(s.replace(/,\s*([}\]])/g, "$1"));
+    } catch {
+      return null;
+    }
+  }
+}
+
+async function callAnthropic(model: string, system: string, user: string): Promise<string | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        system,
+        messages: [{ role: "user", content: user }],
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.content?.[0]?.text ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function callOpenAI(system: string, user: string): Promise<string | null> {
+  if (!process.env.OPENAI_API_KEY) return null;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        max_tokens: 4096,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function callDeepSeek(system: string, user: string): Promise<string | null> {
+  if (!process.env.DEEPSEEK_API_KEY) return null;
+  try {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        max_tokens: 4096,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Run a provider by key. Returns { raw, source } or null.
+async function runProvider(
+  key: string,
+  system: string,
+  user: string
+): Promise<{ raw: string; source: string } | null> {
+  let raw: string | null = null;
+  if (key === "claude-sonnet") raw = await callAnthropic("claude-3-5-sonnet-20241022", system, user);
+  else if (key === "claude-haiku") raw = await callAnthropic("claude-3-5-haiku-20241022", system, user);
+  else if (key === "gpt-4o") raw = await callOpenAI(system, user);
+  else if (key === "deepseek") raw = await callDeepSeek(system, user);
+  return raw ? { raw, source: key } : null;
+}
+
+function buildSynthesisFallback(
+  topic: string,
+  disease: string,
+  grant_type: string,
+  texts: { filename: string; content: string }[]
+) {
+  const paper_summaries = texts.slice(0, 25).map((t) => ({
+    filename: t.filename,
+    key_findings:
+      (t.content || "").split(/[.!?]\s/).slice(0, 2).join(". ").slice(0, 280) ||
+      "Key findings could not be auto-extracted — review the source.",
+    methodology: "Methodology not auto-extracted (template mode — add an AI key for full analysis).",
+    main_conclusion: (t.content || "").slice(0, 200) || "See source document.",
+    relevance: `Relevant to "${topic}".`,
+  }));
+  const dz = disease || topic;
+  return {
+    paper_summaries,
+    field_overview:
+      `Template synthesis for "${topic}"${disease ? ` in the context of ${disease}` : ""}. ` +
+      `${texts.length} source(s) ingested. Configure an ANTHROPIC_API_KEY, OPENAI_API_KEY, or ` +
+      `DEEPSEEK_API_KEY in Convex to unlock full multi-agent AI synthesis with deep paper analysis, ` +
+      `gap mapping and novel hypothesis generation.`,
+    research_gaps: [
+      `Mechanistic drivers of ${dz} remain incompletely defined.`,
+      `Translation of ${topic} findings into validated clinical endpoints is limited.`,
+      `Predictive biomarkers for patient stratification in ${dz} are lacking.`,
+    ],
+    web_context: "",
+    novel_hypotheses: [
+      {
+        hypothesis: `Targeting a key pathway implicated in ${topic} will modulate disease progression in ${dz}.`,
+        rationale: "Derived from convergent themes across the ingested literature.",
+        novelty_score: 6,
+        supporting_evidence: `${texts.length} ingested source(s) point to this direction.`,
+        testability: "Testable via in vitro and in vivo models with defined readouts.",
+      },
+    ],
+    specific_aims: [
+      `Aim 1: Characterize the molecular basis of ${topic} in ${dz}.`,
+      `Aim 2: Develop and validate a targeted intervention informed by Aim 1.`,
+      `Aim 3: Evaluate translational potential and candidate biomarkers.`,
+    ],
+    objectives: [
+      `Define the mechanism linking ${topic} to ${dz}.`,
+      `Establish proof-of-concept for intervention.`,
+      `Identify biomarkers for stratification.`,
+    ],
+    grant_sections: {
+      "Specific Aims": generateFallbackGrantContent(grant_type, topic, "specific aims"),
+      "Significance": generateFallbackGrantContent(grant_type, topic, "significance"),
+    },
+    source: "template",
+    model_label: MODEL_LABELS["template"],
+  };
+}
+
+export const researchSynthesis = action({
+  args: {
+    texts: v.array(v.object({ filename: v.string(), content: v.string() })),
+    topic: v.string(),
+    disease: v.optional(v.string()),
+    grant_type: v.optional(v.string()),
+    extra_context: v.optional(v.string()),
+    model: v.optional(v.string()),
+    feedback: v.optional(
+      v.object({
+        liked: v.array(v.string()),
+        disliked: v.array(v.string()),
+      })
+    ),
+  },
+  handler: async (_ctx, { texts, topic, disease, grant_type, extra_context, model, feedback }) => {
+    const gt = grant_type || "NIH R01";
+    const dz = disease || "";
+    const chosen = (model || "auto") as SwarmModel;
+
+    const system =
+      "You are a multi-agent scientific research swarm composed of seven specialist agents: " +
+      "(1) a literature analyst, (2) a gap-mapper, (3) a field-intelligence synthesizer, " +
+      "(4) a hypothesis generator, (5) an NIH study-section reviewer, (6) a specific-aims architect, " +
+      "and (7) an expert grant writer. You analyze biomedical literature with rigor and produce " +
+      "novel, testable, fundable research directions. You ALWAYS respond with a single valid JSON " +
+      "object and nothing else — no prose, no markdown fences.";
+
+    const corpus = texts
+      .slice(0, 30)
+      .map((t, i) => `[Paper ${i + 1}: ${t.filename}]\n${(t.content || "").slice(0, 6000)}`)
+      .join("\n\n");
+
+    const feedbackBlock =
+      feedback && (feedback.liked.length || feedback.disliked.length)
+        ? `\nLEARNED INVESTIGATOR PREFERENCES (from prior hypothesis ratings — weight these heavily):\n` +
+          (feedback.liked.length
+            ? `HIGHLY RATED (generate hypotheses in this style/direction):\n- ${feedback.liked.join("\n- ")}\n`
+            : "") +
+          (feedback.disliked.length
+            ? `LOW RATED (avoid this style/direction):\n- ${feedback.disliked.join("\n- ")}\n`
+            : "")
+        : "";
+
+    const user =
+      `RESEARCH TOPIC: ${topic}\n` +
+      `DISEASE / CONDITION: ${dz || "(not specified)"}\n` +
+      `TARGET GRANT MECHANISM: ${gt}\n` +
+      (extra_context ? `INVESTIGATOR CONTEXT: ${extra_context}\n` : "") +
+      feedbackBlock +
+      `\nINGESTED LITERATURE (${texts.length} sources):\n${corpus}\n\n` +
+      `TASK: Synthesize the literature and return a JSON object with EXACTLY these keys:\n` +
+      `{\n` +
+      `  "paper_summaries": [{"filename","key_findings","methodology","main_conclusion","relevance"}],\n` +
+      `  "field_overview": "3-5 sentence state-of-the-field synthesis",\n` +
+      `  "research_gaps": ["specific, addressable gaps"],\n` +
+      `  "web_context": "what the broader field is converging on",\n` +
+      `  "novel_hypotheses": [{"hypothesis","rationale","novelty_score (1-10 integer)","supporting_evidence","testability"}],\n` +
+      `  "specific_aims": ["NIH-style aim statements"],\n` +
+      `  "objectives": ["concrete measurable objectives"],\n` +
+      `  "grant_sections": {"Specific Aims": "full drafted text", "Significance": "full drafted text", "Innovation": "full drafted text"}\n` +
+      `}\n` +
+      `Generate 3-5 novel_hypotheses ranked by novelty. Be specific to ${dz || topic}. ` +
+      `Tailor grant_sections to ${gt} conventions.`;
+
+    // Provider order: honor explicit choice first, then fall back across all available.
+    let order: string[];
+    if (chosen === "auto") {
+      order = ["claude-sonnet", "gpt-4o", "deepseek", "claude-haiku"];
+    } else {
+      order = [chosen, "claude-sonnet", "gpt-4o", "deepseek", "claude-haiku"].filter(
+        (v, i, a) => a.indexOf(v) === i
+      );
+    }
+
+    for (const key of order) {
+      const res = await runProvider(key, system, user);
+      if (!res) continue;
+      const parsed = extractJson(res.raw);
+      if (parsed && (parsed.novel_hypotheses || parsed.specific_aims || parsed.field_overview)) {
+        return {
+          paper_summaries: parsed.paper_summaries ?? [],
+          field_overview: parsed.field_overview ?? "",
+          research_gaps: parsed.research_gaps ?? [],
+          web_context: parsed.web_context ?? "",
+          novel_hypotheses: (parsed.novel_hypotheses ?? []).map((h: any) => ({
+            hypothesis: h.hypothesis ?? "",
+            rationale: h.rationale ?? "",
+            novelty_score: Number(h.novelty_score) || 5,
+            supporting_evidence: h.supporting_evidence ?? "",
+            testability: h.testability ?? "",
+          })),
+          specific_aims: parsed.specific_aims ?? [],
+          objectives: parsed.objectives ?? [],
+          grant_sections: parsed.grant_sections ?? {},
+          source: res.source,
+          model_label: MODEL_LABELS[res.source] ?? res.source,
+        };
+      }
+    }
+
+    // All providers unavailable or failed → structured template (never empty).
+    return buildSynthesisFallback(topic, dz, gt, texts);
+  },
+});

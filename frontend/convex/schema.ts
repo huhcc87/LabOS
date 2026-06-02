@@ -737,4 +737,19 @@ export default defineSchema({
     answer: v.string(),
     created_at: v.number(),
   }).index("by_user", ["user_id"]),
+
+  // ── Research AI Swarm: hypothesis ratings (feedback / learning loop) ──
+  hypothesis_ratings: defineTable({
+    user_id: v.id("users"),
+    topic: v.string(),
+    disease: v.optional(v.string()),
+    hypothesis: v.string(),
+    rationale: v.optional(v.string()),
+    rating: v.number(), // 1-5 stars
+    novelty_score: v.optional(v.number()),
+    unfunded: v.optional(v.boolean()),
+    created_at: v.number(),
+  })
+    .index("by_user", ["user_id"])
+    .index("by_topic", ["topic"]),
 });

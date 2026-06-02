@@ -450,24 +450,58 @@ export const grantsApi = {
     return { data: result };
   },
   researchSynthesis: async (data: any) => {
-    // Build synthesis from existing grant submissions and protocols
-    const submissions = await client.query(api.grants.listSubmissions, { paginationOpts: { numItems: 50, cursor: null } });
-    const protocols = await client.query(api.protocols.list, { paginationOpts: { numItems: 50, cursor: null } });
-    const subItems = submissions?.page ?? [];
-    const protoItems = (protocols as any)?.page ?? protocols ?? [];
-    return {
-      data: {
-        paper_summaries: [],
-        field_overview: `Based on ${subItems.length} grant submissions and ${protoItems.length} protocols in your lab.`,
-        research_gaps: subItems.length === 0 ? ["No grant submissions found — consider starting a submission"] : [],
-        web_context: "",
-        novel_hypotheses: [],
-        specific_aims: data?.specific_aims ?? [],
-        objectives: data?.objectives ?? [],
-        grant_sections: {},
-        source: "lab-data",
-      } as any,
-    };
+    // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek with template fallback).
+    const result = await client.action(api.grants.researchSynthesis, {
+      texts: (data?.texts ?? []).map((t: any) => ({
+        filename: String(t.filename ?? 'source'),
+        content: String(t.content ?? ''),
+      })),
+      topic: String(data?.topic ?? ''),
+      disease: data?.disease ? String(data.disease) : undefined,
+      grant_type: data?.grant_type ? String(data.grant_type) : undefined,
+      extra_context: data?.extra_context ? String(data.extra_context) : undefined,
+      model: data?.model ? String(data.model) : undefined,
+      feedback: data?.feedback,
+    });
+    return { data: result as any };
+  },
+};
+
+// ── Funding Intelligence (unfunded-gap analysis across grant agencies) ─────────
+export const fundingApi = {
+  analyze: async (topic: string, gaps: string[], agencies?: string[]) => {
+    const token = getToken();
+    const result = await client.action(api.funding.analyzeFunding, {
+      token: token || '',
+      topic,
+      gaps,
+      agencies,
+    });
+    return { data: result as any };
+  },
+};
+
+// ── Research AI Swarm feedback / learning loop ─────────────────────────────────
+export const swarmFeedbackApi = {
+  rate: async (payload: {
+    topic: string; disease?: string; hypothesis: string; rationale?: string;
+    rating: number; novelty_score?: number; unfunded?: boolean;
+  }) => {
+    const token = getToken();
+    const result = await client.mutation(api.swarmFeedback.rateHypothesis, { token: token || '', ...payload });
+    return { data: result as any };
+  },
+  preferences: async () => {
+    const token = getToken();
+    if (!token) return { data: { liked: [], disliked: [], total_rated: 0, avg_rating: 0 } };
+    const result = await client.query(api.swarmFeedback.getPreferences, { token });
+    return { data: result as any };
+  },
+  myRatings: async () => {
+    const token = getToken();
+    if (!token) return { data: { ratings: {}, total: 0 } };
+    const result = await client.query(api.swarmFeedback.myRatings, { token });
+    return { data: result as any };
   },
 };
 

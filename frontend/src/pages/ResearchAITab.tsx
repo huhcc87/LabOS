@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { grantsApi } from '../lib/api';
+import { grantsApi, fundingApi, swarmFeedbackApi } from '../lib/api';
 import type { SwarmExportOptions } from '../lib/exportDocx';
 
 // ─── Disease / Condition list ─────────────────────────────────────────────────
@@ -89,7 +89,53 @@ interface SynthesisResult {
   objectives: string[];
   grant_sections: Record<string, string>;
   source: string;
+  model_label?: string;
 }
+
+// ─── Funding intelligence types ───────────────────────────────────────────────
+
+interface AgencyOverview {
+  id: string;
+  label: string;
+  available: boolean;
+  total: number;
+  sampleTitles: string[];
+}
+interface GapFunding {
+  gap: string;
+  counts: Record<string, number | null>;
+  total_funded: number;
+  status: 'unfunded' | 'underfunded' | 'funded';
+}
+interface FundingResult {
+  agencies: AgencyOverview[];
+  gap_analysis: GapFunding[];
+  summary: { agencies_live: number; agencies_total: number; gaps_analyzed: number; unfunded: number; underfunded: number };
+  generated_at: number;
+}
+
+const FUNDING_AGENCIES: { id: string; label: string }[] = [
+  { id: 'nih', label: 'NIH RePORTER' },
+  { id: 'nsf', label: 'NSF Awards' },
+  { id: 'ukri', label: 'UKRI / Wellcome' },
+  { id: 'erc', label: 'ERC / CORDIS (EU)' },
+];
+
+const FUNDING_STATUS_META: Record<GapFunding['status'], { label: string; color: string; bg: string; icon: string }> = {
+  unfunded: { label: 'UNFUNDED', color: '#22c55e', bg: 'rgba(34,197,94,0.12)', icon: '🟢' },
+  underfunded: { label: 'UNDERFUNDED', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '🟡' },
+  funded: { label: 'CROWDED', color: '#f87171', bg: 'rgba(239,68,68,0.12)', icon: '🔴' },
+};
+
+// ─── AI model options ─────────────────────────────────────────────────────────
+
+const SWARM_MODELS: { id: string; label: string; desc: string }[] = [
+  { id: 'auto', label: '⚡ Auto (best available)', desc: 'Tries Claude Sonnet → GPT-4o → DeepSeek' },
+  { id: 'claude-sonnet', label: '🟣 Claude 3.5 Sonnet', desc: 'Deepest reasoning & synthesis' },
+  { id: 'claude-haiku', label: '🟢 Claude 3.5 Haiku', desc: 'Fast & economical' },
+  { id: 'gpt-4o', label: '🔵 GPT-4o', desc: 'OpenAI flagship multimodal' },
+  { id: 'deepseek', label: '🔶 DeepSeek V3', desc: 'Strong open-weight reasoning' },
+];
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
 
@@ -101,6 +147,7 @@ const STAGES = [
   { id: 'hypothesis', icon: '🧬', label: 'Generating Hypotheses',      desc: 'Creating novel, testable hypotheses' },
   { id: 'aims',       icon: '🎯', label: 'Drafting Specific Aims',     desc: 'Structuring NIH-style aims & objectives' },
   { id: 'compose',    icon: '✍️', label: 'Composing Grant Sections',   desc: 'Writing Specific Aims & Significance' },
+  { id: 'funding',    icon: '💰', label: 'Funding Gap Analysis',       desc: 'Cross-checking NIH · NSF · UKRI · ERC for unfunded white-space' },
 ];
 
 const LIBRARY_COLORS = ['#6366f1', '#0071bc', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#8b5cf6'];
@@ -137,6 +184,145 @@ function downloadText(content: string, filename: string) {
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
+}
+
+// ─── Star rating (feedback / learning loop) ───────────────────────────────────
+
+function StarRating({ value, onRate }: { value: number; onRate: (n: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }} title="Rate this hypothesis — the swarm learns from your ratings">
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} onClick={(e) => { e.stopPropagation(); onRate(n); }}
+          onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 1px', color: (hover || value) >= n ? '#f59e0b' : 'var(--border)', filter: (hover || value) >= n ? 'none' : 'grayscale(1)' }}>
+          ★
+        </button>
+      ))}
+    </span>
+  );
+}
+
+// ─── Funding landscape visualization (lightweight, no chart dep) ──────────────
+
+function FundingVisualization({ funding }: { funding: FundingResult }) {
+  const maxAgency = Math.max(1, ...funding.agencies.map(a => a.total));
+  const maxGap = Math.max(1, ...funding.gap_analysis.map(g => g.total_funded));
+  const AGENCY_COLORS: Record<string, string> = { nih: '#6366f1', nsf: '#0071bc', ukri: '#ec4899', erc: '#14b8a6' };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Summary banner */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {[
+          ['🟢 Unfunded white-space', funding.summary.unfunded, '#22c55e'],
+          ['🟡 Underfunded', funding.summary.underfunded, '#f59e0b'],
+          ['🛰️ Agencies live', `${funding.summary.agencies_live}/${funding.summary.agencies_total}`, '#6366f1'],
+          ['🔬 Gaps analysed', funding.summary.gaps_analyzed, '#0071bc'],
+        ].map(([label, val, color]) => (
+          <div key={label as string} style={{ flex: '1 1 160px', padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${color}33`, borderRadius: 10 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: color as string }}>{val}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Agency funding volume */}
+      <div className="card">
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: 'var(--text)' }}>🏛️ Funded Awards by Agency (topic-wide)</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {funding.agencies.map(a => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 130, fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>{a.label}{!a.available && ' ⚠️'}</span>
+              <div style={{ flex: 1, background: 'var(--surface2, #f1f5f9)', borderRadius: 6, height: 22, overflow: 'hidden', position: 'relative' }}>
+                <div style={{ width: `${a.available ? Math.max(2, (a.total / maxAgency) * 100) : 0}%`, height: '100%', background: AGENCY_COLORS[a.id] || '#6366f1', borderRadius: 6, transition: 'width 0.4s' }} />
+                <span style={{ position: 'absolute', right: 8, top: 0, lineHeight: '22px', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
+                  {a.available ? a.total.toLocaleString() : 'no API'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Per-gap funding status */}
+      <div className="card">
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--text)' }}>🎯 Gap Funding Status</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
+          Fewer existing awards = more white-space for a fundable proposal. 🟢 unfunded ·  🟡 underfunded · 🔴 crowded.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {funding.gap_analysis.map((g, i) => {
+            const meta = FUNDING_STATUS_META[g.status];
+            return (
+              <div key={i} style={{ padding: '12px 14px', background: meta.bg, border: `1px solid ${meta.color}33`, borderRadius: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 13 }}>{meta.icon}</span>
+                  <span style={{ flex: 1, fontSize: 13, lineHeight: 1.5, color: 'var(--text)' }}>{g.gap}</span>
+                  <span style={{ flexShrink: 0, background: meta.color, color: '#fff', borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 800 }}>{meta.label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1, background: 'var(--surface2, #f1f5f9)', borderRadius: 6, height: 14, overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, (g.total_funded / maxGap) * 100)}%`, height: '100%', background: meta.color, opacity: 0.8 }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {g.total_funded} award{g.total_funded !== 1 ? 's' : ''}
+                    {' · '}
+                    {Object.entries(g.counts).filter(([, c]) => c != null).map(([k, c]) => `${k.toUpperCase()}:${c}`).join(' ')}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Atomic notes export (Zettelkasten markdown) ──────────────────────────────
+
+function buildAtomicNotes(result: SynthesisResult, funding: FundingResult | null, topic: string, disease: string, grantType: string): string {
+  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+  const tag = `#${slug(disease || topic) || 'research'}`;
+  const stamp = new Date().toISOString().slice(0, 10);
+  const fundingFor = (text: string): GapFunding | undefined =>
+    funding?.gap_analysis.find(g => g.gap === text);
+  const notes: string[] = [];
+
+  notes.push(
+    `---\nid: ${stamp}-MOC-${slug(topic)}\ntype: map-of-content\ntags: [${tag}, research-swarm, grant]\ntopic: "${topic}"\ndisease: "${disease || 'n/a'}"\ngrant: "${grantType}"\nmodel: "${result.model_label || result.source}"\n---\n\n` +
+    `# 🗺️ MOC — ${topic}\n\n${result.field_overview}\n\n` +
+    `## Linked notes\n` +
+    result.novel_hypotheses.map((_, i) => `- [[${stamp}-H${i + 1}-${slug(topic)}]]`).join('\n') + '\n\n' +
+    `## Latest field intelligence\n${result.web_context || '—'}\n`
+  );
+
+  result.novel_hypotheses.forEach((h, i) => {
+    notes.push(
+      `---\nid: ${stamp}-H${i + 1}-${slug(topic)}\ntype: hypothesis\ntags: [${tag}, hypothesis, novelty-${h.novelty_score}]\nnovelty_score: ${h.novelty_score}\n---\n\n` +
+      `# 🧬 Hypothesis ${i + 1}\n\n> ${h.hypothesis}\n\n` +
+      `**Novelty:** ${h.novelty_score}/10\n\n` +
+      `**Rationale:** ${h.rationale}\n\n` +
+      `**Supporting evidence:** ${h.supporting_evidence}\n\n` +
+      `**Testability:** ${h.testability}\n\n` +
+      `**Back-link:** [[${stamp}-MOC-${slug(topic)}]]\n`
+    );
+  });
+
+  result.research_gaps.forEach((gap, i) => {
+    const f = fundingFor(gap);
+    const fundLine = f
+      ? `**Funding status:** ${FUNDING_STATUS_META[f.status].label} — ${f.total_funded} existing award(s) [${Object.entries(f.counts).filter(([, c]) => c != null).map(([k, c]) => `${k.toUpperCase()}:${c}`).join(', ')}]\n\n`
+      : '';
+    notes.push(
+      `---\nid: ${stamp}-G${i + 1}-${slug(topic)}\ntype: research-gap\ntags: [${tag}, gap${f ? `, ${f.status}` : ''}]\n---\n\n` +
+      `# 🕳️ Research Gap ${i + 1}\n\n${gap}\n\n${fundLine}` +
+      `**Back-link:** [[${stamp}-MOC-${slug(topic)}]]\n`
+    );
+  });
+
+  return notes.join('\n\n' + '='.repeat(70) + '\n\n');
 }
 
 const STOP_WORDS = new Set(['the','a','an','and','or','of','in','for','to','with','by','on','at','is','are','was','were','that','this','from','as','into','via','using','between','among','after','before','during','through','within','without','against','toward','upon','effect','effects','role','roles','impact','impacts','study','studies','analysis','review','novel','new','patients','patient','cells','cell','gene','genes','protein','proteins','expression','associated','based','cancer','tumor','tumour','therapy','treatment','clinical','human','mouse','model','models','type','high','low','increased','decreased','activity','function','signaling','pathway','data','results','show','showed','identify','identified','report','reported','case','cases','level','levels','group','groups','target','targeting','potential','mechanism','mechanisms','approach']);
@@ -193,6 +379,57 @@ async function fetchByDOI(doi: string): Promise<Article | null> {
     const authors = (w.author || []).slice(0, 3).map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).join(', ') + (w.author?.length > 3 ? ' et al.' : '');
     return { id: `doi-${doi}`, doi, title: (w.title || ['Untitled'])[0], authors, journal: (w['container-title'] || [''])[0], year: w.published?.['date-parts']?.[0]?.[0]?.toString() || '', abstract: w.abstract?.replace(/<[^>]+>/g, '') || '', url: w.URL || `https://doi.org/${doi}` };
   } catch { return null; }
+}
+
+// ─── Europe PMC (peer-reviewed + preprints, full abstracts inline) ─────────────
+
+async function europePmcSearch(query: string, preprintsOnly = false): Promise<Article[]> {
+  const q = preprintsOnly ? `${query} AND SRC:PPR` : query;
+  const r = await fetch(`https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(q)}&format=json&pageSize=25&resultType=core&sort=CITED desc`);
+  const j = await r.json();
+  const list = j.resultList?.result || [];
+  return list.map((d: any): Article => {
+    const pmid = d.pmid || '';
+    const doi = d.doi || '';
+    const isPreprint = d.source === 'PPR';
+    const id = pmid ? `pmid-${pmid}` : doi ? `doi-${doi}` : `epmc-${d.id}`;
+    const url = doi ? `https://doi.org/${doi}` : pmid ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`
+      : `https://europepmc.org/article/${d.source}/${d.id}`;
+    return {
+      id, pmid: pmid || undefined, doi: doi || undefined,
+      title: (isPreprint ? '[Preprint] ' : '') + (d.title || 'Untitled').replace(/<[^>]+>/g, ''),
+      authors: d.authorString || 'Unknown authors',
+      journal: d.journalInfo?.journal?.title || (isPreprint ? d.bookOrReportDetails?.publisher || 'Preprint Server' : ''),
+      year: (d.pubYear || '').toString(),
+      abstract: (d.abstractText || '').replace(/<[^>]+>/g, ''),
+      url,
+    };
+  });
+}
+
+// ─── Semantic Scholar (AI-ranked relevance, 200M+ corpus) ──────────────────────
+
+async function semanticScholarSearch(query: string): Promise<Article[]> {
+  const fields = 'title,authors,year,abstract,venue,externalIds,url,citationCount';
+  const r = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=25&fields=${fields}`);
+  if (!r.ok) throw new Error('Semantic Scholar rate-limited');
+  const j = await r.json();
+  const list = j.data || [];
+  return list.map((d: any): Article => {
+    const pmid = d.externalIds?.PubMed || '';
+    const doi = d.externalIds?.DOI || '';
+    const id = pmid ? `pmid-${pmid}` : doi ? `doi-${doi}` : `s2-${d.paperId}`;
+    const authors = (d.authors || []).slice(0, 3).map((a: any) => a.name).join(', ') + ((d.authors?.length || 0) > 3 ? ' et al.' : '');
+    return {
+      id, pmid: pmid || undefined, doi: doi || undefined,
+      title: d.title || 'Untitled',
+      authors: authors || 'Unknown authors',
+      journal: d.venue || '',
+      year: (d.year || '').toString(),
+      abstract: d.abstract || '',
+      url: d.url || (doi ? `https://doi.org/${doi}` : pmid ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` : ''),
+    };
+  });
 }
 
 // ─── Library Browse Panel (display-only, state lives in LiteratureFinder) ────
@@ -370,6 +607,7 @@ function SaveToLibraryPicker({
 
 function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]) => void }) {
   const [mode, setMode] = useState<'topic' | 'pmid' | 'doi'>('topic');
+  const [source, setSource] = useState<'pubmed' | 'europepmc' | 'preprints' | 'semantic' | 'all'>('all');
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Article[]>([]);
@@ -396,9 +634,27 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
     try {
       let articles: Article[] = [];
       if (mode === 'topic') {
-        const ids = await pubmedSearch(query.trim());
-        if (!ids.length) { setSearchErr('No results found. Try different keywords.'); return; }
-        articles = await pubmedSummary(ids);
+        const q = query.trim();
+        const tasks: Promise<Article[]>[] = [];
+        const wantPubmed = source === 'pubmed' || source === 'all';
+        const wantEpmc = source === 'europepmc' || source === 'all';
+        const wantPreprint = source === 'preprints';
+        const wantS2 = source === 'semantic' || source === 'all';
+        if (wantPubmed) tasks.push(pubmedSearch(q).then(ids => pubmedSummary(ids)).catch(() => []));
+        if (wantEpmc) tasks.push(europePmcSearch(q).catch(() => []));
+        if (wantPreprint) tasks.push(europePmcSearch(q, true).catch(() => []));
+        if (wantS2) tasks.push(semanticScholarSearch(q).catch(() => []));
+        const batches = await Promise.all(tasks);
+        // Merge + de-duplicate across sources (prefer entries that already have an abstract)
+        const byKey = new Map<string, Article>();
+        for (const a of batches.flat()) {
+          const key = a.doi ? `doi:${a.doi.toLowerCase()}` : a.pmid ? `pmid:${a.pmid}` : `t:${a.title.toLowerCase().slice(0, 60)}`;
+          const existing = byKey.get(key);
+          if (!existing) byKey.set(key, a);
+          else if (!existing.abstract && a.abstract) byKey.set(key, { ...existing, abstract: a.abstract });
+        }
+        articles = Array.from(byKey.values());
+        if (!articles.length) { setSearchErr('No results found. Try different keywords or another source.'); return; }
       } else if (mode === 'pmid') {
         const ids = query.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
         articles = await pubmedSummary(ids);
@@ -481,7 +737,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
         <span style={{ fontSize: 22 }}>🔎</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Literature Finder</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Search PubMed by topic, PMID, or DOI — select and send to AI Swarm</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Search PubMed · Europe PMC · Preprints · Semantic Scholar — select and send to AI Swarm</div>
         </div>
         <LibraryBrowse
           libraries={libraries}
@@ -504,6 +760,27 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
           </button>
         ))}
       </div>
+
+      {/* Source selector (topic mode only) */}
+      {mode === 'topic' && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginRight: 2 }}>SOURCES:</span>
+          {([
+            ['all', '🌐 All Sources'],
+            ['pubmed', '📕 PubMed'],
+            ['europepmc', '📗 Europe PMC'],
+            ['preprints', '📄 Preprints (bioRxiv/medRxiv)'],
+            ['semantic', '🧠 Semantic Scholar'],
+          ] as const).map(([s, label]) => (
+            <button key={s} onClick={() => setSource(s)} style={{
+              padding: '4px 11px', borderRadius: 20, border: '1px solid', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+              borderColor: source === s ? 'var(--accent)' : 'var(--border)',
+              background: source === s ? 'rgba(99,102,241,0.12)' : 'transparent',
+              color: source === s ? '#818cf8' : 'var(--text-muted)',
+            }}>{label}</button>
+          ))}
+        </div>
+      )}
 
       {/* Search input */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -681,6 +958,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
   const [topic, setTopic] = useState('');
   const [disease, setDisease] = useState('');
   const [grantType, setGrantType] = useState('NIH R01 (Standard Research Project)');
+  const [model, setModel] = useState('auto');
   const [extraContext, setExtraContext] = useState('');
   const [dragging, setDragging] = useState(false);
 
@@ -689,9 +967,30 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
   const [result, setResult] = useState<SynthesisResult | null>(null);
   const [error, setError] = useState('');
 
+  // Funding intelligence + feedback/learning loop
+  const [agencies, setAgencies] = useState<string[]>(['nih', 'nsf', 'ukri', 'erc']);
+  const [funding, setFunding] = useState<FundingResult | null>(null);
+  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [prefStats, setPrefStats] = useState<{ total_rated: number; avg_rating: number }>({ total_rated: 0, avg_rating: 0 });
+
+  useEffect(() => {
+    swarmFeedbackApi.myRatings().then(r => setRatings(r.data.ratings || {})).catch(() => {});
+    swarmFeedbackApi.preferences().then(r => setPrefStats({ total_rated: r.data.total_rated || 0, avg_rating: r.data.avg_rating || 0 })).catch(() => {});
+  }, []);
+
+  const rateHypothesis = async (h: HypothesisItem, n: number) => {
+    setRatings(prev => ({ ...prev, [h.hypothesis]: n }));
+    const isUnfunded = funding?.gap_analysis.some(g => g.status === 'unfunded' && (g.gap.includes(h.hypothesis.slice(0, 20)) || h.supporting_evidence?.includes(g.gap.slice(0, 20)))) || false;
+    try {
+      await swarmFeedbackApi.rate({ topic, disease, hypothesis: h.hypothesis, rationale: h.rationale, rating: n, novelty_score: h.novelty_score, unfunded: isUnfunded });
+      const p = await swarmFeedbackApi.preferences();
+      setPrefStats({ total_rated: p.data.total_rated || 0, avg_rating: p.data.avg_rating || 0 });
+    } catch { /* non-blocking */ }
+  };
+
   const [expandedPaper, setExpandedPaper] = useState<number | null>(null);
   const [expandedHyp, setExpandedHyp] = useState<number | null>(0);
-  const [activeResultTab, setActiveResultTab] = useState<'overview' | 'hypotheses' | 'aims' | 'grant'>('overview');
+  const [activeResultTab, setActiveResultTab] = useState<'overview' | 'hypotheses' | 'funding' | 'aims' | 'grant'>('overview');
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -722,13 +1021,34 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
     if (!texts.length) { setError('Add at least one article — search PubMed above, upload a file, or paste text.'); return; }
     if (!topic.trim()) { setError('Enter a research topic.'); return; }
 
-    setError(''); setRunning(true); setResult(null); setCurrentStage(0);
+    setError(''); setRunning(true); setResult(null); setFunding(null); setCurrentStage(0);
     const timer = setInterval(() => setCurrentStage(p => p < STAGES.length - 1 ? p + 1 : p), 2200);
     try {
-      const res = await grantsApi.researchSynthesis({ texts, topic: topic.trim(), disease: disease.trim(), grant_type: grantType, extra_context: extraContext.trim() });
-      clearInterval(timer); setCurrentStage(STAGES.length); setResult(res.data); setActiveResultTab('overview');
+      // Learning loop: inject this user's rated-hypothesis preferences into the prompt.
+      let feedback: { liked: string[]; disliked: string[] } | undefined;
+      try {
+        const pref = await swarmFeedbackApi.preferences();
+        if (pref.data.liked?.length || pref.data.disliked?.length) {
+          feedback = { liked: pref.data.liked, disliked: pref.data.disliked };
+        }
+      } catch { /* preferences optional */ }
+
+      const res = await grantsApi.researchSynthesis({ texts, topic: topic.trim(), disease: disease.trim(), grant_type: grantType, extra_context: extraContext.trim(), model, feedback });
+      setResult(res.data); setActiveResultTab('overview');
+
+      // Funding gap analysis — cross-check the AI-detected gaps against real grant agencies.
+      setCurrentStage(STAGES.length - 1);
+      try {
+        const gaps: string[] = res.data?.research_gaps ?? [];
+        if (gaps.length && agencies.length) {
+          const fund = await fundingApi.analyze(topic.trim(), gaps, agencies);
+          setFunding(fund.data);
+        }
+      } catch { /* funding analysis is best-effort */ }
+
+      clearInterval(timer); setCurrentStage(STAGES.length);
     } catch (err: any) {
-      clearInterval(timer); setError(err.response?.data?.detail || 'Synthesis failed — check backend connection.');
+      clearInterval(timer); setError(err.response?.data?.detail || err?.message || 'Synthesis failed — check backend connection.');
     } finally { setRunning(false); }
   };
 
@@ -742,13 +1062,17 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           <span style={{ fontSize: 28 }}>🧬</span>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: 'var(--text)' }}>Research AI Swarm</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>Search PubMed → select articles → AI synthesises gaps → novel hypotheses → grant-ready content</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>Search 4 repositories → multi-model AI synthesises gaps → novel hypotheses → grant-ready content</p>
           </div>
-          {result && (
-            <span style={{ marginLeft: 'auto', background: result.source === 'openai' ? 'rgba(99,102,241,0.15)' : 'rgba(34,197,94,0.12)', color: result.source === 'openai' ? '#818cf8' : '#4ade80', border: `1px solid ${result.source === 'openai' ? '#6366f140' : '#22c55e40'}`, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
-              {result.source === 'openai' ? '⚡ GPT-4o Powered' : '📋 Template Mode'}
-            </span>
-          )}
+          {result && (() => {
+            const isAI = result.source !== 'template';
+            const label = result.model_label || (isAI ? result.source : 'Template Engine');
+            return (
+              <span style={{ marginLeft: 'auto', background: isAI ? 'rgba(99,102,241,0.15)' : 'rgba(34,197,94,0.12)', color: isAI ? '#818cf8' : '#4ade80', border: `1px solid ${isAI ? '#6366f140' : '#22c55e40'}`, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
+                {isAI ? `⚡ ${label} Powered` : '📋 Template Mode'}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -825,6 +1149,36 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
               </div>
 
               <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>AI MODEL</label>
+                <select value={model} onChange={e => setModel(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
+                  {SWARM_MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                </select>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{SWARM_MODELS.find(m => m.id === model)?.desc}</div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>FUNDING AGENCIES TO CHECK (unfunded-gap analysis)</label>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {FUNDING_AGENCIES.map(a => {
+                    const on = agencies.includes(a.id);
+                    return (
+                      <button key={a.id} type="button" onClick={() => setAgencies(p => on ? p.filter(x => x !== a.id) : [...p, a.id])}
+                        style={{ padding: '5px 11px', borderRadius: 20, border: '1px solid', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                          borderColor: on ? 'var(--accent)' : 'var(--border)', background: on ? 'rgba(99,102,241,0.12)' : 'transparent', color: on ? '#818cf8' : 'var(--text-muted)' }}>
+                        {on ? '✓ ' : ''}{a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {prefStats.total_rated > 0 && (
+                  <div style={{ fontSize: 10, color: '#818cf8', marginTop: 6 }}>
+                    🧠 Learning active — {prefStats.total_rated} hypothesis rating{prefStats.total_rated !== 1 ? 's' : ''} (avg {prefStats.avg_rating}★) feeding the next run.
+                  </div>
+                )}
+              </div>
+
+              <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>EXTRA CONTEXT</label>
                 <input value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Lab expertise, preliminary data, PI background…"
                   style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
@@ -845,7 +1199,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             <span style={{ color: totalSources > 20 ? '#f59e0b' : 'var(--text-muted)', fontWeight: totalSources > 20 ? 700 : 400 }}>
               {totalSources} paper{totalSources !== 1 ? 's' : ''}
             </span>
-            {' '}ready · 7 AI agents
+            {' '}ready · 8-stage swarm · {SWARM_MODELS.find(m => m.id === model)?.label.replace(/^[^ ]+ /, '') || 'Auto'} · {agencies.length} funding agenc{agencies.length === 1 ? 'y' : 'ies'}
             {totalSources > 20 && <span style={{ color: '#f59e0b' }}> · adaptive batching enabled</span>}
             {disease && <> · <span style={{ color: '#f59e0b' }}>{disease}</span></>}
             {grantType && <> · <span style={{ color: '#818cf8' }}>{grantType}</span></>}
@@ -891,9 +1245,9 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <div style={{ display: 'flex', gap: 6 }}>
-              {(['overview', 'hypotheses', 'aims', 'grant'] as const).map(tab => (
+              {(['overview', 'hypotheses', 'funding', 'aims', 'grant'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveResultTab(tab)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: activeResultTab === tab ? 'var(--accent)' : 'var(--surface)', color: activeResultTab === tab ? 'white' : 'var(--text)' }}>
-                  {tab === 'overview' ? '📊 Overview' : tab === 'hypotheses' ? '🧬 Hypotheses' : tab === 'aims' ? '🎯 Aims' : '✍️ Grant Sections'}
+                  {tab === 'overview' ? '📊 Overview' : tab === 'hypotheses' ? '🧬 Hypotheses' : tab === 'funding' ? `💰 Funding${funding ? ` (${funding.summary.unfunded}🟢)` : ''}` : tab === 'aims' ? '🎯 Aims' : '✍️ Grant Sections'}
                 </button>
               ))}
             </div>
@@ -921,7 +1275,12 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 style={{ padding: '8px 14px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                 ⬇ Text (.txt)
               </button>
-              <button onClick={() => { setResult(null); setCurrentStage(-1); }} style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>↺ New Analysis</button>
+              <button onClick={() => downloadText(buildAtomicNotes(result, funding, topic, disease, grantType), `atomic_notes_${topic.slice(0, 30).replace(/\s+/g, '_')}.md`)}
+                title="Export Zettelkasten-style linked atomic notes (Obsidian/Logseq-ready)"
+                style={{ padding: '8px 14px', border: '1px solid rgba(236,72,153,0.35)', borderRadius: 8, background: 'rgba(236,72,153,0.1)', color: '#f472b6', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                🗂️ Atomic Notes (.md)
+              </button>
+              <button onClick={() => { setResult(null); setFunding(null); setCurrentStage(-1); }} style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>↺ New Analysis</button>
               <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #0071bc, #1a4480)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>📝 Send to Grant Composer</button>
             </div>
           </div>
@@ -985,9 +1344,13 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
                     <span style={{ fontSize: 28, flexShrink: 0 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-muted)' }}>HYPOTHESIS {i + 1}</span>
                         <NoveltyBadge score={h.novelty_score} />
+                        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>RATE:</span>
+                          <StarRating value={ratings[h.hypothesis] || 0} onRate={(n) => rateHypothesis(h, n)} />
+                        </span>
                       </div>
                       <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--text)' }}>{h.hypothesis}</p>
                     </div>
@@ -1011,6 +1374,23 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeResultTab === 'funding' && (
+            <div>
+              <div style={{ padding: '12px 16px', background: 'rgba(34,197,94,0.07)', borderRadius: 10, border: '1px solid rgba(34,197,94,0.2)', fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                💰 <strong>Funding Gap Intelligence</strong> — each AI-detected gap is cross-checked against live grant-agency databases. Gaps with few or zero existing awards are genuine <strong>unfunded white-space</strong> — your strongest case for a new proposal.
+              </div>
+              {funding ? (
+                <FundingVisualization funding={funding} />
+              ) : (
+                <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 14 }}>
+                  {agencies.length === 0
+                    ? 'No funding agencies selected. Pick at least one agency in the setup panel and re-run.'
+                    : 'Funding analysis was not available for this run (agency APIs may be temporarily unreachable). Re-run to retry.'}
+                </div>
+              )}
             </div>
           )}
 
