@@ -870,6 +870,19 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
     downloadText(sel.map(a => `${'='.repeat(80)}\nTitle: ${a.title}\nAuthors: ${a.authors}\nJournal: ${a.journal} (${a.year})\nPMID: ${a.pmid || 'N/A'} | DOI: ${a.doi || 'N/A'}\nURL: ${a.url}\n\nAbstract:\n${a.abstract || 'Not available'}\n`).join('\n'), `literature_${Date.now()}.txt`);
   };
 
+  const downloadIds = () => {
+    const sel = selectedArticles;
+    const lines = sel.map(a => {
+      const parts: string[] = [];
+      if (a.pmid) parts.push(`PMID:${a.pmid}`);
+      if (a.doi) parts.push(`DOI:${a.doi}`);
+      parts.push(a.title);
+      return parts.join('\t');
+    });
+    const header = `# ${sel.length} articles exported from LabOS Research AI — ${new Date().toISOString().slice(0, 10)}\n# PMID/DOI\tTitle\n`;
+    downloadText(header + lines.join('\n'), `article_ids_${Date.now()}.tsv`);
+  };
+
   const downloadSingle = async (article: Article) => {
     let art = article;
     if (!art.abstract && art.pmid) { const map = await pubmedAbstracts([art.pmid]); art = { ...art, abstract: map[art.pmid] || 'Abstract not available.' }; }
@@ -1004,6 +1017,9 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
 
               <button onClick={downloadSelected} disabled={fetchingAbstracts} style={{ padding: '6px 14px', background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                 ⬇ Download ({selCount})
+              </button>
+              <button onClick={downloadIds} style={{ padding: '6px 14px', background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                📋 Export IDs
               </button>
             </div>
           )}
@@ -1486,7 +1502,37 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>{result.web_context}</p>
               </div>
               <div className="card" style={{ gridColumn: '1 / -1' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: 'var(--text)' }}>📚 Paper Summaries</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>📚 Paper Summaries ({result.paper_summaries.length})</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => {
+                      const lines = result.paper_summaries.map((p, i) => {
+                        const id = p.identifier || '';
+                        return [id, p.filename].filter(Boolean).join('\t');
+                      });
+                      downloadText(`# PMIDs / DOIs from synthesis\n` + lines.join('\n'), `synthesis_ids_${Date.now()}.tsv`);
+                    }} style={{ padding: '5px 12px', background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
+                      📋 Export IDs
+                    </button>
+                    <button onClick={() => {
+                      const txt = result.paper_summaries.map((p, i) => {
+                        return `${'='.repeat(70)}\n${i + 1}. ${p.filename}\n` +
+                          (p.identifier ? `Identifier: ${p.identifier}\n` : '') +
+                          `Sample Size: ${p.sample_size || 'Not reported'}\n` +
+                          `Race/Ethnicity: ${p.race_ethnicity || 'Not reported'}\n` +
+                          `Country: ${p.country || 'Not reported'}\n` +
+                          `Methodology: ${p.methodology}\n` +
+                          (p.results ? `Results: ${p.results}\n` : '') +
+                          `Key Findings: ${p.key_findings}\n` +
+                          `Conclusion: ${p.main_conclusion}\n` +
+                          `Relevance: ${p.relevance}\n`;
+                      }).join('\n');
+                      downloadText(txt, `paper_summaries_${Date.now()}.txt`);
+                    }} style={{ padding: '5px 12px', background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
+                      ⬇ Download All
+                    </button>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {result.paper_summaries.map((p, i) => (
                     <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
