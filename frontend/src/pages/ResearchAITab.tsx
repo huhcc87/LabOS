@@ -65,9 +65,14 @@ interface Article {
 
 interface PaperSummary {
   filename: string;
+  identifier?: string;       // PMID / DOI if present
   key_findings: string;
   methodology: string;
+  results?: string;
   main_conclusion: string;
+  sample_size?: string;      // e.g. "N=120" or "Not reported"
+  race_ethnicity?: string;   // cohort race/ethnicity or "Not reported"
+  country?: string;          // study country/setting or "Not reported"
   relevance: string;
 }
 
@@ -182,8 +187,11 @@ function downloadText(content: string, filename: string) {
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = filename; a.style.display = 'none';
+  // Anchor must be in the DOM; revoke AFTER the click has been dispatched.
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 5000);
 }
 
 // ─── Star rating (feedback / learning loop) ───────────────────────────────────
@@ -342,23 +350,42 @@ function autoGenerateTopic(articles: Article[]): string {
 
 const NCBI = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 
-async function pubmedSearch(query: string): Promise<string[]> {
-  const r = await fetch(`${NCBI}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=25&retmode=json&sort=relevance`);
+// Hard ceiling on how many PMIDs we'll pull from a single PubMed search so a
+// huge query can't lock up the browser. Covers typical gene-level result sets.
+const PUBMED_MAX = 2000;
+
+async function pubmedSearch(
+  query: string,
+  opts: { retmax?: number; reldateDays?: number; sort?: string } = {},
+): Promise<string[]> {
+  const retmax = Math.min(Math.max(opts.retmax ?? 25, 1), PUBMED_MAX);
+  const sort = opts.sort || 'relevance';
+  let url = `${NCBI}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=${retmax}&retmode=json&sort=${encodeURIComponent(sort)}`;
+  if (opts.reldateDays && opts.reldateDays > 0) url += `&datetype=pdat&reldate=${opts.reldateDays}`;
+  const r = await fetch(url);
   const j = await r.json();
   return j.esearchresult?.idlist || [];
 }
 
 async function pubmedSummary(ids: string[]): Promise<Article[]> {
   if (!ids.length) return [];
-  const r = await fetch(`${NCBI}/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`);
-  const j = await r.json();
-  const result = j.result || {};
-  return (result.uids || ids).map((pmid: string) => {
-    const d = result[pmid] || {};
-    const authors = (d.authors || []).slice(0, 3).map((a: any) => a.name).join(', ') + (d.authors?.length > 3 ? ' et al.' : '');
-    const doi = (d.articleids || []).find((x: any) => x.idtype === 'doi')?.value || '';
-    return { id: `pmid-${pmid}`, pmid, doi, title: d.title || 'Untitled', authors: authors || 'Unknown authors', journal: d.source || '', year: (d.pubdate || '').split(' ')[0] || '', abstract: '', url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` };
-  });
+  const CHUNK = 200; // esummary via GET is reliable up to ~200 ids per request
+  const out: Article[] = [];
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const slice = ids.slice(i, i + CHUNK);
+    try {
+      const r = await fetch(`${NCBI}/esummary.fcgi?db=pubmed&id=${slice.join(',')}&retmode=json`);
+      const j = await r.json();
+      const result = j.result || {};
+      for (const pmid of (result.uids || slice)) {
+        const d = result[pmid] || {};
+        const authors = (d.authors || []).slice(0, 3).map((a: any) => a.name).join(', ') + (d.authors?.length > 3 ? ' et al.' : '');
+        const doi = (d.articleids || []).find((x: any) => x.idtype === 'doi')?.value || '';
+        out.push({ id: `pmid-${pmid}`, pmid, doi, title: d.title || 'Untitled', authors: authors || 'Unknown authors', journal: d.source || '', year: (d.pubdate || '').split(' ')[0] || '', abstract: '', url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` });
+      }
+    } catch (err) { console.warn(`[PubMed] esummary batch failed (ids ${i}–${i + CHUNK}):`, err); }
+  }
+  return out;
 }
 
 async function pubmedAbstracts(ids: string[]): Promise<Record<string, string>> {
@@ -383,9 +410,10 @@ async function fetchByDOI(doi: string): Promise<Article | null> {
 
 // ─── Europe PMC (peer-reviewed + preprints, full abstracts inline) ─────────────
 
-async function europePmcSearch(query: string, preprintsOnly = false): Promise<Article[]> {
+async function europePmcSearch(query: string, preprintsOnly = false, pageSize = 25): Promise<Article[]> {
   const q = preprintsOnly ? `${query} AND SRC:PPR` : query;
-  const r = await fetch(`https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(q)}&format=json&pageSize=25&resultType=core&sort=CITED desc`);
+  const size = Math.min(Math.max(pageSize, 1), 1000);
+  const r = await fetch(`https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(q)}&format=json&pageSize=${size}&resultType=core&sort=CITED desc`);
   const j = await r.json();
   const list = j.resultList?.result || [];
   return list.map((d: any): Article => {
@@ -409,9 +437,10 @@ async function europePmcSearch(query: string, preprintsOnly = false): Promise<Ar
 
 // ─── Semantic Scholar (AI-ranked relevance, 200M+ corpus) ──────────────────────
 
-async function semanticScholarSearch(query: string): Promise<Article[]> {
+async function semanticScholarSearch(query: string, limit = 25): Promise<Article[]> {
   const fields = 'title,authors,year,abstract,venue,externalIds,url,citationCount';
-  const r = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=25&fields=${fields}`);
+  const lim = Math.min(Math.max(limit, 1), 100); // Semantic Scholar caps at 100/page
+  const r = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${lim}&fields=${fields}`);
   if (!r.ok) throw new Error('Semantic Scholar rate-limited');
   const j = await r.json();
   const list = j.data || [];
@@ -430,6 +459,93 @@ async function semanticScholarSearch(query: string): Promise<Article[]> {
       url: d.url || (doi ? `https://doi.org/${doi}` : pmid ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` : ''),
     };
   });
+}
+
+// ─── Pasted-URL parser ───────────────────────────────────────────────────────
+// Lets users paste a full search/article URL (PubMed, Europe PMC, Semantic
+// Scholar, DOI, bioRxiv) and have the finder extract the query + filters.
+
+type ParsedUrl =
+  | { kind: 'pubmed-search'; term: string; retmax?: number; reldateDays?: number; sort?: string }
+  | { kind: 'pmid'; ids: string[] }
+  | { kind: 'doi'; doi: string }
+  | { kind: 'term'; term: string; preprint?: boolean };
+
+// Map PubMed `filter=datesearch.y_N` → reldate in days.
+function dateFilterToDays(filterVals: string[]): number | undefined {
+  for (const f of filterVals) {
+    const m = /datesearch\.y_(\d+)/.exec(f);
+    if (m) return parseInt(m[1], 10) * 365;
+  }
+  return undefined;
+}
+
+function parseSearchUrl(raw: string): ParsedUrl | null {
+  let text = raw.trim();
+  // Accept scheme-less links too — browsers hide "https://" in the address
+  // bar, so a copied URL often arrives as "pubmed.ncbi.nlm.nih.gov/?term=…".
+  if (!/^https?:\/\//i.test(text)) {
+    if (/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/|\?)/i.test(text)) text = 'https://' + text;
+    else return null;
+  }
+  let u: URL;
+  try { u = new URL(text); } catch { return null; }
+  const host = u.hostname.toLowerCase();
+  const params = u.searchParams;
+
+  // DOI links → doi.org/<doi> or any URL carrying a /10.xxxx/ DOI
+  if (host.endsWith('doi.org')) {
+    const doi = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
+    if (doi) return { kind: 'doi', doi };
+  }
+  const doiInPath = /\/(10\.\d{4,9}\/[^\s?#]+)/.exec(u.pathname + u.search);
+  if (doiInPath) return { kind: 'doi', doi: decodeURIComponent(doiInPath[1]) };
+
+  // PubMed
+  if (host.includes('pubmed.ncbi.nlm.nih.gov')) {
+    // Article page: /<pmid>/
+    const pmidPath = /^\/(\d{5,9})\/?$/.exec(u.pathname);
+    if (pmidPath) return { kind: 'pmid', ids: [pmidPath[1]] };
+    const term = (params.get('term') || '').replace(/\+/g, ' ').trim();
+    if (term) {
+      const sizeRaw = parseInt(params.get('size') || '', 10);
+      const order = params.get('sort_order'); // asc/desc
+      const sortField = params.get('sort');    // date, pubdate, etc.
+      return {
+        kind: 'pubmed-search',
+        term,
+        retmax: Number.isFinite(sizeRaw) ? sizeRaw : undefined,
+        reldateDays: dateFilterToDays(params.getAll('filter')),
+        sort: sortField ? (sortField === 'date' || sortField === 'pubdate' ? 'pub_date' : sortField)
+          : order === 'asc' ? 'pub_date' : undefined,
+      };
+    }
+  }
+
+  // Europe PMC search/article
+  if (host.includes('europepmc.org') || host.includes('ebi.ac.uk')) {
+    const term = (params.get('query') || params.get('term') || '').trim();
+    if (term) return { kind: 'term', term };
+  }
+
+  // Semantic Scholar search
+  if (host.includes('semanticscholar.org')) {
+    const term = (params.get('q') || params.get('query') || '').trim();
+    if (term) return { kind: 'term', term };
+  }
+
+  // bioRxiv / medRxiv → treat as preprint term if a search query is present
+  if (host.includes('biorxiv.org') || host.includes('medrxiv.org')) {
+    const term = (params.get('text') || params.get('query') || '').trim();
+    if (term) return { kind: 'term', term, preprint: true };
+  }
+
+  // Generic fallback: any URL carrying a recognizable search term
+  const generic = (params.get('q') || params.get('query') || params.get('term') || params.get('text') || '')
+    .replace(/\+/g, ' ').trim();
+  if (generic) return { kind: 'term', term: generic };
+
+  return null;
 }
 
 // ─── Library Browse Panel (display-only, state lives in LiteratureFinder) ────
@@ -610,6 +726,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
   const [source, setSource] = useState<'pubmed' | 'europepmc' | 'preprints' | 'semantic' | 'all'>('all');
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState('');
   const [results, setResults] = useState<Article[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -630,9 +747,59 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
 
   const doSearch = async () => {
     if (!query.trim()) return;
-    setSearching(true); setResults([]); setSelected(new Set()); setSearchErr(''); setSuggestedTopic('');
+    setSearching(true); setSearchProgress(''); setResults([]); setSelected(new Set()); setSearchErr(''); setSuggestedTopic('');
     try {
       let articles: Article[] = [];
+
+      // ── Pasted URL? Extract the query/filters and route automatically ──────
+      const parsed = parseSearchUrl(query);
+      if (parsed) {
+        if (parsed.kind === 'doi') {
+          const a = await fetchByDOI(parsed.doi);
+          articles = a ? [a] : [];
+        } else if (parsed.kind === 'pmid') {
+          articles = await pubmedSummary(parsed.ids);
+        } else if (parsed.kind === 'pubmed-search') {
+          // Pull the FULL result set honoring date/sort filters, then enrich.
+          setSearchProgress('Searching PubMed…');
+          const ids = await pubmedSearch(parsed.term, {
+            retmax: PUBMED_MAX, reldateDays: parsed.reldateDays, sort: parsed.sort,
+          });
+          setSearchProgress(`Found ${ids.length} PMIDs — fetching details…`);
+          const [pm, epmc, s2] = await Promise.all([
+            pubmedSummary(ids),
+            europePmcSearch(parsed.term).catch(() => []),
+            semanticScholarSearch(parsed.term).catch(() => []),
+          ]);
+          setSearchProgress(`Merging ${pm.length + epmc.length + s2.length} results…`);
+          const byKey = new Map<string, Article>();
+          for (const a of [...pm, ...epmc, ...s2]) {
+            const key = a.doi ? `doi:${a.doi.toLowerCase()}` : a.pmid ? `pmid:${a.pmid}` : `t:${a.title.toLowerCase().slice(0, 60)}`;
+            const existing = byKey.get(key);
+            if (!existing) byKey.set(key, a);
+            else if (!existing.abstract && a.abstract) byKey.set(key, { ...existing, abstract: a.abstract });
+          }
+          articles = Array.from(byKey.values());
+        } else { // 'term'
+          const [epmc, s2, pmIds] = await Promise.all([
+            europePmcSearch(parsed.term, parsed.preprint).catch(() => []),
+            parsed.preprint ? Promise.resolve([]) : semanticScholarSearch(parsed.term).catch(() => []),
+            parsed.preprint ? Promise.resolve([]) : pubmedSearch(parsed.term).catch(() => []),
+          ]);
+          const pm = await pubmedSummary(pmIds as string[]).catch(() => []);
+          const byKey = new Map<string, Article>();
+          for (const a of [...pm, ...epmc, ...(s2 as Article[])]) {
+            const key = a.doi ? `doi:${a.doi.toLowerCase()}` : a.pmid ? `pmid:${a.pmid}` : `t:${a.title.toLowerCase().slice(0, 60)}`;
+            if (!byKey.has(key)) byKey.set(key, a);
+          }
+          articles = Array.from(byKey.values());
+        }
+        if (!articles.length) { setSearchErr('No results found from that link. Check the URL or try keywords.'); return; }
+        setResults(articles);
+        setSuggestedTopic(autoGenerateTopic(articles));
+        return;
+      }
+
       if (mode === 'topic') {
         const q = query.trim();
         const tasks: Promise<Article[]>[] = [];
@@ -640,10 +807,13 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
         const wantEpmc = source === 'europepmc' || source === 'all';
         const wantPreprint = source === 'preprints';
         const wantS2 = source === 'semantic' || source === 'all';
-        if (wantPubmed) tasks.push(pubmedSearch(q).then(ids => pubmedSummary(ids)).catch(() => []));
-        if (wantEpmc) tasks.push(europePmcSearch(q).catch(() => []));
-        if (wantPreprint) tasks.push(europePmcSearch(q, true).catch(() => []));
-        if (wantS2) tasks.push(semanticScholarSearch(q).catch(() => []));
+        // Fetch a reasonable page from each source — 50 per source gives ~100-150
+        // deduplicated results across 3 sources without overwhelming the UI.
+        const FETCH = 50;
+        if (wantPubmed) tasks.push(pubmedSearch(q, { retmax: FETCH }).then(ids => pubmedSummary(ids)).catch(() => []));
+        if (wantEpmc) tasks.push(europePmcSearch(q, false, FETCH).catch(() => []));
+        if (wantPreprint) tasks.push(europePmcSearch(q, true, FETCH).catch(() => []));
+        if (wantS2) tasks.push(semanticScholarSearch(q, 50).catch(() => []));
         const batches = await Promise.all(tasks);
         // Merge + de-duplicate across sources (prefer entries that already have an abstract)
         const byKey = new Map<string, Article>();
@@ -785,12 +955,18 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
       {/* Search input */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()}
-          placeholder={mode === 'topic' ? 'e.g. CAR-T immunotherapy glioblastoma' : mode === 'pmid' ? 'e.g. 38234567, 38123456 (comma-separated)' : 'e.g. 10.1038/s41586-024-07018-7'}
+          placeholder={mode === 'topic' ? 'Keywords, or paste a PubMed/Europe PMC/DOI link…' : mode === 'pmid' ? 'e.g. 38234567, 38123456 (comma-separated)' : 'e.g. 10.1038/s41586-024-07018-7'}
           style={{ flex: 1, padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
         <button onClick={doSearch} disabled={searching || !query.trim()} style={{ padding: '9px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', opacity: searching || !query.trim() ? 0.6 : 1 }}>
-          {searching ? '⏳ Searching…' : '🔍 Search'}
+          {searching ? (searchProgress ? `⏳ ${searchProgress}` : '⏳ Searching…') : '🔍 Search'}
         </button>
       </div>
+
+      {mode === 'topic' && /^https?:\/\//i.test(query.trim()) && (
+        <div style={{ padding: '7px 14px', background: 'rgba(34,197,94,0.1)', borderRadius: 8, color: '#4ade80', fontSize: 12, marginBottom: 12 }}>
+          🔗 Link detected — extracting the search term &amp; filters from the URL.
+        </div>
+      )}
 
       {searchErr && <div style={{ padding: '8px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, color: '#f87171', fontSize: 13, marginBottom: 12 }}>⚠️ {searchErr}</div>}
 
@@ -1018,8 +1194,9 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
 
   const runPipeline = async () => {
     const texts = [...files.map(f => ({ filename: f.filename, content: f.content })), ...(pasteText.trim() ? [{ filename: 'Pasted Text', content: pasteText.trim() }] : [])];
-    if (!texts.length) { setError('Add at least one article — search PubMed above, upload a file, or paste text.'); return; }
-    if (!topic.trim()) { setError('Enter a research topic.'); return; }
+    // Papers are optional: with no literature supplied the swarm synthesizes
+    // from the model's own knowledge of the field. A topic is always required.
+    if (!topic.trim()) { setError('Enter a research topic to launch the swarm (adding papers is optional but improves results).'); return; }
 
     setError(''); setRunning(true); setResult(null); setFunding(null); setCurrentStage(0);
     const timer = setInterval(() => setCurrentStage(p => p < STAGES.length - 1 ? p + 1 : p), 2200);
@@ -1197,9 +1374,9 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           </button>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             <span style={{ color: totalSources > 20 ? '#f59e0b' : 'var(--text-muted)', fontWeight: totalSources > 20 ? 700 : 400 }}>
-              {totalSources} paper{totalSources !== 1 ? 's' : ''}
+              {totalSources > 0 ? `${totalSources} paper${totalSources !== 1 ? 's' : ''} ready` : 'Field-knowledge mode (no papers)'}
             </span>
-            {' '}ready · 8-stage swarm · {SWARM_MODELS.find(m => m.id === model)?.label.replace(/^[^ ]+ /, '') || 'Auto'} · {agencies.length} funding agenc{agencies.length === 1 ? 'y' : 'ies'}
+            {' · '}8-stage swarm · {SWARM_MODELS.find(m => m.id === model)?.label.replace(/^[^ ]+ /, '') || 'Auto'} · {agencies.length} funding agenc{agencies.length === 1 ? 'y' : 'ies'}
             {totalSources > 20 && <span style={{ color: '#f59e0b' }}> · adaptive batching enabled</span>}
             {disease && <> · <span style={{ color: '#f59e0b' }}>{disease}</span></>}
             {grantType && <> · <span style={{ color: '#818cf8' }}>{grantType}</span></>}
@@ -1314,17 +1491,31 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   {result.paper_summaries.map((p, i) => (
                     <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                       <button onClick={() => setExpandedPaper(expandedPaper === i ? null : i)} style={{ width: '100%', padding: '12px 16px', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
-                        <span>📄</span><span style={{ fontWeight: 600, fontSize: 13, flex: 1, color: 'var(--text)' }}>{p.filename}</span>
+                        <span>📄</span>
+                        <span style={{ fontWeight: 600, fontSize: 13, flex: 1, color: 'var(--text)' }}>{p.filename}</span>
+                        {p.identifier && <span style={{ fontSize: 11, fontWeight: 700, color: '#818cf8', background: 'rgba(99,102,241,0.12)', borderRadius: 6, padding: '2px 8px', whiteSpace: 'nowrap' }}>{p.identifier}</span>}
                         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{expandedPaper === i ? '▲' : '▼'}</span>
                       </button>
                       {expandedPaper === i && (
-                        <div style={{ padding: '12px 16px 16px', background: 'var(--bg)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                          {[['🔑 Key Findings', p.key_findings], ['🔬 Methodology', p.methodology], ['💡 Conclusion', p.main_conclusion], ['🎯 Relevance', p.relevance]].map(([label, text]) => (
-                            <div key={label as string}>
-                              <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-                              <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text)' }}>{text}</div>
+                        <div style={{ padding: '12px 16px 16px', background: 'var(--bg)' }}>
+                          {/* Cohort chips: N, race/ethnicity, country */}
+                          {(p.sample_size || p.race_ethnicity || p.country) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                              {p.sample_size && <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '3px 9px' }}>👥 {p.sample_size}</span>}
+                              {p.race_ethnicity && <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6, padding: '3px 9px' }}>🧬 {p.race_ethnicity}</span>}
+                              {p.country && <span style={{ fontSize: 11, fontWeight: 600, color: '#38bdf8', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 6, padding: '3px 9px' }}>🌍 {p.country}</span>}
                             </div>
-                          ))}
+                          )}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            {([['🔬 Methodology', p.methodology], ['📊 Results', p.results], ['💡 Conclusion', p.main_conclusion], ['🔑 Key Findings', p.key_findings], ['🎯 Relevance', p.relevance]] as [string, string | undefined][])
+                              .filter(([, text]) => text && text.trim())
+                              .map(([label, text]) => (
+                                <div key={label}>
+                                  <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+                                  <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text)' }}>{text}</div>
+                                </div>
+                              ))}
+                          </div>
                         </div>
                       )}
                     </div>

@@ -495,15 +495,84 @@ function buildSynthesisFallback(
   grant_type: string,
   texts: { filename: string; content: string }[]
 ) {
-  const paper_summaries = texts.slice(0, 25).map((t) => ({
-    filename: t.filename,
-    key_findings:
-      (t.content || "").split(/[.!?]\s/).slice(0, 2).join(". ").slice(0, 280) ||
-      "Key findings could not be auto-extracted — review the source.",
-    methodology: "Methodology not auto-extracted (template mode — add an AI key for full analysis).",
-    main_conclusion: (t.content || "").slice(0, 200) || "See source document.",
-    relevance: `Relevant to "${topic}".`,
-  }));
+  const paper_summaries = texts.slice(0, 25).map((t) => {
+    const c = t.content || "";
+
+    // Split structured header from abstract body
+    const abstractStart = c.indexOf("Abstract:\n");
+    const abstract = abstractStart >= 0 ? c.slice(abstractStart + 10).trim() : c;
+    const sentences = abstract.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10);
+
+    // Identifiers
+    const pmid = /PMID:\s*([0-9]{1,9})/i.exec(c)?.[1];
+    const doi = /DOI:\s*(10\.\d{4,9}\/[^\s.,;)}\]]+)/i.exec(c)?.[1];
+
+    // Sample size — multiple patterns: N=120, n = 1,200, 120 patients, cohort of 500
+    const nMatch =
+      /\bN\s*=\s*([0-9][0-9,]*)/i.exec(abstract)?.[1] ||
+      /\b(\d[0-9,]*)\s*(?:patients|participants|subjects|individuals|cases|samples|children|adults|women|men|persons|enrollees|volunteers)/i.exec(abstract)?.[1] ||
+      /\bcohort\s+of\s+(\d[0-9,]*)/i.exec(abstract)?.[1] ||
+      /\b(?:enrolled|recruited|included|analyzed|screened)\s+(\d[0-9,]*)/i.exec(abstract)?.[1];
+
+    // Methodology — look for sentences with method-related keywords
+    const methodKeywords = /\b(randomized|cohort|cross-sectional|longitudinal|retrospective|prospective|meta-analysis|systematic review|double-blind|placebo-controlled|case-control|rct|in vitro|in vivo|single-cell|RNA-seq|CRISPR|immunohistochemistry|flow cytometry|western blot|ELISA|PCR|qPCR|mass spectrometry|whole[- ]?exome|whole[- ]?genome|survey|questionnaire|interview|observational)\b/i;
+    const methodSentences = sentences
+      .filter((s) => methodKeywords.test(s))
+      .slice(0, 2);
+    const methodology = methodSentences.length
+      ? methodSentences.join(" ").slice(0, 400)
+      : "Not auto-extracted — add an AI key for full analysis.";
+
+    // Results — look for sentences with quantitative language
+    const resultKeywords = /\b(p\s*[<=]\s*0\.\d|CI\s|odds ratio|hazard ratio|risk ratio|OR\s*=|HR\s*=|RR\s*=|fold[- ]change|significantly|increased|decreased|reduced|improved|higher|lower|correlated|associated with|compared to|versus|median|mean\b.*\bwas\b|\d+(\.\d+)?%)/i;
+    const resultSentences = sentences
+      .filter((s) => resultKeywords.test(s) && !methodKeywords.test(s))
+      .slice(0, 2);
+    const results = resultSentences.length
+      ? resultSentences.join(" ").slice(0, 400)
+      : "Not auto-extracted — add an AI key for full analysis.";
+
+    // Key findings — first two abstract sentences (or result sentences if available)
+    const keyFindings =
+      (resultSentences.length ? resultSentences : sentences.slice(0, 2))
+        .join(". ")
+        .slice(0, 280) ||
+      "Key findings could not be auto-extracted — review the source.";
+
+    // Conclusion — look for concluding sentences at the end of the abstract
+    const conclusionKeywords = /\b(conclude|conclusion|suggest|in summary|taken together|overall|these (?:results|findings|data)|our (?:results|findings|data|study)|this study|implications)\b/i;
+    const conclusionSentences = sentences
+      .filter((s) => conclusionKeywords.test(s))
+      .slice(0, 2);
+    const mainConclusion = conclusionSentences.length
+      ? conclusionSentences.join(" ").slice(0, 400)
+      : sentences.slice(-2).join(" ").slice(0, 400) || "See source document.";
+
+    // Race / ethnicity
+    const raceKeywords = /\b(African[- ]?American|Black|White|Caucasian|Hispanic|Latino|Latina|Asian|Native American|Indigenous|Pacific Islander|Maori|Aboriginal|mixed[- ]?race|multi[- ]?ethnic|ethnicity|race|racial)\b/i;
+    const raceSentence = sentences.find((s) => raceKeywords.test(s));
+    const raceEthnicity = raceSentence
+      ? raceSentence.slice(0, 200)
+      : "Not reported";
+
+    // Country / setting
+    const countries = /\b(United States|USA|U\.S\.|UK|United Kingdom|China|Japan|India|Germany|France|Canada|Australia|Brazil|South Korea|Italy|Spain|Netherlands|Sweden|Switzerland|Norway|Denmark|Finland|Israel|Taiwan|Singapore|Mexico|Thailand|Iran|Turkey|Egypt|Nigeria|South Africa|Kenya|Colombia|Argentina|Chile|Peru|Saudi Arabia|Pakistan|Bangladesh|Indonesia|Vietnam|Philippines|Malaysia|Poland|Belgium|Austria|Ireland|Scotland|Wales|New Zealand|Portugal|Greece|Czech Republic|Hungary|Romania|Russia|Ukraine)\b/i;
+    const countryMatch = countries.exec(abstract);
+    const country = countryMatch ? countryMatch[1] : "Not reported";
+
+    return {
+      filename: t.filename,
+      identifier: pmid ? `PMID ${pmid}` : doi ? `DOI ${doi}` : "",
+      key_findings: keyFindings,
+      methodology,
+      results,
+      main_conclusion: mainConclusion,
+      sample_size: nMatch ? `N=${nMatch.replace(/,/g, ",")}` : "Not reported",
+      race_ethnicity: raceEthnicity,
+      country,
+      relevance: `Relevant to "${topic}".`,
+    };
+  });
   const dz = disease || topic;
   return {
     paper_summaries,
@@ -590,16 +659,29 @@ export const researchSynthesis = action({
             : "")
         : "";
 
+    const literatureBlock = texts.length
+      ? `\nINGESTED LITERATURE (${texts.length} sources):\n${corpus}\n\n` +
+        `TASK: Synthesize the literature and return a JSON object with EXACTLY these keys:\n`
+      : `\nNO PAPERS WERE SUPPLIED. Draw on your own up-to-date expert knowledge of this field ` +
+        `to map the state of the art, identify genuine open gaps, and generate novel directions. ` +
+        `Leave "paper_summaries" as an empty array.\n\n` +
+        `TASK: Synthesize the field and return a JSON object with EXACTLY these keys:\n`;
+
     const user =
       `RESEARCH TOPIC: ${topic}\n` +
       `DISEASE / CONDITION: ${dz || "(not specified)"}\n` +
       `TARGET GRANT MECHANISM: ${gt}\n` +
       (extra_context ? `INVESTIGATOR CONTEXT: ${extra_context}\n` : "") +
       feedbackBlock +
-      `\nINGESTED LITERATURE (${texts.length} sources):\n${corpus}\n\n` +
-      `TASK: Synthesize the literature and return a JSON object with EXACTLY these keys:\n` +
+      literatureBlock +
       `{\n` +
-      `  "paper_summaries": [{"filename","key_findings","methodology","main_conclusion","relevance"}],\n` +
+      `  "paper_summaries": [{"filename","identifier","key_findings","methodology","results","main_conclusion","sample_size","race_ethnicity","country","relevance"}],\n` +
+      `     // For each paper: "identifier" = its PMID or DOI exactly as given in the source text. ` +
+      `"results" = a brief statement of the quantitative findings. ` +
+      `"sample_size" = the cohort size as "N=<number>" (or "Not reported"). ` +
+      `"race_ethnicity" = the cohort race/ethnicity composition (or "Not reported"). ` +
+      `"country" = the study country/setting (or "Not reported"). ` +
+      `NEVER invent these values — if a field is not stated in the paper text, write "Not reported".\n` +
       `  "field_overview": "3-5 sentence state-of-the-field synthesis",\n` +
       `  "research_gaps": ["specific, addressable gaps"],\n` +
       `  "web_context": "what the broader field is converging on",\n` +

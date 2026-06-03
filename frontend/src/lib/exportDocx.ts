@@ -6,8 +6,12 @@ function saveBlob(buf: Blob, filename: string) {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  // The anchor MUST be in the DOM for the download to fire reliably across
+  // browsers (a detached element's .click() is silently ignored in some).
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 5000);
 }
 
 // ─── Grant Composer export ────────────────────────────────────────────────────
@@ -146,7 +150,7 @@ export interface SwarmExportOptions {
   fieldOverview: string;
   webContext: string;
   researchGaps: string[];
-  paperSummaries: { filename: string; key_findings: string; methodology: string; main_conclusion: string; relevance: string }[];
+  paperSummaries: { filename: string; identifier?: string; key_findings: string; methodology: string; results?: string; main_conclusion: string; sample_size?: string; race_ethnicity?: string; country?: string; relevance: string }[];
   novelHypotheses: { hypothesis: string; rationale: string; novelty_score: number; supporting_evidence: string; testability: string }[];
   specificAims: string[];
   objectives: string[];
@@ -291,8 +295,13 @@ export async function exportSwarmDocx(opts: SwarmExportOptions) {
     h1('Appendix — Individual Paper Summaries'),
     ...paperSummaries.flatMap((p, i) => [
       h3(`${i + 1}. ${p.filename}`),
-      meta('Key Findings', p.key_findings),
+      ...(p.identifier ? [meta('Identifier', p.identifier)] : []),
+      meta('Sample Size', p.sample_size || 'Not reported'),
+      meta('Race / Ethnicity', p.race_ethnicity || 'Not reported'),
+      meta('Country', p.country || 'Not reported'),
       meta('Methodology', p.methodology),
+      ...(p.results ? [meta('Results', p.results)] : []),
+      meta('Key Findings', p.key_findings),
       meta('Conclusion', p.main_conclusion),
       meta('Relevance', p.relevance),
       new Paragraph({ text: '', spacing: { after: 80 } }),
