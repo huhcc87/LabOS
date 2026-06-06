@@ -1,7 +1,10 @@
+import logging
 import os
 import secrets
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
+
+logger = logging.getLogger("labos.config")
 
 
 class Settings(BaseSettings):
@@ -11,7 +14,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./lab.db"
     upload_dir: str = "./uploads"
     scheduler_interval_seconds: int = 60
-    access_token_expire_minutes: int = 120  # Reduced from 480 to 2 hours
+    access_token_expire_minutes: int = 120
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     environment: str = "development"  # "development" | "production"
 
@@ -59,15 +62,20 @@ class Settings(BaseSettings):
 
     @field_validator('secret_key', mode='before')
     @classmethod
-    def validate_secret_key(cls, v: str) -> str:
-        if not v or v in ["fallback-dev-key", "supersecret-lab-key-change-in-production", ""]:
-            # Generate a secure random key for development
+    def validate_secret_key(cls, v: str, info) -> str:
+        env = (info.data or {}).get("environment", os.getenv("ENVIRONMENT", "development"))
+        insecure = not v or v in ["fallback-dev-key", "supersecret-lab-key-change-in-production", ""]
+        if insecure and env == "production":
+            raise ValueError(
+                "SECRET_KEY must be set to a secure random value (≥32 chars) in production. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+            )
+        if insecure:
             generated_key = secrets.token_urlsafe(32)
-            print(f"WARNING: No secure SECRET_KEY found. Generated temporary key for development.")
-            print(f"For production, set SECRET_KEY environment variable to a secure random value.")
+            logger.warning("No secure SECRET_KEY found. Generated temporary key for development.")
             return generated_key
         if len(v) < 32:
-            print("WARNING: SECRET_KEY should be at least 32 characters for security.")
+            logger.warning("SECRET_KEY should be at least 32 characters for security.")
         return v
 
 

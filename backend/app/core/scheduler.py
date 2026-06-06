@@ -1,3 +1,4 @@
+import logging
 import smtplib
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
@@ -6,6 +7,8 @@ from email.mime.text import MIMEText
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.core.config import settings
+
+logger = logging.getLogger("labos.scheduler")
 
 scheduler = BackgroundScheduler()
 
@@ -27,7 +30,7 @@ def _send_email(to: str, subject: str, body: str) -> bool:
             server.sendmail(settings.smtp_from, [to], msg.as_string())
         return True
     except Exception as exc:
-        print(f"[EMAIL ERROR] {exc}")
+        logger.error("Email send failed: %s", exc)
         return False
 
 
@@ -68,9 +71,9 @@ def dispatch_reminders():
                 )
                 sent = _send_email(recipient_email, subject, body)
                 if not sent:
-                    print(f"[REMINDER] Email not configured — logged: {reminder.title} → {recipient_label}")
+                    logger.info("Email not configured — logged: %s → %s", reminder.title, recipient_label)
             else:
-                print(f"[REMINDER] Dashboard delivery to {recipient_label}: {reminder.title}")
+                logger.info("Dashboard delivery to %s: %s", recipient_label, reminder.title)
                 sent = True
 
             reminder.status = ReminderStatus.sent if sent else ReminderStatus.failed
@@ -79,7 +82,7 @@ def dispatch_reminders():
         if pending:
             db.commit()
     except Exception as exc:
-        print(f"[REMINDER ERROR] {exc}")
+        logger.error("Reminder dispatch error: %s", exc)
         db.rollback()
     finally:
         db.close()
@@ -174,14 +177,14 @@ def check_iot_alerts():
                         if ok:
                             notified.append(email)
                         else:
-                            print(f"[IOT ALERT] SMTP not configured — would email {email}: {subject}")
+                            logger.warning("SMTP not configured — would email %s: %s", email, subject)
 
             alert.notified_emails = ",".join(notified)
-            print(f"[IOT ALERT] {severity.upper()} — {sensor.name}: {value}{sensor.unit}  emails={notified or 'none'}")
+            logger.info("IoT alert %s — %s: %s%s  emails=%s", severity.upper(), sensor.name, value, sensor.unit, notified or "none")
 
         db.commit()
     except Exception as exc:
-        print(f"[IOT ALERT ERROR] {exc}")
+        logger.error("IoT alert check error: %s", exc)
         db.rollback()
     finally:
         db.close()
@@ -215,13 +218,13 @@ def check_reagent_expiry():
         ).all()
         recipients = [u.email for u in staff if u.email]
         if not recipients:
-            print(f"[EXPIRY] {len(items)} expiring reagents — no staff emails configured")
+            logger.info("%d expiring reagents — no staff emails configured", len(items))
             return
         payload = [{"name": i.name, "expires_on": i.expires_on, "category": i.category} for i in items]
         send_expiry_alert(recipients, payload)
-        print(f"[EXPIRY] Sent alert for {len(items)} reagents to {recipients}")
+        logger.info("Sent expiry alert for %d reagents to %s", len(items), recipients)
     except Exception as exc:
-        print(f"[EXPIRY ERROR] {exc}")
+        logger.error("Reagent expiry check error: %s", exc)
     finally:
         db.close()
 
@@ -250,7 +253,7 @@ def start_scheduler():
         replace_existing=True,
     )
     scheduler.start()
-    print(f"[SCHEDULER] Started — polling every {settings.scheduler_interval_seconds}s")
+    logger.info("Scheduler started — polling every %ds", settings.scheduler_interval_seconds)
 
 
 def stop_scheduler():

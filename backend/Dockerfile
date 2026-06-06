@@ -25,8 +25,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy app source
 COPY . .
 
-# Create uploads dir (file uploads default location; can override with UPLOAD_DIR env)
-RUN mkdir -p /app/uploads
+# Create uploads dir and non-root user
+RUN mkdir -p /app/uploads \
+    && addgroup --gid 1000 appuser \
+    && adduser --disabled-password --uid 1000 --ingroup appuser appuser \
+    && chown -R appuser:appuser /app
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -34,6 +37,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000
 
-# Use uvicorn directly. Workers=1 keeps memory low (Fly free tier).
-# Bump to 2-4 if you scale up.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+USER appuser
+
+# Run migrations then start uvicorn. Workers=1 keeps memory low (Fly free tier).
+# Bump to 2-4 when scaling up; each worker uses ~200MB RAM.
+CMD ["sh", "-c", "python -m alembic upgrade head 2>/dev/null; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,6 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.security_middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 from app.api import (
     activity,
     ai,
@@ -67,7 +74,14 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+_is_prod = settings.environment == "production"
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else "/openapi.json",
+)
 
 # Security middleware — order matters: outermost runs last on response
 app.add_middleware(SecurityHeadersMiddleware)

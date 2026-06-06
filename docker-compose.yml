@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:-sqlite:///./lab.db}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-min-32-chars!!}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set — generate with: python -c "import secrets; print(secrets.token_urlsafe(48))"}
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","http://frontend:80"]'
       ENVIRONMENT: ${ENVIRONMENT:-development}
       # SMTP (optional)
