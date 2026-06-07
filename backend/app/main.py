@@ -54,6 +54,7 @@ from app.api import org_hierarchy
 from app.api import freezer, biosketch, grant_versions, grant_submissions
 from app.api import reagent_cart, payments, procurement_extras, lab_members
 from app.api import export as export_router
+from app.api import error_tracking
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.migrations import auto_migrate
@@ -146,6 +147,24 @@ app.include_router(payments.router, prefix="/api")
 app.include_router(procurement_extras.router, prefix="/api")
 app.include_router(lab_members.router, prefix="/api")
 app.include_router(export_router.router, prefix="/api")
+app.include_router(error_tracking.router, prefix="/api")
+
+
+# ─── Global exception handler — catches unhandled server errors ──────────
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+    from starlette.responses import JSONResponse
+    error_tracking.record_error(
+        source="server",
+        message=str(exc),
+        stack=traceback.format_exc(),
+        url=str(request.url),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 
 @app.get("/")

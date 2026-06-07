@@ -8,9 +8,11 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { initWebVitals } from './lib/webVitals'
 import { initAnalytics } from './lib/analytics'
+import { initErrorTracking } from './lib/errorTracker'
 import './styles.css'
 
-// Initialize performance monitoring & analytics
+// Initialize error tracking, performance monitoring & analytics
+initErrorTracking();
 initWebVitals();
 initAnalytics();
 

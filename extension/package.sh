@@ -17,18 +17,13 @@ TARGET="${1:-chrome}"
 OUT_DIR="../dist-extension"
 mkdir -p "$OUT_DIR"
 
+EXCLUDES=(-x "manifest.firefox.json" -x "*.sh" -x ".DS_Store" -x "*.md" -x "../dist-extension/*")
+
 build_chrome() {
   local zip_name="$OUT_DIR/labos-extension-${VERSION}-chrome.zip"
   rm -f "$zip_name"
   echo "→ Packaging Chrome / Edge / Brave bundle…"
-  zip -r "$zip_name" . \
-    -x "manifest.firefox.json" \
-    -x "*.sh" \
-    -x ".DS_Store" \
-    -x "INSTALL.md" \
-    -x "README.md" \
-    -x "../dist-extension/*" \
-    > /dev/null
+  zip -r "$zip_name" . "${EXCLUDES[@]}" > /dev/null
   echo "  ✓ $zip_name ($(du -h "$zip_name" | cut -f1))"
 }
 
@@ -39,14 +34,7 @@ build_firefox() {
   # Temporarily swap manifests so Firefox sees the right file
   cp manifest.json /tmp/labos-chrome-manifest.bak
   cp manifest.firefox.json manifest.json
-  zip -r "$zip_name" . \
-    -x "manifest.firefox.json" \
-    -x "*.sh" \
-    -x ".DS_Store" \
-    -x "INSTALL.md" \
-    -x "README.md" \
-    -x "../dist-extension/*" \
-    > /dev/null
+  zip -r "$zip_name" . "${EXCLUDES[@]}" > /dev/null
   cp /tmp/labos-chrome-manifest.bak manifest.json
   rm /tmp/labos-chrome-manifest.bak
   echo "  ✓ $zip_name ($(du -h "$zip_name" | cut -f1))"

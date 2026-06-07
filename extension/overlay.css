@@ -1,0 +1,11 @@
+/*
+ * LabOS Reagent Capture — overlay styles.
+ * Injected by web_accessible_resources for vendor page UI elements.
+ * Kept minimal — primary styles are in _shared.js inline for isolation.
+ */
+
+.labos-overlay {
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}

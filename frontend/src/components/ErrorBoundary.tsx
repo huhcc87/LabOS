@@ -1,4 +1,5 @@
 import React from 'react';
+import { reportError } from '../lib/errorTracker';
 
 interface State {
   hasError: boolean;
@@ -18,7 +19,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[LabOS Error]', error.message, '\nStack:', error.stack, '\nComponent:', info.componentStack);
+    // Report to backend in production, console in dev
+    reportError(error, { component: info.componentStack ?? undefined });
+    if (import.meta.env.DEV) {
+      console.error('[LabOS Error]', error.message, '\nStack:', error.stack, '\nComponent:', info.componentStack);
+    }
 
     // Auto-reload on stale chunk errors (happens after redeployment)
     const isChunkError =

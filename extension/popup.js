@@ -10,6 +10,13 @@ async function getSettings() {
   return new Promise(r => chrome.storage.sync.get(['apiBase'], s => r(s)));
 }
 
+// Sanitize text to prevent XSS when inserting into DOM
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
 function render(cart) {
   const list = document.getElementById('cart-list');
   document.getElementById('stat-count').textContent = String(cart.length);
@@ -26,19 +33,23 @@ function render(cart) {
   for (const item of cart.slice().reverse()) {
     const div = document.createElement('div');
     div.className = 'item';
+
+    // Build image safely — only allow http/https URLs
+    const imgSrc = (item.imageUrl && /^https?:\/\//.test(item.imageUrl)) ? esc(item.imageUrl) : '';
+
     div.innerHTML = `
-      <img src="${item.imageUrl || ''}" onerror="this.style.display='none'" />
+      ${imgSrc ? `<img src="${imgSrc}" onerror="this.style.display='none'" />` : ''}
       <div class="item-info">
-        <div class="item-name" title="${(item.name || '').replace(/"/g, '&quot;')}">${item.name || 'Untitled'}</div>
+        <div class="item-name" title="${esc(item.name)}">${esc(item.name) || 'Untitled'}</div>
         <div class="item-meta">
-          ${item.vendor ? `<span class="item-vendor">${item.vendor}</span>` : ''}
-          ${item.catalog ? `<span>#${item.catalog}</span>` : ''}
-          ${item.size ? `<span>${item.size}</span>` : ''}
+          ${item.vendor ? `<span class="item-vendor">${esc(item.vendor)}</span>` : ''}
+          ${item.catalog ? `<span>#${esc(item.catalog)}</span>` : ''}
+          ${item.size ? `<span>${esc(item.size)}</span>` : ''}
           ${item.unitPrice != null ? `<span class="item-price">$${Number(item.unitPrice).toFixed(2)}</span>` : ''}
           <span class="sync-status ${item.synced ? 'synced' : 'pending'}">${item.synced ? '✓ synced' : '⏳ local'}</span>
         </div>
       </div>
-      <button class="item-remove" data-id="${item.id}" title="Remove">×</button>
+      <button class="item-remove" data-id="${esc(item.id)}" title="Remove">×</button>
     `;
     list.appendChild(div);
   }

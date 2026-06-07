@@ -67,6 +67,7 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/auth/users":       (30,  60),   # 30 user-list/create calls per minute
     "/api/gdpr":             (5,   60),   # 5 GDPR requests per minute
     "/api/consent":          (20,  60),
+    "/api/errors/client":    (30,  60),   # 30 error reports per minute per IP
     "default":               (120, 60),   # 120 req/min for all other routes
 }
 
