@@ -1,0 +1,269 @@
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
+
+const DEMO_USERS = import.meta.env.DEV ? [
+  { label: 'Admin', email: 'admin@lab.local', password: 'Admin123!', color: '#ef4444' },
+  { label: 'PI', email: 'pi@lab.local', password: 'Pi123!', color: '#8b5cf6' },
+  { label: 'Manager', email: 'manager@lab.local', password: 'Manager123!', color: '#0071bc' },
+  { label: 'Staff', email: 'staff@lab.local', password: 'Staff123!', color: '#22c55e' },
+  { label: 'Trainee', email: 'trainee@lab.local', password: 'Trainee123!', color: '#f59e0b' },
+] : [];
+
+const FEATURES = [
+  { icon: '🔬', title: 'Lab Hub', desc: 'Protocols, instruments & bookings' },
+  { icon: '🧪', title: 'Sample Hub', desc: 'Full sample lifecycle tracking' },
+  { icon: '📝', title: 'Grant Hub', desc: 'NIH & NSF grant management' },
+  { icon: '🛡️', title: 'Safety & Compliance', desc: 'GLP, 21 CFR Part 11, ISO 17025' },
+  { icon: '📈', title: 'Reports & Analytics', desc: 'Live dashboards and KPI tracking' },
+];
+
+export default function LoginPage() {
+  const { login, totpRequired, clearTotpRequired } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [totpCode, setTotpCode] = useState('');
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>({
+    defaultValues: { email: '', password: '' },
+  });
+
+  async function onSubmit(data: LoginForm) {
+    setLoading(true);
+    try {
+      await login(data.email, data.password);
+      if (!totpRequired) toast.success('Welcome to LabOS v3!');
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      if (msg.includes('Invalid email') || msg.includes('password')) {
+        toast.error('Invalid email or password.');
+      } else if (msg.includes('disabled')) {
+        toast.error('This account has been disabled. Contact your administrator.');
+      } else {
+        toast.error(msg || 'Login failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onTotpSubmit() {
+    if (!totpRequired || !totpCode) return;
+    setLoading(true);
+    try {
+      await login(totpRequired.email, totpRequired.password, totpCode);
+      toast.success('Welcome to LabOS v3!');
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      if (msg.includes('two-factor')) {
+        toast.error('Invalid two-factor code. Please try again.');
+      } else {
+        toast.error(msg || 'Login failed.');
+      }
+    } finally {
+      setLoading(false);
+      setTotpCode('');
+    }
+  }
+
+  return (
+    <div className="login-shell">
+      {/* Accent stripe */}
+      <div className="login-top-stripe" />
+
+      <div className="login-split">
+        {/* ── Left panel: branding ── */}
+        <div className="login-panel-left">
+          <div className="login-left-inner">
+            {/* Logo */}
+            <div className="login-brand-row">
+              <div className="login-logo-box">⬡</div>
+              <div>
+                <div className="login-brand-name">LabOS <span className="login-brand-v">v3</span></div>
+                <div className="login-brand-sub">Laboratory Operations System</div>
+              </div>
+            </div>
+
+            <h2 className="login-left-headline">
+              Research-grade lab management for modern institutions
+            </h2>
+            <p className="login-left-desc">
+              Centralize your protocols, samples, instruments, grants, safety records,
+              and team collaboration — all in one secure platform.
+            </p>
+
+            {/* Feature list */}
+            <div className="login-features">
+              {FEATURES.map(f => (
+                <div key={f.title} className="login-feature-row">
+                  <span className="login-feature-icon">{f.icon}</span>
+                  <div>
+                    <div className="login-feature-title">{f.title}</div>
+                    <div className="login-feature-desc">{f.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Standards badges */}
+            <div className="login-compliance">
+              {['GLP Workflows', '21 CFR Part 11', 'HIPAA-Ready', 'GDPR Tools', 'On-Premise', 'Audit Trail'].map(b => (
+                <span key={b} className="login-compliance-badge">{b}</span>
+              ))}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+              Designed to support these workflows. Compliance is achieved through your institution's practices and policies.
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right panel: form ── */}
+        <div className="login-panel-right">
+          <div className="login-form-card">
+            {totpRequired ? (
+              <>
+                <div className="login-form-header">
+                  <div className="login-secure-badge">
+                    <span>🔐</span> Two-Factor Authentication
+                  </div>
+                  <h3 className="login-form-title">Enter verification code</h3>
+                  <p className="login-form-subtitle">Open your authenticator app and enter the 6-digit code</p>
+                </div>
+                <div className="login-form" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="lf-group">
+                    <label className="lf-label">Verification Code</label>
+                    <div className="lf-input-wrap">
+                      <span className="lf-icon">🔢</span>
+                      <input
+                        className="lf-input"
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        autoFocus
+                        maxLength={6}
+                        inputMode="numeric"
+                        style={{ letterSpacing: 8, fontSize: 20, fontWeight: 700, textAlign: 'center' }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && totpCode.length === 6) onTotpSubmit(); }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="login-submit-btn"
+                    disabled={loading || totpCode.length !== 6}
+                    onClick={onTotpSubmit}
+                  >
+                    {loading ? (
+                      <span className="login-btn-loading"><span className="login-spinner" /> Verifying…</span>
+                    ) : 'Verify & Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { clearTotpRequired(); setTotpCode(''); }}
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--text-muted)',
+                      cursor: 'pointer', fontSize: 13, textDecoration: 'underline',
+                    }}
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </>
+            ) : (
+            <>
+            <div className="login-form-header">
+              <div className="login-secure-badge">
+                <span>🔒</span> Secure Sign In
+              </div>
+              <h3 className="login-form-title">Welcome back</h3>
+              <p className="login-form-subtitle">Sign in to your LabOS account to continue</p>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="login-form">
+              <div className="lf-group">
+                <label className="lf-label">Email Address</label>
+                <div className="lf-input-wrap">
+                  <span className="lf-icon">✉</span>
+                  <input
+                    className={`lf-input ${errors.email ? 'lf-input-error' : ''}`}
+                    {...register('email', { required: 'Email is required' })}
+                    placeholder="user@institution.edu"
+                    autoComplete="email"
+                    type="email"
+                  />
+                </div>
+                {errors.email && <span className="lf-error">{errors.email.message}</span>}
+              </div>
+
+              <div className="lf-group">
+                <label className="lf-label">Password</label>
+                <div className="lf-input-wrap">
+                  <span className="lf-icon">🔑</span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className={`lf-input ${errors.password ? 'lf-input-error' : ''}`}
+                    {...register('password', { required: 'Password is required' })}
+                    placeholder="••••••••••"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="lf-toggle-pw"
+                    onClick={() => setShowPassword(v => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? '🙈' : '👁'}
+                  </button>
+                </div>
+                {errors.password && <span className="lf-error">{errors.password.message}</span>}
+              </div>
+
+              <button type="submit" className="login-submit-btn" disabled={loading}>
+                {loading ? (
+                  <span className="login-btn-loading">
+                    <span className="login-spinner" /> Signing in…
+                  </span>
+                ) : (
+                  'Sign In to LabOS'
+                )}
+              </button>
+            </form>
+
+            {/* Demo accounts — dev only */}
+            {DEMO_USERS.length > 0 && <div className="login-demo-section">
+              <div className="login-demo-divider">
+                <span>Quick demo access</span>
+              </div>
+              <div className="login-demo-pills">
+                {DEMO_USERS.map(u => (
+                  <button
+                    key={u.label}
+                    className="login-demo-pill"
+                    style={{ '--pill-color': u.color } as React.CSSProperties}
+                    onClick={() => { setValue('email', u.email); setValue('password', u.password); }}
+                    type="button"
+                  >
+                    {u.label}
+                  </button>
+                ))}
+              </div>
+            </div>}
+
+            <div className="login-form-footer">
+              <span>🔒 256-bit SSL encrypted</span>
+              <span>·</span>
+              <span>Data stays on your server</span>
+            </div>
+            </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

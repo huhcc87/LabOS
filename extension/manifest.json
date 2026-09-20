@@ -1,0 +1,194 @@
+{
+  "manifest_version": 3,
+  "name": "LabOS Reagent Capture",
+  "short_name": "LabOS",
+  "version": "1.0.0",
+  "description": "Capture reagents from any biomedical vendor and route them to LabOS for centralized purchasing.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.sigmaaldrich.com/*",
+    "*://*.merckmillipore.com/*",
+    "*://*.thermofisher.com/*",
+    "*://*.fishersci.com/*",
+    "*://*.vwr.com/*",
+    "*://*.bio-rad.com/*",
+    "*://*.abcam.com/*",
+    "*://*.neb.com/*",
+    "*://*.idtdna.com/*",
+    "*://*.rndsystems.com/*",
+    "*://*.cellsignal.com/*",
+    "*://*.qiagen.com/*",
+    "*://*.invitrogen.com/*",
+    "*://*.lifetechnologies.com/*",
+    "*://*.santacruzbiotech.com/*",
+    "*://*.miltenyibiotec.com/*",
+    "*://*.eppendorf.com/*",
+    "*://*.beckman.com/*",
+    "*://*.promega.com/*",
+    "*://*.takarabio.com/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.sigmaaldrich.com/*",
+        "*://*.merckmillipore.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/sigma.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.thermofisher.com/*",
+        "*://*.invitrogen.com/*",
+        "*://*.lifetechnologies.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/thermofisher.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.fishersci.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/fishersci.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.vwr.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/vwr.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.bio-rad.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/biorad.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.abcam.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/abcam.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.neb.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/neb.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.idtdna.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/idt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.rndsystems.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/rndsystems.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.cellsignal.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/cellsignal.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.qiagen.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/qiagen.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.santacruzbiotech.com/*",
+        "*://*.miltenyibiotec.com/*",
+        "*://*.eppendorf.com/*",
+        "*://*.beckman.com/*",
+        "*://*.promega.com/*",
+        "*://*.takarabio.com/*"
+      ],
+      "js": [
+        "content/_shared.js",
+        "content/generic.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "overlay.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+// AI Swarm Protocol Intelligence — barrel exports
+export { useSwarm } from './useSwarm'
+export { default as SwarmDashboard } from './SwarmDashboard'
+export { default as SOPGeneratorForm } from './SOPGeneratorForm'
+export { default as AgentPanel } from './AgentPanel'
+export { default as SwarmConsensusView } from './SwarmConsensusView'
+export { default as SwarmChat } from './SwarmChat'
+export { default as SOPViewer } from './SOPViewer'
+export * from './swarmTypes'
+export * from './swarmEngine'

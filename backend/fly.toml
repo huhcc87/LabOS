@@ -1,0 +1,59 @@
+# ════════════════════════════════════════════════════════════════════════
+# fly.toml — LabOS v3 backend deployment config
+#
+# Generated for pay-per-second pricing model:
+#   - Machines auto-stop after 5 min idle (billing pauses)
+#   - Auto-start on incoming request (~2 sec cold start)
+#   - 0 minimum running machines (pure pay-as-you-go)
+#
+# Change `app` to a unique name before running `fly launch`.
+# ════════════════════════════════════════════════════════════════════════
+
+app = "labos-api"
+primary_region = "iad"   # us-east. Change to nearest: ord, sjc, lhr, fra, syd
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  ENVIRONMENT = "production"
+  UPLOAD_DIR = "/data/uploads"
+
+# ─── Persistent volume for file uploads (1 GB, free) ────────────────────
+# Comment out if using Cloudflare R2 instead (recommended for production).
+[mounts]
+  source = "labos_uploads"
+  destination = "/data"
+  initial_size = "1gb"
+
+# ─── HTTP service — auto-scale to zero when idle ────────────────────────
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"        # ← stops machine after idle (pays $0)
+  auto_start_machines = true          # ← starts on first request
+  min_machines_running = 0            # ← truly $0 when no traffic
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+# Healthchecks — Fly uses these to verify the app is alive
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/api/health"
+
+# ─── VM size — shared-cpu-1x with 512 MB RAM ────────────────────────────
+# Costs roughly:
+#   $0.0041/hour when running (~$0.30/mo if used 1 hr/day)
+#   $0 when stopped (auto_stop_machines = stop)
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

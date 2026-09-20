@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Backend lint + type-check ────────────────────────────────────────────
+  backend:
+    name: Backend (Python 3.12)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check app/
+
+      - name: Import check
+        run: python -c "from app.main import app; print('Backend imports OK')"
+        env:
+          SECRET_KEY: ci-testing-key-at-least-32-characters-long
+          DATABASE_URL: sqlite:///./test_ci.db
+
+      - name: Run tests (if any)
+        run: |
+          if [ -d "tests" ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
+            pip install pytest pytest-asyncio httpx
+            pytest tests/ -v --tb=short
+          else
+            echo "No tests yet — skipping"
+          fi
+        env:
+          SECRET_KEY: ci-testing-key-at-least-32-characters-long
+          DATABASE_URL: sqlite:///./test_ci.db
+
+  # ── Frontend type-check + build ─────────────────────────────────────────
+  frontend:
+    name: Frontend (Node 20)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: /api
