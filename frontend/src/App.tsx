@@ -70,6 +70,7 @@ const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPa
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
 const LabNotebookPage            = lazy(() => import('./pages/LabNotebookPage'));
 const StorageMapPage             = lazy(() => import('./pages/StorageMapPage'));
+const StorageBrowserPage         = lazy(() => import('./pages/StorageBrowserPage'));
 const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
@@ -207,6 +208,7 @@ function AppInner() {
       // New v2 pages
       case 'lab-notebook': return <LabNotebookPage />;
       case 'storage-map': return <StorageMapPage />;
+      case 'storage-browser': return <StorageBrowserPage />;
       case 'supplier-directory': return <SupplierDirectoryPage />;
       // Tier 1 — AI Research Intelligence
       case 'eln': return <ELNPage />;

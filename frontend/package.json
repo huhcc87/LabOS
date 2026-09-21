@@ -105,6 +105,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -115,6 +116,7 @@
     "@types/react-big-calendar": "^1.8.9",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "convex-test": "^0.0.59",
     "jsdom": "^29.1.1",
     "typescript": "^5.4.5",
     "vite": "^5.2.13",

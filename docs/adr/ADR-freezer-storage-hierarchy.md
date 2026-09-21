@@ -113,6 +113,13 @@ Checkpoint B — they are left read-only as the rollback path.
 
 ## Proposed schema
 
+> **Correction, 2026-09-20:** the `workspace_id` field below is implemented as
+> `lab_id: v.id("labs")`. `workspaces` has no membership table (Gap Report
+> H2 — zero existing links from a user to a workspace), while
+> `lab_memberships` (`user_id`, `lab_id`, `lab_role`) already exists and is
+> populated, so it is the real tenancy boundary. Every `workspace_id` below
+> reads as `lab_id` against `labs`.
+
 ```ts
 storage_facilities: defineTable({
   workspace_id: v.id("workspaces"),

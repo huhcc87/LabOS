@@ -1,6 +1,19 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Shared audit trail fields for the storage-hierarchy tables (ADR:
+// docs/adr/ADR-freezer-storage-hierarchy.md). `version` backs optimistic
+// concurrency checks on update; archived_* backs soft delete.
+const auditFields = {
+  created_at: v.number(),
+  created_by: v.id("users"),
+  updated_at: v.number(),
+  updated_by: v.optional(v.id("users")),
+  version: v.number(),
+  archived_at: v.optional(v.number()),
+  archived_by: v.optional(v.id("users")),
+};
+
 export default defineSchema({
   // ── Sessions (custom password auth) ──────────────────────────────────
   sessions: defineTable({
@@ -128,9 +141,32 @@ export default defineSchema({
     metadata: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
+    // ── Storage-hierarchy extension (Checkpoint B) — all optional so
+    // existing rows stay valid without a backfill of this table itself.
+    lab_id: v.optional(v.id("labs")),
+    container_type: v.optional(v.string()),
+    parent_sample_id: v.optional(v.id("samples")),
+    volume: v.optional(v.number()),
+    volume_unit: v.optional(v.string()),
+    concentration: v.optional(v.number()),
+    concentration_unit: v.optional(v.string()),
+    passage_number: v.optional(v.number()),
+    freeze_thaw_count: v.optional(v.number()),
+    hazard_class: v.optional(v.string()),
+    retention_date: v.optional(v.number()),
+    owner_team: v.optional(v.string()),
+    checked_out_by: v.optional(v.id("users")),
+    checked_out_at: v.optional(v.number()),
+    expected_return: v.optional(v.number()),
+    disposed_at: v.optional(v.number()),
+    disposal_reason: v.optional(v.string()),
+    archived_at: v.optional(v.number()),
+    version: v.optional(v.number()),
   })
     .index("by_status", ["status"])
     .index("by_sample_id", ["sample_id"])
+    .index("by_lab", ["lab_id"])
+    .index("by_checked_out_by", ["checked_out_by"])
     .searchIndex("search_name", { searchField: "name" }),
 
   sample_events: defineTable({
@@ -517,6 +553,98 @@ export default defineSchema({
   })
     .index("by_freezer", ["freezer_id"])
     .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"]),
+
+  // ── Storage hierarchy (Checkpoint B) ────────────────────────────────
+  // docs/adr/ADR-freezer-storage-hierarchy.md · docs/plans/FREEZER_SAMPLE_STORAGE_IMPLEMENTATION_PLAN.md
+  // `freezers` / `freezer_slots` above stay read-only legacy sources for
+  // the backfill (migration plan step 5); these are the new write path.
+  //
+  // Tenancy boundary is `lab_id`, not `workspace_id`: `workspaces` has no
+  // membership table (Gap Report H2), while `lab_memberships` already links
+  // users to labs with a role. Decided 2026-09-20 (Plan §5 follow-up).
+  storage_facilities: defineTable({
+    lab_id: v.id("labs"),
+    name: v.string(),
+    building: v.optional(v.string()),
+    room: v.optional(v.string()),
+    ...auditFields,
+  }).index("by_lab", ["lab_id"]),
+
+  storage_units: defineTable({ // the freezer itself
+    lab_id: v.id("labs"),
+    facility_id: v.optional(v.id("storage_facilities")),
+    name: v.string(),
+    storage_type: v.string(), // -196|-150|-80|-20|4|rt|ln2|custom
+    target_temp: v.optional(v.number()),
+    temp_unit: v.optional(v.string()),
+    manufacturer: v.optional(v.string()),
+    model: v.optional(v.string()),
+    serial_number: v.optional(v.string()),
+    asset_number: v.optional(v.string()),
+    owner_team: v.optional(v.string()),
+    iot_sensor_id: v.optional(v.id("iot_sensors")),
+    status: v.string(), // normal|warning|critical|offline|maintenance
+    notes: v.optional(v.string()),
+    legacy_freezer_id: v.optional(v.id("freezers")), // migration provenance
+    ...auditFields,
+  })
+    .index("by_lab", ["lab_id"])
+    .index("by_lab_status", ["lab_id", "status"])
+    .index("by_legacy_freezer", ["legacy_freezer_id"])
+    .searchIndex("search_name", { searchField: "name" }),
+
+  storage_nodes: defineTable({ // shelf | rack | box
+    lab_id: v.id("labs"),
+    unit_id: v.id("storage_units"),
+    parent_id: v.optional(v.id("storage_nodes")), // undefined => child of the unit
+    path: v.array(v.id("storage_nodes")), // ancestors, root-first
+    depth: v.number(),
+    kind: v.union(v.literal("shelf"), v.literal("rack"), v.literal("box")),
+    name: v.string(),
+    ordinal: v.optional(v.number()),
+    rows: v.optional(v.number()), // box only
+    cols: v.optional(v.number()), // box only
+    position_naming: v.optional(v.union(v.literal("alpha_row"), v.literal("numeric"))),
+    capacity: v.optional(v.number()), // shelf/rack: max children
+    ...auditFields,
+  })
+    .index("by_unit", ["unit_id"])
+    .index("by_parent", ["parent_id"])
+    .index("by_lab", ["lab_id"]),
+
+  storage_positions: defineTable({ // SPARSE — only non-empty positions exist
+    lab_id: v.id("labs"),
+    box_id: v.id("storage_nodes"),
+    row: v.number(),
+    col: v.number(),
+    label: v.string(), // "A1"
+    state: v.union(
+      v.literal("occupied"), v.literal("reserved"),
+      v.literal("quarantined"), v.literal("unavailable"),
+    ),
+    sample_id: v.optional(v.id("samples")), // real reference; undefined for unresolved legacy slots
+    reserved_by: v.optional(v.id("users")),
+    reserved_until: v.optional(v.number()),
+    ...auditFields,
+  })
+    .index("by_box", ["box_id"])
+    .index("by_box_pos", ["box_id", "row", "col"])
+    .index("by_sample", ["sample_id"]),
+
+  storage_moves: defineTable({ // append-only ledger
+    lab_id: v.id("labs"),
+    sample_id: v.id("samples"),
+    from_box_id: v.optional(v.id("storage_nodes")),
+    from_label: v.optional(v.string()),
+    to_box_id: v.optional(v.id("storage_nodes")),
+    to_label: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    moved_by: v.id("users"),
+    moved_at: v.number(),
+    request_id: v.optional(v.string()), // idempotency
+  })
+    .index("by_sample", ["sample_id"])
+    .index("by_request_id", ["request_id"]),
 
   // ── Grants ───────────────────────────────────────────────────────────
   grant_versions: defineTable({

@@ -6,6 +6,15 @@ Depends on: `docs/adr/ADR-freezer-storage-hierarchy.md`,
 
 ---
 
+> **Correction, 2026-09-20:** every "workspace" below is `lab_id` against the
+> existing `labs`/`lab_memberships` tables, not `workspace_id` against
+> `workspaces` (which has no membership table — see ADR correction note).
+> Permission checks map to the existing `users.role` enum
+> (`superadmin|admin|pi|manager|staff|trainee`) rather than an undocumented
+> 16-permission list: `superadmin`/`admin` = Owner tier, `pi` = Lab Admin
+> tier, `manager`/`staff` = standard write access, `trainee` = read +
+> checkout only. See `convex/permissions.ts`.
+
 ## 1. API plan (Convex functions, not REST)
 
 The prompt lists REST paths for a FastAPI backend that is not in the production
@@ -163,18 +172,20 @@ Their disposition is a separate decision.
 
 ---
 
-## 5. Open questions — need answers before Checkpoint B
+## 5. Open questions — resolved 2026-09-20 (unblocks Checkpoint B)
 
-1. **Git.** `LabOS-main/` is not a repository. Where should this work live, and
-   under what branch? (Blocks prompt rules 1–3.)
-2. **Tenancy scope.** Scope only the new storage tables by `workspace_id`, or
-   retrofit all 58 existing tables? (Gap Report §4.)
-3. **Existing production data.** The live deployment `tame-ladybug-197` holds
-   real freezers/slots. Run the backfill against a dev deployment first — is
-   there one, or should a snapshot be used?
-4. **Unresolved legacy slots.** `freezer_slots.sample_id` is free text. For rows
-   that match no sample: create a stub sample, or leave the position occupied
-   with a label and flag it for manual reconciliation? (Plan assumes the latter.)
-5. **ZPL / thermal printers.** In scope for Checkpoint E, or browser-print only
-   until a physical printer is available to test against? No device = no claim.
-6. **Permanent delete.** Who gets `storage.delete`? Owner only, or Lab Admin too?
+1. **Git.** ~~`LabOS-main/` is not a repository.~~ Resolved: repo initialized,
+   work proceeds on branch `claude/whats-next-7e19d9` (baseline commit
+   `75f54f4`).
+2. **Tenancy scope.** RESOLVED — new storage tables only, scoped by
+   `workspace_id`. The existing 58 tables are not retrofitted.
+3. **Existing production data.** RESOLVED — create a dev Convex deployment,
+   push schema + run the backfill there first and verify, then run against
+   the live deployment (`tame-ladybug-197`).
+4. **Unresolved legacy slots.** RESOLVED — leave the position occupied with a
+   label, flag it for manual reconciliation (no stub samples created). Matches
+   the plan's original assumption.
+5. **ZPL / thermal printers.** RESOLVED — browser-print only for Checkpoint E.
+   ZPL deferred until physical hardware is available to test against.
+6. **Permanent delete.** RESOLVED — `storage.delete` granted to Owner **and**
+   Lab Admin.

@@ -40,8 +40,17 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Network-first for API calls — cache GET responses for offline fallback
-  if (url.pathname.startsWith(API_PREFIX)) {
+  // Network-first for same-origin REST API calls — cache GET responses for
+  // offline fallback. Scoped to same-origin: this predates the Convex
+  // migration, when '/api/*' was this app's own backend. Convex's client
+  // (frontend/src/lib/convexClient.ts) posts to '<deployment-url>/api/query'
+  // and '/api/mutation' on a DIFFERENT origin — matching on pathname alone
+  // caught those too, and on any transient failure silently returned a fake
+  // "queued for sync" response instead of the real error (which is never
+  // actually replayed — see syncPendingActions() below). Cross-origin Convex
+  // calls now fall through to the default handler further down, which
+  // surfaces a genuine network error instead of a misleading synthetic one.
+  if (url.origin === self.location.origin && url.pathname.startsWith(API_PREFIX)) {
     if (request.method === 'GET') {
       event.respondWith(
         fetch(request)

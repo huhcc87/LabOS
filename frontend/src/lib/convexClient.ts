@@ -623,6 +623,49 @@ export const samplesApi = {
     await client.mutation(api.samples.deleteEvent, { id: toStr(id) as any });
     return { data: { success: true } };
   },
+  // ── Storage-hierarchy lifecycle (Checkpoint D) ──────────────────────────
+  place: async (labId: IdLike, sampleId: IdLike, boxId: IdLike, row: number, col: number, label: string, reason?: string) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.place, { token, labId: labId as any, sampleId: sampleId as any, boxId: boxId as any, row, col, label, reason });
+    return { data: adapt(result) };
+  },
+  move: async (labId: IdLike, sampleId: IdLike, toBoxId: IdLike, toRow: number, toCol: number, toLabel: string, reason?: string) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.move, { token, labId: labId as any, sampleId: sampleId as any, toBoxId: toBoxId as any, toRow, toCol, toLabel, reason });
+    return { data: adapt(result) };
+  },
+  checkout: async (labId: IdLike, sampleId: IdLike, expectedReturn?: number, reason?: string) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.checkout, { token, labId: labId as any, sampleId: sampleId as any, expectedReturn, reason });
+    return { data: adapt(result) };
+  },
+  returnSample: async (labId: IdLike, sampleId: IdLike) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.returnSample, { token, labId: labId as any, sampleId: sampleId as any });
+    return { data: adapt(result) };
+  },
+  dispose: async (labId: IdLike, sampleId: IdLike, disposalReason: string) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.dispose, { token, labId: labId as any, sampleId: sampleId as any, disposalReason });
+    return { data: adapt(result) };
+  },
+  history: async (labId: IdLike, sampleId: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.samples.history, { token, labId: labId as any, sampleId: sampleId as any });
+    return { data: (result ?? []).map(adapt) };
+  },
+  resolveBarcode: async (labId: IdLike, barcode: string) => {
+    const token = getToken();
+    const result = await client.query(api.samples.resolveBarcode, { token, labId: labId as any, barcode });
+    return { data: result ? { sample: adapt((result as any).sample), position: adapt((result as any).position) } : null };
+  },
+  searchByName: async (labId: IdLike, search: string) => {
+    const token = getToken();
+    const result = await client.query(api.samples.list, { token, search, paginationOpts: { numItems: 20, cursor: null } });
+    void labId; // samples aren't lab-scoped for legacy rows; kept for a consistent call signature
+    const items = (result?.page ?? []) as any[];
+    return { data: items.map(adapt) };
+  },
 };
 
 export const maintenanceApi = {
@@ -704,6 +747,140 @@ export const freezerApi = {
   search: async (q: string) => {
     const result = await client.query(api.freezer.search, { query: q });
     return { data: (result ?? []).map(adapt) };
+  },
+};
+
+// ── Storage hierarchy (Checkpoint C) ──────────────────────────────────────
+// docs/plans/FREEZER_SAMPLE_STORAGE_IMPLEMENTATION_PLAN.md §1-2
+// Separate from freezerApi above, which stays on the legacy freezers/freezer_slots
+// tables until the migration (Plan §5 Q3) has run and been reviewed.
+export const storageUnitsApi = {
+  list: async (labId: IdLike, opts?: { storageType?: string; status?: string; includeArchived?: boolean }) => {
+    const token = getToken();
+    const result = await client.query(api.storageUnits.list, {
+      token, labId: labId as any,
+      storageType: opts?.storageType, status: opts?.status, includeArchived: opts?.includeArchived,
+    });
+    return { data: (result?.page ?? []).map(adapt) };
+  },
+  get: async (labId: IdLike, id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageUnits.get, { token, labId: labId as any, id: id as any });
+    return { data: adapt(result) };
+  },
+  previewTemplate: async (labId: IdLike, template: { shelves: number; racksPerShelf: number; boxesPerRack: number; boxRows: number; boxCols: number }) => {
+    const token = getToken();
+    const result = await client.query(api.storageUnits.previewTemplate, { token, labId: labId as any, template });
+    return { data: result };
+  },
+  create: async (labId: IdLike, data: any) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageUnits.create, { token, labId: labId as any, ...data });
+    return { data: adapt(result) };
+  },
+  update: async (labId: IdLike, id: IdLike, version: number, data: any) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageUnits.update, { token, labId: labId as any, id: id as any, version, ...data });
+    return { data: adapt(result) };
+  },
+  archive: async (labId: IdLike, id: IdLike, version: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageUnits.archive, { token, labId: labId as any, id: id as any, version });
+    return { data: adapt(result) };
+  },
+  restore: async (labId: IdLike, id: IdLike, version: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageUnits.restore, { token, labId: labId as any, id: id as any, version });
+    return { data: adapt(result) };
+  },
+  occupancy: async (labId: IdLike, id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageUnits.occupancy, { token, labId: labId as any, id: id as any });
+    return { data: result };
+  },
+  purge: async (labId: IdLike, id: IdLike, confirmName: string) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageUnits.purge, { token, labId: labId as any, id: id as any, confirmName });
+    return { data: result };
+  },
+};
+
+export const storageNodesApi = {
+  listBoxes: async (labId: IdLike, unitId: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageNodes.listBoxes, { token, labId: labId as any, unitId: unitId as any });
+    return { data: (result ?? []).map(adapt) };
+  },
+  list: async (labId: IdLike, unitId: IdLike, parentId?: IdLike, includeArchived?: boolean) => {
+    const token = getToken();
+    const result = await client.query(api.storageNodes.list, {
+      token, labId: labId as any, unitId: unitId as any,
+      parentId: parentId as any, includeArchived,
+    });
+    return { data: (result ?? []).map(adapt) };
+  },
+  get: async (labId: IdLike, id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageNodes.get, { token, labId: labId as any, id: id as any });
+    return { data: adapt(result) };
+  },
+  create: async (labId: IdLike, data: any) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.create, { token, labId: labId as any, ...data });
+    return { data: adapt(result) };
+  },
+  createBatch: async (labId: IdLike, data: any) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.createBatch, { token, labId: labId as any, ...data });
+    return { data: result };
+  },
+  update: async (labId: IdLike, id: IdLike, version: number, data: any) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.update, { token, labId: labId as any, id: id as any, version, ...data });
+    return { data: adapt(result) };
+  },
+  move: async (labId: IdLike, id: IdLike, version: number, newParentId: IdLike) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.move, { token, labId: labId as any, id: id as any, version, newParentId: newParentId as any });
+    return { data: adapt(result) };
+  },
+  archive: async (labId: IdLike, id: IdLike, version: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.archive, { token, labId: labId as any, id: id as any, version });
+    return { data: adapt(result) };
+  },
+  restore: async (labId: IdLike, id: IdLike, version: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storageNodes.restore, { token, labId: labId as any, id: id as any, version });
+    return { data: adapt(result) };
+  },
+  breadcrumbs: async (labId: IdLike, id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageNodes.breadcrumbs, { token, labId: labId as any, id: id as any });
+    return { data: result ?? [] };
+  },
+  occupancy: async (labId: IdLike, id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storageNodes.occupancy, { token, labId: labId as any, id: id as any });
+    return { data: result };
+  },
+};
+
+export const storagePositionsApi = {
+  listForBox: async (labId: IdLike, boxId: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.storagePositions.listForBox, { token, labId: labId as any, boxId: boxId as any });
+    return { data: result };
+  },
+  reserve: async (labId: IdLike, boxId: IdLike, row: number, col: number, label: string, reservedUntil?: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storagePositions.reserve, { token, labId: labId as any, boxId: boxId as any, row, col, label, reservedUntil });
+    return { data: adapt(result) };
+  },
+  release: async (labId: IdLike, id: IdLike, version: number) => {
+    const token = getToken();
+    const result = await client.mutation(api.storagePositions.release, { token, labId: labId as any, id: id as any, version });
+    return { data: result };
   },
 };
 

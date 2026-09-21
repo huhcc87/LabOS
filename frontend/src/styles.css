@@ -2,8 +2,8 @@
    LabOS v2 — Professional NIH-Inspired Theme System
    ============================================================ */
 
-/* ── Dark theme (default) — Professional Deep Blue ── */
-:root, [data-theme="dark"] {
+/* ── Dark theme — Professional Deep Blue ── */
+[data-theme="dark"] {
   /* Primary colors - NIH-inspired deep government blue */
   --primary-dark: #0a1628;
   --primary: #112e51;
@@ -78,8 +78,8 @@
   background: var(--bg);
 }
 
-/* ── Light theme — Clean Professional ── */
-[data-theme="light"] {
+/* ── Light theme (default) — Clean Professional ── */
+:root, [data-theme="light"] {
   /* Primary colors */
   --primary-dark: #112e51;
   --primary: #1a4480;
@@ -149,6 +149,7 @@
 
   color: var(--text);
   background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
   font-size: 15px;
   line-height: 1.6;
 }
@@ -3021,7 +3022,7 @@ a:hover { text-decoration: underline; }
 .rail-item {
   width: 58px;
   padding: 8px 2px;
-  border: none;
+  border: 2px solid transparent;
   background: none;
   border-radius: 10px;
   display: flex;
@@ -3029,12 +3030,13 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 3px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.62);
-  transition: background 0.15s, color 0.15s;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.75;
+  transition: background 0.15s, color 0.15s, opacity 0.15s, border-color 0.15s;
 }
 
-.rail-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
-.rail-item.active { background: rgba(255, 255, 255, 0.15); color: #fff; }
+.rail-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; opacity: 1; }
+.rail-item.active { background: rgba(255, 255, 255, 0.15); color: #fff; opacity: 1; border-color: rgba(255, 255, 255, 0.9); }
 .rail-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .rail-icon { font-size: 18px; line-height: 1; }

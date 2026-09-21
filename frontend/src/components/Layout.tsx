@@ -80,6 +80,7 @@ const NAV_SECTIONS: NavSection[] = [
     minRole: 'trainee',
     items: [
       { key: 'freezer-biobank', label: 'Freezers', icon: '🧊', minRole: 'trainee' },
+      { key: 'storage-browser', label: 'Storage Hierarchy', icon: '🗄️', minRole: 'trainee' },
       { key: 'inventory', label: 'Consumables', icon: '📦', minRole: 'trainee' },
       { key: 'samples', label: 'Samples', icon: '🧪', minRole: 'trainee' },
       { key: 'procurement-hub', label: 'Orders', icon: '🛒', minRole: 'trainee' },
@@ -132,7 +133,7 @@ interface LayoutProps {
 
 export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const { user, logout, hasRole } = useAuth();
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'dark');
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'light');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
@@ -281,7 +282,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const PAGE_PARENT: Record<string, string> = {
     'protocols': 'lab-hub', 'eln': 'lab-hub', 'experiments': 'lab-hub',
     'equipment': 'lab-hub', 'lab-meetings': 'lab-hub',
-    'freezer-biobank': 'samples', 'label-printer': 'samples',
+    'freezer-biobank': 'samples', 'label-printer': 'samples', 'storage-browser': 'inventory',
     'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
     'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
     'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',
