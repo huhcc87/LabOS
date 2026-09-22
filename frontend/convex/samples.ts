@@ -212,6 +212,25 @@ async function loadSampleInLab(ctx: QueryCtx | MutationCtx, sampleId: Id<"sample
   return sample;
 }
 
+/**
+ * Mutation-only: loads the sample and, if it predates lab scoping
+ * (`lab_id === undefined`, true for every legacy/pre-migration row today),
+ * claims it for `labId` immediately instead of leaving it permissively
+ * unscoped for every future caller in every lab. `place`/`batchCommit` do
+ * their own inline backfill on first placement; this closes the same gap
+ * for move/checkout/return/dispose/archive/restore, which previously used
+ * the read-only `loadSampleInLab` and left the sample open to any lab
+ * indefinitely (code review finding, Checkpoint D).
+ */
+async function loadAndClaimSampleInLab(ctx: MutationCtx, sampleId: Id<"samples">, labId: Id<"labs">) {
+  const sample = await loadSampleInLab(ctx, sampleId, labId);
+  if (sample.lab_id === undefined) {
+    await ctx.db.patch(sampleId, { lab_id: labId });
+    return { ...sample, lab_id: labId };
+  }
+  return sample;
+}
+
 async function loadBoxForPlacement(ctx: QueryCtx | MutationCtx, boxId: Id<"storage_nodes">, labId: Id<"labs">) {
   const box = await ctx.db.get(boxId);
   if (!box || box.lab_id !== labId) throw new Error("Storage box not found");
@@ -296,7 +315,7 @@ export const move = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "move");
-    await loadSampleInLab(ctx, args.sampleId, args.labId);
+    await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
 
     if (args.requestId) {
       const existingMove = await ctx.db
@@ -344,7 +363,7 @@ export const checkout = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "checkout");
-    const sample = await loadSampleInLab(ctx, args.sampleId, args.labId);
+    const sample = await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
     if (sample.checked_out_by) throw new Error("Sample is already checked out");
 
     await ctx.db.patch(args.sampleId, {
@@ -363,7 +382,7 @@ export const returnSample = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "return");
-    const sample = await loadSampleInLab(ctx, args.sampleId, args.labId);
+    const sample = await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
     if (!sample.checked_out_by) throw new Error("Sample is not checked out");
 
     await ctx.db.patch(args.sampleId, {
@@ -383,7 +402,7 @@ export const dispose = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "dispose");
-    const sample = await loadSampleInLab(ctx, args.sampleId, args.labId);
+    const sample = await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
     if (sample.disposed_at) throw new Error("Sample is already disposed");
 
     const position = await currentPositionOf(ctx, args.sampleId);
@@ -410,7 +429,7 @@ export const archiveSample = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "archive");
-    const sample = await loadSampleInLab(ctx, args.sampleId, args.labId);
+    const sample = await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
     if ((sample.version ?? 0) !== args.version) throw new Error("CONFLICT: sample was updated by someone else");
 
     await ctx.db.patch(args.sampleId, { archived_at: Date.now(), version: (sample.version ?? 0) + 1, updated_at: Date.now() });
@@ -424,7 +443,7 @@ export const restoreSample = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     await requireStoragePermission(ctx, userId, args.labId, "restore");
-    const sample = await loadSampleInLab(ctx, args.sampleId, args.labId);
+    const sample = await loadAndClaimSampleInLab(ctx, args.sampleId, args.labId);
     if ((sample.version ?? 0) !== args.version) throw new Error("CONFLICT: sample was updated by someone else");
     if (sample.archived_at === undefined) throw new Error("Sample is not archived");
 
@@ -479,6 +498,11 @@ async function validateBatchRows(ctx: QueryCtx | MutationCtx, labId: Id<"labs">,
     const box = await ctx.db.get(row.boxId);
     if (!box || box.lab_id !== labId || box.kind !== "box") {
       errors.push({ index: i, message: "Storage box not found" });
+      continue;
+    }
+    const rowSample = await ctx.db.get(row.sampleId);
+    if (!rowSample || (rowSample.lab_id !== undefined && rowSample.lab_id !== labId)) {
+      errors.push({ index: i, message: "Sample not found" });
       continue;
     }
     if (row.row < 0 || row.row >= (box.rows ?? 0) || row.col < 0 || row.col >= (box.cols ?? 0)) {
@@ -538,7 +562,11 @@ export const batchCommit = mutation({
         lab_id: args.labId, sample_id: row.sampleId, to_box_id: row.boxId, to_label: row.label,
         moved_by: userId, moved_at: now,
       });
-      await ctx.db.patch(row.sampleId, { location: row.label, updated_at: now });
+      const rowSample = await ctx.db.get(row.sampleId);
+      await ctx.db.patch(row.sampleId, {
+        location: row.label, updated_at: now,
+        ...(rowSample?.lab_id === undefined ? { lab_id: args.labId } : {}),
+      });
       placed.push(positionId);
     }
 
@@ -564,9 +592,15 @@ export const resolveBarcode = query({
         .query("samples")
         .filter((q) => q.eq(q.field("barcode"), args.barcode))
         .first());
-    if (!sample) return null;
+    // A resolved barcode/sample_id match belonging to a different lab must
+    // never be returned here — this is the "scan to place" entry point, and
+    // without this check any lab member could scan an arbitrary code and
+    // read back another lab's sample details plus its live location
+    // (code review finding, Checkpoint D).
+    if (!sample || (sample.lab_id !== undefined && sample.lab_id !== args.labId)) return null;
 
     const position = await currentPositionOf(ctx, sample._id);
+    if (position && position.lab_id !== args.labId) return { sample, position: null };
     return { sample, position };
   },
 });

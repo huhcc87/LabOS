@@ -138,6 +138,14 @@ export const backfillOneFreezer = internalMutation({
           });
           positionsCreated++;
 
+          // Claim the matched sample for this lab now, not on next touch —
+          // otherwise every migrated sample stays lab-unscoped (readable and
+          // actionable from any lab) until someone happens to call
+          // place/move/etc. on it again (code review finding).
+          if (matched && matched.lab_id === undefined) {
+            await ctx.db.patch(matched._id, { lab_id: args.labId });
+          }
+
           if (!matched) {
             unresolved.push({ freezerId: args.freezerId, rack: rackNumber, box: boxNumber, row: slot.row, col: slot.col, sampleIdText });
           }

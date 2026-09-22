@@ -255,4 +255,48 @@ describe("samples.resolveBarcode", () => {
     const result = await t.query(api.samples.resolveBarcode, { token, labId, barcode: "NOPE" });
     expect(result).toBeNull();
   });
+
+  it("never returns another lab's sample, even when its sample_id/barcode matches (cross-tenant leak, code review finding)", async () => {
+    const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+    const { labId, token } = await seedWorld(t);
+    const otherLabId = await t.run(async (ctx) => {
+      const orgId = await ctx.db.insert("organizations", { name: "Other Org", created_at: Date.now() });
+      const siteId = await ctx.db.insert("sites", { organization_id: orgId, name: "Other Site", created_at: Date.now() });
+      return ctx.db.insert("labs", { site_id: siteId, name: "Lab B", created_at: Date.now() });
+    });
+    await t.run((ctx) =>
+      ctx.db.insert("samples", {
+        sample_id: "OTHER-1", name: "Other Lab's Sample", status: "stored", lab_id: otherLabId,
+        created_at: Date.now(), updated_at: Date.now(), barcode: "BC-OTHER",
+      }),
+    );
+
+    const result = await t.query(api.samples.resolveBarcode, { token, labId, barcode: "OTHER-1" });
+    expect(result).toBeNull();
+  });
+});
+
+describe("samples lab-ownership backfill on legacy (unscoped) samples", () => {
+  it("move claims a legacy sample for the acting lab immediately, not just on next touch", async () => {
+    const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+    const { labId, token, boxAId, boxBId, sampleId } = await seedWorld(t);
+    await t.mutation(api.samples.place, { token, labId, sampleId, boxId: boxAId, row: 0, col: 0, label: "A1" });
+    await t.run((ctx) => ctx.db.patch(sampleId, { lab_id: undefined })); // simulate a pre-migration legacy sample
+
+    await t.mutation(api.samples.move, { token, labId, sampleId, toBoxId: boxBId, toRow: 0, toCol: 0, toLabel: "A1" });
+
+    const sample = await t.run((ctx) => ctx.db.get(sampleId));
+    expect(sample?.lab_id).toBe(labId);
+  });
+
+  it("batchCommit claims each placed legacy sample for the acting lab", async () => {
+    const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+    const { labId, token, boxAId, sampleId } = await seedWorld(t);
+    await t.run((ctx) => ctx.db.patch(sampleId, { lab_id: undefined }));
+
+    await t.mutation(api.samples.batchCommit, { token, labId, rows: [{ sampleId, boxId: boxAId, row: 0, col: 0, label: "A1" }] });
+
+    const sample = await t.run((ctx) => ctx.db.get(sampleId));
+    expect(sample?.lab_id).toBe(labId);
+  });
 });

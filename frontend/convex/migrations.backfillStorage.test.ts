@@ -74,6 +74,15 @@ describe("migrations.backfillStorage", () => {
     expect(resolved).toHaveLength(2); // placed in both racks per the seed data
   });
 
+  it("claims the matched sample for the target lab (code review finding: migration left samples lab-unscoped)", async () => {
+    const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+    const { labId, actorUserId, matchedSampleId } = await seedLegacy(t);
+    await t.action(internal.migrations.backfillStorage.run, { labId, actorUserId });
+
+    const sample = await t.run((ctx) => ctx.db.get(matchedSampleId));
+    expect(sample?.lab_id).toBe(labId);
+  });
+
   it("is idempotent: re-running does not duplicate a freezer already migrated", async () => {
     const t = convexTest(schema, import.meta.glob("./**/*.ts"));
     const { labId, actorUserId } = await seedLegacy(t);
