@@ -1,6 +1,13 @@
 # Freezer / Sample Storage — Status
 
-Last updated: 2026-09-20 · Current checkpoint: **C (hierarchy UI) — code complete, awaiting review**
+Last updated: 2026-09-21 · Current checkpoint: **E (labels & exports) — scoped down, code complete; D also done** · commits `2109820` `ce2b7f3` `2c0c540`
+
+Checkpoints D and E landed since the table below was last written in full:
+- **D** (samples/scan/move UI): place/move/checkout/return/dispose dialogs + barcode scan, wired into the Checkpoint C position grid.
+- **E** (labels & exports), scoped per Plan §5 Q5 (no ZPL — no hardware): fixed `exportUtils.ts` to produce real `.xlsx`/`.pdf` (was a CSV mislabeled "Excel" and a print-dialog "PDF" built from unescaped HTML — a real stored-XSS path, now gone); added one-click barcode label printing to `SampleActionsDialog`, reusing the existing `Barcode` component and `LabelPrinterPage`'s `@media print` pattern instead of standing up a parallel backend template system.
+- Deferred from E: `label_templates`/`print_jobs` backend tables (shared template library + print-job audit trail) — separable from shipping a working print button, not done.
+- Still open: Checkpoint F (final verification), running the migration against a real dev deployment, code review of B–D, batch sample import wizard.
+- 140/140 tests, `tsc`/build clean as of `2c0c540`.
 
 | Requirement | Status | Files | API | Migration | Tests | Evidence | Remaining risk |
 |---|---|---|---|---|---|---|---|
