@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { Modal } from '../../components/Modal';
+import Barcode from '../../components/Barcode';
 import { samplesApi, storageNodesApi, storagePositionsApi } from '../../lib/api';
 import { PositionGrid } from './PositionGrid';
 
@@ -32,7 +33,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box',
 };
 
-type Mode = 'menu' | 'move' | 'dispose';
+type Mode = 'menu' | 'move' | 'dispose' | 'label';
 
 export function SampleActionsDialog({ isOpen, onClose, labId, unitId, sampleId, currentLabel, onChanged }: SampleActionsDialogProps) {
   const [mode, setMode] = useState<Mode>('menu');
@@ -149,6 +150,7 @@ export function SampleActionsDialog({ isOpen, onClose, labId, unitId, sampleId, 
       {mode === 'menu' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {sample && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sample.sample_id} · {sample.status}{isCheckedOut ? ' · checked out' : ''}</div>}
+          <button type="button" onClick={() => setMode('label')} style={menuButtonStyle}>🏷️ Print label</button>
           <button type="button" onClick={openMove} style={menuButtonStyle}>📤 Move to another position</button>
           {isCheckedOut ? (
             <button type="button" onClick={handleReturn} disabled={busy} style={menuButtonStyle}>↩️ Return</button>
@@ -184,6 +186,29 @@ export function SampleActionsDialog({ isOpen, onClose, labId, unitId, sampleId, 
             <button type="button" onClick={() => setMode('menu')} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'none', cursor: 'pointer' }}>Back</button>
             <button type="button" onClick={handleMoveConfirm} disabled={!destCell || busy} style={{ padding: '8px 16px', fontSize: 13, border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 600, opacity: !destCell || busy ? 0.6 : 1 }}>
               {busy ? 'Moving…' : 'Confirm move'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'label' && sample && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <style>{`
+            @media print {
+              body * { visibility: hidden; }
+              .label-print-area, .label-print-area * { visibility: visible; }
+              .label-print-area { position: absolute; left: 0; top: 0; }
+            }
+          `}</style>
+          <div className="label-print-area" style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: '#fff', color: '#111' }}>
+            <Barcode value={sample.sample_id} type="barcode" width={220} height={60} />
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{sample.name}</div>
+            <div style={{ fontSize: 12 }}>{sample.sample_id} · {currentLabel}</div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <button type="button" onClick={() => setMode('menu')} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'none', cursor: 'pointer' }}>Back</button>
+            <button type="button" onClick={() => setTimeout(() => window.print(), 50)} style={{ padding: '8px 16px', fontSize: 13, border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+              🖨️ Print
             </button>
           </div>
         </div>
