@@ -30,14 +30,14 @@ export function ExportMenu<T extends Record<string, unknown>>({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleExport = (format: ExportFormat) => {
+  const handleExport = async (format: ExportFormat) => {
     if (data.length === 0) {
       toast.error('No data to export');
       return;
     }
 
     try {
-      exportData(data, {
+      await exportData(data, {
         filename,
         format,
         title: title || filename,

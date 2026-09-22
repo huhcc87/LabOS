@@ -53,6 +53,22 @@ function downloadFile(content: string, filename: string, mimeType: string): void
   URL.revokeObjectURL(url);
 }
 
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function cellText(value: unknown): string {
+  if (value === null || value === undefined) return '-';
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+}
+
 /**
  * Generates a timestamp string for filenames
  */
@@ -64,16 +80,19 @@ function getTimestamp(): string {
 /**
  * Main export function - exports data to various formats
  */
-export function exportData<T extends Record<string, unknown>>(
+export async function exportData<T extends Record<string, unknown>>(
   data: T[],
   options: ExportOptions,
   columns?: string[]
-): void {
+): Promise<void> {
   const timestamp = options.includeTimestamp ? `_${getTimestamp()}` : '';
   const filename = `${options.filename}${timestamp}`;
 
   switch (options.format) {
-    case 'excel':
+    case 'excel': {
+      await exportRealExcel(data, filename, columns);
+      break;
+    }
     case 'csv': {
       const csv = objectsToCSV(data, columns);
       downloadFile(csv, `${filename}.csv`, 'text/csv;charset=utf-8;');
@@ -85,74 +104,70 @@ export function exportData<T extends Record<string, unknown>>(
       break;
     }
     case 'pdf': {
-      // Generate a printable HTML that can be saved as PDF
-      const html = generatePrintableHTML(data, options.title || filename, columns);
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.print();
-      }
+      await exportRealPDF(data, filename, options.title || filename, columns);
       break;
     }
   }
 }
 
-/**
- * Generates printable HTML for PDF export
- */
-function generatePrintableHTML<T extends Record<string, unknown>>(
-  data: T[],
-  title: string,
-  columns?: string[]
-): string {
-  if (data.length === 0) return '<html><body><p>No data to export</p></body></html>';
+/** Real .xlsx via SheetJS (already a project dependency) — replaces the old CSV-mislabeled-as-Excel export. */
+async function exportRealExcel<T extends Record<string, unknown>>(
+  data: T[], filename: string, columns?: string[]
+): Promise<void> {
+  const XLSX = await import('xlsx');
+  const headers = columns || (data.length > 0 ? Object.keys(data[0]) : []);
+  const rows = data.map((row) => headers.map((h) => cellText(row[h])));
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Export');
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  downloadBlob(
+    new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    `${filename}.xlsx`,
+  );
+}
 
-  const headers = columns || Object.keys(data[0]);
+/** Real .pdf via jsPDF (already a project dependency) — replaces the old browser-print-to-PDF workaround. */
+async function exportRealPDF<T extends Record<string, unknown>>(
+  data: T[], filename: string, title: string, columns?: string[]
+): Promise<void> {
+  const { default: JsPDF } = await import('jspdf');
+  const doc = new JsPDF({ orientation: 'landscape' });
+  const headers = columns || (data.length > 0 ? Object.keys(data[0]) : []);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  const colWidth = headers.length > 0 ? (pageWidth - margin * 2) / headers.length : 0;
+  const rowHeight = 8;
+  let y = margin;
 
-  const headerRow = headers.map(h => `<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">${h}</th>`).join('');
+  doc.setFontSize(14);
+  doc.text(title, margin, y);
+  y += 6;
+  doc.setFontSize(9);
+  doc.text(`Generated from LabOS v3 on ${new Date().toLocaleString()} · ${data.length} records`, margin, y);
+  y += 8;
 
-  const dataRows = data.map(row => {
-    const cells = headers.map(header => {
-      const value = row[header];
-      const displayValue = value === null || value === undefined
-        ? '-'
-        : typeof value === 'object'
-          ? JSON.stringify(value)
-          : String(value);
-      return `<td style="border: 1px solid #ddd; padding: 8px;">${displayValue}</td>`;
-    }).join('');
-    return `<tr>${cells}</tr>`;
-  }).join('');
+  const drawHeader = () => {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    headers.forEach((h, i) => doc.text(String(h), margin + i * colWidth, y, { maxWidth: colWidth - 2 }));
+    y += rowHeight;
+    doc.setFont('helvetica', 'normal');
+  };
+  drawHeader();
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${title} - LabOS Export</title>
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; }
-        h1 { color: #1a4480; margin-bottom: 8px; }
-        .subtitle { color: #666; margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { font-size: 12px; }
-        .footer { margin-top: 30px; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 10px; }
-      </style>
-    </head>
-    <body>
-      <h1>${title}</h1>
-      <div class="subtitle">Generated from LabOS v3 on ${new Date().toLocaleString()}</div>
-      <table>
-        <thead><tr>${headerRow}</tr></thead>
-        <tbody>${dataRows}</tbody>
-      </table>
-      <div class="footer">
-        LabOS v3 - Laboratory Operations System<br>
-        Total Records: ${data.length}
-      </div>
-    </body>
-    </html>
-  `;
+  for (const row of data) {
+    if (y > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+      drawHeader();
+    }
+    headers.forEach((h, i) => doc.text(cellText(row[h]), margin + i * colWidth, y, { maxWidth: colWidth - 2 }));
+    y += rowHeight;
+  }
+
+  doc.save(`${filename}.pdf`);
 }
 
 /**
@@ -195,5 +210,5 @@ export const EXPORT_OPTIONS: ExportButtonConfig[] = [
   { label: 'Export to Excel', format: 'excel', icon: 'XLS' },
   { label: 'Export to CSV', format: 'csv', icon: 'CSV' },
   { label: 'Export to JSON', format: 'json', icon: '{}' },
-  { label: 'Print / PDF', format: 'pdf', icon: 'PDF' },
+  { label: 'Export to PDF', format: 'pdf', icon: 'PDF' },
 ];
