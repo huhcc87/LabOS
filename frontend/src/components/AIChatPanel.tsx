@@ -1,8 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
 import DOMPurify from 'dompurify';
+import toast from 'react-hot-toast';
 import { aiApi } from '../lib/api';
 
-type Msg = { role: 'user' | 'assistant'; text: string; suggestions?: string[]; source?: string };
+type ProposalStatus = 'pending' | 'running' | 'confirmed' | 'cancelled' | 'error';
+
+type ProposedAction = {
+  id: string;
+  actionType: string;
+  summary: string;
+  destructive: boolean;
+  payload: Record<string, unknown>;
+  status: ProposalStatus;
+  error?: string;
+};
+
+type SearchHit = { id: string; type: string; title: string; subtitle: string; icon: string; page: string };
+
+type Msg = {
+  role: 'user' | 'assistant';
+  text: string;
+  suggestions?: string[];
+  source?: string;
+  proposedActions?: ProposedAction[];
+  searchResults?: SearchHit[];
+};
 
 const STARTER_QUESTIONS = [
   'What items are low on stock?',
@@ -48,17 +70,50 @@ export function AIChatPanel({ onClose }: { onClose: () => void }) {
     setLoading(true);
     try {
       const res = await aiApi.chat(q);
+      const proposedActions: ProposedAction[] = (res.data.proposedActions ?? []).map((p: any) => ({
+        ...p,
+        status: 'pending' as const,
+      }));
       setMessages(prev => [...prev, {
         role: 'assistant',
         text: res.data.answer,
         suggestions: res.data.suggestions,
         source: res.data.source,
+        proposedActions,
+        searchResults: res.data.searchResults ?? [],
       }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I couldn't reach the server. Please try again." }]);
     } finally {
       setLoading(false);
     }
+  }
+
+  function setProposalStatus(msgIndex: number, proposalId: string, status: ProposalStatus, error?: string) {
+    setMessages(prev => prev.map((m, i) => {
+      if (i !== msgIndex || !m.proposedActions) return m;
+      return {
+        ...m,
+        proposedActions: m.proposedActions.map(p => p.id === proposalId ? { ...p, status, error } : p),
+      };
+    }));
+  }
+
+  async function confirmProposal(msgIndex: number, proposal: ProposedAction) {
+    setProposalStatus(msgIndex, proposal.id, 'running');
+    try {
+      await aiApi.confirmAction(proposal.actionType, proposal.payload);
+      setProposalStatus(msgIndex, proposal.id, 'confirmed');
+      toast.success('Done');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Action failed';
+      setProposalStatus(msgIndex, proposal.id, 'error', message);
+      toast.error(message);
+    }
+  }
+
+  function cancelProposal(msgIndex: number, proposalId: string) {
+    setProposalStatus(msgIndex, proposalId, 'cancelled');
   }
 
   return (
@@ -114,6 +169,66 @@ export function AIChatPanel({ onClose }: { onClose: () => void }) {
                   >
                     {s}
                   </button>
+                ))}
+              </div>
+            )}
+            {msg.proposedActions && msg.proposedActions.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '92%' }}>
+                {msg.proposedActions.map(p => (
+                  <div key={p.id} style={{
+                    border: `1px solid ${p.destructive ? '#dc2626' : 'var(--accent)'}`,
+                    borderRadius: 10, padding: '10px 12px', background: 'var(--surface2)',
+                  }}>
+                    <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600, lineHeight: 1.4 }}>
+                      {p.destructive ? '⚠️ ' : ''}{p.summary}
+                    </div>
+                    {(p.status === 'pending') && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button onClick={() => confirmProposal(i, p)}
+                          style={{
+                            fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8, cursor: 'pointer',
+                            background: p.destructive ? '#dc2626' : 'var(--accent)', border: 'none', color: '#fff',
+                          }}>
+                          Confirm
+                        </button>
+                        <button onClick={() => cancelProposal(i, p.id)}
+                          style={{
+                            fontSize: 12, padding: '6px 14px', borderRadius: 8, cursor: 'pointer',
+                            background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)',
+                          }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                    {p.status === 'running' && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Working…</div>
+                    )}
+                    {p.status === 'confirmed' && (
+                      <div style={{ fontSize: 11, color: '#16a34a', marginTop: 8 }}>✓ Done</div>
+                    )}
+                    {p.status === 'cancelled' && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Cancelled</div>
+                    )}
+                    {p.status === 'error' && (
+                      <div style={{ fontSize: 11, color: '#dc2626', marginTop: 8 }}>Failed: {p.error}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {msg.searchResults && msg.searchResults.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '92%' }}>
+                {msg.searchResults.map(r => (
+                  <div key={r.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8,
+                    background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 12,
+                  }}>
+                    <span>{r.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.type} — {r.subtitle}</div>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

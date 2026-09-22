@@ -11,6 +11,14 @@ Object.defineProperty(window, "localStorage", {
   },
 });
 
+// jsdom doesn't implement scrollIntoView (used by chat-style auto-scroll effects).
+// This setup file runs for every suite, including convex/*.test.ts files, which
+// use the `edge-runtime` environment (no `window`) — guard accordingly, or every
+// convex-test suite in the repo fails to even collect.
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 // Mock matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,

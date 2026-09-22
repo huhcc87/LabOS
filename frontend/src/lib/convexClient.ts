@@ -1137,6 +1137,13 @@ export const aiApi = {
     const result = await client.action(api.agent.chat, { token, question });
     return { data: result };
   },
+  // Executes a chatbot-proposed action (agent.ts's propose_* tools) — only ever
+  // called after the user clicks Confirm on a proposed-action card.
+  confirmAction: async (actionType: string, payload: Record<string, unknown>) => {
+    const token = getToken();
+    const result = await client.action(api.agentActions.confirmAction, { token, actionType, payload } as any);
+    return { data: result };
+  },
   inventoryPredictions: async () => {
     const token = getToken();
     const result = await client.query(api.aiChat.inventoryPredictions, { token });

@@ -10,6 +10,7 @@
 
 import type * as activity from "../activity.js";
 import type * as agent from "../agent.js";
+import type * as agentActions from "../agentActions.js";
 import type * as ai from "../ai.js";
 import type * as aiChat from "../aiChat.js";
 import type * as audit from "../audit.js";
@@ -59,6 +60,7 @@ import type * as suppliers from "../suppliers.js";
 import type * as swarmFeedback from "../swarmFeedback.js";
 import type * as tasks from "../tasks.js";
 import type * as templates from "../templates.js";
+import type * as testHelpers from "../testHelpers.js";
 import type * as totp from "../totp.js";
 import type * as training from "../training.js";
 import type * as users from "../users.js";
@@ -74,6 +76,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
   agent: typeof agent;
+  agentActions: typeof agentActions;
   ai: typeof ai;
   aiChat: typeof aiChat;
   audit: typeof audit;
@@ -123,6 +126,7 @@ declare const fullApi: ApiFromModules<{
   swarmFeedback: typeof swarmFeedback;
   tasks: typeof tasks;
   templates: typeof templates;
+  testHelpers: typeof testHelpers;
   totp: typeof totp;
   training: typeof training;
   users: typeof users;
