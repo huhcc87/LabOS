@@ -602,6 +602,14 @@ export const samplesApi = {
     api.samples.remove,
     api.samples.get
   ),
+  // Override: samples.get requires a token (requireAuth), unlike crudApi's
+  // generic get which sends no auth — the other crud entities' get queries
+  // don't take a token arg, so this can't move into crudApi itself.
+  get: async (id: IdLike) => {
+    const token = getToken();
+    const result = await client.query(api.samples.get, { token, id: toStr(id) as any });
+    return { data: adapt(result) };
+  },
   listEvents: async (page = 1, perPage = 20, _search = '', sampleId?: string) => {
     if (!sampleId) return paginated([], page, perPage);
     const result = await client.query(api.samples.listEvents, {

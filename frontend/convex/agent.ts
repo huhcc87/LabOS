@@ -60,7 +60,7 @@ async function findSampleCandidates(ctx: any, token: string | undefined, labId: 
     .filter((h) => h.type === "Sample")
     .map((h) => String(h.id).replace(/^samples-/, ""))
     .slice(0, MAX_CANDIDATES);
-  const samples = await Promise.all(sampleIds.map((id) => ctx.runQuery(api.samples.get, { id })));
+  const samples = await Promise.all(sampleIds.map((id) => ctx.runQuery(api.samples.get, { token, id })));
   return samples.filter(Boolean) as any[];
 }
 

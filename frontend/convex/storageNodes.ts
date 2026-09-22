@@ -346,10 +346,10 @@ export const archive = mutation({
     if (node.version !== args.version) throw new Error("CONFLICT: storage node was updated by someone else");
 
     const boxes = await boxesInSubtree(ctx, node);
-    for (const box of boxes) {
-      if (await boxHasPositions(ctx, box._id)) {
-        throw new Error("Cannot archive: one or more positions in this subtree are occupied, reserved, or flagged");
-      }
+    // Parallel per-box existence checks instead of a sequential N+1 loop.
+    const occupiedFlags = await Promise.all(boxes.map((box) => boxHasPositions(ctx, box._id)));
+    if (occupiedFlags.some(Boolean)) {
+      throw new Error("Cannot archive: one or more positions in this subtree are occupied, reserved, or flagged");
     }
 
     await ctx.db.patch(args.id, {
@@ -407,24 +407,27 @@ export const occupancy = query({
     const node = await loadNodeInLab(ctx, args.id, args.labId);
     const boxes = await boxesInSubtree(ctx, node);
 
+    // Parallel per-box position reads instead of a sequential N+1 loop.
+    const positionsByBox = await Promise.all(
+      boxes.map((box) =>
+        ctx.db.query("storage_positions").withIndex("by_box", (q) => q.eq("box_id", box._id)).collect()
+      )
+    );
+
     let capacity = 0;
     let occupied = 0;
     let reserved = 0;
     let quarantined = 0;
     let unavailable = 0;
-    for (const box of boxes) {
+    boxes.forEach((box, i) => {
       capacity += (box.rows ?? 0) * (box.cols ?? 0);
-      const positions = await ctx.db
-        .query("storage_positions")
-        .withIndex("by_box", (q) => q.eq("box_id", box._id))
-        .collect();
-      for (const p of positions) {
+      for (const p of positionsByBox[i]) {
         if (p.state === "occupied") occupied++;
         else if (p.state === "reserved") reserved++;
         else if (p.state === "quarantined") quarantined++;
         else if (p.state === "unavailable") unavailable++;
       }
-    }
+    });
     return { capacity, occupied, reserved, quarantined, unavailable, boxCount: boxes.length };
   },
 });

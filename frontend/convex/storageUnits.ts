@@ -222,11 +222,11 @@ async function unitHasOccupiedPositions(ctx: MutationCtx, unitId: Id<"storage_un
     .withIndex("by_unit", (q) => q.eq("unit_id", unitId))
     .filter((q) => q.eq(q.field("kind"), "box"))
     .collect();
-  for (const box of boxes) {
-    const first = await ctx.db.query("storage_positions").withIndex("by_box", (q) => q.eq("box_id", box._id)).first();
-    if (first) return true;
-  }
-  return false;
+  // Parallel per-box existence checks instead of a sequential N+1 loop.
+  const firsts = await Promise.all(
+    boxes.map((box) => ctx.db.query("storage_positions").withIndex("by_box", (q) => q.eq("box_id", box._id)).first())
+  );
+  return firsts.some((first) => first !== null);
 }
 
 export const archive = mutation({
@@ -282,17 +282,21 @@ export const occupancy = query({
       .filter((q) => q.eq(q.field("kind"), "box"))
       .collect();
 
+    // Parallel per-box position reads instead of a sequential N+1 loop.
+    const positionsByBox = await Promise.all(
+      boxes.map((box) => ctx.db.query("storage_positions").withIndex("by_box", (q) => q.eq("box_id", box._id)).collect())
+    );
+
     let capacity = 0, occupied = 0, reserved = 0, quarantined = 0, unavailable = 0;
-    for (const box of boxes) {
+    boxes.forEach((box, i) => {
       capacity += (box.rows ?? 0) * (box.cols ?? 0);
-      const positions = await ctx.db.query("storage_positions").withIndex("by_box", (q) => q.eq("box_id", box._id)).collect();
-      for (const p of positions) {
+      for (const p of positionsByBox[i]) {
         if (p.state === "occupied") occupied++;
         else if (p.state === "reserved") reserved++;
         else if (p.state === "quarantined") quarantined++;
         else if (p.state === "unavailable") unavailable++;
       }
-    }
+    });
     return { capacity, occupied, reserved, quarantined, unavailable, boxCount: boxes.length };
   },
 });

@@ -19,6 +19,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -59,8 +60,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("samples") },
+  args: { token: v.optional(v.string()), id: v.id("samples") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
