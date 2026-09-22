@@ -666,6 +666,22 @@ export const samplesApi = {
     const items = (result?.page ?? []) as any[];
     return { data: items.map(adapt) };
   },
+  batchValidate: async (labId: IdLike, rows: Array<{ sampleId: IdLike; boxId: IdLike; row: number; col: number; label: string }>) => {
+    const token = getToken();
+    const result = await client.query(api.samples.batchValidate, {
+      token, labId: labId as any,
+      rows: rows.map((r) => ({ sampleId: r.sampleId as any, boxId: r.boxId as any, row: r.row, col: r.col, label: r.label })),
+    });
+    return { data: result };
+  },
+  batchCommit: async (labId: IdLike, rows: Array<{ sampleId: IdLike; boxId: IdLike; row: number; col: number; label: string }>) => {
+    const token = getToken();
+    const result = await client.mutation(api.samples.batchCommit, {
+      token, labId: labId as any,
+      rows: rows.map((r) => ({ sampleId: r.sampleId as any, boxId: r.boxId as any, row: r.row, col: r.col, label: r.label })),
+    });
+    return { data: result };
+  },
 };
 
 export const maintenanceApi = {

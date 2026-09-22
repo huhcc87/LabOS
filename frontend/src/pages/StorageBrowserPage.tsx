@@ -7,6 +7,7 @@ import { OccupancySummary, type OccupancyStats } from '../features/storage/Occup
 import { PositionGrid, type GridPosition } from '../features/storage/PositionGrid';
 import { StorageUnitDialog } from '../features/storage/StorageUnitDialog';
 import { StorageNodeDialog } from '../features/storage/StorageNodeDialog';
+import { SampleBatchImportWizard } from '../features/storage/SampleBatchImportWizard';
 import { SamplePlaceDialog } from '../features/storage/SamplePlaceDialog';
 import { SampleActionsDialog } from '../features/storage/SampleActionsDialog';
 import { BarcodeScanner } from '../components/BarcodeScanner';
@@ -42,6 +43,7 @@ export default function StorageBrowserPage() {
 
   const [showUnitDialog, setShowUnitDialog] = useState(false);
   const [showNodeDialog, setShowNodeDialog] = useState(false);
+  const [showBatchImport, setShowBatchImport] = useState(false);
   const [placeCell, setPlaceCell] = useState<{ row: number; col: number; label: string } | null>(null);
   const [actionsCell, setActionsCell] = useState<{ sampleId: string; label: string } | null>(null);
   const [showScanner, setShowScanner] = useState(false);
@@ -262,9 +264,14 @@ export default function StorageBrowserPage() {
         </div>
       ) : (
         <div>
-          <button onClick={() => setSelectedUnit(null)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>
-            ← All storage units
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <button onClick={() => setSelectedUnit(null)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+              ← All storage units
+            </button>
+            <button onClick={() => setShowBatchImport(true)} style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'none', cursor: 'pointer' }}>
+              📋 Batch import
+            </button>
+          </div>
 
           <StorageBreadcrumbs
             crumbs={[
@@ -367,6 +374,18 @@ export default function StorageBrowserPage() {
         />
       )}
       <BarcodeScanner isOpen={showScanner} onClose={() => setShowScanner(false)} onScan={handleScan} mode="simple" />
+      {labId && selectedUnit && (
+        <SampleBatchImportWizard
+          isOpen={showBatchImport}
+          onClose={() => setShowBatchImport(false)}
+          labId={labId}
+          unitId={selectedUnit.id}
+          onImported={() => {
+            if (selectedBox) loadBoxPositions(selectedBox.id);
+            loadUnitOccupancy(selectedUnit);
+          }}
+        />
+      )}
     </div>
   );
 }
