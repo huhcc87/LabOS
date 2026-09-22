@@ -8,17 +8,9 @@ import { AIChatPanel } from './AIChatPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
+import { GlobalSearch } from './GlobalSearch';
 
 type Theme = 'dark' | 'light' | 'system';
-
-interface SearchResult {
-  id: string;
-  type: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-  page: string;
-}
 
 interface AppNotification {
   id: string;
@@ -134,9 +126,6 @@ interface LayoutProps {
 export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const { user, logout, hasRole } = useAuth();
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'light');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
@@ -147,23 +136,11 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('labos_onboarding_done'));
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
 
   // ── Convex: live summary for notifications ────────────────────────────
   const summary = useQuery(api.dashboard.summary);
-
-  // ── Convex: search (debounced) ────────────────────────────────────────
-  const searchResults = useQuery(
-    api.search.globalSearch,
-    debouncedQ.length >= 2 ? { q: debouncedQ } : 'skip'
-  ) ?? [];
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(searchQuery), 300);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
 
   // ── Derive notifications from live summary ─────────────────────────────
   const notifications = useMemo<AppNotification[]>(() => {
@@ -214,9 +191,6 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotificationsOpen(false);
       }
@@ -230,12 +204,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
       if (e.key === 'Escape') {
-        setSearchOpen(false);
         setNotificationsOpen(false);
       }
     };
@@ -417,57 +386,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           {/* Header Actions */}
           <div className="header-actions">
             {/* Global Search */}
-            <div ref={searchRef} className="global-search-wrapper">
-              <div
-                className="global-search-trigger"
-                onClick={() => setSearchOpen(true)}
-              >
-                <span className="search-icon">🔍</span>
-                <span className="search-placeholder">Search... <kbd>⌘K</kbd></span>
-              </div>
-
-              {searchOpen && (
-                <div className="global-search-modal">
-                  <div className="search-input-wrapper">
-                    <span className="search-icon">🔍</span>
-                    <input
-                      type="text"
-                      className="search-input"
-                      placeholder="Search samples, protocols, instruments..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      autoFocus
-                    />
-                    {searchQuery && (
-                      <button className="search-clear" onClick={() => setSearchQuery('')}>×</button>
-                    )}
-                  </div>
-                  {searchQuery.length >= 2 && (
-                    <div className="search-results">
-                      {searchResults === undefined ? (
-                        <div className="search-no-results">Searching...</div>
-                      ) : searchResults.length === 0 ? (
-                        <div className="search-no-results">No results found for "{searchQuery}"</div>
-                      ) : (
-                        searchResults.map(result => (
-                          <div
-                            key={result.id}
-                            className="search-result-item"
-                            onClick={() => { onNavigate(result.page); setSearchOpen(false); setSearchQuery(''); }}
-                          >
-                            <span className="result-icon">{result.icon}</span>
-                            <div className="result-content">
-                              <div className="result-title">{result.title}</div>
-                              <div className="result-subtitle">{result.type} • {result.subtitle}</div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <GlobalSearch onNavigate={onNavigate} />
 
             {/* AI Chat Toggle */}
             <button

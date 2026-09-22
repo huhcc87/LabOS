@@ -1400,4 +1400,13 @@ export const orgApi = {
   },
 };
 
+export const searchApi = {
+  query: async (term: string) => {
+    if (!term || term.trim().length < 2) return { data: [] };
+    const token = getToken();
+    const result = await client.query(api.search.globalSearch, { token, q: term });
+    return { data: result ?? [] };
+  },
+};
+
 export { client as convexClient };

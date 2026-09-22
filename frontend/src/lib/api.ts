@@ -49,6 +49,7 @@ export {
   orgApi,
   fundingApi,
   swarmFeedbackApi,
+  searchApi,
 } from './convexClient';
 
 export type { PaginatedResponse } from './types';
