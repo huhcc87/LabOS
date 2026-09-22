@@ -6,8 +6,9 @@ Checkpoints D and E landed since the table below was last written in full:
 - **D** (samples/scan/move UI): place/move/checkout/return/dispose dialogs + barcode scan, wired into the Checkpoint C position grid.
 - **E** (labels & exports), scoped per Plan §5 Q5 (no ZPL — no hardware): fixed `exportUtils.ts` to produce real `.xlsx`/`.pdf` (was a CSV mislabeled "Excel" and a print-dialog "PDF" built from unescaped HTML — a real stored-XSS path, now gone); added one-click barcode label printing to `SampleActionsDialog`, reusing the existing `Barcode` component and `LabelPrinterPage`'s `@media print` pattern instead of standing up a parallel backend template system.
 - Deferred from E: `label_templates`/`print_jobs` backend tables (shared template library + print-job audit trail) — separable from shipping a working print button, not done.
-- Still open: Checkpoint F (final verification), running the migration against a real dev deployment, code review of B–D, batch sample import wizard.
-- 140/140 tests, `tsc`/build clean as of `2c0c540`.
+- **Checkpoint F (automated verification): DONE.** `tsc` clean, 140/140 tests, `npm run build` clean. No Playwright E2E — "the prompt's 11 scenarios" referenced by the plan were never captured in this repo, so there's nothing to automate against; manual click-through still recommended.
+- Still blocked, needs you: **running the migration against a real dev deployment** — requires an interactive `npx convex login` (browser OAuth), which I cannot do headlessly. Everything else is ready; say go once you're at a terminal.
+- Still open: code review of B–D, batch sample import wizard (in progress as a background task).
 
 | Requirement | Status | Files | API | Migration | Tests | Evidence | Remaining risk |
 |---|---|---|---|---|---|---|---|
