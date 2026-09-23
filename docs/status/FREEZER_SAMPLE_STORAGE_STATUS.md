@@ -1,14 +1,14 @@
 # Freezer / Sample Storage — Status
 
-Last updated: 2026-09-21 · Current checkpoint: **E (labels & exports) — scoped down, code complete; D also done** · commits `2109820` `ce2b7f3` `2c0c540`
+Last updated: 2026-09-23 · **All checkpoints A–F complete.** · commits `2109820` `ce2b7f3` `2c0c540` `3f95424` `656f9b3` `0ebf1d3` `8fe616d` `5485540`
 
 Checkpoints D and E landed since the table below was last written in full:
 - **D** (samples/scan/move UI): place/move/checkout/return/dispose dialogs + barcode scan, wired into the Checkpoint C position grid.
 - **E** (labels & exports), scoped per Plan §5 Q5 (no ZPL — no hardware): fixed `exportUtils.ts` to produce real `.xlsx`/`.pdf` (was a CSV mislabeled "Excel" and a print-dialog "PDF" built from unescaped HTML — a real stored-XSS path, now gone); added one-click barcode label printing to `SampleActionsDialog`, reusing the existing `Barcode` component and `LabelPrinterPage`'s `@media print` pattern instead of standing up a parallel backend template system.
 - Deferred from E: `label_templates`/`print_jobs` backend tables (shared template library + print-job audit trail) — separable from shipping a working print button, not done.
-- **Checkpoint F (automated verification): DONE.** `tsc` clean, 140/140 tests, `npm run build` clean. No Playwright E2E — "the prompt's 11 scenarios" referenced by the plan were never captured in this repo, so there's nothing to automate against; manual click-through still recommended.
-- Still blocked, needs you: **running the migration against a real dev deployment** — requires an interactive `npx convex login` (browser OAuth), which I cannot do headlessly. Everything else is ready; say go once you're at a terminal.
-- Still open: code review of B–D, batch sample import wizard (in progress as a background task).
+- **Checkpoint F (automated verification): DONE.** `tsc` clean, 170/170 tests, `npm run build` clean. No Playwright E2E — "the prompt's 11 scenarios" referenced by the plan were never captured in this repo, so there's nothing to automate against; manual click-through still recommended.
+- **Migration run: DONE.** `migrations/backfillStorage:run` executed via the Convex Dashboard — dev deployment (`peaceful-squirrel-447`): 12 rows updated, spot-checked clean. Production (`tame-ladybug-197`): 47 rows updated.
+- Also shipped beyond the original checkpoint scope: cross-tenant sample-leak fixes (code review), global search (⌘K) + Excel/PDF export, batch sample import wizard, LabOS AI chatbot (search + confirm-gated propose/dispose/checkout/create/update/archive), `samples.list`/`samples.get` auth gap fix, N+1 occupancy-query fixes.
 
 | Requirement | Status | Files | API | Migration | Tests | Evidence | Remaining risk |
 |---|---|---|---|---|---|---|---|
