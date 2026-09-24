@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List ──────────────────────────────────────────────────────────────────────
@@ -103,9 +103,9 @@ export const update = mutation({
     const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
-    if (!entry) throw new Error("Notebook entry not found");
+    if (!entry) throw new ConvexError("Notebook entry not found");
     if (entry.is_locked) {
-      throw new Error(
+      throw new ConvexError(
         "This notebook entry is locked and cannot be modified. " +
           "Locked entries are read-only to preserve scientific integrity."
       );
@@ -127,9 +127,9 @@ export const remove = mutation({
     const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
-    if (!entry) throw new Error("Notebook entry not found");
+    if (!entry) throw new ConvexError("Notebook entry not found");
     if (entry.is_locked) {
-      throw new Error(
+      throw new ConvexError(
         "Cannot delete a locked notebook entry. " +
           "Locked entries are archived for scientific record-keeping."
       );
@@ -151,10 +151,10 @@ export const sign = mutation({
     const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
-    if (!entry) throw new Error("Notebook entry not found");
+    if (!entry) throw new ConvexError("Notebook entry not found");
 
     if (entry.signed_at) {
-      throw new Error("This entry has already been signed.");
+      throw new ConvexError("This entry has already been signed.");
     }
 
     await ctx.db.patch(id, {
@@ -181,16 +181,16 @@ export const witness = mutation({
     const userId = await requireAuth(ctx, token);
 
     const entry = await ctx.db.get(id);
-    if (!entry) throw new Error("Notebook entry not found");
+    if (!entry) throw new ConvexError("Notebook entry not found");
 
     if (!entry.signed_at) {
-      throw new Error(
+      throw new ConvexError(
         "Cannot witness an unsigned entry. The entry must be signed before witnessing."
       );
     }
 
     if (witnessed_by === entry.author_id) {
-      throw new Error(
+      throw new ConvexError(
         "The witness must be a different person from the author of the notebook entry."
       );
     }

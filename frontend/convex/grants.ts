@@ -1,5 +1,5 @@
 import { query, mutation, action } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ export const updateSubmission = mutation({
     await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Submission not found");
+    if (!existing) throw new ConvexError("Submission not found");
 
     // Strip undefined values
     const updates = Object.fromEntries(
@@ -143,7 +143,7 @@ export const deleteSubmission = mutation({
   handler: async (ctx, { token, id }) => {
     await requireAuth(ctx, token);
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Submission not found");
+    if (!existing) throw new ConvexError("Submission not found");
     await ctx.db.delete(id);
   },
 });

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/check-convex-url.mjs && vite build",
     "build:check": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",

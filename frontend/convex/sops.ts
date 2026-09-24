@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List SOPs (paginated, with search and status filter) ──────────────────
@@ -134,7 +134,7 @@ export const update = mutation({
     await requireAuth(ctx, args.token);
     const { id, token: _token, ...fields } = args;
     const sop = await ctx.db.get(id);
-    if (!sop) throw new Error("SOP not found");
+    if (!sop) throw new ConvexError("SOP not found");
 
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     if (fields.title !== undefined) patch.title = fields.title;
@@ -156,7 +156,7 @@ export const remove = mutation({
   handler: async (ctx, { token, id }) => {
     await requireAuth(ctx, token);
     const sop = await ctx.db.get(id);
-    if (!sop) throw new Error("SOP not found");
+    if (!sop) throw new ConvexError("SOP not found");
     await ctx.db.delete(id);
     return id;
   },
@@ -173,7 +173,7 @@ export const approve = mutation({
   handler: async (ctx, { token, id, approved_by }) => {
     await requireAuth(ctx, token);
     const sop = await ctx.db.get(id);
-    if (!sop) throw new Error("SOP not found");
+    if (!sop) throw new ConvexError("SOP not found");
 
     await ctx.db.patch(id, {
       status: "approved",

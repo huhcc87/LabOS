@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── Sensors ───────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export const updateSensor = mutation({
     const userId = await requireAuth(ctx, token);
 
     const sensor = await ctx.db.get(id);
-    if (!sensor) throw new Error("Sensor not found");
+    if (!sensor) throw new ConvexError("Sensor not found");
 
     const updates = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
@@ -79,7 +79,7 @@ export const deleteSensor = mutation({
     const userId = await requireAuth(ctx, token);
 
     const sensor = await ctx.db.get(id);
-    if (!sensor) throw new Error("Sensor not found");
+    if (!sensor) throw new ConvexError("Sensor not found");
 
     await ctx.db.delete(id);
   },
@@ -100,7 +100,7 @@ export const recordReading = mutation({
   },
   handler: async (ctx, { sensor_id, value, timestamp, metadata }) => {
     const sensor = await ctx.db.get(sensor_id);
-    if (!sensor) throw new Error("Sensor not found");
+    if (!sensor) throw new ConvexError("Sensor not found");
 
     const ts = timestamp ?? Date.now();
 
@@ -214,10 +214,10 @@ export const acknowledgeAlert = mutation({
     const userId = await requireAuth(ctx, token);
 
     const alert = await ctx.db.get(id);
-    if (!alert) throw new Error("Alert not found");
+    if (!alert) throw new ConvexError("Alert not found");
 
     if (alert.is_acknowledged) {
-      throw new Error("Alert has already been acknowledged.");
+      throw new ConvexError("Alert has already been acknowledged.");
     }
 
     await ctx.db.patch(id, {

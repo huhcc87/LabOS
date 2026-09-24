@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── Calendar Events ──────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export const updateCalendarEvent = mutation({
 
     const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Calendar event not found");
+    if (!existing) throw new ConvexError("Calendar event not found");
 
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
@@ -93,7 +93,7 @@ export const deleteCalendarEvent = mutation({
     const userId = await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Calendar event not found");
+    if (!existing) throw new ConvexError("Calendar event not found");
 
     await ctx.db.delete(id);
     return id;
@@ -180,7 +180,7 @@ export const updateReminder = mutation({
 
     const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Reminder not found");
+    if (!existing) throw new ConvexError("Reminder not found");
 
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
@@ -198,7 +198,7 @@ export const deleteReminder = mutation({
     const userId = await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Reminder not found");
+    if (!existing) throw new ConvexError("Reminder not found");
 
     await ctx.db.delete(id);
     return id;

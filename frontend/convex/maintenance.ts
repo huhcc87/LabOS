@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List maintenance records (paginated, filter by status) ────────────────
@@ -113,7 +113,7 @@ export const update = mutation({
     await requireAuth(ctx, args.token);
     const { id, token: _token, ...fields } = args;
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Maintenance record not found");
+    if (!record) throw new ConvexError("Maintenance record not found");
 
     const patch: Record<string, unknown> = {};
     if (fields.instrument_id !== undefined) patch.instrument_id = fields.instrument_id;
@@ -145,7 +145,7 @@ export const complete = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx, args.token);
     const record = await ctx.db.get(args.id);
-    if (!record) throw new Error("Maintenance record not found");
+    if (!record) throw new ConvexError("Maintenance record not found");
 
     const patch: Record<string, unknown> = {
       status: "completed",
@@ -168,7 +168,7 @@ export const remove = mutation({
   handler: async (ctx, { token, id }) => {
     await requireAuth(ctx, token);
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Maintenance record not found");
+    if (!record) throw new ConvexError("Maintenance record not found");
     await ctx.db.delete(id);
     return id;
   },

@@ -1,12 +1,12 @@
 import { action, mutation, query, internalQuery, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 
 export const setupTotp = action({
   args: { token: v.string() },
   handler: async (ctx, { token }): Promise<{ secret: string; otpauth_url: string }> => {
     const session = await ctx.runQuery(api.totp.getSession, { token });
-    if (!session) throw new Error("Unauthorized");
+    if (!session) throw new ConvexError("Unauthorized");
 
     const { generateSecret, generateURI } = await import("otplib");
     const secret = generateSecret();
@@ -25,14 +25,14 @@ export const verifyAndEnable = action({
   args: { token: v.string(), code: v.string() },
   handler: async (ctx, { token, code }): Promise<{ success: boolean }> => {
     const session = await ctx.runQuery(api.totp.getSession, { token });
-    if (!session) throw new Error("Unauthorized");
+    if (!session) throw new ConvexError("Unauthorized");
 
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
-    if (!user || !user.totp_secret) throw new Error("TOTP not set up");
+    if (!user || !user.totp_secret) throw new ConvexError("TOTP not set up");
 
     const { verifySync } = await import("otplib");
     const isValid = verifySync({ secret: user.totp_secret, token: code }).valid;
-    if (!isValid) throw new Error("Invalid verification code");
+    if (!isValid) throw new ConvexError("Invalid verification code");
 
     await ctx.runMutation(internal.totp.enableTotp, { user_id: session.user_id });
     return { success: true };
@@ -43,14 +43,14 @@ export const disable = action({
   args: { token: v.string(), password: v.string() },
   handler: async (ctx, { token, password }): Promise<{ success: boolean }> => {
     const session = await ctx.runQuery(api.totp.getSession, { token });
-    if (!session) throw new Error("Unauthorized");
+    if (!session) throw new ConvexError("Unauthorized");
 
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
-    if (!user) throw new Error("Unauthorized");
+    if (!user) throw new ConvexError("Unauthorized");
 
     const bcrypt = await import("bcryptjs");
     const valid = await bcrypt.compare(password, user.hashed_password);
-    if (!valid) throw new Error("Invalid password");
+    if (!valid) throw new ConvexError("Invalid password");
 
     await ctx.runMutation(internal.totp.disableTotp, { user_id: session.user_id });
     return { success: true };
@@ -62,7 +62,7 @@ export const verifyLogin = action({
   handler: async (ctx, { email, code }): Promise<{ valid: boolean }> => {
     const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
     if (!user || !user.totp_secret || !user.totp_enabled) {
-      throw new Error("TOTP not enabled");
+      throw new ConvexError("TOTP not enabled");
     }
 
     const { verifySync } = await import("otplib");

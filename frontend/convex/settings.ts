@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List Settings ─────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ export const create = mutation({
       .query("settings")
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .first();
-    if (existing) throw new Error(`Setting with key "${args.key}" already exists`);
+    if (existing) throw new ConvexError(`Setting with key "${args.key}" already exists`);
 
     const now = Date.now();
     return await ctx.db.insert("settings", {
@@ -86,7 +86,7 @@ export const updateByKey = mutation({
       .query("settings")
       .withIndex("by_key", (q) => q.eq("key", key))
       .first();
-    if (!setting) throw new Error(`Setting with key "${key}" not found`);
+    if (!setting) throw new ConvexError(`Setting with key "${key}" not found`);
 
     await ctx.db.patch(setting._id, {
       value,
@@ -113,7 +113,7 @@ export const update = mutation({
     const userId = await requireAuth(ctx, token);
 
     const setting = await ctx.db.get(id);
-    if (!setting) throw new Error("Setting not found");
+    if (!setting) throw new ConvexError("Setting not found");
 
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     if (fields.key !== undefined) patch.key = fields.key;
@@ -135,7 +135,7 @@ export const remove = mutation({
     const userId = await requireAuth(ctx, token);
 
     const setting = await ctx.db.get(id);
-    if (!setting) throw new Error("Setting not found");
+    if (!setting) throw new ConvexError("Setting not found");
 
     await ctx.db.delete(id);
     return id;

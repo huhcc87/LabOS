@@ -16,7 +16,7 @@
  * reported as `available: false` rather than failing the request.
  */
 import { action } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 
 // ── Fetch with timeout ───────────────────────────────────────────────────────
 async function fetchWithTimeout(url: string, init: any = {}, ms = 9000): Promise<Response> {
@@ -51,7 +51,7 @@ async function nihSearch(text: string): Promise<{ total: number; titles: string[
       offset: 0,
     }),
   });
-  if (!r.ok) throw new Error(`NIH ${r.status}`);
+  if (!r.ok) throw new ConvexError(`NIH ${r.status}`);
   const j = await r.json();
   return {
     total: j.meta?.total ?? (j.results?.length ?? 0),
@@ -66,7 +66,7 @@ async function nsfSearch(text: string): Promise<{ total: number; titles: string[
     encodeURIComponent(cleanQuery(text)) +
     "&printFields=title,startDate,awardeeName&rpp=15";
   const r = await fetchWithTimeout(url);
-  if (!r.ok) throw new Error(`NSF ${r.status}`);
+  if (!r.ok) throw new ConvexError(`NSF ${r.status}`);
   const j = await r.json();
   const awards = j.response?.award ?? [];
   return { total: awards.length, titles: awards.slice(0, 6).map((a: any) => a.title).filter(Boolean) };
@@ -76,7 +76,7 @@ async function nsfSearch(text: string): Promise<{ total: number; titles: string[
 async function ukriSearch(text: string): Promise<{ total: number; titles: string[] }> {
   const url = "https://gtr.ukri.org/gtr/api/projects?q=" + encodeURIComponent(cleanQuery(text)) + "&s=15";
   const r = await fetchWithTimeout(url, { headers: { Accept: "application/vnd.rcuk.gtr.json-v7" } });
-  if (!r.ok) throw new Error(`UKRI ${r.status}`);
+  if (!r.ok) throw new ConvexError(`UKRI ${r.status}`);
   const j = await r.json();
   const projects = j.project ?? [];
   return {
@@ -94,7 +94,7 @@ async function ercSearch(text: string): Promise<{ total: number; titles: string[
     encodeURIComponent(`'${cleanQuery(text)}'`) +
     "&p=1&num=15&srt=Relevance:decreasing&format=json";
   const r = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 9000);
-  if (!r.ok) throw new Error(`ERC ${r.status}`);
+  if (!r.ok) throw new ConvexError(`ERC ${r.status}`);
   const j = await r.json();
   const hits = j.payload?.results?.hits?.hit ?? j.hits ?? [];
   const titles = (Array.isArray(hits) ? hits : [])

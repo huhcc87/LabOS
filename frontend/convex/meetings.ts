@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 export const list = query({
@@ -106,7 +106,7 @@ export const update = mutation({
 
     const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Meeting not found");
+    if (!existing) throw new ConvexError("Meeting not found");
 
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
@@ -124,7 +124,7 @@ export const remove = mutation({
     const userId = await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Meeting not found");
+    if (!existing) throw new ConvexError("Meeting not found");
 
     await ctx.db.delete(id);
     return id;
@@ -167,7 +167,7 @@ export const cancel = mutation({
     const userId = await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Meeting not found");
+    if (!existing) throw new ConvexError("Meeting not found");
 
     await ctx.db.patch(id, {
       status: "cancelled",
@@ -188,7 +188,7 @@ export const complete = mutation({
     const userId = await requireAuth(ctx, token);
 
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Meeting not found");
+    if (!existing) throw new ConvexError("Meeting not found");
 
     await ctx.db.patch(id, {
       status: "completed",

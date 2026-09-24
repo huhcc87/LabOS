@@ -10,21 +10,21 @@
  *   STRIPE_SECRET_KEY — sk_live_… or sk_test_…
  */
 import { action, mutation, query, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY not set in Convex environment");
+  if (!key) throw new ConvexError("STRIPE_SECRET_KEY not set in Convex environment");
   const Stripe = (await import("stripe")).default;
   return new Stripe(key, { apiVersion: "2025-04-30.basil" as any });
 }
 
 async function requireSession(ctx: any, token: string) {
   const session = await ctx.runQuery(api.totp.getSession, { token });
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new ConvexError("Unauthorized");
   return session;
 }
 
@@ -48,7 +48,7 @@ export const createSetupIntent = action({
 
     // Get or create a Stripe customer for this user
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError("User not found");
 
     let customerId = (user as any).stripe_customer_id;
 
@@ -86,16 +86,16 @@ export const createPaymentIntent = action({
   },
   handler: async (ctx, { token, amount, currency, description, payment_method_id }) => {
     if (!Number.isInteger(amount) || amount < 50 || amount > 99999999) {
-      throw new Error("Invalid amount: must be between 50 and 99999999 cents");
+      throw new ConvexError("Invalid amount: must be between 50 and 99999999 cents");
     }
     const session = await requireSession(ctx, token);
     const stripe = await getStripe();
 
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError("User not found");
 
     const customerId = (user as any).stripe_customer_id;
-    if (!customerId) throw new Error("No Stripe customer. Save a card first.");
+    if (!customerId) throw new ConvexError("No Stripe customer. Save a card first.");
 
     const params: any = {
       amount,
@@ -130,7 +130,7 @@ export const listPaymentMethods = action({
     const stripe = await getStripe();
 
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError("User not found");
 
     const customerId = (user as any).stripe_customer_id;
     if (!customerId) return [];
@@ -159,12 +159,12 @@ export const detachPaymentMethod = action({
     const stripe = await getStripe();
 
     const user = await ctx.runQuery(api.totp.getSession, { token });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError("User not found");
 
     const pm = await stripe.paymentMethods.retrieve(payment_method_id);
     const dbUser = await ctx.runQuery(api.customAuth.me, { token });
     if (!dbUser || !dbUser.stripe_customer_id || pm.customer !== dbUser.stripe_customer_id) {
-      throw new Error("Payment method does not belong to this account");
+      throw new ConvexError("Payment method does not belong to this account");
     }
 
     await stripe.paymentMethods.detach(payment_method_id);

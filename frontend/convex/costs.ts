@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List cost records (paginated, filter by status) ───────────────────────
@@ -118,7 +118,7 @@ export const update = mutation({
     await requireAuth(ctx, args.token);
     const { id, token: _token, ...fields } = args;
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Cost record not found");
+    if (!record) throw new ConvexError("Cost record not found");
 
     const patch: Record<string, unknown> = {};
     if (fields.title !== undefined) patch.title = fields.title;
@@ -142,7 +142,7 @@ export const remove = mutation({
   handler: async (ctx, { token, id }) => {
     await requireAuth(ctx, token);
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Cost record not found");
+    if (!record) throw new ConvexError("Cost record not found");
     await ctx.db.delete(id);
     return id;
   },
@@ -159,7 +159,7 @@ export const approve = mutation({
   handler: async (ctx, { token, id, approved_by }) => {
     await requireAuth(ctx, token);
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Cost record not found");
+    if (!record) throw new ConvexError("Cost record not found");
 
     await ctx.db.patch(id, {
       status: "approved",
@@ -181,7 +181,7 @@ export const reject = mutation({
   handler: async (ctx, { token, id, approved_by }) => {
     await requireAuth(ctx, token);
     const record = await ctx.db.get(id);
-    if (!record) throw new Error("Cost record not found");
+    if (!record) throw new ConvexError("Cost record not found");
 
     const patch: Record<string, unknown> = { status: "rejected" };
     if (approved_by !== undefined) patch.approved_by = approved_by;

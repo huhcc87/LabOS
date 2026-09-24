@@ -5,7 +5,7 @@
  * IMPORTANT: Change the default password immediately after first login!
  */
 import { internalAction, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
 export const createAdmin = internalAction({
@@ -21,7 +21,7 @@ export const createAdmin = internalAction({
 
     // Enforce minimum password strength for production admin
     if (password.length < 12) {
-      throw new Error("Admin password must be at least 12 characters");
+      throw new ConvexError("Admin password must be at least 12 characters");
     }
 
     const bcrypt = await import("bcryptjs");
