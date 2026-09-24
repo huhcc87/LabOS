@@ -16,17 +16,17 @@ def _get_entity_name(db: Session, entity_type: str, entity_id: int) -> str:
 
     # Import here to avoid circular imports
     from app.models.models import (
-        Protocol,
-        Instrument,
-        Task,
-        SampleRecord,
-        InventoryItem,
-        IncidentReport,
-        StudyWorkspace,
         SOP,
-        MaintenanceLog,
         CostEntry,
         DocumentTemplate,
+        IncidentReport,
+        Instrument,
+        InventoryItem,
+        MaintenanceLog,
+        Protocol,
+        SampleRecord,
+        StudyWorkspace,
+        Task,
     )
 
     entity_map = {
@@ -61,7 +61,7 @@ def get_activity_timeline(
     page: int = 1,
     per_page: int = 50,
     entity_type: str = "",
-    user_id: int = None,
+    user_id: int | None = None,
     action: str = "",
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
@@ -81,7 +81,7 @@ def get_activity_timeline(
     pages = (total + per_page - 1) // per_page or 1
 
     # Get user names for all user_ids
-    user_ids = list(set(a.user_id for a in items if a.user_id))
+    user_ids = list({a.user_id for a in items if a.user_id})
     users = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
 
     enriched = []
@@ -111,7 +111,7 @@ def get_recent_activity(
     """Get recent activity (last N entries)"""
     items = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit).all()
 
-    user_ids = list(set(a.user_id for a in items if a.user_id))
+    user_ids = list({a.user_id for a in items if a.user_id})
     users = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
 
     result = []
@@ -167,8 +167,9 @@ def get_activity_stats(
     _: User = Depends(require_role(UserRole.manager)),
 ):
     """Get activity statistics"""
-    from sqlalchemy import func
     from datetime import datetime, timedelta
+
+    from sqlalchemy import func
 
     # Activity by action type
     by_action = db.query(

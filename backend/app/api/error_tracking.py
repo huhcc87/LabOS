@@ -7,17 +7,15 @@ Built-in error tracking — zero cost, no external service.
 - Errors stored in-memory (last 500) + written to log file
 """
 import logging
-import traceback
 from collections import deque
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from app.api.auth import get_current_user, require_role
+from app.api.auth import require_role
 
 logger = logging.getLogger("labos.errors")
 
@@ -31,35 +29,35 @@ _lock = Lock()
 
 class ClientErrorReport(BaseModel):
     message: str
-    stack: Optional[str] = None
-    component: Optional[str] = None
-    url: Optional[str] = None
-    user_agent: Optional[str] = None
-    extra: Optional[dict] = None
+    stack: str | None = None
+    component: str | None = None
+    url: str | None = None
+    user_agent: str | None = None
+    extra: dict | None = None
 
 
 class ErrorRecord(BaseModel):
     id: str
     source: str            # "client" | "server"
     message: str
-    stack: Optional[str] = None
-    url: Optional[str] = None
-    component: Optional[str] = None
-    user_id: Optional[int] = None
-    ip: Optional[str] = None
+    stack: str | None = None
+    url: str | None = None
+    component: str | None = None
+    user_id: int | None = None
+    ip: str | None = None
     timestamp: str
-    extra: Optional[dict] = None
+    extra: dict | None = None
 
 
 def record_error(
     source: str,
     message: str,
-    stack: Optional[str] = None,
-    url: Optional[str] = None,
-    component: Optional[str] = None,
-    user_id: Optional[int] = None,
-    ip: Optional[str] = None,
-    extra: Optional[dict] = None,
+    stack: str | None = None,
+    url: str | None = None,
+    component: str | None = None,
+    user_id: int | None = None,
+    ip: str | None = None,
+    extra: dict | None = None,
 ) -> ErrorRecord:
     """Store an error record and log it."""
     record = ErrorRecord(
@@ -119,7 +117,7 @@ async def report_client_error(report: ClientErrorReport, request: Request):
 
 @router.get("")
 async def list_errors(
-    source: Optional[str] = None,
+    source: str | None = None,
     limit: int = 50,
     current_user=Depends(require_role("admin")),
 ):

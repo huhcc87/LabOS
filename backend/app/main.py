@@ -12,29 +12,50 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+import os
+
 from app.api import (
     activity,
+    admin_migrations,
     ai,
     audit,
     auth,
+    biosketch,
+    capa,
     compliance,
+    consent,
     costs,
     dashboard,
+    email_notifications,
+    error_tracking,
     feedback,
     files,
+    freezer,
+    gdpr,
+    grant_submissions,
+    grant_versions,
     grants,
     incidents,
     instruments,
     integrations,
     inventory,
     iot,
+    lab_members,
     lab_notebook,
     maintenance,
     meetings,
     notifications,
+    org_hierarchy,
+    payments,
+    procurement_extras,
     protocols,
+    reagent_cart,
+    reagents,
+    references,
     samples,
     scheduling,
+    security,
+    signatures,
     sops,
     suppliers,
     tasks,
@@ -43,24 +64,11 @@ from app.api import (
     video_call,
     workspaces,
 )
-from app.api import settings as lab_settings
-from app.api import admin_migrations
-from app.api import consent, gdpr, security, signatures
-from app.api import reagents
-from app.api import capa
-from app.api import references
-from app.api import email_notifications
-from app.api import org_hierarchy
-from app.api import freezer, biosketch, grant_versions, grant_submissions
-from app.api import reagent_cart, payments, procurement_extras, lab_members
 from app.api import export as export_router
-from app.api import error_tracking
+from app.api import settings as lab_settings
 from app.core.config import settings
-from app.core.database import Base, engine
 from app.core.migrations import auto_migrate
 from app.core.scheduler import start_scheduler, stop_scheduler
-
-import os
 
 os.makedirs(settings.upload_dir, exist_ok=True)
 
@@ -154,6 +162,7 @@ app.include_router(error_tracking.router, prefix="/api")
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     import traceback
+
     from starlette.responses import JSONResponse
     error_tracking.record_error(
         source="server",

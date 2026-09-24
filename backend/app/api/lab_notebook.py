@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import AuditAction, LabNotebookEntry, User, UserRole
 from app.schemas.schemas import (
-    LabNotebookEntryCreate, LabNotebookEntryOut, LabNotebookEntryUpdate, PaginatedResponse,
+    LabNotebookEntryCreate,
+    LabNotebookEntryOut,
+    LabNotebookEntryUpdate,
+    PaginatedResponse,
 )
 from app.services.auth import get_current_user, write_audit
 

@@ -1,8 +1,9 @@
 import logging
 import os
 import secrets
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger("labos.config")
 
@@ -55,8 +56,8 @@ class Settings(BaseSettings):
                 import json
                 try:
                     return json.loads(v)
-                except Exception:
-                    pass
+                except json.JSONDecodeError:
+                    pass  # not valid JSON — fall through to comma-separated parsing
             return [o.strip() for o in v.split(',') if o.strip()]
         return v
 

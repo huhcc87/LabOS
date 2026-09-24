@@ -11,13 +11,12 @@ Features:
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Optional
 
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ _ALEMBIC_INI = os.path.join(_BACKEND_ROOT, "alembic.ini")
 
 # ── Config helpers ─────────────────────────────────────────────────────────
 
-def _alembic_cfg(db_url: Optional[str] = None) -> Config:
+def _alembic_cfg(db_url: str | None = None) -> Config:
     cfg = Config(_ALEMBIC_INI)
     if db_url:
         cfg.set_main_option("sqlalchemy.url", db_url)
@@ -37,7 +36,7 @@ def _alembic_cfg(db_url: Optional[str] = None) -> Config:
     return cfg
 
 
-def _engine(db_url: Optional[str] = None):
+def _engine(db_url: str | None = None):
     from app.core.database import engine as default_engine
     if db_url:
         from sqlalchemy import create_engine as _ce
@@ -48,7 +47,7 @@ def _engine(db_url: Optional[str] = None):
 
 # ── Core inspection ────────────────────────────────────────────────────────
 
-def get_current_revision(db_url: Optional[str] = None) -> Optional[str]:
+def get_current_revision(db_url: str | None = None) -> str | None:
     """Return the revision currently recorded in the DB, or None if untracked."""
     eng = _engine(db_url)
     try:
@@ -59,7 +58,7 @@ def get_current_revision(db_url: Optional[str] = None) -> Optional[str]:
         return None
 
 
-def get_head_revision(db_url: Optional[str] = None) -> Optional[str]:
+def get_head_revision(db_url: str | None = None) -> str | None:
     """Return the latest migration revision (head)."""
     cfg = _alembic_cfg(db_url)
     script = ScriptDirectory.from_config(cfg)
@@ -67,7 +66,7 @@ def get_head_revision(db_url: Optional[str] = None) -> Optional[str]:
     return heads[0] if heads else None
 
 
-def get_pending_revisions(db_url: Optional[str] = None) -> list[str]:
+def get_pending_revisions(db_url: str | None = None) -> list[str]:
     """Return list of revision IDs not yet applied to the DB."""
     cfg = _alembic_cfg(db_url)
     script = ScriptDirectory.from_config(cfg)
@@ -84,28 +83,28 @@ def get_pending_revisions(db_url: Optional[str] = None) -> list[str]:
             for rev in script.iterate_revisions(current, "base"):
                 applied.add(rev.revision)
             applied.add(current)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to walk applied revisions from %s: %s", current, exc)
 
     pending = []
     try:
         for rev in script.walk_revisions():
             if rev.revision not in applied:
                 pending.append(rev.revision)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to walk migration revisions: %s", exc)
     return list(reversed(pending))
 
 
-def is_db_untracked(db_url: Optional[str] = None) -> bool:
+def is_db_untracked(db_url: str | None = None) -> bool:
     """Return True if alembic_version table does not exist."""
     eng = _engine(db_url)
-    with eng.connect() as conn:
+    with eng.connect():  # verify the DB is reachable before inspecting
         insp = inspect(eng)
         return "alembic_version" not in insp.get_table_names()
 
 
-def db_has_data(db_url: Optional[str] = None) -> bool:
+def db_has_data(db_url: str | None = None) -> bool:
     """Return True if the DB already has app tables (created via create_all)."""
     eng = _engine(db_url)
     insp = inspect(eng)
@@ -115,7 +114,7 @@ def db_has_data(db_url: Optional[str] = None) -> bool:
 
 # ── Migration operations ───────────────────────────────────────────────────
 
-def upgrade(target: str = "head", db_url: Optional[str] = None) -> dict:
+def upgrade(target: str = "head", db_url: str | None = None) -> dict:
     """Apply migrations up to target revision. Returns result dict."""
     cfg = _alembic_cfg(db_url)
     before = get_current_revision(db_url)
@@ -143,7 +142,7 @@ def upgrade(target: str = "head", db_url: Optional[str] = None) -> dict:
         }
 
 
-def downgrade(target: str = "-1", db_url: Optional[str] = None) -> dict:
+def downgrade(target: str = "-1", db_url: str | None = None) -> dict:
     """Roll back to target revision. Returns result dict."""
     cfg = _alembic_cfg(db_url)
     before = get_current_revision(db_url)
@@ -171,7 +170,7 @@ def downgrade(target: str = "-1", db_url: Optional[str] = None) -> dict:
         }
 
 
-def stamp(revision: str, db_url: Optional[str] = None) -> dict:
+def stamp(revision: str, db_url: str | None = None) -> dict:
     """Mark the DB at revision without running any migration SQL."""
     cfg = _alembic_cfg(db_url)
     try:
@@ -184,7 +183,7 @@ def stamp(revision: str, db_url: Optional[str] = None) -> dict:
         return {"success": False, "error": str(exc)}
 
 
-def create_revision(message: str, autogenerate: bool = False, db_url: Optional[str] = None) -> dict:
+def create_revision(message: str, autogenerate: bool = False, db_url: str | None = None) -> dict:
     """Generate a new migration file, optionally with autogenerated diff."""
     cfg = _alembic_cfg(db_url)
     try:
@@ -196,7 +195,7 @@ def create_revision(message: str, autogenerate: bool = False, db_url: Optional[s
 
 # ── Status & history ───────────────────────────────────────────────────────
 
-def get_history(db_url: Optional[str] = None) -> list[dict]:
+def get_history(db_url: str | None = None) -> list[dict]:
     """Return all migration revisions with applied/pending status."""
     cfg = _alembic_cfg(db_url)
     script = ScriptDirectory.from_config(cfg)
@@ -221,7 +220,7 @@ def get_history(db_url: Optional[str] = None) -> list[dict]:
     return history
 
 
-def get_status(db_url: Optional[str] = None) -> dict:
+def get_status(db_url: str | None = None) -> dict:
     """Return comprehensive migration status."""
     current = get_current_revision(db_url)
     head = get_head_revision(db_url)
@@ -242,7 +241,7 @@ def get_status(db_url: Optional[str] = None) -> dict:
 
 # ── Startup runner ─────────────────────────────────────────────────────────
 
-def auto_migrate(db_url: Optional[str] = None) -> None:
+def auto_migrate(db_url: str | None = None) -> None:
     """
     Smart startup migration runner. Call this instead of Base.metadata.create_all().
 

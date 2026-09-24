@@ -1,7 +1,6 @@
 """Stripe payment methods endpoint. Gracefully gates when Stripe is
 not configured (STRIPE_SECRET_KEY env var)."""
 import os
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -26,7 +25,7 @@ def _stripe():
         return None
 
 
-def _customer_id_for(user: User) -> Optional[str]:
+def _customer_id_for(user: User) -> str | None:
     """Look up or lazily create a Stripe Customer for this user. Stored on
     the user model under `stripe_customer_id` once that column exists; for now
     we use a simple in-memory map keyed by user id."""

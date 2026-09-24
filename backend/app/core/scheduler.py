@@ -202,7 +202,6 @@ def check_reagent_expiry():
     try:
         today = date.today()
         cutoff = (today + timedelta(days=30)).isoformat()
-        today_str = today.isoformat()
         items = (
             db.query(InventoryItem)
             .filter(InventoryItem.expires_on.isnot(None))

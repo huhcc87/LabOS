@@ -7,16 +7,13 @@ Permission rules (enforced in each endpoint):
 - A user can leave a lab they belong to themselves (sets status=revoked).
 """
 from datetime import datetime, timezone
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.models import (
-    LabMembership, LabMembershipStatus, LabUnit, User, UserRole
-)
+from app.models.models import LabMembership, LabMembershipStatus, LabUnit, User, UserRole
 from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/lab-members", tags=["lab-members"])
@@ -25,18 +22,18 @@ router = APIRouter(prefix="/lab-members", tags=["lab-members"])
 # ─── Pydantic ────────────────────────────────────────────────────────────────
 class MembershipOut(BaseModel):
     id: int
-    user_id: Optional[int]
+    user_id: int | None
     lab_id: int
     lab_name: str
     lab_role: str
     status: str
     invite_email: str
-    invited_by: Optional[int]
-    approved_by: Optional[int]
-    approved_at: Optional[str]
-    revoked_at: Optional[str]
-    user_email: Optional[str]
-    user_name: Optional[str]
+    invited_by: int | None
+    approved_by: int | None
+    approved_at: str | None
+    revoked_at: str | None
+    user_email: str | None
+    user_name: str | None
     notes: str
     created_at: str
 
@@ -83,9 +80,7 @@ def _to_out(m: LabMembership, db: Session) -> dict:
 def _can_manage_lab(user: User, lab: LabUnit) -> bool:
     if user.role in (UserRole.superadmin, UserRole.admin):
         return True
-    if lab.pi_user_id == user.id:
-        return True
-    return False
+    return lab.pi_user_id == user.id
 
 
 def _require_pi(db: Session, user: User, lab_id: int) -> LabUnit:
@@ -98,7 +93,7 @@ def _require_pi(db: Session, user: User, lab_id: int) -> LabUnit:
 
 
 # ─── Endpoints ──────────────────────────────────────────────────────────────
-@router.get("/lab/{lab_id}", response_model=List[MembershipOut])
+@router.get("/lab/{lab_id}", response_model=list[MembershipOut])
 def list_members(lab_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """List all memberships for a lab. The PI sees everyone; members see other approved members."""
     lab = db.query(LabUnit).filter(LabUnit.id == lab_id).first()
@@ -157,7 +152,7 @@ def invite(body: InviteIn, db: Session = Depends(get_db), user: User = Depends(g
         user_id=target.id if target else None,
         lab_id=lab.id,
         lab_role=body.lab_role,
-        status=LabMembershipStatus.invited if target else LabMembershipStatus.invited,
+        status=LabMembershipStatus.invited,
         invited_by=user.id,
         invite_email=body.email,
         notes=body.notes,
@@ -205,7 +200,7 @@ def approve(membership_id: int, db: Session = Depends(get_db), user: User = Depe
     m = db.query(LabMembership).filter(LabMembership.id == membership_id).first()
     if not m:
         raise HTTPException(404)
-    lab = _require_pi(db, user, m.lab_id)
+    _require_pi(db, user, m.lab_id)
     m.status = LabMembershipStatus.approved
     m.approved_by = user.id
     m.approved_at = datetime.now(timezone.utc)

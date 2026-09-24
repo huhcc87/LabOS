@@ -17,7 +17,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from typing import Optional, BinaryIO
+from typing import BinaryIO
 
 from app.core.config import settings
 
@@ -51,7 +51,7 @@ def _get_s3_client():
     )
 
 
-def save_file(file_obj: BinaryIO, original_filename: str, content_type: Optional[str] = None,
+def save_file(file_obj: BinaryIO, original_filename: str, content_type: str | None = None,
               subfolder: str = "general") -> dict:
     """Save a file to cloud storage or local disk. Returns metadata dict:
     {
@@ -121,7 +121,7 @@ def delete_file(key: str) -> bool:
     return False
 
 
-def get_presigned_url(key: str, expires_in: int = 3600) -> Optional[str]:
+def get_presigned_url(key: str, expires_in: int = 3600) -> str | None:
     """Generate a temporary signed URL for private file access."""
     if not _r2_configured():
         return f"/uploads/{key}"

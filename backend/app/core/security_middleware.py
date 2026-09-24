@@ -13,7 +13,6 @@ from starlette.responses import JSONResponse
 
 from app.core.config import settings
 
-
 # ─── Security Headers ─────────────────────────────────────────────────────────
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

@@ -1,7 +1,7 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.core.database import get_db
 from app.models.models import GrantSubmission, GrantSubmissionStatus, User
@@ -19,21 +19,21 @@ class SubmissionCreate(BaseModel):
     grant_type: str = "R01"
     submitted_at: str = ""
     status: GrantSubmissionStatus = GrantSubmissionStatus.submitted
-    score: Optional[float] = None
-    percentile: Optional[float] = None
+    score: float | None = None
+    percentile: float | None = None
     total_amount: float = 0.0
     revision_number: int = 0
     notes: str = ""
 
 
 class SubmissionUpdate(BaseModel):
-    title: Optional[str] = None
-    status: Optional[GrantSubmissionStatus] = None
-    score: Optional[float] = None
-    percentile: Optional[float] = None
-    total_amount: Optional[float] = None
-    notes: Optional[str] = None
-    submitted_at: Optional[str] = None
+    title: str | None = None
+    status: GrantSubmissionStatus | None = None
+    score: float | None = None
+    percentile: float | None = None
+    total_amount: float | None = None
+    notes: str | None = None
+    submitted_at: str | None = None
 
 
 def _to_out(s: GrantSubmission) -> dict:

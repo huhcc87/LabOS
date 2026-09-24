@@ -1,16 +1,16 @@
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.security import create_session, log_security_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.models import AuditAction, SecurityEventSeverity, SecurityEventType, User, UserRole
 from app.schemas.schemas import LoginRequest, PaginatedResponse, Token, UserCreate, UserOut, UserUpdate
 from app.services.auth import get_current_user, require_role, write_audit
-from app.api.security import create_session, log_security_event
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

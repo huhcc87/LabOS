@@ -5,20 +5,24 @@ import hashlib
 import io
 import json
 import secrets
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
 
 import pyotp
 import qrcode
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password
 from app.models.models import (
-    SecurityClearance, SecurityEvent, SecurityEventSeverity, SecurityEventType,
-    User, UserRole, UserSession, ROLE_DEFAULT_CLEARANCE,
+    SecurityClearance,
+    SecurityEvent,
+    SecurityEventSeverity,
+    SecurityEventType,
+    User,
+    UserRole,
+    UserSession,
 )
 from app.services.auth import get_current_user, require_role
 
@@ -50,10 +54,10 @@ def log_security_event(
     db: Session,
     event_type: SecurityEventType,
     severity: SecurityEventSeverity = SecurityEventSeverity.info,
-    user: Optional[User] = None,
+    user: User | None = None,
     ip_address: str = "",
     user_agent: str = "",
-    details: dict = None,
+    details: dict | None = None,
 ) -> SecurityEvent:
     evt = SecurityEvent(
         event_type=event_type,
@@ -373,9 +377,9 @@ def set_clearance(
 def list_security_events(
     page: int = 1,
     per_page: int = 50,
-    event_type: Optional[str] = None,
-    severity: Optional[str] = None,
-    user_id: Optional[int] = None,
+    event_type: str | None = None,
+    severity: str | None = None,
+    user_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.manager)),
 ):

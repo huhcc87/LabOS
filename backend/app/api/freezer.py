@@ -1,8 +1,8 @@
 from datetime import date, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.core.database import get_db
 from app.models.models import Freezer, FreezerBox, FreezerSlot, FreezerType, User

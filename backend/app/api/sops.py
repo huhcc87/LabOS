@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.models import AuditAction, SOP, SOPStatus, User, UserRole
+from app.models.models import SOP, AuditAction, SOPStatus, User, UserRole
 from app.schemas.schemas import PaginatedResponse, SOPCreate, SOPOut, SOPUpdate
 from app.services.auth import get_current_user, require_role, write_audit
 

@@ -14,17 +14,22 @@ Covers:
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.models import (
-    ReagentCartItem, CartItemMeta, LabBudget, ApprovalRule, RestrictedChemical,
-    BorrowRequest, User, InventoryItem, LabUnit,
+    ApprovalRule,
+    BorrowRequest,
+    CartItemMeta,
+    InventoryItem,
+    LabBudget,
+    ReagentCartItem,
+    RestrictedChemical,
+    User,
 )
 from app.services.auth import get_current_user
 
@@ -71,7 +76,7 @@ class AltPrice(BaseModel):
 
 
 @router.post("/{item_id}/alt-prices")
-def set_alt_prices(item_id: int, prices: List[AltPrice], db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def set_alt_prices(item_id: int, prices: list[AltPrice], db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     m = get_or_create_meta(db, item_id)
     m.alt_prices_json = json.dumps([p.dict() for p in prices])
     db.commit()
@@ -105,7 +110,7 @@ def swap_vendor(item_id: int, vendor: str, unit_price: float, url: str = "", db:
 
 # ─── Feature 2: Approval workflow ───────────────────────────────────────────
 class ApproveBody(BaseModel):
-    item_ids: List[int]
+    item_ids: list[int]
     reason: str = ""
 
 
@@ -160,7 +165,7 @@ def reject_items(body: ApproveBody, db: Session = Depends(get_db), user: User = 
 
 class ApprovalRuleIn(BaseModel):
     name: str
-    over_amount: Optional[float] = None
+    over_amount: float | None = None
     hazardous: bool = False
     vendor_match: str = ""
     role_required: str = "staff"
@@ -246,8 +251,8 @@ def scan_chemical(name: str = "", cas: str = "", db: Session = Depends(get_db), 
 class BudgetIn(BaseModel):
     name: str
     budget_code: str
-    grant_id: Optional[int] = None
-    lab_id: Optional[int] = None
+    grant_id: int | None = None
+    lab_id: int | None = None
     total_amount: float
     fiscal_year: str = ""
     notes: str = ""
@@ -315,7 +320,7 @@ def request_quote(item_id: int, body: RFQIn, db: Session = Depends(get_db), user
 
 
 @router.post("/{item_id}/record-quote")
-def record_quote(item_id: int, quote_url: str = "", new_price: Optional[float] = None,
+def record_quote(item_id: int, quote_url: str = "", new_price: float | None = None,
                  db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     m = get_or_create_meta(db, item_id)
     m.rfq_status = "received"
@@ -368,8 +373,8 @@ def detect_group_buy(db: Session = Depends(get_db), _: User = Depends(get_curren
 
 # ─── Feature 15: Lab-to-lab borrow ─────────────────────────────────────────
 class BorrowIn(BaseModel):
-    inventory_item_id: Optional[int] = None
-    cart_item_id: Optional[int] = None
+    inventory_item_id: int | None = None
+    cart_item_id: int | None = None
     requested_quantity: str = ""
     purpose: str = ""
 
@@ -503,11 +508,11 @@ def set_recurrence(item_id: int, body: RecurrenceIn, db: Session = Depends(get_d
 
 
 @router.post("/{item_id}/sds")
-def set_sds(item_id: int, sds_url: str = "", hazards: List[str] = [],
+def set_sds(item_id: int, sds_url: str = "", hazards: list[str] | None = None,
             db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     m = get_or_create_meta(db, item_id)
     m.sds_url = sds_url
-    m.hazard_codes_json = json.dumps(hazards)
+    m.hazard_codes_json = json.dumps(hazards or [])
     db.commit()
     return {"ok": True}
 
@@ -515,7 +520,7 @@ def set_sds(item_id: int, sds_url: str = "", hazards: List[str] = [],
 # ─── Feature 7: Receive-on-arrival (barcode scan) ───────────────────────────
 class ReceiveBody(BaseModel):
     barcode: str
-    received_quantity: Optional[int] = None
+    received_quantity: int | None = None
 
 
 @router.post("/receive")

@@ -1,7 +1,8 @@
+import asyncio
 import os
 import re
-import shutil
 import secrets
+import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -119,8 +120,11 @@ async def upload_file(
         dest = upload_path / unique_filename
         counter += 1
 
-    with open(dest, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    def _write_to_disk() -> None:
+        with open(dest, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+    await asyncio.to_thread(_write_to_disk)
 
     attachment = Attachment(
         entity_type=entity_type,

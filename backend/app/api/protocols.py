@@ -207,10 +207,10 @@ def get_protocol_for_print(protocol_id: int, db: Session = Depends(get_db), _: U
 
 # ─── Version History ──────────────────────────────────────────────────────────
 
-from app.models.models import ProtocolVersion
+
 from pydantic import BaseModel as PydanticBaseModel
-from typing import Optional as Opt
-from datetime import datetime as Dt
+
+from app.models.models import ProtocolVersion
 
 
 class VersionCreate(PydanticBaseModel):

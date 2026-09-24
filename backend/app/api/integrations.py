@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import AuditAction, Integration, User, UserRole
 from app.schemas.schemas import IntegrationCreate, IntegrationOut, IntegrationUpdate, PaginatedResponse
-from app.services.auth import get_current_user, require_role, write_audit
+from app.services.auth import require_role, write_audit
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 

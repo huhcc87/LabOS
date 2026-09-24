@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -58,11 +58,11 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
+    full_name: str | None = None
+    email: str | None = None
+    password: str | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
 
 
 class UserOut(BaseModel):
@@ -99,19 +99,19 @@ class ProtocolCreate(BaseModel):
     field: str
     version: str = "1.0"
     description: str
-    owner_id: Optional[int] = None
+    owner_id: int | None = None
     reminder_days_before: int = 3
     steps: list[WorkflowStepCreate] = []
 
 
 class ProtocolUpdate(BaseModel):
-    title: Optional[str] = None
-    field: Optional[str] = None
-    version: Optional[str] = None
-    description: Optional[str] = None
-    owner_id: Optional[int] = None
-    reminder_days_before: Optional[int] = None
-    steps: Optional[list[WorkflowStepCreate]] = None
+    title: str | None = None
+    field: str | None = None
+    version: str | None = None
+    description: str | None = None
+    owner_id: int | None = None
+    reminder_days_before: int | None = None
+    steps: list[WorkflowStepCreate] | None = None
 
 
 class ProtocolOut(BaseModel):
@@ -120,8 +120,8 @@ class ProtocolOut(BaseModel):
     field: str
     version: str
     description: str
-    owner_id: Optional[int] = None
-    owner_name: Optional[str] = None
+    owner_id: int | None = None
+    owner_name: str | None = None
     reminder_days_before: int
     created_at: datetime
     steps: list[WorkflowStepOut] = []
@@ -143,13 +143,13 @@ class InstrumentCreate(BaseModel):
 
 
 class InstrumentUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-    location: Optional[str] = None
-    maintenance_frequency_days: Optional[int] = None
-    next_maintenance_date: Optional[str] = None
-    status: Optional[str] = None
-    notes: Optional[str] = None
+    name: str | None = None
+    category: str | None = None
+    location: str | None = None
+    maintenance_frequency_days: int | None = None
+    next_maintenance_date: str | None = None
+    status: str | None = None
+    notes: str | None = None
 
 
 class InstrumentOut(BaseModel):
@@ -178,20 +178,20 @@ class BookingCreate(BaseModel):
 
 
 class BookingUpdate(BaseModel):
-    instrument_id: Optional[int] = None
-    user_id: Optional[int] = None
-    purpose: Optional[str] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    status: Optional[BookingStatus] = None
+    instrument_id: int | None = None
+    user_id: int | None = None
+    purpose: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    status: BookingStatus | None = None
 
 
 class BookingOut(BaseModel):
     id: int
     instrument_id: int
-    instrument_name: Optional[str] = None
+    instrument_name: str | None = None
     user_id: int
-    user_name: Optional[str] = None
+    user_name: str | None = None
     purpose: str
     start_time: str
     end_time: str
@@ -208,25 +208,25 @@ class TaskCreate(BaseModel):
     description: str = ""
     due_date: str
     status: TaskStatus = TaskStatus.pending
-    assigned_to: Optional[int] = None
+    assigned_to: int | None = None
     reminder_type: str = "email"
-    related_protocol_id: Optional[int] = None
+    related_protocol_id: int | None = None
     priority: str = "medium"
     subtasks: str = "[]"
     comments: str = "[]"
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    due_date: Optional[str] = None
-    status: Optional[TaskStatus] = None
-    assigned_to: Optional[int] = None
-    reminder_type: Optional[str] = None
-    related_protocol_id: Optional[int] = None
-    priority: Optional[str] = None
-    subtasks: Optional[str] = None
-    comments: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    due_date: str | None = None
+    status: TaskStatus | None = None
+    assigned_to: int | None = None
+    reminder_type: str | None = None
+    related_protocol_id: int | None = None
+    priority: str | None = None
+    subtasks: str | None = None
+    comments: str | None = None
 
 
 class TaskOut(BaseModel):
@@ -235,10 +235,10 @@ class TaskOut(BaseModel):
     description: str
     due_date: str
     status: TaskStatus
-    assigned_to: Optional[int] = None
-    assignee_name: Optional[str] = None
+    assigned_to: int | None = None
+    assignee_name: str | None = None
     reminder_type: str
-    related_protocol_id: Optional[int] = None
+    related_protocol_id: int | None = None
     priority: str = "medium"
     subtasks: str = "[]"
     comments: str = "[]"
@@ -253,14 +253,14 @@ class ComplianceLogCreate(BaseModel):
     title: str
     category: str
     details: str
-    logged_by: Optional[int] = None
+    logged_by: int | None = None
 
 
 class ComplianceLogUpdate(BaseModel):
-    title: Optional[str] = None
-    category: Optional[str] = None
-    details: Optional[str] = None
-    logged_by: Optional[int] = None
+    title: str | None = None
+    category: str | None = None
+    details: str | None = None
+    logged_by: int | None = None
 
 
 class ComplianceLogOut(BaseModel):
@@ -268,8 +268,8 @@ class ComplianceLogOut(BaseModel):
     title: str
     category: str
     details: str
-    logged_by: Optional[int] = None
-    logger_name: Optional[str] = None
+    logged_by: int | None = None
+    logger_name: str | None = None
     created_at: datetime
 
     class Config:
@@ -282,14 +282,14 @@ class FeedbackCreate(BaseModel):
     subject: str
     message: str
     module: str = "general"
-    submitted_by: Optional[int] = None
+    submitted_by: int | None = None
 
 
 class FeedbackUpdate(BaseModel):
-    subject: Optional[str] = None
-    message: Optional[str] = None
-    module: Optional[str] = None
-    status: Optional[str] = None
+    subject: str | None = None
+    message: str | None = None
+    module: str | None = None
+    status: str | None = None
 
 
 class FeedbackOut(BaseModel):
@@ -297,8 +297,8 @@ class FeedbackOut(BaseModel):
     subject: str
     message: str
     module: str
-    submitted_by: Optional[int] = None
-    submitter_name: Optional[str] = None
+    submitted_by: int | None = None
+    submitter_name: str | None = None
     status: str
     created_at: datetime
 
@@ -311,8 +311,8 @@ class FeedbackOut(BaseModel):
 class TrainingRecordCreate(BaseModel):
     user_id: int
     title: str
-    instrument_id: Optional[int] = None
-    protocol_id: Optional[int] = None
+    instrument_id: int | None = None
+    protocol_id: int | None = None
     completed_on: str
     expires_on: str
     status: TrainingStatus = TrainingStatus.active
@@ -320,24 +320,24 @@ class TrainingRecordCreate(BaseModel):
 
 
 class TrainingRecordUpdate(BaseModel):
-    user_id: Optional[int] = None
-    title: Optional[str] = None
-    instrument_id: Optional[int] = None
-    protocol_id: Optional[int] = None
-    completed_on: Optional[str] = None
-    expires_on: Optional[str] = None
-    status: Optional[TrainingStatus] = None
-    notes: Optional[str] = None
+    user_id: int | None = None
+    title: str | None = None
+    instrument_id: int | None = None
+    protocol_id: int | None = None
+    completed_on: str | None = None
+    expires_on: str | None = None
+    status: TrainingStatus | None = None
+    notes: str | None = None
 
 
 class TrainingRecordOut(BaseModel):
     id: int
     user_id: int
-    user_name: Optional[str] = None
+    user_name: str | None = None
     title: str
-    instrument_id: Optional[int] = None
-    instrument_name: Optional[str] = None
-    protocol_id: Optional[int] = None
+    instrument_id: int | None = None
+    instrument_name: str | None = None
+    protocol_id: int | None = None
     completed_on: str
     expires_on: str
     status: TrainingStatus
@@ -358,7 +358,7 @@ class InventoryItemCreate(BaseModel):
     reorder_threshold: int = 0
     storage_location: str = ""
     barcode: str = ""
-    expires_on: Optional[str] = None
+    expires_on: str | None = None
     notes: str = ""
     cas_number: str = ""
     sds_url: str = ""
@@ -367,20 +367,20 @@ class InventoryItemCreate(BaseModel):
 
 
 class InventoryItemUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-    lot_number: Optional[str] = None
-    quantity: Optional[int] = None
-    unit: Optional[str] = None
-    reorder_threshold: Optional[int] = None
-    storage_location: Optional[str] = None
-    barcode: Optional[str] = None
-    expires_on: Optional[str] = None
-    notes: Optional[str] = None
-    cas_number: Optional[str] = None
-    sds_url: Optional[str] = None
-    hazard_class: Optional[str] = None
-    storage_temp: Optional[str] = None
+    name: str | None = None
+    category: str | None = None
+    lot_number: str | None = None
+    quantity: int | None = None
+    unit: str | None = None
+    reorder_threshold: int | None = None
+    storage_location: str | None = None
+    barcode: str | None = None
+    expires_on: str | None = None
+    notes: str | None = None
+    cas_number: str | None = None
+    sds_url: str | None = None
+    hazard_class: str | None = None
+    storage_temp: str | None = None
 
 
 class InventoryItemOut(BaseModel):
@@ -393,7 +393,7 @@ class InventoryItemOut(BaseModel):
     reorder_threshold: int
     storage_location: str
     barcode: str
-    expires_on: Optional[str] = None
+    expires_on: str | None = None
     notes: str
     cas_number: str = ""
     sds_url: str = ""
@@ -413,17 +413,17 @@ class IncidentReportCreate(BaseModel):
     description: str
     corrective_action: str = ""
     status: str = "open"
-    reported_by: Optional[int] = None
+    reported_by: int | None = None
 
 
 class IncidentReportUpdate(BaseModel):
-    title: Optional[str] = None
-    area: Optional[str] = None
-    severity: Optional[IncidentSeverity] = None
-    description: Optional[str] = None
-    corrective_action: Optional[str] = None
-    status: Optional[str] = None
-    reported_by: Optional[int] = None
+    title: str | None = None
+    area: str | None = None
+    severity: IncidentSeverity | None = None
+    description: str | None = None
+    corrective_action: str | None = None
+    status: str | None = None
+    reported_by: int | None = None
 
 
 class IncidentReportOut(BaseModel):
@@ -434,8 +434,8 @@ class IncidentReportOut(BaseModel):
     description: str
     corrective_action: str
     status: str
-    reported_by: Optional[int] = None
-    reporter_name: Optional[str] = None
+    reported_by: int | None = None
+    reporter_name: str | None = None
     created_at: datetime
 
     class Config:
@@ -447,27 +447,27 @@ class IncidentReportOut(BaseModel):
 class StudyWorkspaceCreate(BaseModel):
     name: str
     field: str
-    lead_id: Optional[int] = None
+    lead_id: int | None = None
     milestone: str = ""
     status: str = "active"
     description: str = ""
 
 
 class StudyWorkspaceUpdate(BaseModel):
-    name: Optional[str] = None
-    field: Optional[str] = None
-    lead_id: Optional[int] = None
-    milestone: Optional[str] = None
-    status: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    field: str | None = None
+    lead_id: int | None = None
+    milestone: str | None = None
+    status: str | None = None
+    description: str | None = None
 
 
 class StudyWorkspaceOut(BaseModel):
     id: int
     name: str
     field: str
-    lead_id: Optional[int] = None
-    lead_name: Optional[str] = None
+    lead_id: int | None = None
+    lead_name: str | None = None
     milestone: str
     status: str
     description: str
@@ -488,12 +488,12 @@ class NotificationRuleCreate(BaseModel):
 
 
 class NotificationRuleUpdate(BaseModel):
-    title: Optional[str] = None
-    trigger_event: Optional[str] = None
-    channel: Optional[NotificationChannel] = None
-    recipient_role: Optional[str] = None
-    lead_time_hours: Optional[int] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    trigger_event: str | None = None
+    channel: NotificationChannel | None = None
+    recipient_role: str | None = None
+    lead_time_hours: int | None = None
+    is_active: bool | None = None
 
 
 class NotificationRuleOut(BaseModel):
@@ -516,27 +516,27 @@ class SampleRecordCreate(BaseModel):
     barcode: str = ""
     sample_type: str
     source: str = ""
-    project_id: Optional[int] = None
-    protocol_id: Optional[int] = None
+    project_id: int | None = None
+    protocol_id: int | None = None
     storage_location: str = ""
     status: SampleStatus = SampleStatus.received
     received_on: str
-    owner_id: Optional[int] = None
+    owner_id: int | None = None
     notes: str = ""
 
 
 class SampleRecordUpdate(BaseModel):
-    sample_id: Optional[str] = None
-    barcode: Optional[str] = None
-    sample_type: Optional[str] = None
-    source: Optional[str] = None
-    project_id: Optional[int] = None
-    protocol_id: Optional[int] = None
-    storage_location: Optional[str] = None
-    status: Optional[SampleStatus] = None
-    received_on: Optional[str] = None
-    owner_id: Optional[int] = None
-    notes: Optional[str] = None
+    sample_id: str | None = None
+    barcode: str | None = None
+    sample_type: str | None = None
+    source: str | None = None
+    project_id: int | None = None
+    protocol_id: int | None = None
+    storage_location: str | None = None
+    status: SampleStatus | None = None
+    received_on: str | None = None
+    owner_id: int | None = None
+    notes: str | None = None
 
 
 class SampleRecordOut(BaseModel):
@@ -545,15 +545,15 @@ class SampleRecordOut(BaseModel):
     barcode: str
     sample_type: str
     source: str
-    project_id: Optional[int] = None
-    project_name: Optional[str] = None
-    protocol_id: Optional[int] = None
-    protocol_name: Optional[str] = None
+    project_id: int | None = None
+    project_name: str | None = None
+    protocol_id: int | None = None
+    protocol_name: str | None = None
     storage_location: str
     status: SampleStatus
     received_on: str
-    owner_id: Optional[int] = None
-    owner_name: Optional[str] = None
+    owner_id: int | None = None
+    owner_name: str | None = None
     notes: str
 
     class Config:
@@ -567,18 +567,18 @@ class SampleEventCreate(BaseModel):
     event_type: str
     location: str = ""
     status: str = "logged"
-    performed_by: Optional[int] = None
+    performed_by: int | None = None
     timestamp: str
     notes: str = ""
 
 
 class SampleEventUpdate(BaseModel):
-    event_type: Optional[str] = None
-    location: Optional[str] = None
-    status: Optional[str] = None
-    performed_by: Optional[int] = None
-    timestamp: Optional[str] = None
-    notes: Optional[str] = None
+    event_type: str | None = None
+    location: str | None = None
+    status: str | None = None
+    performed_by: int | None = None
+    timestamp: str | None = None
+    notes: str | None = None
 
 
 class SampleEventOut(BaseModel):
@@ -587,8 +587,8 @@ class SampleEventOut(BaseModel):
     event_type: str
     location: str
     status: str
-    performed_by: Optional[int] = None
-    performer_name: Optional[str] = None
+    performed_by: int | None = None
+    performer_name: str | None = None
     timestamp: str
     notes: str
 
@@ -604,32 +604,32 @@ class CalendarEventCreate(BaseModel):
     start_time: str
     end_time: str
     location: str = ""
-    related_instrument_id: Optional[int] = None
-    related_task_id: Optional[int] = None
-    related_protocol_id: Optional[int] = None
-    owner_id: Optional[int] = None
+    related_instrument_id: int | None = None
+    related_task_id: int | None = None
+    related_protocol_id: int | None = None
+    owner_id: int | None = None
     description: str = ""
     recurrence_rule: str = "none"
-    recurrence_end: Optional[str] = None
+    recurrence_end: str | None = None
     attendee_ids: str = ""
-    reminder_minutes: Optional[int] = None
+    reminder_minutes: int | None = None
 
 
 class CalendarEventUpdate(BaseModel):
-    title: Optional[str] = None
-    event_type: Optional[str] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    location: Optional[str] = None
-    related_instrument_id: Optional[int] = None
-    related_task_id: Optional[int] = None
-    related_protocol_id: Optional[int] = None
-    owner_id: Optional[int] = None
-    description: Optional[str] = None
-    recurrence_rule: Optional[str] = None
-    recurrence_end: Optional[str] = None
-    attendee_ids: Optional[str] = None
-    reminder_minutes: Optional[int] = None
+    title: str | None = None
+    event_type: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    location: str | None = None
+    related_instrument_id: int | None = None
+    related_task_id: int | None = None
+    related_protocol_id: int | None = None
+    owner_id: int | None = None
+    description: str | None = None
+    recurrence_rule: str | None = None
+    recurrence_end: str | None = None
+    attendee_ids: str | None = None
+    reminder_minutes: int | None = None
 
 
 class CalendarEventOut(BaseModel):
@@ -639,18 +639,18 @@ class CalendarEventOut(BaseModel):
     start_time: str
     end_time: str
     location: str
-    related_instrument_id: Optional[int] = None
-    related_task_id: Optional[int] = None
-    related_protocol_id: Optional[int] = None
-    owner_id: Optional[int] = None
-    owner_name: Optional[str] = None
+    related_instrument_id: int | None = None
+    related_task_id: int | None = None
+    related_protocol_id: int | None = None
+    owner_id: int | None = None
+    owner_name: str | None = None
     description: str
     recurrence_rule: str = "none"
-    recurrence_end: Optional[str] = None
-    recurrence_group_id: Optional[int] = None
+    recurrence_end: str | None = None
+    recurrence_group_id: int | None = None
     attendee_ids: str = ""
-    attendee_names: Optional[str] = None
-    reminder_minutes: Optional[int] = None
+    attendee_names: str | None = None
+    reminder_minutes: int | None = None
 
     class Config:
         from_attributes = True
@@ -664,19 +664,19 @@ class ReminderQueueCreate(BaseModel):
     title: str
     due_at: str
     channel: NotificationChannel = NotificationChannel.dashboard
-    recipient_user_id: Optional[int] = None
+    recipient_user_id: int | None = None
     recipient_role: str = "staff"
     message: str = ""
 
 
 class ReminderQueueUpdate(BaseModel):
-    title: Optional[str] = None
-    due_at: Optional[str] = None
-    channel: Optional[NotificationChannel] = None
-    recipient_user_id: Optional[int] = None
-    recipient_role: Optional[str] = None
-    status: Optional[ReminderStatus] = None
-    message: Optional[str] = None
+    title: str | None = None
+    due_at: str | None = None
+    channel: NotificationChannel | None = None
+    recipient_user_id: int | None = None
+    recipient_role: str | None = None
+    status: ReminderStatus | None = None
+    message: str | None = None
 
 
 class ReminderQueueOut(BaseModel):
@@ -686,10 +686,10 @@ class ReminderQueueOut(BaseModel):
     title: str
     due_at: str
     channel: NotificationChannel
-    recipient_user_id: Optional[int] = None
+    recipient_user_id: int | None = None
     recipient_role: str
     status: ReminderStatus
-    last_attempt_at: Optional[str] = None
+    last_attempt_at: str | None = None
     message: str
 
     class Config:
@@ -704,8 +704,8 @@ class AttachmentOut(BaseModel):
     entity_id: int
     filename: str
     filepath: str
-    uploaded_by: Optional[int] = None
-    uploader_name: Optional[str] = None
+    uploaded_by: int | None = None
+    uploader_name: str | None = None
     uploaded_at: datetime
 
     class Config:
@@ -718,8 +718,8 @@ class AuditLogOut(BaseModel):
     id: int
     action: AuditAction
     entity_type: str
-    entity_id: Optional[int] = None
-    user_id: Optional[int] = None
+    entity_id: int | None = None
+    user_id: int | None = None
     user_email: str
     changes_json: str
     timestamp: datetime
@@ -770,24 +770,24 @@ class SOPCreate(BaseModel):
     version: str = "1.0"
     description: str = ""
     content: str = ""
-    effective_date: Optional[str] = None
-    review_date: Optional[str] = None
-    author_id: Optional[int] = None
-    approver_id: Optional[int] = None
+    effective_date: str | None = None
+    review_date: str | None = None
+    author_id: int | None = None
+    approver_id: int | None = None
 
 
 class SOPUpdate(BaseModel):
-    title: Optional[str] = None
-    code: Optional[str] = None
-    category: Optional[str] = None
-    version: Optional[str] = None
-    status: Optional[SOPStatus] = None
-    description: Optional[str] = None
-    content: Optional[str] = None
-    effective_date: Optional[str] = None
-    review_date: Optional[str] = None
-    author_id: Optional[int] = None
-    approver_id: Optional[int] = None
+    title: str | None = None
+    code: str | None = None
+    category: str | None = None
+    version: str | None = None
+    status: SOPStatus | None = None
+    description: str | None = None
+    content: str | None = None
+    effective_date: str | None = None
+    review_date: str | None = None
+    author_id: int | None = None
+    approver_id: int | None = None
 
 
 class SOPOut(BaseModel):
@@ -799,12 +799,12 @@ class SOPOut(BaseModel):
     status: SOPStatus
     description: str
     content: str
-    effective_date: Optional[str] = None
-    review_date: Optional[str] = None
-    author_id: Optional[int] = None
-    author_name: Optional[str] = None
-    approver_id: Optional[int] = None
-    approver_name: Optional[str] = None
+    effective_date: str | None = None
+    review_date: str | None = None
+    author_id: int | None = None
+    author_name: str | None = None
+    approver_id: int | None = None
+    approver_name: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -820,38 +820,38 @@ class MaintenanceLogCreate(BaseModel):
     title: str
     description: str = ""
     scheduled_date: str
-    performed_by: Optional[int] = None
+    performed_by: int | None = None
     parts_replaced: str = ""
     cost: float = 0.0
     notes: str = ""
 
 
 class MaintenanceLogUpdate(BaseModel):
-    instrument_id: Optional[int] = None
-    type: Optional[MaintenanceType] = None
-    status: Optional[MaintenanceStatus] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    scheduled_date: Optional[str] = None
-    completed_date: Optional[str] = None
-    performed_by: Optional[int] = None
-    parts_replaced: Optional[str] = None
-    cost: Optional[float] = None
-    notes: Optional[str] = None
+    instrument_id: int | None = None
+    type: MaintenanceType | None = None
+    status: MaintenanceStatus | None = None
+    title: str | None = None
+    description: str | None = None
+    scheduled_date: str | None = None
+    completed_date: str | None = None
+    performed_by: int | None = None
+    parts_replaced: str | None = None
+    cost: float | None = None
+    notes: str | None = None
 
 
 class MaintenanceLogOut(BaseModel):
     id: int
     instrument_id: int
-    instrument_name: Optional[str] = None
+    instrument_name: str | None = None
     type: MaintenanceType
     status: MaintenanceStatus
     title: str
     description: str
     scheduled_date: str
-    completed_date: Optional[str] = None
-    performed_by: Optional[int] = None
-    technician_name: Optional[str] = None
+    completed_date: str | None = None
+    performed_by: int | None = None
+    technician_name: str | None = None
     parts_replaced: str
     cost: float
     notes: str
@@ -869,16 +869,16 @@ class DocumentTemplateCreate(BaseModel):
     description: str = ""
     content: str = ""
     variables: str = "[]"
-    created_by: Optional[int] = None
+    created_by: int | None = None
 
 
 class DocumentTemplateUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[TemplateCategory] = None
-    description: Optional[str] = None
-    content: Optional[str] = None
-    variables: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    category: TemplateCategory | None = None
+    description: str | None = None
+    content: str | None = None
+    variables: str | None = None
+    is_active: bool | None = None
 
 
 class DocumentTemplateOut(BaseModel):
@@ -889,8 +889,8 @@ class DocumentTemplateOut(BaseModel):
     content: str
     variables: str
     is_active: bool
-    created_by: Optional[int] = None
-    creator_name: Optional[str] = None
+    created_by: int | None = None
+    creator_name: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -907,23 +907,23 @@ class CostEntryCreate(BaseModel):
     project: str = ""
     vendor: str = ""
     date: str
-    submitted_by: Optional[int] = None
+    submitted_by: int | None = None
     receipt_path: str = ""
     notes: str = ""
 
 
 class CostEntryUpdate(BaseModel):
-    category: Optional[CostCategory] = None
-    description: Optional[str] = None
-    amount: Optional[float] = None
-    project: Optional[str] = None
-    vendor: Optional[str] = None
-    date: Optional[str] = None
-    status: Optional[CostStatus] = None
-    approved_by: Optional[int] = None
-    approved_date: Optional[str] = None
-    receipt_path: Optional[str] = None
-    notes: Optional[str] = None
+    category: CostCategory | None = None
+    description: str | None = None
+    amount: float | None = None
+    project: str | None = None
+    vendor: str | None = None
+    date: str | None = None
+    status: CostStatus | None = None
+    approved_by: int | None = None
+    approved_date: str | None = None
+    receipt_path: str | None = None
+    notes: str | None = None
 
 
 class CostEntryOut(BaseModel):
@@ -935,11 +935,11 @@ class CostEntryOut(BaseModel):
     vendor: str
     date: str
     status: CostStatus
-    submitted_by: Optional[int] = None
-    submitter_name: Optional[str] = None
-    approved_by: Optional[int] = None
-    approver_name: Optional[str] = None
-    approved_date: Optional[str] = None
+    submitted_by: int | None = None
+    submitter_name: str | None = None
+    approved_by: int | None = None
+    approver_name: str | None = None
+    approved_date: str | None = None
     receipt_path: str
     notes: str
     created_at: datetime
@@ -959,14 +959,14 @@ class IntegrationCreate(BaseModel):
 
 
 class IntegrationUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
-    api_endpoint: Optional[str] = None
-    api_key: Optional[str] = None
-    config_json: Optional[str] = None
-    status: Optional[str] = None
-    last_sync_at: Optional[str] = None
+    name: str | None = None
+    category: str | None = None
+    description: str | None = None
+    api_endpoint: str | None = None
+    api_key: str | None = None
+    config_json: str | None = None
+    status: str | None = None
+    last_sync_at: str | None = None
 
 
 class IntegrationOut(BaseModel):
@@ -977,7 +977,7 @@ class IntegrationOut(BaseModel):
     api_endpoint: str
     config_json: str
     status: str
-    last_sync_at: Optional[str] = None
+    last_sync_at: str | None = None
     created_at: datetime
 
     class Config:
@@ -994,9 +994,9 @@ class LabSettingCreate(BaseModel):
 
 
 class LabSettingUpdate(BaseModel):
-    value: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
+    value: str | None = None
+    category: str | None = None
+    description: str | None = None
 
 
 class LabSettingOut(BaseModel):
@@ -1017,9 +1017,9 @@ class ActivityTimelineItem(BaseModel):
     id: int
     action: str
     entity_type: str
-    entity_id: Optional[int] = None
+    entity_id: int | None = None
     entity_name: str
-    user_id: Optional[int] = None
+    user_id: int | None = None
     user_name: str
     timestamp: datetime
     details: str = ""
@@ -1033,32 +1033,32 @@ class LabMeetingCreate(BaseModel):
     scheduled_at: str
     end_time: str
     location: str = ""
-    video_link: Optional[str] = None
+    video_link: str | None = None
     description: str = ""
     is_recurring: bool = False
-    recurring_pattern: Optional[str] = None
+    recurring_pattern: str | None = None
     agenda_json: str = "[]"
     attendees_json: str = "[]"
     tags: str = ""
 
 
 class LabMeetingUpdate(BaseModel):
-    title: Optional[str] = None
-    type: Optional[MeetingType] = None
-    status: Optional[MeetingStatus] = None
-    scheduled_at: Optional[str] = None
-    end_time: Optional[str] = None
-    location: Optional[str] = None
-    video_link: Optional[str] = None
-    description: Optional[str] = None
-    is_recurring: Optional[bool] = None
-    recurring_pattern: Optional[str] = None
-    agenda_json: Optional[str] = None
-    attendees_json: Optional[str] = None
-    minutes: Optional[str] = None
-    minutes_published: Optional[bool] = None
-    minutes_published_at: Optional[str] = None
-    tags: Optional[str] = None
+    title: str | None = None
+    type: MeetingType | None = None
+    status: MeetingStatus | None = None
+    scheduled_at: str | None = None
+    end_time: str | None = None
+    location: str | None = None
+    video_link: str | None = None
+    description: str | None = None
+    is_recurring: bool | None = None
+    recurring_pattern: str | None = None
+    agenda_json: str | None = None
+    attendees_json: str | None = None
+    minutes: str | None = None
+    minutes_published: bool | None = None
+    minutes_published_at: str | None = None
+    tags: str | None = None
 
 
 class LabNotebookEntryCreate(BaseModel):
@@ -1066,18 +1066,18 @@ class LabNotebookEntryCreate(BaseModel):
     content: str = ""
     experiment_type: str = ""
     tags: str = ""
-    linked_sample_id: Optional[int] = None
-    linked_protocol_id: Optional[int] = None
+    linked_sample_id: int | None = None
+    linked_protocol_id: int | None = None
 
 
 class LabNotebookEntryUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    experiment_type: Optional[str] = None
-    tags: Optional[str] = None
-    linked_sample_id: Optional[int] = None
-    linked_protocol_id: Optional[int] = None
-    is_archived: Optional[bool] = None
+    title: str | None = None
+    content: str | None = None
+    experiment_type: str | None = None
+    tags: str | None = None
+    linked_sample_id: int | None = None
+    linked_protocol_id: int | None = None
+    is_archived: bool | None = None
 
 
 class LabNotebookEntryOut(BaseModel):
@@ -1086,13 +1086,13 @@ class LabNotebookEntryOut(BaseModel):
     content: str
     experiment_type: str
     tags: str
-    linked_sample_id: Optional[int] = None
-    linked_protocol_id: Optional[int] = None
+    linked_sample_id: int | None = None
+    linked_protocol_id: int | None = None
     author_id: int
-    author_name: Optional[str] = None
-    signed_at: Optional[str] = None
-    witnessed_by_id: Optional[int] = None
-    witnessed_at: Optional[str] = None
+    author_name: str | None = None
+    signed_at: str | None = None
+    witnessed_by_id: int | None = None
+    witnessed_at: str | None = None
     is_archived: bool
     created_at: datetime
     updated_at: datetime
@@ -1109,17 +1109,17 @@ class LabMeetingOut(BaseModel):
     scheduled_at: str
     end_time: str
     location: str
-    video_link: Optional[str] = None
+    video_link: str | None = None
     description: str
     is_recurring: bool
-    recurring_pattern: Optional[str] = None
-    organizer_id: Optional[int] = None
-    organizer_name: Optional[str] = None
+    recurring_pattern: str | None = None
+    organizer_id: int | None = None
+    organizer_name: str | None = None
     agenda_json: str
     attendees_json: str
     minutes: str
     minutes_published: bool
-    minutes_published_at: Optional[str] = None
+    minutes_published_at: str | None = None
     tags: str
     created_at: datetime
     updated_at: datetime
@@ -1129,28 +1129,28 @@ class LabMeetingOut(BaseModel):
 
 
 class DisposalLogCreate(BaseModel):
-    inventory_item_id: Optional[int] = None
+    inventory_item_id: int | None = None
     reagent_name: str
     lot_number: str = ""
     quantity_disposed: str
     disposal_method: str
     hazard_class: str = ""
     reason: str = ""
-    witness_id: Optional[int] = None
+    witness_id: int | None = None
     notes: str = ""
 
 
 class DisposalLogOut(BaseModel):
     id: int
-    inventory_item_id: Optional[int] = None
+    inventory_item_id: int | None = None
     reagent_name: str
     lot_number: str
     quantity_disposed: str
     disposal_method: str
     hazard_class: str
     reason: str
-    disposed_by: Optional[int] = None
-    witness_id: Optional[int] = None
+    disposed_by: int | None = None
+    witness_id: int | None = None
     notes: str
     disposed_at: datetime
 
@@ -1167,24 +1167,24 @@ class CapaCreate(BaseModel):
     source: str = ""
     reference_id: str = ""
     severity: str = "minor"
-    assigned_to: Optional[int] = None
+    assigned_to: int | None = None
     due_date: str = ""
     notes: str = ""
 
 
 class CapaUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    root_cause: Optional[str] = None
-    corrective_action: Optional[str] = None
-    preventive_action: Optional[str] = None
-    source: Optional[str] = None
-    reference_id: Optional[str] = None
-    severity: Optional[str] = None
-    status: Optional[str] = None
-    assigned_to: Optional[int] = None
-    due_date: Optional[str] = None
-    verification_notes: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    root_cause: str | None = None
+    corrective_action: str | None = None
+    preventive_action: str | None = None
+    source: str | None = None
+    reference_id: str | None = None
+    severity: str | None = None
+    status: str | None = None
+    assigned_to: int | None = None
+    due_date: str | None = None
+    verification_notes: str | None = None
 
 
 class CapaOut(BaseModel):
@@ -1198,10 +1198,10 @@ class CapaOut(BaseModel):
     reference_id: str
     severity: str
     status: str
-    assigned_to: Optional[int] = None
-    created_by: Optional[int] = None
+    assigned_to: int | None = None
+    created_by: int | None = None
     due_date: str
-    closed_at: Optional[datetime] = None
+    closed_at: datetime | None = None
     verification_notes: str
     created_at: datetime
     updated_at: datetime
@@ -1216,7 +1216,7 @@ class ReferenceCreate(BaseModel):
     title: str
     authors: list[str] = []
     journal: str = ""
-    year: Optional[int] = None
+    year: int | None = None
     volume: str = ""
     issue: str = ""
     pages: str = ""
@@ -1228,19 +1228,19 @@ class ReferenceCreate(BaseModel):
 
 
 class ReferenceUpdate(BaseModel):
-    title: Optional[str] = None
-    authors: Optional[list[str]] = None
-    journal: Optional[str] = None
-    year: Optional[int] = None
-    volume: Optional[str] = None
-    issue: Optional[str] = None
-    pages: Optional[str] = None
-    abstract: Optional[str] = None
-    tags: Optional[list[str]] = None
-    folder: Optional[str] = None
-    is_favorite: Optional[bool] = None
-    notes: Optional[str] = None
-    doi: Optional[str] = None
+    title: str | None = None
+    authors: list[str] | None = None
+    journal: str | None = None
+    year: int | None = None
+    volume: str | None = None
+    issue: str | None = None
+    pages: str | None = None
+    abstract: str | None = None
+    tags: list[str] | None = None
+    folder: str | None = None
+    is_favorite: bool | None = None
+    notes: str | None = None
+    doi: str | None = None
 
 
 class ReferenceOut(BaseModel):
@@ -1250,7 +1250,7 @@ class ReferenceOut(BaseModel):
     title: str
     authors: list[str]
     journal: str
-    year: Optional[int] = None
+    year: int | None = None
     volume: str
     issue: str
     pages: str
@@ -1260,7 +1260,7 @@ class ReferenceOut(BaseModel):
     is_favorite: bool
     notes: str
     citations: int
-    created_by: Optional[int] = None
+    created_by: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -1345,7 +1345,7 @@ class LabUnitCreate(BaseModel):
     name: str
     code: str = ""
     lab_type: str = "research"
-    pi_user_id: Optional[int] = None
+    pi_user_id: int | None = None
     capacity_persons: int = 0
     notes: str = ""
 
@@ -1356,7 +1356,7 @@ class LabUnitOut(BaseModel):
     name: str
     code: str
     lab_type: str
-    pi_user_id: Optional[int] = None
+    pi_user_id: int | None = None
     capacity_persons: int
     notes: str
     is_active: bool

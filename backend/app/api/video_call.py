@@ -2,19 +2,17 @@
 WebRTC Video Conferencing Module
 Self-hosted, no external dependencies required
 """
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Set
 
 logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.models import User, LabMeeting
+from app.models.models import LabMeeting, User
 from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/video", tags=["video"])
@@ -23,18 +21,18 @@ router = APIRouter(prefix="/video", tags=["video"])
 # ─── DATA MODELS ────────────────────────────────────────────────────────────────
 
 class VideoRoom:
-    def __init__(self, room_id: str, meeting_id: int = None, host_id: int = None):
+    def __init__(self, room_id: str, meeting_id: int | None = None, host_id: int | None = None):
         self.room_id = room_id
         self.meeting_id = meeting_id
         self.host_id = host_id
-        self.participants: Dict[str, dict] = {}  # socket_id -> participant info
-        self.websockets: Dict[str, WebSocket] = {}  # socket_id -> websocket
-        self.chat_messages: List[dict] = []
-        self.transcriptions: List[dict] = []
+        self.participants: dict[str, dict] = {}  # socket_id -> participant info
+        self.websockets: dict[str, WebSocket] = {}  # socket_id -> websocket
+        self.chat_messages: list[dict] = []
+        self.transcriptions: list[dict] = []
         self.created_at = datetime.now(timezone.utc)
         self.is_recording = False
-        self.whiteboard_state: List[dict] = []
-        self.shared_documents: List[dict] = []
+        self.whiteboard_state: list[dict] = []
+        self.shared_documents: list[dict] = []
 
     def to_dict(self):
         return {
@@ -52,9 +50,9 @@ class VideoRoom:
 
 class RoomManager:
     def __init__(self):
-        self.rooms: Dict[str, VideoRoom] = {}
+        self.rooms: dict[str, VideoRoom] = {}
 
-    def create_room(self, meeting_id: int = None, host_id: int = None) -> VideoRoom:
+    def create_room(self, meeting_id: int | None = None, host_id: int | None = None) -> VideoRoom:
         room_id = str(uuid.uuid4())[:8]
         room = VideoRoom(room_id, meeting_id, host_id)
         self.rooms[room_id] = room
@@ -254,14 +252,14 @@ async def video_websocket(
             room_manager.delete_room(room_id)
 
 
-async def broadcast_to_room(room: VideoRoom, message: dict, exclude: str = None):
+async def broadcast_to_room(room: VideoRoom, message: dict, exclude: str | None = None):
     """Broadcast message to all participants in room"""
     for sid, ws in list(room.websockets.items()):
         if sid != exclude:
             try:
                 await ws.send_json(message)
-            except:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to broadcast to %s: %s", sid, exc)
 
 
 async def send_to_participant(room: VideoRoom, socket_id: str, message: dict):
@@ -270,8 +268,8 @@ async def send_to_participant(room: VideoRoom, socket_id: str, message: dict):
     if ws:
         try:
             await ws.send_json(message)
-        except:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to send to %s: %s", socket_id, exc)
 
 
 async def handle_signaling_message(room: VideoRoom, sender_id: str, data: dict):

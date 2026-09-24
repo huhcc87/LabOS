@@ -4,8 +4,12 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import AuditAction, Booking, BookingStatus, Instrument, User, UserRole
 from app.schemas.schemas import (
-    BookingCreate, BookingOut, BookingUpdate,
-    InstrumentCreate, InstrumentOut, InstrumentUpdate,
+    BookingCreate,
+    BookingOut,
+    BookingUpdate,
+    InstrumentCreate,
+    InstrumentOut,
+    InstrumentUpdate,
     PaginatedResponse,
 )
 from app.services.auth import get_current_user, require_role, write_audit
