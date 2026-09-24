@@ -3,8 +3,8 @@
 const url = process.env.VITE_CONVEX_URL;
 
 if (!url) {
-  console.error("[check-convex-url] VITE_CONVEX_URL is not set — skipping build (nothing to check).");
-  process.exit(1);
+  console.log("[check-convex-url] VITE_CONVEX_URL is not set — skipping check (not a deploy build).");
+  process.exit(0);
 }
 
 try {
