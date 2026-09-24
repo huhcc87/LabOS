@@ -3,7 +3,7 @@
  * Uses bcryptjs for hashing + a sessions table for token storage.
  */
 import { action, mutation, query, internalMutation, internalQuery } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 
 // ── Token helpers ─────────────────────────────────────────────────────────
@@ -31,10 +31,10 @@ export const register = action({
   },
   handler: async (ctx, { email, password, full_name, role }): Promise<{ token: string; user_id: string }> => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Invalid email format");
-    if (password.length < 8) throw new Error("Password must be at least 8 characters");
-    if (!/\d/.test(password)) throw new Error("Password must contain at least one digit");
-    if (full_name.trim().length < 2) throw new Error("Name must be at least 2 characters");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new ConvexError("Invalid email format");
+    if (password.length < 8) throw new ConvexError("Password must be at least 8 characters");
+    if (!/\d/.test(password)) throw new ConvexError("Password must contain at least one digit");
+    if (full_name.trim().length < 2) throw new ConvexError("Name must be at least 2 characters");
     const bcrypt = await import("bcryptjs");
     const hashed_password = await bcrypt.hash(password, 12);
     const token = generateToken();
@@ -59,8 +59,8 @@ export const login = action({
     const bcrypt = await import("bcryptjs");
 
     const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
-    if (!user) throw new Error("Invalid email or password");
-    if (!user.is_active) throw new Error("Account is disabled");
+    if (!user) throw new ConvexError("Invalid email or password");
+    if (!user.is_active) throw new ConvexError("Account is disabled");
 
     // Account lockout check (5 failed attempts → 30 min lock)
     const MAX_ATTEMPTS = 5;
@@ -73,7 +73,7 @@ export const login = action({
         severity: "HIGH",
         details: `Blocked login attempt for locked account ${maskEmail(email)} (${minutes}min remaining)`,
       });
-      throw new Error(`Account locked. Try again in ${minutes} minute(s).`);
+      throw new ConvexError(`Account locked. Try again in ${minutes} minute(s).`);
     }
 
     const valid = await bcrypt.compare(password, user.hashed_password);
@@ -91,7 +91,7 @@ export const login = action({
         severity: locked ? "HIGH" : "WARN",
         details: `Failed login for ${maskEmail(email)} (attempt ${attempts})`,
       });
-      throw new Error("Invalid email or password");
+      throw new ConvexError("Invalid email or password");
     }
 
     // 2FA check: if TOTP is enabled, verify the code
@@ -101,7 +101,7 @@ export const login = action({
       }
       const { verifySync } = await import("otplib");
       const totpValid = verifySync({ secret: user.totp_secret, token: totp_code }).valid;
-      if (!totpValid) throw new Error("Invalid two-factor code");
+      if (!totpValid) throw new ConvexError("Invalid two-factor code");
     }
 
     // Reset failed attempts on successful login
@@ -249,7 +249,7 @@ export const createUserAndSession = internalMutation({
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
-    if (existing) throw new Error("Email already registered");
+    if (existing) throw new ConvexError("Email already registered");
 
     const userId = await ctx.db.insert("users", {
       email: args.email,

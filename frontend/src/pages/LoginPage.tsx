@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { ConvexError } from 'convex/values';
 import { useAuth } from '../context/AuthContext';
+
+function loginErrorMessage(err: unknown): string {
+  if (err instanceof ConvexError && typeof err.data === 'string') return err.data;
+  return err instanceof Error ? err.message : '';
+}
 
 interface LoginForm {
   email: string;
@@ -38,8 +44,8 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       if (!totpRequired) toast.success('Welcome to LabOS v3!');
-    } catch (err: any) {
-      const msg = err?.message ?? '';
+    } catch (err) {
+      const msg = loginErrorMessage(err);
       if (msg.includes('Invalid email') || msg.includes('password')) {
         toast.error('Invalid email or password.');
       } else if (msg.includes('disabled')) {
@@ -58,8 +64,8 @@ export default function LoginPage() {
     try {
       await login(totpRequired.email, totpRequired.password, totpCode);
       toast.success('Welcome to LabOS v3!');
-    } catch (err: any) {
-      const msg = err?.message ?? '';
+    } catch (err) {
+      const msg = loginErrorMessage(err);
       if (msg.includes('two-factor')) {
         toast.error('Invalid two-factor code. Please try again.');
       } else {
