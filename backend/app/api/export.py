@@ -15,13 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.models import (
+    CapaRecord,
+    GrantSubmission,
     InventoryItem,
     LabNotebookEntry,
-    SampleRecord,
-    GrantSubmission,
     PurchaseOrder,
+    SampleRecord,
     TrainingRecord,
-    CapaRecord,
 )
 from app.services.auth import get_current_user
 
@@ -222,7 +222,7 @@ def export_eln_pdf(entry_id: int, db: Session = Depends(get_db), _=Depends(get_c
 
     try:
         from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
     except ImportError:

@@ -75,9 +75,8 @@ def send_email(to: str | list[str], subject: str, body_html: str, body_text: str
         return False
 
     # 1. Try Resend first (preferred — free tier 3k/mo, HTTP not SMTP)
-    if _resend_configured():
-        if _send_via_resend(recipients, subject, body_html, body_text):
-            return True
+    if _resend_configured() and _send_via_resend(recipients, subject, body_html, body_text):
+        return True
         # If Resend fails, fall through to SMTP if available
 
     # 2. SMTP fallback

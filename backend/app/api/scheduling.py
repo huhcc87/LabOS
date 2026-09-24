@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -6,11 +7,17 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import AuditAction, Booking, CalendarEvent, ReminderQueue, User, UserRole
 from app.schemas.schemas import (
-    CalendarEventCreate, CalendarEventOut, CalendarEventUpdate,
+    CalendarEventCreate,
+    CalendarEventOut,
+    CalendarEventUpdate,
     PaginatedResponse,
-    ReminderQueueCreate, ReminderQueueOut, ReminderQueueUpdate,
+    ReminderQueueCreate,
+    ReminderQueueOut,
+    ReminderQueueUpdate,
 )
 from app.services.auth import get_current_user, require_role, write_audit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scheduling", tags=["scheduling"])
 
@@ -118,8 +125,8 @@ def _schedule_reminder(db: Session, event: CalendarEvent):
             message=f"Upcoming event: {event.title} at {event.start_time}",
         )
         db.add(reminder)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to queue reminder for event %s: %s", event.id, exc)
 
 
 @router.get("/calendar", response_model=PaginatedResponse[CalendarEventOut])
@@ -237,7 +244,8 @@ def delete_calendar_series(
 
 @router.get("/calendar/export.ics")
 def export_ics(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    from icalendar import Calendar, Event as ICalEvent
+    from icalendar import Calendar
+    from icalendar import Event as ICalEvent
     cal = Calendar()
     cal.add("prodid", "-//LabOS v3//EN")
     cal.add("version", "2.0")
@@ -260,7 +268,8 @@ def export_ics(db: Session = Depends(get_db), _: User = Depends(get_current_user
         try:
             ie.add("dtstart", datetime.fromisoformat(b.start_time.replace("Z", "+00:00")))
             ie.add("dtend", datetime.fromisoformat(b.end_time.replace("Z", "+00:00")))
-        except Exception:
+        except Exception as exc:
+            logger.warning("Skipping booking %s in ICS export, bad dates: %s", b.id, exc)
             continue
         cal.add_component(ie)
 
@@ -366,7 +375,7 @@ def delete_reminder(
 
 # ── Equipment Booking Conflict Detection ──────────────────────────────────────
 
-from app.models.models import Instrument, BookingStatus
+from app.models.models import BookingStatus, Instrument
 
 
 @router.get("/bookings/conflicts")

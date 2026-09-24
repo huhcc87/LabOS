@@ -1,8 +1,8 @@
 """Admin endpoints for database migration management."""
 
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 
 from app.core import migrations as mig
 
@@ -36,7 +36,7 @@ def get_migration_status():
 
 
 @router.post("/upgrade")
-def run_upgrade(body: UpgradeRequest = UpgradeRequest()):
+def run_upgrade(body: UpgradeRequest = Body(default_factory=UpgradeRequest)):
     """Apply pending migrations up to target (default: head)."""
     result = mig.upgrade(body.target)
     if not result["success"]:
@@ -45,7 +45,7 @@ def run_upgrade(body: UpgradeRequest = UpgradeRequest()):
 
 
 @router.post("/downgrade")
-def run_downgrade(body: DowngradeRequest = DowngradeRequest()):
+def run_downgrade(body: DowngradeRequest = Body(default_factory=DowngradeRequest)):
     """Roll back migrations to target (default: -1 = one step back)."""
     result = mig.downgrade(body.target)
     if not result["success"]:

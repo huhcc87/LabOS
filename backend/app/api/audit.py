@@ -1,16 +1,17 @@
 import json
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.models import AuditLog, AuditAction, User, UserRole
+from app.models.models import AuditAction, AuditLog, User, UserRole
 from app.schemas.schemas import AuditLogOut, PaginatedResponse
 from app.services.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
 
-def log_action(db: Session, action: str, entity_type: str, entity_id: int, user: User, changes: dict = None):
+def log_action(db: Session, action: str, entity_type: str, entity_id: int, user: User, changes: dict | None = None):
     """Log an action to the audit log."""
     action_enum = AuditAction(action) if action in [e.value for e in AuditAction] else AuditAction.update
     log = AuditLog(

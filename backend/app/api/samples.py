@@ -5,8 +5,12 @@ from app.core.database import get_db
 from app.models.models import AuditAction, SampleEvent, SampleRecord, User, UserRole
 from app.schemas.schemas import (
     PaginatedResponse,
-    SampleEventCreate, SampleEventOut, SampleEventUpdate,
-    SampleRecordCreate, SampleRecordOut, SampleRecordUpdate,
+    SampleEventCreate,
+    SampleEventOut,
+    SampleEventUpdate,
+    SampleRecordCreate,
+    SampleRecordOut,
+    SampleRecordUpdate,
 )
 from app.services.auth import get_current_user, require_role, write_audit
 

@@ -1,18 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.models import User
-from app.models.models import UserRole
+from app.models.models import User, UserRole
 from app.services.auth import get_current_user, require_role
 from app.services.email import (
-    send_capa_assignment,
     send_email,
     send_expiry_alert,
-    send_incident_notification,
-    send_task_reminder,
     send_welcome,
 )
 
@@ -75,6 +71,7 @@ def notify_expiry_alerts(
     current_user: User = Depends(require_role(UserRole.staff)),
 ):
     from datetime import date, timedelta
+
     from app.models.models import InventoryItem
     today = date.today()
     cutoff = today + timedelta(days=90)

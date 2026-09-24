@@ -6,8 +6,7 @@ GDPR Compliance API
 - Art. 33: Breach notification log (admin only)
 - Data retention enforcement (admin only)
 """
-import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -26,9 +25,7 @@ from app.models.models import (
     ErasureStatus,
     Feedback,
     IncidentReport,
-    InventoryItem,
     LabNotebookEntry,
-    SampleEvent,
     SampleRecord,
     Task,
     TrainingRecord,

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends
 
@@ -20,7 +19,7 @@ class LiteratureText(BaseModel):
     content: str  # extracted or pasted text
 
 class SynthesisRequest(BaseModel):
-    texts: List[LiteratureText]
+    texts: list[LiteratureText]
     topic: str
     grant_type: str = "NIH R01"
     disease: str = ""
@@ -41,13 +40,13 @@ class HypothesisItem(BaseModel):
     testability: str
 
 class SynthesisResponse(BaseModel):
-    paper_summaries: List[PaperSummary]
+    paper_summaries: list[PaperSummary]
     field_overview: str
-    research_gaps: List[str]
+    research_gaps: list[str]
     web_context: str
-    novel_hypotheses: List[HypothesisItem]
-    specific_aims: List[str]
-    objectives: List[str]
+    novel_hypotheses: list[HypothesisItem]
+    specific_aims: list[str]
+    objectives: list[str]
     grant_sections: dict
     source: str
 
@@ -106,7 +105,6 @@ def _template_synthesis(req: SynthesisRequest) -> SynthesisResponse:
     summaries = []
     for t in req.texts:
         fname = t.filename or "Article"
-        preview = t.content[:400].strip() if t.content else ""
         summaries.append(PaperSummary(
             filename=fname,
             key_findings=(
@@ -131,7 +129,7 @@ def _template_synthesis(req: SynthesisRequest) -> SynthesisResponse:
     gaps = [
         f"No prospective validation of biomarkers identified in {topic} studies — all current evidence is retrospective.",
         f"Mechanistic link between early molecular events and long-term outcomes in {disease} remains uncharacterized.",
-        f"Absence of combinatorial therapeutic approaches targeting multiple identified pathways simultaneously.",
+        "Absence of combinatorial therapeutic approaches targeting multiple identified pathways simultaneously.",
         f"Lack of sex- and age-stratified analyses limits generalizability of current {topic} findings.",
         f"No integration of single-cell resolution data with clinical outcomes in {disease} cohorts.",
         f"Limited translational studies bridging preclinical {topic} findings to patient-relevant endpoints.",
@@ -214,11 +212,11 @@ def _template_synthesis(req: SynthesisRequest) -> SynthesisResponse:
             f"atlas of {disease} enabling target identification."
         ),
         (
-            f"Aim 2: Develop and validate combinatorial therapeutic strategies targeting convergent "
-            f"pathways identified in Aim 1 and across the reviewed literature. We will test "
-            f"synergistic drug combinations in ≥3 orthogonal model systems, identify the most "
-            f"efficacious combination, and define mechanistic synergy. Expected outcome: ≥2 "
-            f"validated lead therapeutic combinations with defined mechanism."
+            "Aim 2: Develop and validate combinatorial therapeutic strategies targeting convergent "
+            "pathways identified in Aim 1 and across the reviewed literature. We will test "
+            "synergistic drug combinations in ≥3 orthogonal model systems, identify the most "
+            "efficacious combination, and define mechanistic synergy. Expected outcome: ≥2 "
+            "validated lead therapeutic combinations with defined mechanism."
         ),
         (
             f"Aim 3: Prospectively validate a predictive molecular biomarker enabling patient "
@@ -232,9 +230,9 @@ def _template_synthesis(req: SynthesisRequest) -> SynthesisResponse:
     objectives = [
         f"Establish single-cell molecular atlas of {disease} with cell-type-specific pathway maps",
         f"Identify and validate ≥3 novel therapeutic targets within {topic} network",
-        f"Demonstrate ≥40% improvement in preclinical efficacy with combinatorial approach vs. monotherapy",
-        f"Develop validated predictive biomarker with AUC ≥0.85 in prospective cohort",
-        f"Publish ≥4 peer-reviewed manuscripts and file ≥2 provisional patents",
+        "Demonstrate ≥40% improvement in preclinical efficacy with combinatorial approach vs. monotherapy",
+        "Develop validated predictive biomarker with AUC ≥0.85 in prospective cohort",
+        "Publish ≥4 peer-reviewed manuscripts and file ≥2 provisional patents",
         f"Train ≥3 junior researchers in advanced {topic} methodologies",
         "Establish open-access dataset for the {topic} research community",
     ]
@@ -305,7 +303,8 @@ async def ai_research_synthesis(
     if not settings.anthropic_api_key and not settings.deepseek_api_key and not settings.openai_api_key:
         return _template_synthesis(body)
 
-    import json, re
+    import json
+    import re
 
     topic = body.topic or "the research topic"
     disease = body.disease or "the target condition"
@@ -671,10 +670,10 @@ _SECTION_ALIASES: dict[str, str] = {
 
 class AIDraftRequest(BaseModel):
     grant_type: str
-    disease: Optional[str] = ""
+    disease: str | None = ""
     title: str
     section: str
-    context: Optional[str] = ""
+    context: str | None = ""
 
 
 class AIDraftResponse(BaseModel):

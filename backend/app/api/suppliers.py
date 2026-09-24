@@ -9,14 +9,18 @@ from pydantic import BaseModel
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.api.audit import log_action
 from app.core.database import get_db
 from app.models.models import (
-    Supplier, InventoryItem, PurchaseOrder, SupplierReview,
-    User, UserRole, PurchaseOrderStatus
+    InventoryItem,
+    PurchaseOrder,
+    PurchaseOrderStatus,
+    Supplier,
+    SupplierReview,
+    User,
+    UserRole,
 )
 from app.services.auth import get_current_user, require_role
-from app.api.audit import log_action
-
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -605,7 +609,7 @@ def create_review(
     # Update supplier average rating
     reviews = db.query(SupplierReview).filter(SupplierReview.supplier_id == data.supplier_id).all()
     avg_rating = sum(r.rating for r in reviews) / (len(reviews) + 1) if reviews else data.rating
-    supplier.rating = int(round(avg_rating))
+    supplier.rating = round(avg_rating)
 
     db.commit()
     db.refresh(review)

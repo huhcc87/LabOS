@@ -61,6 +61,10 @@ function authHeaders() {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
+function isPlainObject(v: unknown): v is Record<string, any> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
 function daysUntil(dateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -127,13 +131,16 @@ export default function ReagentHubPage() {
     try {
       if (tab === 'expiry') {
         const r = await axios.get(`/api/reagents/expiry-alerts?days=${expiryDays}`, { headers: authHeaders() });
-        setExpiry(r.data);
+        // ponytail: this REST endpoint isn't served in this deployment (Convex-only); a
+        // 404 falls through to index.html with a 200, so axios hands back an HTML string
+        // instead of JSON — guard the shape before trusting it, same as the sds/disposal branches below.
+        setExpiry(isPlainObject(r.data) ? (r.data as unknown as ExpiryAlerts) : null);
       } else if (tab === 'sds') {
         const r = await axios.get('/api/reagents/sds-status', { headers: authHeaders() });
-        setSdsStatus(r.data);
+        setSdsStatus(isPlainObject(r.data) ? (r.data as unknown as SDSStatus) : null);
       } else {
         const r = await axios.get('/api/reagents/disposal-log?per_page=100', { headers: authHeaders() });
-        setDisposalLogs(r.data.items || []);
+        setDisposalLogs(isPlainObject(r.data) ? r.data.items || [] : []);
       }
     } catch {
       // backend might not be running; show empty state

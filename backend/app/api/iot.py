@@ -15,7 +15,6 @@ import logging
 import secrets
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -24,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.models import IoTAlert, IoTAlertSeverity, IoTReading, IoTSensor, IoTSensorType
+from app.models.models import IoTAlert, IoTReading, IoTSensor, IoTSensorType
 from app.services.auth import get_current_user
 
 log = logging.getLogger(__name__)
@@ -126,13 +125,13 @@ class SensorCreate(BaseModel):
 
 
 class SensorUpdate(BaseModel):
-    name: Optional[str] = None
-    location: Optional[str] = None
-    min_threshold: Optional[float] = None
-    max_threshold: Optional[float] = None
-    target: Optional[float] = None
-    notify_email: Optional[str] = None
-    alert_cooldown_minutes: Optional[int] = None
+    name: str | None = None
+    location: str | None = None
+    min_threshold: float | None = None
+    max_threshold: float | None = None
+    target: float | None = None
+    notify_email: str | None = None
+    alert_cooldown_minutes: int | None = None
 
 
 class SensorOut(BaseModel):
@@ -149,9 +148,9 @@ class SensorOut(BaseModel):
     api_key: str
     notify_email: str
     alert_cooldown_minutes: int
-    current_value: Optional[float] = None
+    current_value: float | None = None
     current_status: str = "offline"
-    last_updated: Optional[str] = None
+    last_updated: str | None = None
     unack_alerts: int = 0
 
     model_config = {"from_attributes": True}
@@ -159,7 +158,7 @@ class SensorOut(BaseModel):
 
 class ReadingIn(BaseModel):
     value: float
-    recorded_at: Optional[datetime] = None
+    recorded_at: datetime | None = None
 
 
 class ReadingOut(BaseModel):
@@ -179,7 +178,7 @@ class AlertOut(BaseModel):
     message: str
     triggered_at: datetime
     acknowledged: bool
-    acknowledged_at: Optional[datetime] = None
+    acknowledged_at: datetime | None = None
     notified_emails: str
 
     model_config = {"from_attributes": True}

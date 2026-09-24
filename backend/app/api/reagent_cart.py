@@ -2,7 +2,6 @@
 serves them to the LabOS app. Designed to work whether or not Stripe
 is configured."""
 from datetime import datetime, timezone
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -20,7 +19,7 @@ class CartItemIn(BaseModel):
     name: str
     catalog: str = ""
     size: str = ""
-    unit_price: Optional[float] = None
+    unit_price: float | None = None
     quantity: int = 1
     currency: str = "USD"
     url: str = ""
@@ -28,18 +27,18 @@ class CartItemIn(BaseModel):
     cas: str = ""
     purity: str = ""
     notes: str = ""
-    captured_at: Optional[datetime] = None
+    captured_at: datetime | None = None
 
 
 class CartItemUpdate(BaseModel):
-    quantity: Optional[int] = None
-    notes: Optional[str] = None
-    status: Optional[ReagentCartItemStatus] = None
+    quantity: int | None = None
+    notes: str | None = None
+    status: ReagentCartItemStatus | None = None
 
 
 class CheckoutIn(BaseModel):
-    item_ids: List[int]
-    payment_method_id: Optional[str] = None
+    item_ids: list[int]
+    payment_method_id: str | None = None
 
 
 def _to_out(item: ReagentCartItem) -> dict:

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends
 
@@ -11,9 +10,18 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import (
-    CapaRecord, CapaStatus, IncidentReport, InventoryItem,
-    LabNotebookEntry, Protocol, ReminderQueue, ReminderStatus,
-    SampleRecord, Task, TaskStatus, User,
+    CapaRecord,
+    CapaStatus,
+    IncidentReport,
+    InventoryItem,
+    LabNotebookEntry,
+    Protocol,
+    ReminderQueue,
+    ReminderStatus,
+    SampleRecord,
+    Task,
+    TaskStatus,
+    User,
 )
 from app.services.auth import get_current_user
 
@@ -22,7 +30,7 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 
 class ChatRequest(BaseModel):
     question: str
-    context: Optional[str] = ""
+    context: str | None = ""
 
 
 class ChatResponse(BaseModel):
@@ -243,9 +251,9 @@ def inventory_predictions(
     _: User = Depends(get_current_user),
 ):
     """Return inventory items with predicted depletion dates based on usage."""
-    from app.models.models import AuditLog, AuditAction
     from datetime import timedelta, timezone
-    import json
+
+    from app.models.models import AuditAction, AuditLog
 
     items = db.query(InventoryItem).all()
     predictions = []
@@ -299,7 +307,6 @@ def inventory_predictions(
 
 
 from datetime import datetime, timezone
-
 
 # ── Protocol Analysis ─────────────────────────────────────────────────────────
 

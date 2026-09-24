@@ -21,7 +21,7 @@ def list_maintenance_logs(
     page: int = 1,
     per_page: int = 20,
     search: str = "",
-    instrument_id: int = None,
+    instrument_id: int | None = None,
     status: str = "",
     maintenance_type: str = "",
     db: Session = Depends(get_db),

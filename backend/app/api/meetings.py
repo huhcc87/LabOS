@@ -1,16 +1,18 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.audit import log_action
 from app.core.database import get_db
-from app.services.auth import get_current_user, require_role
-from app.models.models import LabMeeting, User, MeetingStatus, ROLE_HIERARCHY, UserRole
+from app.models.models import ROLE_HIERARCHY, LabMeeting, MeetingStatus, User, UserRole
 from app.schemas.schemas import (
     LabMeetingCreate,
-    LabMeetingUpdate,
     LabMeetingOut,
+    LabMeetingUpdate,
     PaginatedResponse,
 )
-from app.api.audit import log_action
+from app.services.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
 
@@ -97,7 +99,6 @@ def list_past_meetings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from datetime import datetime
     now = datetime.now(timezone.utc).isoformat()
     items = (
         db.query(LabMeeting)
@@ -234,7 +235,6 @@ def publish_minutes(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("manager")),
 ):
-    from datetime import datetime
     m = db.query(LabMeeting).filter(LabMeeting.id == meeting_id).first()
     if not m:
         raise HTTPException(status_code=404, detail="Meeting not found")

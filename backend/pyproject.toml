@@ -1,0 +1,38 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# BLE001 (blind except Exception) — the vast majority of these sites already
+# log the exception before returning a safe fallback; narrowing to specific
+# exception types would need per-call-site research into each service's
+# actual failure modes, which risks silently missing failure cases we don't
+# know about yet. Left as a known style debt, not a live bug.
+#
+# DTZ005/DTZ011 (naive datetime.now()/date.today()) — the DB layer stores
+# naive datetimes throughout (SQLite/SQLAlchemy default). Switching call
+# sites to timezone-aware datetimes piecemeal would raise
+# "can't compare offset-naive and offset-aware datetimes" against the
+# existing naive columns. A real fix needs a coordinated DB-wide migration
+# to tz-aware storage, not a lint autofix.
+ignore = ["BLE001", "DTZ005", "DTZ011"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom is `param: T = Depends(...)` — ruff's
+# B008 doesn't know Depends()/Query()/etc. are meant to be called at
+# declaration time, not per-request. This is ruff's own documented fix for
+# FastAPI projects, not a suppression of a real bug.
+extend-immutable-calls = [
+  "fastapi.Depends",
+  "fastapi.Query",
+  "fastapi.Path",
+  "fastapi.Header",
+  "fastapi.Body",
+  "fastapi.Cookie",
+  "fastapi.Security",
+  "fastapi.Form",
+  "fastapi.File",
+  "app.services.auth.require_role",
+  "app.services.auth.require_roles",
+  "app.api.auth.require_role",
+  "app.api.auth.require_roles",
+]
