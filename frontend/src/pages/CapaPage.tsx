@@ -72,12 +72,16 @@ export default function CapaPage() {
     const params = new URLSearchParams({ per_page: '100' });
     if (filterStatus) params.set('status', filterStatus);
     if (filterSeverity) params.set('severity', filterSeverity);
+    // ponytail: this REST endpoint isn't served in this deployment (Convex-only); a 404
+    // falls through to index.html with a 200, so `.ok` is true but the body is HTML, not
+    // JSON — check content-type before parsing instead of letting .json() throw.
+    const isJson = (r: Response) => r.ok && (r.headers.get('content-type') ?? '').includes('application/json');
     const [r1, r2] = await Promise.all([
       fetch(`${API}/capa?${params}`, { headers: authHeaders() }),
       fetch(`${API}/capa/stats/summary`, { headers: authHeaders() }),
     ]);
-    if (r1.ok) setCapas((await r1.json()).items ?? []);
-    if (r2.ok) setStats(await r2.json());
+    if (isJson(r1)) setCapas((await r1.json()).items ?? []);
+    if (isJson(r2)) setStats(await r2.json());
     setLoading(false);
   };
 

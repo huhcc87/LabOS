@@ -172,8 +172,8 @@ export default function AILabManagerPage() {
 
     // ── 5. ELN entries — unsigned older than 7 days ────────────────────────
     const entries = ((notebookEntries.data as any).items || []) as any[];
-    const cutoff = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
-    const staleEntries = entries.filter(e => !e.signed_at && (e.created_at || '').slice(0, 10) < cutoff);
+    const cutoff = Date.now() - 7 * 86400_000;
+    const staleEntries = entries.filter(e => !e.signed_at && e.created_at && e.created_at < cutoff);
     if (staleEntries.length) {
       briefing.push({
         id: 'eln-unsigned', severity: 'warning', category: 'ELN', icon: '📓',
