@@ -89,9 +89,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <h2 className="login-left-headline">
+            <h1 className="login-left-headline">
               Research-grade lab management for modern institutions
-            </h2>
+            </h1>
             <p className="login-left-desc">
               Centralize your protocols, samples, instruments, grants, safety records,
               and team collaboration — all in one secure platform.
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   <div className="login-secure-badge">
                     <span>🔐</span> Two-Factor Authentication
                   </div>
-                  <h3 className="login-form-title">Enter verification code</h3>
+                  <h2 className="login-form-title">Enter verification code</h2>
                   <p className="login-form-subtitle">Open your authenticator app and enter the 6-digit code</p>
                 </div>
                 <div className="login-form" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -180,7 +180,7 @@ export default function LoginPage() {
               <div className="login-secure-badge">
                 <span>🔒</span> Secure Sign In
               </div>
-              <h3 className="login-form-title">Welcome back</h3>
+              <h2 className="login-form-title">Welcome back</h2>
               <p className="login-form-subtitle">Sign in to your LabOS account to continue</p>
             </div>
 

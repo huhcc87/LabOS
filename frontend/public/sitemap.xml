@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LabOS is a private, authenticated SaaS app: every route past the sign-in
+  screen requires a logged-in session (see frontend/src/App.tsx — any
+  unauthenticated request renders <LoginPage />, not the requested page).
+  This sitemap intentionally lists only the one URL Google can ever reach.
+  Do not add authenticated app routes here; they will 404 for a crawler.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://lab-os.vercel.app/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

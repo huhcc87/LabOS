@@ -1,0 +1,9 @@
+# LabOS is a private lab-operations platform. Everything except the sign-in
+# screen requires an authenticated session, so there is nothing behind /
+# for a crawler to index — but we don't block it either, since Google should
+# still be free to index the sign-in / marketing screen itself.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://lab-os.vercel.app/sitemap.xml
