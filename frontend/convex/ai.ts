@@ -1,5 +1,5 @@
 import { action } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -10,7 +10,7 @@ async function callAnthropic(
   maxTokens = 1024
 ): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+  if (!apiKey) throw new ConvexError("ANTHROPIC_API_KEY not set");
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -29,7 +29,7 @@ async function callAnthropic(
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Anthropic API error ${response.status}: ${err}`);
+    throw new ConvexError(`Anthropic API error ${response.status}: ${err}`);
   }
 
   const data = await response.json();
@@ -42,7 +42,7 @@ async function callDeepSeek(
   maxTokens = 1024
 ): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) throw new Error("DEEPSEEK_API_KEY not set");
+  if (!apiKey) throw new ConvexError("DEEPSEEK_API_KEY not set");
 
   const response = await fetch(
     "https://api.deepseek.com/v1/chat/completions",
@@ -65,7 +65,7 @@ async function callDeepSeek(
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`DeepSeek API error ${response.status}: ${err}`);
+    throw new ConvexError(`DeepSeek API error ${response.status}: ${err}`);
   }
 
   const data = await response.json();
@@ -165,9 +165,9 @@ export const chat = action({
   args: { token: v.optional(v.string()), question: v.string() },
   returns: v.object({ answer: v.string(), source: v.string() }),
   handler: async (ctx, { token, question }) => {
-    if (!token) throw new Error("Unauthorized");
+    if (!token) throw new ConvexError("Unauthorized");
     const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
-    if (!session || session.expires_at < Date.now()) throw new Error("Unauthorized");
+    if (!session || session.expires_at < Date.now()) throw new ConvexError("Unauthorized");
     const systemPrompt =
       "You are LabOS AI, an expert assistant for scientific laboratory management. " +
       "You help researchers and lab managers with inventory, equipment, protocols, " +
@@ -217,9 +217,9 @@ export const inventoryPredictions = action({
     })
   ),
   handler: async (ctx, { token, items }) => {
-    if (!token) throw new Error("Unauthorized");
+    if (!token) throw new ConvexError("Unauthorized");
     const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
-    if (!session || session.expires_at < Date.now()) throw new Error("Unauthorized");
+    if (!session || session.expires_at < Date.now()) throw new ConvexError("Unauthorized");
     const now = Date.now();
 
     // Build a concise inventory snapshot for the prompt

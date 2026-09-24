@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 export const status = query({
@@ -51,7 +51,7 @@ export const deleteMethod = mutation({
     const userId = await requireAuth(ctx, token);
     const method = await ctx.db.get(id);
     if (!method || method.user_id !== userId) {
-      throw new Error("Forbidden: payment method not found or not yours");
+      throw new ConvexError("Forbidden: payment method not found or not yours");
     }
     await ctx.db.delete(id);
     return { success: true };

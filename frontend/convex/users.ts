@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 export const getMe = query({
@@ -102,7 +102,7 @@ export const create = mutation({
     const callerId = await requireAuth(ctx, args.token);
     const caller = await ctx.db.get(callerId);
     if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new Error("Forbidden: admin role required");
+      throw new ConvexError("Forbidden: admin role required");
     }
     const now = Date.now();
     return await ctx.db.insert("users", {
@@ -151,7 +151,7 @@ export const update = mutation({
     const callerId = await requireAuth(ctx, args.token);
     const caller = await ctx.db.get(callerId);
     if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new Error("Forbidden: admin role required");
+      throw new ConvexError("Forbidden: admin role required");
     }
     const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
@@ -169,7 +169,7 @@ export const remove = mutation({
     const callerId = await requireAuth(ctx, args.token);
     const caller = await ctx.db.get(callerId);
     if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new Error("Forbidden: admin role required");
+      throw new ConvexError("Forbidden: admin role required");
     }
     await ctx.db.patch(args.id, {
       is_active: false,

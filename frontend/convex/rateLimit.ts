@@ -3,6 +3,7 @@
  * Tracks attempts per key (IP/email) with a sliding window.
  * In production, use Convex's built-in rate limiting or a dedicated service.
  */
+import { ConvexError } from "convex/values";
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
@@ -27,6 +28,6 @@ export function checkRateLimit(key: string): void {
   entry.count++;
   if (entry.count > MAX_ATTEMPTS) {
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
+    throw new ConvexError(`Too many requests. Try again in ${retryAfter} seconds.`);
   }
 }

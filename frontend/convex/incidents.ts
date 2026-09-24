@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 export const list = query({
@@ -96,7 +96,7 @@ export const update = mutation({
 
     const { id, token: _token, ...fields } = args;
     const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Incident not found");
+    if (!existing) throw new ConvexError("Incident not found");
 
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
@@ -119,7 +119,7 @@ export const resolve = mutation({
     const userId = await requireAuth(ctx, args.token);
 
     const existing = await ctx.db.get(args.id);
-    if (!existing) throw new Error("Incident not found");
+    if (!existing) throw new ConvexError("Incident not found");
 
     const now = Date.now();
     await ctx.db.patch(args.id, {

@@ -5,6 +5,7 @@
 import { action, mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { checkRateLimit } from "./rateLimit";
 
 // ── Token helpers ─────────────────────────────────────────────────────────
 function generateToken(): string {
@@ -31,6 +32,7 @@ export const register = action({
   },
   handler: async (ctx, { email, password, full_name, role }): Promise<{ token: string; user_id: string }> => {
     const normalizedEmail = email.trim().toLowerCase();
+    checkRateLimit(`register:${normalizedEmail}`);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new ConvexError("Invalid email format");
     if (password.length < 8) throw new ConvexError("Password must be at least 8 characters");
     if (!/\d/.test(password)) throw new ConvexError("Password must contain at least one digit");
@@ -56,6 +58,7 @@ export const register = action({
 export const login = action({
   args: { email: v.string(), password: v.string(), totp_code: v.optional(v.string()) },
   handler: async (ctx, { email, password, totp_code }): Promise<{ token: string; user: Record<string, any>; totp_required?: boolean }> => {
+    checkRateLimit(`login:${email.trim().toLowerCase()}`);
     const bcrypt = await import("bcryptjs");
 
     const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });

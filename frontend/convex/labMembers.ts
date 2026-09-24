@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List all members of a lab ─────────────────────────────────────────────
@@ -86,7 +86,7 @@ export const invite = mutation({
       .filter((q) => q.eq(q.field("user_id"), user_id))
       .first();
 
-    if (existing) throw new Error("User already has a membership for this lab");
+    if (existing) throw new ConvexError("User already has a membership for this lab");
 
     return await ctx.db.insert("lab_memberships", {
       lab_id: lab_id,
@@ -110,7 +110,7 @@ export const approve = mutation({
   handler: async (ctx, { token, membership_id }) => {
     await requireAuth(ctx, token);
     const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new Error("Membership not found");
+    if (!membership) throw new ConvexError("Membership not found");
 
     await ctx.db.patch(membership_id, {
       status: "active",
@@ -130,7 +130,7 @@ export const revoke = mutation({
   handler: async (ctx, { token, membership_id }) => {
     await requireAuth(ctx, token);
     const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new Error("Membership not found");
+    if (!membership) throw new ConvexError("Membership not found");
 
     await ctx.db.patch(membership_id, { status: "revoked" });
     return membership_id;
@@ -148,7 +148,7 @@ export const updateRole = mutation({
   handler: async (ctx, { token, membership_id, lab_role }) => {
     await requireAuth(ctx, token);
     const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new Error("Membership not found");
+    if (!membership) throw new ConvexError("Membership not found");
 
     await ctx.db.patch(membership_id, { lab_role: lab_role });
     return membership_id;

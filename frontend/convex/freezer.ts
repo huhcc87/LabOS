@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List all freezers ─────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ export const remove = mutation({
   handler: async (ctx, { token, id }) => {
     await requireAuth(ctx, token);
     const freezer = await ctx.db.get(id);
-    if (!freezer) throw new Error("Freezer not found");
+    if (!freezer) throw new ConvexError("Freezer not found");
 
     // Remove all associated slots first
     const slots = await ctx.db

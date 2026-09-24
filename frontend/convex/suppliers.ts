@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export const update = mutation({
     const userId = await requireAuth(ctx, token);
 
     const supplier = await ctx.db.get(id);
-    if (!supplier) throw new Error("Supplier not found");
+    if (!supplier) throw new ConvexError("Supplier not found");
 
     const updates = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
@@ -122,7 +122,7 @@ export const remove = mutation({
     const userId = await requireAuth(ctx, token);
 
     const supplier = await ctx.db.get(id);
-    if (!supplier) throw new Error("Supplier not found");
+    if (!supplier) throw new ConvexError("Supplier not found");
 
     await ctx.db.delete(id);
   },
@@ -217,11 +217,11 @@ export const updateOrder = mutation({
     const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
-    if (!order) throw new Error("Purchase order not found");
+    if (!order) throw new ConvexError("Purchase order not found");
 
     // Prevent editing orders that have already been received
     if (order.status === "received") {
-      throw new Error(
+      throw new ConvexError(
         "Cannot modify a received purchase order. Create a new order if changes are needed."
       );
     }
@@ -244,16 +244,16 @@ export const approveOrder = mutation({
     const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
-    if (!order) throw new Error("Purchase order not found");
+    if (!order) throw new ConvexError("Purchase order not found");
 
     if (order.status === "approved") {
-      throw new Error("Order is already approved.");
+      throw new ConvexError("Order is already approved.");
     }
     if (order.status === "received") {
-      throw new Error("Cannot approve an order that has already been received.");
+      throw new ConvexError("Cannot approve an order that has already been received.");
     }
     if (order.status === "cancelled") {
-      throw new Error("Cannot approve a cancelled order.");
+      throw new ConvexError("Cannot approve a cancelled order.");
     }
 
     const patch: Record<string, unknown> = {
@@ -277,16 +277,16 @@ export const receiveOrder = mutation({
     const userId = await requireAuth(ctx, token);
 
     const order = await ctx.db.get(id);
-    if (!order) throw new Error("Purchase order not found");
+    if (!order) throw new ConvexError("Purchase order not found");
 
     if (order.status === "received") {
-      throw new Error("Order has already been marked as received.");
+      throw new ConvexError("Order has already been marked as received.");
     }
     if (order.status === "cancelled") {
-      throw new Error("Cannot receive a cancelled order.");
+      throw new ConvexError("Cannot receive a cancelled order.");
     }
     if (order.status === "draft") {
-      throw new Error(
+      throw new ConvexError(
         "Cannot receive a draft order. The order must be approved before it can be received."
       );
     }

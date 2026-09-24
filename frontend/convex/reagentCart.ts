@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAuth } from "./authHelper";
 
 // ── List current user's cart items ────────────────────────────────────────────
@@ -78,8 +78,8 @@ export const update = mutation({
     const userId = await requireAuth(ctx, token);
 
     const item = await ctx.db.get(id);
-    if (!item) throw new Error("Cart item not found");
-    if (item.user_id !== userId) throw new Error("Not authorized to update this item");
+    if (!item) throw new ConvexError("Cart item not found");
+    if (item.user_id !== userId) throw new ConvexError("Not authorized to update this item");
 
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
@@ -105,8 +105,8 @@ export const remove = mutation({
     const userId = await requireAuth(ctx, token);
 
     const item = await ctx.db.get(id);
-    if (!item) throw new Error("Cart item not found");
-    if (item.user_id !== userId) throw new Error("Not authorized to remove this item");
+    if (!item) throw new ConvexError("Cart item not found");
+    if (item.user_id !== userId) throw new ConvexError("Not authorized to remove this item");
 
     await ctx.db.delete(id);
     return id;
