@@ -141,7 +141,7 @@ interface LayoutProps {
 }
 
 export function Layout({ activePage, onNavigate, children }: LayoutProps) {
-  const { user, logout, hasRole } = useAuth();
+  const { user, token, logout, hasRole } = useAuth();
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'dark');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -166,7 +166,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   // ── Convex: search (debounced) ────────────────────────────────────────
   const searchResults = useQuery(
     api.search.globalSearch,
-    debouncedQ.length >= 2 ? { q: debouncedQ } : 'skip'
+    token && debouncedQ.length >= 2 ? { token, q: debouncedQ } : 'skip'
   ) ?? [];
 
   useEffect(() => {

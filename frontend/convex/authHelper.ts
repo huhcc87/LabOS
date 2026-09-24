@@ -2,6 +2,7 @@
  * Auth helper for custom token-based auth.
  * Each protected function receives a `token` arg and calls requireAuth to get the userId.
  */
+import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -13,13 +14,13 @@ export async function requireAuth(
   ctx: QueryCtx | MutationCtx,
   token: string | undefined | null
 ): Promise<Id<"users">> {
-  if (!token) throw new Error("Unauthorized");
+  if (!token) throw new ConvexError("Unauthorized");
   const session = await ctx.db
     .query("sessions")
     .withIndex("by_token", (q) => q.eq("token", token))
     .first();
   if (!session || session.expires_at < Date.now()) {
-    throw new Error("Unauthorized");
+    throw new ConvexError("Unauthorized");
   }
   return session.user_id;
 }

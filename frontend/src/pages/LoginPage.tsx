@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { ConvexError } from 'convex/values';
 import { useAuth } from '../context/AuthContext';
+
+function loginErrorMessage(err: unknown): string {
+  if (err instanceof ConvexError && typeof err.data === 'string') return err.data;
+  return err instanceof Error ? err.message : '';
+}
 
 interface LoginForm {
   email: string;
@@ -24,7 +30,11 @@ const FEATURES = [
   { icon: '📈', title: 'Reports & Analytics', desc: 'Live dashboards and KPI tracking' },
 ];
 
-export default function LoginPage() {
+interface Props {
+  onCreateAccount: () => void;
+}
+
+export default function LoginPage({ onCreateAccount }: Props) {
   const { login, totpRequired, clearTotpRequired } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,8 +48,8 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       if (!totpRequired) toast.success('Welcome to LabOS v3!');
-    } catch (err: any) {
-      const msg = err?.message ?? '';
+    } catch (err) {
+      const msg = loginErrorMessage(err);
       if (msg.includes('Invalid email') || msg.includes('password')) {
         toast.error('Invalid email or password.');
       } else if (msg.includes('disabled')) {
@@ -58,8 +68,8 @@ export default function LoginPage() {
     try {
       await login(totpRequired.email, totpRequired.password, totpCode);
       toast.success('Welcome to LabOS v3!');
-    } catch (err: any) {
-      const msg = err?.message ?? '';
+    } catch (err) {
+      const msg = loginErrorMessage(err);
       if (msg.includes('two-factor')) {
         toast.error('Invalid two-factor code. Please try again.');
       } else {
@@ -233,6 +243,17 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <button
+              type="button"
+              onClick={onCreateAccount}
+              style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)',
+                cursor: 'pointer', fontSize: 13, textDecoration: 'underline', marginTop: 12,
+              }}
+            >
+              Don't have an account? Create one
+            </button>
 
             {/* Demo accounts — dev only */}
             {DEMO_USERS.length > 0 && <div className="login-demo-section">

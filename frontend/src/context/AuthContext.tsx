@@ -12,6 +12,7 @@ interface AuthContextValue {
   token: string | null;
   totpRequired: { email: string; password: string } | null;
   login: (email: string, password: string, totp_code?: string) => Promise<void>;
+  register: (email: string, password: string, full_name: string) => Promise<void>;
   clearTotpRequired: () => void;
   logout: () => Promise<void>;
   hasRole: (minRole: UserRole) => boolean;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [totpRequired, setTotpRequired] = useState<{ email: string; password: string } | null>(null);
 
   const loginAction = useAction(api.customAuth.login);
+  const registerAction = useAction(api.customAuth.register);
   const logoutMutation = useMutation(api.customAuth.logout);
 
   // Fetch current user by token — skip when no token
@@ -57,6 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
   }, [loginAction]);
 
+  const register = useCallback(async (email: string, password: string, full_name: string) => {
+    const result = await registerAction({ email, password, full_name });
+    localStorage.setItem(TOKEN_KEY, result.token);
+    setToken(result.token);
+    setLoading(true);
+  }, [registerAction]);
+
   const clearTotpRequired = useCallback(() => {
     setTotpRequired(null);
   }, []);
@@ -82,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         totpRequired,
         login,
+        register,
         clearTotpRequired,
         logout,
         hasRole: checkRole,

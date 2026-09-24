@@ -10,6 +10,7 @@ import { trackPageView } from './lib/analytics';
 
 // Always-eager: login + dashboard shown immediately on load
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 
 // All other pages — lazy loaded on first navigation (splits main bundle)
@@ -94,6 +95,7 @@ function PageLoader() {
 function AppInner() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState('dashboard');
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
 
   // A11y: skip-to-content link
   useEffect(() => { setupSkipToContent(); }, []);
@@ -132,7 +134,9 @@ function AppInner() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    return authView === 'register'
+      ? <RegisterPage onBackToLogin={() => setAuthView('login')} />
+      : <LoginPage onCreateAccount={() => setAuthView('register')} />;
   }
 
   const renderPage = () => {

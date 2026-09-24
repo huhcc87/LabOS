@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersAdminApi, auditApi } from '../lib/api';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
+import { AdminPasswordReset } from '../components/AdminPasswordReset';
 
 // Types
 interface User {
@@ -371,6 +372,8 @@ export default function AdminHubPage() {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div>
+          <AdminPasswordReset onDone={showToast} />
+
           {/* Filters & Actions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
             <div style={{ display: 'flex', gap: 12 }}>
