@@ -30,7 +30,11 @@ const FEATURES = [
   { icon: '📈', title: 'Reports & Analytics', desc: 'Live dashboards and KPI tracking' },
 ];
 
-export default function LoginPage() {
+interface Props {
+  onCreateAccount: () => void;
+}
+
+export default function LoginPage({ onCreateAccount }: Props) {
   const { login, totpRequired, clearTotpRequired } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -239,6 +243,17 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <button
+              type="button"
+              onClick={onCreateAccount}
+              style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)',
+                cursor: 'pointer', fontSize: 13, textDecoration: 'underline', marginTop: 12,
+              }}
+            >
+              Don't have an account? Create one
+            </button>
 
             {/* Demo accounts — dev only */}
             {DEMO_USERS.length > 0 && <div className="login-demo-section">

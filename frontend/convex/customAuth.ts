@@ -200,6 +200,13 @@ export const getUserByEmail = internalQuery({
   },
 });
 
+export const getUserById = internalQuery({
+  args: { user_id: v.id("users") },
+  handler: async (ctx, { user_id }) => {
+    return await ctx.db.get(user_id);
+  },
+});
+
 export const trackFailedLogin = internalMutation({
   args: {
     user_id: v.id("users"),
@@ -289,6 +296,55 @@ export const logSecurityEvent = internalMutation({
       entity_type: "auth",
       details: `[${severity}] ${details}`,
       created_at: Date.now(),
+    });
+  },
+});
+
+// ── Admin: reset another user's password ──────────────────────────────────
+export const adminResetPassword = action({
+  args: { token: v.string(), target_email: v.string(), new_password: v.string() },
+  handler: async (ctx, { token, target_email, new_password }): Promise<{ success: true }> => {
+    if (new_password.length < 8) throw new ConvexError("Password must be at least 8 characters");
+    if (!/\d/.test(new_password)) throw new ConvexError("Password must contain at least one digit");
+
+    const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
+    if (!session || session.expires_at < Date.now()) throw new ConvexError("Unauthorized");
+
+    const admin = await ctx.runQuery(internal.customAuth.getUserById, { user_id: session.user_id });
+    if (!admin || (admin.role !== "admin" && admin.role !== "superadmin")) {
+      throw new ConvexError("Admin access required");
+    }
+
+    const target = await ctx.runQuery(internal.customAuth.getUserByEmail, { email: target_email.trim().toLowerCase() });
+    if (!target) throw new ConvexError("No user found with that email");
+
+    const bcrypt = await import("bcryptjs");
+    const hashed_password = await bcrypt.hash(new_password, 12);
+
+    await ctx.runMutation(internal.customAuth.setPasswordAndUnlock, {
+      user_id: target._id,
+      hashed_password,
+    });
+
+    await ctx.runMutation(internal.customAuth.logSecurityEvent, {
+      user_id: target._id,
+      action: "ADMIN_PASSWORD_RESET",
+      severity: "HIGH",
+      details: `Admin ${maskEmail(admin.email)} reset password for ${maskEmail(target.email)}`,
+    });
+
+    return { success: true };
+  },
+});
+
+export const setPasswordAndUnlock = internalMutation({
+  args: { user_id: v.id("users"), hashed_password: v.string() },
+  handler: async (ctx, { user_id, hashed_password }) => {
+    await ctx.db.patch(user_id, {
+      hashed_password,
+      failed_login_attempts: 0,
+      locked_until: undefined,
+      updated_at: Date.now(),
     });
   },
 });
