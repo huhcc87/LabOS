@@ -1,6 +1,9 @@
-const CACHE_NAME = 'labos-v5';
-const OFFLINE_CACHE = 'labos-offline-v5';
-const STATIC_ASSETS = ['/', '/index.html'];
+const CACHE_NAME = 'labos-v6';
+const OFFLINE_CACHE = 'labos-offline-v6';
+// ponytail: no longer precaching '/' / '/index.html' here — the navigate
+// handler below fetches + caches the shell itself on every successful load,
+// so a frozen install-time copy never wins over what's actually live.
+const STATIC_ASSETS = [];
 const API_PREFIX = '/api';
 
 // Key API endpoints to cache for offline access
@@ -11,12 +14,12 @@ const OFFLINE_API_ROUTES = [
   '/api/instruments/',
 ];
 
-// Install: pre-cache the shell
+// Install: open (empty) caches up front so they exist before first fetch
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
-      caches.open(OFFLINE_CACHE).then(() => Promise.resolve()),
+      caches.open(CACHE_NAME),
+      caches.open(OFFLINE_CACHE),
     ])
   );
   self.skipWaiting();
@@ -103,12 +106,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first with offline fallback for navigation (SPA shell)
+  // Network-first with offline fallback for navigation (SPA shell).
+  // `cache: 'no-store'` bypasses the browser's own HTTP cache — without it,
+  // a stale disk-cached response can satisfy this fetch() and this handler
+  // would faithfully hand back the old shell forever, even though the logic
+  // reads as "network-first". On success we also refresh the offline-fallback
+  // copy, so that copy tracks the latest deploy instead of the version that
+  // happened to be live when the service worker first installed.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match('/index.html').then((cached) => cached || fetch('/index.html'))
-      )
+      fetch(request, { cache: 'no-store' })
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(OFFLINE_CACHE).then((cache) => cache.put('/index.html', clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html', { cacheName: OFFLINE_CACHE }))
     );
     return;
   }
