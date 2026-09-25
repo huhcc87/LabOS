@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -19,7 +20,7 @@ def create_access_token(subject: str | Any, role: str = "staff", expires_delta: 
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
-    to_encode = {"exp": expire, "sub": str(subject), "role": role}
+    to_encode = {"exp": expire, "sub": str(subject), "role": role, "jti": secrets.token_hex(16)}
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 
