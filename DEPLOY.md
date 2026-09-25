@@ -155,10 +155,10 @@ git push -u origin main
 | Variable | Value |
 |---|---|
 | `DATABASE_URL` | Neon connection string from step B |
-| `SECRET_KEY` | `FlSqBHNoEwQEFIZe57aQL23le1XItn_jTq-jY2cEq2mOvsNxTo8ugWLI_hVmCt2B` |
+| `SECRET_KEY` | generate your own: `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | `ENVIRONMENT` | `production` |
 | `CORS_ORIGINS` | `https://YOUR_APP.vercel.app` ← update after step D |
-| `DEEPSEEK_API_KEY` | `sk-c2b1420edb304c53aedfea0e25be3986` |
+| `DEEPSEEK_API_KEY` | your DeepSeek key from https://platform.deepseek.com/api_keys |
 | `ANTHROPIC_API_KEY` | your Claude key (optional) |
 | `OPENAI_API_KEY` | your OpenAI key (optional) |
 | `UPLOAD_DIR` | `/data/uploads` |
