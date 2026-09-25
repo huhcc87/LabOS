@@ -280,8 +280,8 @@
     "semantic_hash": ""
   },
   "backend/app/core/security.py": {
-    "mtime": 1790284989.5593204,
-    "ast_hash": "fe550622917b66269bf79295446544e0",
+    "mtime": 1790297424.1262145,
+    "ast_hash": "2603b8470e9217dde953b8e7eefdadbd",
     "semantic_hash": ""
   },
   "backend/app/core/security_middleware.py": {
@@ -645,8 +645,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/ai.ts": {
-    "mtime": 1790284989.5879405,
-    "ast_hash": "9309482c468ad97749569fdea30a425f",
+    "mtime": 1790293877.3205645,
+    "ast_hash": "cc2fe6f97a69f0eca4eb6c6383a2a59b",
     "semantic_hash": ""
   },
   "frontend/convex/aiChat.ts": {
@@ -655,8 +655,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/audit.ts": {
-    "mtime": 1790284989.5894415,
-    "ast_hash": "1f1c06091122c853a418499f0b353179",
+    "mtime": 1790299034.2546546,
+    "ast_hash": "b8f0c44d2320c4feb50a1dfb3557cffa",
     "semantic_hash": ""
   },
   "frontend/convex/auth.config.ts": {
@@ -665,8 +665,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/authHelper.ts": {
-    "mtime": 1790287156.497341,
-    "ast_hash": "8b3ae15c800b319eb4bb2385324c4d72",
+    "mtime": 1790299034.2549112,
+    "ast_hash": "4cdf66396c17f9903bb9d8ea3084fe98",
     "semantic_hash": ""
   },
   "frontend/convex/biosketches.ts": {
@@ -680,18 +680,18 @@
     "semantic_hash": ""
   },
   "frontend/convex/costs.ts": {
-    "mtime": 1790284989.5446444,
-    "ast_hash": "88cc2e086152f3219b30284458d8693b",
+    "mtime": 1790293877.3266027,
+    "ast_hash": "09dda4ebda1956bd5b412f317fd0d3a7",
     "semantic_hash": ""
   },
   "frontend/convex/customAuth.ts": {
-    "mtime": 1790286730.5724854,
-    "ast_hash": "4e40feb822f080218f728eba580d60c8",
+    "mtime": 1790293920.2786977,
+    "ast_hash": "5ff0e43fc8bd4eb86a239323195ac0b5",
     "semantic_hash": ""
   },
   "frontend/convex/dashboard.ts": {
-    "mtime": 1790284989.546743,
-    "ast_hash": "0fad33c703807077f1bf3ab41d1ecd21",
+    "mtime": 1790299034.2552013,
+    "ast_hash": "f4d368ba63d1721fee19f6a864dda91e",
     "semantic_hash": ""
   },
   "frontend/convex/feedback.ts": {
@@ -700,28 +700,28 @@
     "semantic_hash": ""
   },
   "frontend/convex/files.ts": {
-    "mtime": 1790284989.5491447,
-    "ast_hash": "2c251c0a31fb519b2e1ed4eda19bd989",
+    "mtime": 1790299034.2554417,
+    "ast_hash": "63b111a7d1766d6e3defc5c00052c443",
     "semantic_hash": ""
   },
   "frontend/convex/freezer.ts": {
-    "mtime": 1790284989.5498312,
-    "ast_hash": "2c5011fe3e2dbdae461a03f177107b67",
+    "mtime": 1790293877.3323333,
+    "ast_hash": "2123ca93eabb1d487850ada80421eceb",
     "semantic_hash": ""
   },
   "frontend/convex/funding.ts": {
-    "mtime": 1790284989.550182,
-    "ast_hash": "8eed2a157a45152cdde47365f500437a",
+    "mtime": 1790299034.2556973,
+    "ast_hash": "82527be7c8d87840f89578e2e43601d3",
     "semantic_hash": ""
   },
   "frontend/convex/grants.ts": {
-    "mtime": 1790284989.5503705,
-    "ast_hash": "403c9d203ab7bc6fb809e8dd95eb95e0",
+    "mtime": 1790299034.256131,
+    "ast_hash": "522051d699c0e84d45c458ae265dd1e8",
     "semantic_hash": ""
   },
   "frontend/convex/incidents.ts": {
-    "mtime": 1790284989.5508366,
-    "ast_hash": "103be2adcf19c44f2954af584a85532e",
+    "mtime": 1790293877.350679,
+    "ast_hash": "557328f3f8b01bee15fd2c95abad018c",
     "semantic_hash": ""
   },
   "frontend/convex/instruments.ts": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/integrations.ts": {
-    "mtime": 1790284989.5521507,
-    "ast_hash": "56fee4509c4184239cb98320faa52a9e",
+    "mtime": 1790299034.2565029,
+    "ast_hash": "63809621d7d0e479614eed628017c68c",
     "semantic_hash": ""
   },
   "frontend/convex/inventory.ts": {
@@ -740,28 +740,28 @@
     "semantic_hash": ""
   },
   "frontend/convex/iot.ts": {
-    "mtime": 1790284989.5536754,
-    "ast_hash": "7bfcbc54c161044be9ae8c5acf6903ec",
+    "mtime": 1790293877.3561723,
+    "ast_hash": "49e92f0cc2ccf68355636d977efacaea",
     "semantic_hash": ""
   },
   "frontend/convex/labMembers.ts": {
-    "mtime": 1790284989.5541894,
-    "ast_hash": "785f6e75732262baf98d57ad69baa7c2",
+    "mtime": 1790299034.2568226,
+    "ast_hash": "775785b5db8ae8299419e49bdc74db3f",
     "semantic_hash": ""
   },
   "frontend/convex/labNotebook.ts": {
-    "mtime": 1790284989.5549214,
-    "ast_hash": "19bc1b27558e1d6bbc225f17d24867e9",
+    "mtime": 1790293877.3678238,
+    "ast_hash": "84bc95210346d8b4c4c7bcc795664162",
     "semantic_hash": ""
   },
   "frontend/convex/maintenance.ts": {
-    "mtime": 1790284989.5554676,
-    "ast_hash": "0c8579570ec9c554e7796d712f426da4",
+    "mtime": 1790293877.3732042,
+    "ast_hash": "320739e47d11353add711c0ca16086c4",
     "semantic_hash": ""
   },
   "frontend/convex/meetings.ts": {
-    "mtime": 1790284989.5562918,
-    "ast_hash": "2c91a1c25cf1e1a2ea06cf6fc6d80b78",
+    "mtime": 1790293877.378872,
+    "ast_hash": "beb2dcc5dfc32babce2e18ac0dd4906d",
     "semantic_hash": ""
   },
   "frontend/convex/notifications.ts": {
@@ -770,18 +770,18 @@
     "semantic_hash": ""
   },
   "frontend/convex/org.ts": {
-    "mtime": 1790284989.5576332,
-    "ast_hash": "bc1f0ba5a4784fe4817dbe48eab6732a",
+    "mtime": 1790299034.2570753,
+    "ast_hash": "41b76015b216db3c9fc903d24cedd97f",
     "semantic_hash": ""
   },
   "frontend/convex/payments.ts": {
-    "mtime": 1790284989.5586417,
-    "ast_hash": "f0d380c7fa2d7cdf0dc1e85ae2ced583",
+    "mtime": 1790299034.2573035,
+    "ast_hash": "1f3da9abe52a51abbfe530c3e4b59a20",
     "semantic_hash": ""
   },
   "frontend/convex/procurement.ts": {
-    "mtime": 1790284989.5593019,
-    "ast_hash": "3f3504e48e611bccafa1ba1e57c7fe89",
+    "mtime": 1790299034.2576015,
+    "ast_hash": "1acd35e4aa9cce03c5db964d8e581b92",
     "semantic_hash": ""
   },
   "frontend/convex/protocols.ts": {
@@ -790,23 +790,23 @@
     "semantic_hash": ""
   },
   "frontend/convex/rateLimit.ts": {
-    "mtime": 1790284989.5607226,
-    "ast_hash": "27ba849f0500fc0a08905de9d01931a4",
+    "mtime": 1790293896.1871524,
+    "ast_hash": "b4ad86ba943128bb0de659a2472a3371",
     "semantic_hash": ""
   },
   "frontend/convex/reagentCart.ts": {
-    "mtime": 1790284989.5613248,
-    "ast_hash": "4385c32191b0d2ad8424975dbbb74b7b",
+    "mtime": 1790293877.3899412,
+    "ast_hash": "456187fdc9443da19b02fa28d7df547c",
     "semantic_hash": ""
   },
   "frontend/convex/samples.ts": {
-    "mtime": 1790284989.5616548,
-    "ast_hash": "804c54d7cf6260f1cf13e7b4ee548f34",
+    "mtime": 1790299034.2578318,
+    "ast_hash": "787995b9f6d873459c44f3347e810bd1",
     "semantic_hash": ""
   },
   "frontend/convex/scheduling.ts": {
-    "mtime": 1790284989.5624127,
-    "ast_hash": "a0ad206891e72d127bb7ddef5dd57f84",
+    "mtime": 1790293877.3957126,
+    "ast_hash": "f0d0a3aebc71df684e4b72779a60bb72",
     "semantic_hash": ""
   },
   "frontend/convex/schema.ts": {
@@ -825,28 +825,28 @@
     "semantic_hash": ""
   },
   "frontend/convex/seedProdAdmin.ts": {
-    "mtime": 1790284989.5658731,
-    "ast_hash": "817c700fd4f3a74d2b1cd0ebcc57b727",
+    "mtime": 1790293877.4011724,
+    "ast_hash": "47bbeec1e7c41f6cb8595ebc40f1f8a2",
     "semantic_hash": ""
   },
   "frontend/convex/settings.ts": {
-    "mtime": 1790284989.566551,
-    "ast_hash": "b663f5b5177e5a48498f8cae1f4b693b",
+    "mtime": 1790299034.2581546,
+    "ast_hash": "90ca5ff273eefe9778fce777944f1636",
     "semantic_hash": ""
   },
   "frontend/convex/sops.ts": {
-    "mtime": 1790284989.567826,
-    "ast_hash": "1bafa4dcd7827a7dc0c62fafce5b0b14",
+    "mtime": 1790293877.412396,
+    "ast_hash": "988d2563d4e2fa44503ba7db10448aa4",
     "semantic_hash": ""
   },
   "frontend/convex/stripe.ts": {
-    "mtime": 1790284989.568824,
-    "ast_hash": "313eb3a60ea78d293501b75673571892",
+    "mtime": 1790293877.4179842,
+    "ast_hash": "ebfd9fffb212e7a53f29f4041c4b6ec4",
     "semantic_hash": ""
   },
   "frontend/convex/suppliers.ts": {
-    "mtime": 1790284989.5691664,
-    "ast_hash": "df0f8272fcdc698b8d0fbee1cddbd45a",
+    "mtime": 1790293877.4241576,
+    "ast_hash": "a5e1e555c833ea01048dea5bc8b6d130",
     "semantic_hash": ""
   },
   "frontend/convex/swarmFeedback.ts": {
@@ -855,8 +855,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/tasks.ts": {
-    "mtime": 1790284989.5698485,
-    "ast_hash": "a1bb0264a50d94afe024a0a58fd3bf48",
+    "mtime": 1790293877.4303012,
+    "ast_hash": "3fecadaf45885d823e74ce75c4756d04",
     "semantic_hash": ""
   },
   "frontend/convex/templates.ts": {
@@ -865,8 +865,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/totp.ts": {
-    "mtime": 1790284989.5704708,
-    "ast_hash": "705f303950ae7ac989af3bc96b086665",
+    "mtime": 1790299034.2585566,
+    "ast_hash": "c50d2ed9d207624d005e2a56f4650f1a",
     "semantic_hash": ""
   },
   "frontend/convex/training.ts": {
@@ -880,8 +880,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/users.ts": {
-    "mtime": 1790284989.5730472,
-    "ast_hash": "98a343bf78ff3f78110e37dccdb07cf7",
+    "mtime": 1790299034.2588553,
+    "ast_hash": "40b689b5bd1a07aa284bff6beed50985",
     "semantic_hash": ""
   },
   "frontend/convex/videoRooms.ts": {
@@ -925,8 +925,8 @@
     "semantic_hash": ""
   },
   "frontend/package.json": {
-    "mtime": 1790284989.5584757,
-    "ast_hash": "cef66e1cd300038165851f3173328ee3",
+    "mtime": 1790293968.9498396,
+    "ast_hash": "1cb9c74ebd1a20dffba362d71ade0c05",
     "semantic_hash": ""
   },
   "frontend/playwright.config.ts": {
@@ -1025,8 +1025,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/Layout.tsx": {
-    "mtime": 1790287166.0127816,
-    "ast_hash": "3bc016cbd199e3f2d9b08832a121a598",
+    "mtime": 1790299034.2593725,
+    "ast_hash": "3aaeb0e74dbd6e677d9de198c0663ead",
     "semantic_hash": ""
   },
   "frontend/src/components/MarkdownRenderer.tsx": {
@@ -1580,8 +1580,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/convexClient.ts": {
-    "mtime": 1790284989.587346,
-    "ast_hash": "036ee5666a696222402069351a941e90",
+    "mtime": 1790299034.2599475,
+    "ast_hash": "cfdc77ac44c5885725d9d17e6d2c9a3d",
     "semantic_hash": ""
   },
   "frontend/src/lib/errorTracker.ts": {
@@ -1720,8 +1720,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardPage.tsx": {
-    "mtime": 1790284989.566051,
-    "ast_hash": "22b409c1eee78338a01cfcaf486dfd69",
+    "mtime": 1790299034.2603786,
+    "ast_hash": "8e9b926c96a778179cf3a9a29b4ac32a",
     "semantic_hash": ""
   },
   "frontend/src/pages/DocumentsPage.tsx": {
@@ -2512,6 +2512,11 @@
   "frontend/src/pages/RegisterPage.tsx": {
     "mtime": 1790287649.496992,
     "ast_hash": "827f9a472ad0bd304732ce1a00d494b1",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/check-convex-url.mjs": {
+    "mtime": 1790294129.5255096,
+    "ast_hash": "9de724d60ba371b1a8d4cc2f46fb08d4",
     "semantic_hash": ""
   }
 }
