@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
 
 export const list = query({
   args: {
@@ -55,8 +55,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("samples") },
+  args: { token: v.optional(v.string()), id: v.id("samples") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
@@ -116,7 +117,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("samples") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "manager");
     await ctx.db.delete(args.id);
     return { success: true };
   },

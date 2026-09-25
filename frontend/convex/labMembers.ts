@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, sanitizeUser } from "./authHelper";
 
 // ── List all members of a lab ─────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ export const listForLab = query({
     return await Promise.all(
       memberships.map(async (m) => {
         const user = await ctx.db.get(m.user_id);
-        return { ...m, user };
+        return { ...m, user: user ? sanitizeUser(user) : null };
       })
     );
   },
@@ -214,7 +214,7 @@ export const pendingApprovals = query({
       for (const inv of invitations) {
         const user = await ctx.db.get(inv.user_id);
         const lab = await ctx.db.get(inv.lab_id);
-        pending.push({ ...inv, user, lab });
+        pending.push({ ...inv, user: user ? sanitizeUser(user) : null, lab });
       }
     }
 

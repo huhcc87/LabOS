@@ -1,5 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "./authHelper";
 
 // Safety cap — prevents unbounded scans on tables that grow over time.
 // Convex has no native count() API, so .take(N) + .length is the pragmatic
@@ -8,8 +9,9 @@ import { v } from "convex/values";
 const MAX_ROWS = 5000;
 
 export const summary = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const now = Date.now();
     const in30 = now + 30 * 86_400_000;
     const in14 = now + 14 * 86_400_000;

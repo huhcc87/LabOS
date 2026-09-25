@@ -1,12 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
 
 // ── Pending Approvals (purchase_orders with status "pending") ────────────────
 
 export const listPendingApprovals = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("purchase_orders")
       .withIndex("by_status", (q) => q.eq("status", "pending"))
@@ -21,12 +22,12 @@ export const approve = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, { token, ids, reason }) => {
-    const userId = await requireAuth(ctx, token);
+    const caller = await requireRole(ctx, token, "manager");
     const now = Date.now();
     for (const id of ids) {
       await ctx.db.patch(id, {
         status: "approved",
-        approved_by: userId,
+        approved_by: caller._id,
         notes: reason,
         updated_at: now,
       });
@@ -42,7 +43,7 @@ export const reject = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, { token, ids, reason }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "manager");
     const now = Date.now();
     for (const id of ids) {
       await ctx.db.patch(id, { status: "rejected", notes: reason, updated_at: now });
@@ -55,7 +56,8 @@ export const reject = mutation({
 
 export const listRules = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return ctx.db.query("procurement_rules").collect();
   },
 });
@@ -70,14 +72,14 @@ export const createRule = mutation({
     action: v.string(),
   },
   handler: async (ctx, { token, name, condition_field, condition_op, condition_value, action }) => {
-    const userId = await requireAuth(ctx, token);
+    const caller = await requireRole(ctx, token, "manager");
     return ctx.db.insert("procurement_rules", {
       name,
       condition_field,
       condition_op,
       condition_value,
       action,
-      created_by: userId,
+      created_by: caller._id,
       created_at: Date.now(),
     });
   },
@@ -86,7 +88,7 @@ export const createRule = mutation({
 export const deleteRule = mutation({
   args: { token: v.optional(v.string()), id: v.id("procurement_rules") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "manager");
     await ctx.db.delete(id);
     return { success: true };
   },
@@ -96,7 +98,8 @@ export const deleteRule = mutation({
 
 export const listBudgets = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return ctx.db.query("procurement_budgets").collect();
   },
 });
@@ -110,14 +113,14 @@ export const createBudget = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, { token, name, amount, period, department }) => {
-    const userId = await requireAuth(ctx, token);
+    const caller = await requireRole(ctx, token, "manager");
     return ctx.db.insert("procurement_budgets", {
       name,
       amount,
       spent: 0,
       period,
       department,
-      created_by: userId,
+      created_by: caller._id,
       created_at: Date.now(),
     });
   },
@@ -126,7 +129,7 @@ export const createBudget = mutation({
 export const deleteBudget = mutation({
   args: { token: v.optional(v.string()), id: v.id("procurement_budgets") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "manager");
     await ctx.db.delete(id);
     return { success: true };
   },
