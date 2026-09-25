@@ -57,20 +57,6 @@ export const disable = action({
   },
 });
 
-export const verifyLogin = action({
-  args: { email: v.string(), code: v.string() },
-  handler: async (ctx, { email, code }): Promise<{ valid: boolean }> => {
-    const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
-    if (!user || !user.totp_secret || !user.totp_enabled) {
-      throw new ConvexError("TOTP not enabled");
-    }
-
-    const { verifySync } = await import("otplib");
-    const valid = verifySync({ secret: user.totp_secret, token: code }).valid;
-    return { valid };
-  },
-});
-
 // Internal helpers
 export const getSession = query({
   args: { token: v.string() },

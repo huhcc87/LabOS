@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
 
 // ── Organizations ──────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ export const createOrg = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "admin");
     const now = Date.now();
     return await ctx.db.insert("organizations", {
       name: args.name,
@@ -40,7 +40,7 @@ export const updateOrg = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "admin");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
@@ -80,7 +80,7 @@ export const createSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "admin");
     return await ctx.db.insert("sites", {
       organization_id: args.organization_id,
       name: args.name,
@@ -102,7 +102,7 @@ export const updateSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "admin");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
@@ -143,7 +143,7 @@ export const createLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "manager");
     return await ctx.db.insert("labs", {
       site_id: args.site_id,
       name: args.name,
@@ -165,7 +165,7 @@ export const updateLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "manager");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;

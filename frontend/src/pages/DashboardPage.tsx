@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [showAnalytics, setShowAnalytics] = useState(false);
 
-  const summary = useQuery(api.dashboard.summary);
+  const summary = useQuery(api.dashboard.summary, token ? { token } : 'skip');
   const completeTask = useMutation(api.tasks.complete);
 
   if (summary === undefined) return (

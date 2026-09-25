@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole, hasRole, sanitizeUser } from "./authHelper";
 
 export const getMe = query({
   args: { token: v.optional(v.string()) },
@@ -40,6 +40,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireRole(ctx, args.token, "admin");
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -66,17 +67,17 @@ export const list = query({
       );
     }
 
-    return result;
+    return { ...result, page: result.page.map(sanitizeUser) };
   },
 });
 
 export const getById = query({
-  args: { id: v.id("users") },
+  args: { token: v.optional(v.string()), id: v.id("users") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const user = await ctx.db.get(args.id);
     if (!user) return null;
-    const { hashed_password: _, ...safeUser } = user;
-    return safeUser;
+    return sanitizeUser(user);
   },
 });
 
@@ -99,10 +100,9 @@ export const create = mutation({
     data_classification_clearance: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const callerId = await requireAuth(ctx, args.token);
-    const caller = await ctx.db.get(callerId);
-    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new ConvexError("Forbidden: admin role required");
+    const caller = await requireRole(ctx, args.token, "admin");
+    if (!hasRole(caller.role, args.role)) {
+      throw new ConvexError("Forbidden: cannot grant a role higher than your own");
     }
     const now = Date.now();
     return await ctx.db.insert("users", {
@@ -148,10 +148,9 @@ export const update = mutation({
     data_classification_clearance: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const callerId = await requireAuth(ctx, args.token);
-    const caller = await ctx.db.get(callerId);
-    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new ConvexError("Forbidden: admin role required");
+    const caller = await requireRole(ctx, args.token, "admin");
+    if (args.role && !hasRole(caller.role, args.role)) {
+      throw new ConvexError("Forbidden: cannot grant a role higher than your own");
     }
     const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
@@ -166,11 +165,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("users") },
   handler: async (ctx, args) => {
-    const callerId = await requireAuth(ctx, args.token);
-    const caller = await ctx.db.get(callerId);
-    if (!caller || (caller.role !== "admin" && caller.role !== "superadmin")) {
-      throw new ConvexError("Forbidden: admin role required");
-    }
+    await requireRole(ctx, args.token, "admin");
     await ctx.db.patch(args.id, {
       is_active: false,
       updated_at: Date.now(),

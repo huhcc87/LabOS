@@ -17,6 +17,7 @@
  */
 import { action } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
+import { internal } from "./_generated/api";
 
 // ── Fetch with timeout ───────────────────────────────────────────────────────
 async function fetchWithTimeout(url: string, init: any = {}, ms = 9000): Promise<Response> {
@@ -125,7 +126,12 @@ export const analyzeFunding = action({
     gaps: v.array(v.string()),
     agencies: v.optional(v.array(v.string())),
   },
-  handler: async (_ctx, { topic, gaps, agencies }) => {
+  handler: async (ctx, { token, topic, gaps, agencies }) => {
+    const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
+    if (!session || session.expires_at < Date.now()) {
+      throw new ConvexError("Unauthorized");
+    }
+
     const selected = (agencies && agencies.length ? agencies : ["nih", "nsf", "ukri", "erc"]).filter(
       (a) => AGENCY_DEFS[a]
     );

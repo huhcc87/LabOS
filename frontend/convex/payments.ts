@@ -4,7 +4,8 @@ import { requireAuth } from "./authHelper";
 
 export const status = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const methods = await ctx.db.query("payment_methods").collect();
     return { configured: methods.length > 0, mode: "live" };
   },
@@ -84,24 +85,3 @@ export const listOrders = query({
   },
 });
 
-export const createOrder = mutation({
-  args: {
-    token: v.optional(v.string()),
-    amount: v.number(),
-    currency: v.string(),
-    description: v.optional(v.string()),
-    payment_method_id: v.optional(v.id("payment_methods")),
-  },
-  handler: async (ctx, { token, amount, currency, description, payment_method_id }) => {
-    const userId = await requireAuth(ctx, token);
-    return ctx.db.insert("payment_orders", {
-      user_id: userId,
-      amount,
-      currency,
-      status: "completed",
-      description,
-      payment_method_id,
-      created_at: Date.now(),
-    });
-  },
-});

@@ -8,7 +8,8 @@ export const list = query({
     entity_type: v.string(),
     entity_id: v.string(),
   },
-  handler: async (ctx, { entity_type, entity_id }) => {
+  handler: async (ctx, { token, entity_type, entity_id }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("attachments")
       .withIndex("by_entity", (q) =>
@@ -56,8 +57,9 @@ export const remove = mutation({
 });
 
 export const get = query({
-  args: { id: v.id("attachments") },
-  handler: async (ctx, { id }) => {
+  args: { token: v.optional(v.string()), id: v.id("attachments") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     return ctx.db.get(id);
   },
 });

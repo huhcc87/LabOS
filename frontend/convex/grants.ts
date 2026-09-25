@@ -1,12 +1,14 @@
 import { query, mutation, action } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
+import { internal } from "./_generated/api";
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
 
 export const listVersions = query({
-  args: { grant_id: v.string() },
-  handler: async (ctx, { grant_id }) => {
+  args: { token: v.optional(v.string()), grant_id: v.string() },
+  handler: async (ctx, { token, grant_id }) => {
+    await requireAuth(ctx, token);
     return await ctx.db
       .query("grant_versions")
       .withIndex("by_grant", (q) => q.eq("grant_id", grant_id))
@@ -42,7 +44,7 @@ export const createVersion = mutation({
 export const deleteVersion = mutation({
   args: { token: v.optional(v.string()), id: v.id("grant_versions") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "manager");
     await ctx.db.delete(id);
   },
 });
@@ -51,12 +53,14 @@ export const deleteVersion = mutation({
 
 export const listSubmissions = query({
   args: {
+    token: v.optional(v.string()),
     paginationOpts: v.optional(
       v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })
     ),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { paginationOpts, status }) => {
+  handler: async (ctx, { token, paginationOpts, status }) => {
+    await requireAuth(ctx, token);
     const numItems = paginationOpts?.numItems ?? 50;
 
     let allDocs = status
@@ -141,7 +145,7 @@ export const updateSubmission = mutation({
 export const deleteSubmission = mutation({
   args: { token: v.optional(v.string()), id: v.id("grant_submissions") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "manager");
     const existing = await ctx.db.get(id);
     if (!existing) throw new ConvexError("Submission not found");
     await ctx.db.delete(id);
@@ -151,8 +155,9 @@ export const deleteSubmission = mutation({
 // ── Analytics ─────────────────────────────────────────────────────────────────
 
 export const analytics = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const submissions = await ctx.db
       .query("grant_submissions")
       .collect();
@@ -203,13 +208,21 @@ export const analytics = query({
 
 export const aiDraft = action({
   args: {
+    token: v.optional(v.string()),
     grant_type: v.string(),
     title: v.string(),
     section: v.string(),
     context: v.optional(v.string()),
   },
   returns: v.object({ content: v.string(), source: v.string() }),
-  handler: async (_ctx, { grant_type, title, section, context }) => {
+  handler: async (ctx, { token, grant_type, title, section, context }) => {
+    const session = token
+      ? await ctx.runQuery(internal.customAuth.getSessionByToken, { token })
+      : null;
+    if (!session || session.expires_at < Date.now()) {
+      throw new ConvexError("Unauthorized");
+    }
+
     const systemPrompt =
       "You are an expert scientific grant writer with extensive experience in NIH, NSF, " +
       "DOD, and private foundation grant applications. Generate well-structured, compelling, " +

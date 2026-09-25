@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
 
 // ── List audit logs (paginated, filter by entity_type) ────────────────────────
 
@@ -13,7 +13,7 @@ export const list = query({
     user_id: v.optional(v.id("users")),
   },
   handler: async (ctx, { token, entity_type, page, per_page, user_id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "admin");
 
     let logs;
 

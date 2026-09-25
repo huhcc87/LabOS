@@ -161,7 +161,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const fabRef = useRef<HTMLDivElement>(null);
 
   // ── Convex: live summary for notifications ────────────────────────────
-  const summary = useQuery(api.dashboard.summary);
+  const summary = useQuery(api.dashboard.summary, token ? { token } : 'skip');
 
   // ── Convex: search (debounced) ────────────────────────────────────────
   const searchResults = useQuery(

@@ -446,7 +446,7 @@ export const auditApi = {
 
 export const grantsApi = {
   aiDraft: async (data: any) => {
-    const result = await client.action(api.grants.aiDraft, data);
+    const result = await client.action(api.grants.aiDraft, { ...data, token: getToken() });
     return { data: result };
   },
   researchSynthesis: async (data: any) => {

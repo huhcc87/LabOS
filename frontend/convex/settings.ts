@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { requireAuth, requireRole } from "./authHelper";
 
 // ── List Settings ─────────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await requireAuth(ctx, args.token);
+    await requireRole(ctx, args.token, "admin");
 
     // Check for duplicate key
     const existing = await ctx.db
@@ -80,7 +80,7 @@ export const updateByKey = mutation({
     value: v.string(),
   },
   handler: async (ctx, { token, key, value }) => {
-    const userId = await requireAuth(ctx, token);
+    await requireRole(ctx, token, "admin");
 
     const setting = await ctx.db
       .query("settings")
@@ -110,7 +110,7 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, { token, id, ...fields }) => {
-    const userId = await requireAuth(ctx, token);
+    await requireRole(ctx, token, "admin");
 
     const setting = await ctx.db.get(id);
     if (!setting) throw new ConvexError("Setting not found");
@@ -132,7 +132,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("settings") },
   handler: async (ctx, { token, id }) => {
-    const userId = await requireAuth(ctx, token);
+    await requireRole(ctx, token, "admin");
 
     const setting = await ctx.db.get(id);
     if (!setting) throw new ConvexError("Setting not found");
@@ -150,7 +150,7 @@ export const bulkUpdate = mutation({
     settings: v.array(v.object({ key: v.string(), value: v.string() })),
   },
   handler: async (ctx, { token, settings }) => {
-    const userId = await requireAuth(ctx, token);
+    await requireRole(ctx, token, "admin");
 
     const now = Date.now();
     const results: string[] = [];
