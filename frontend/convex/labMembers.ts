@@ -1,6 +1,37 @@
 import { query, mutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, sanitizeUser } from "./authHelper";
+import type { Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
+
+const MANAGER_LAB_ROLES = ["pi", "manager", "admin"];
+
+/** The lab's PI, an active pi/manager/admin member, or a global PI/admin/super admin. */
+async function canManageLab(ctx: QueryCtx, userId: Id<"users">, labId: Id<"labs">): Promise<boolean> {
+  const [user, lab] = await Promise.all([ctx.db.get(userId), ctx.db.get(labId)]);
+  if (!user || !lab) return false;
+  if (["pi", "admin", "superadmin"].includes(user.role) || lab.pi_user_id === userId) return true;
+  const m = await ctx.db
+    .query("lab_memberships")
+    .withIndex("by_lab", (q) => q.eq("lab_id", labId))
+    .filter((q) => q.and(q.eq(q.field("user_id"), userId), q.eq(q.field("status"), "active")))
+    .first();
+  return !!m && MANAGER_LAB_ROLES.includes(m.lab_role);
+}
+
+async function requireLabManager(ctx: QueryCtx, token: string | undefined, labId: Id<"labs">) {
+  const userId = await requireAuth(ctx, token);
+  if (!(await canManageLab(ctx, userId, labId))) throw new ConvexError("Forbidden: you don't manage this lab");
+  return userId;
+}
+
+/** Loads a membership and checks the caller manages its lab. */
+async function requireMembershipManager(ctx: QueryCtx, token: string | undefined, membershipId: Id<"lab_memberships">) {
+  const membership = await ctx.db.get(membershipId);
+  if (!membership) throw new ConvexError("Membership not found");
+  await requireLabManager(ctx, token, membership.lab_id);
+  return membership;
+}
 
 // ── List all members of a lab ─────────────────────────────────────────────
 
@@ -10,11 +41,16 @@ export const listForLab = query({
     lab_id: v.id("labs"),
   },
   handler: async (ctx, { token, lab_id }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
     const memberships = await ctx.db
       .query("lab_memberships")
       .withIndex("by_lab", (q) => q.eq("lab_id", lab_id))
       .collect();
+    // Only the lab's own members and its managers may see the roster.
+    const isMember = memberships.some((m) => m.user_id === userId && m.status === "active");
+    if (!isMember && !(await canManageLab(ctx, userId, lab_id))) {
+      throw new ConvexError("Forbidden: you are not a member of this lab");
+    }
 
     return await Promise.all(
       memberships.map(async (m) => {
@@ -68,7 +104,7 @@ export const invite = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { token, lab_id, user_id, lab_role, notes }) => {
-    const authId = await requireAuth(ctx, token);
+    const authId = await requireLabManager(ctx, token, lab_id);
 
     // Resolve inviter's internal user record
     const inviter = await ctx.db
@@ -108,9 +144,7 @@ export const approve = mutation({
     membership_id: v.id("lab_memberships"),
   },
   handler: async (ctx, { token, membership_id }) => {
-    await requireAuth(ctx, token);
-    const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new ConvexError("Membership not found");
+    const membership = await requireMembershipManager(ctx, token, membership_id);
 
     await ctx.db.patch(membership_id, {
       status: "active",
@@ -128,9 +162,7 @@ export const revoke = mutation({
     membership_id: v.id("lab_memberships"),
   },
   handler: async (ctx, { token, membership_id }) => {
-    await requireAuth(ctx, token);
-    const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new ConvexError("Membership not found");
+    const membership = await requireMembershipManager(ctx, token, membership_id);
 
     await ctx.db.patch(membership_id, { status: "revoked" });
     return membership_id;
@@ -146,9 +178,7 @@ export const updateRole = mutation({
     lab_role: v.string(),
   },
   handler: async (ctx, { token, membership_id, lab_role }) => {
-    await requireAuth(ctx, token);
-    const membership = await ctx.db.get(membership_id);
-    if (!membership) throw new ConvexError("Membership not found");
+    const membership = await requireMembershipManager(ctx, token, membership_id);
 
     await ctx.db.patch(membership_id, { lab_role: lab_role });
     return membership_id;
