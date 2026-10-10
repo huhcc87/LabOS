@@ -39,13 +39,13 @@ function useSubmit(onSubmit: () => Promise<void>, onClose: () => void) {
   return { busy, error, run };
 }
 
-function Footer({ error, busy, confirm, onClose, danger }: { error: string; busy: boolean; confirm: string; onClose: () => void; danger?: boolean }) {
+function Footer({ error, busy, disabled, confirm, onClose, danger }: { error: string; busy: boolean; disabled?: boolean; confirm: string; onClose: () => void; danger?: boolean }) {
   return (
     <>
       {error && <p role="alert" style={{ color: 'var(--bad-text)', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={busy}
+        <button type="submit" className="btn btn-primary" disabled={busy || disabled}
           style={danger ? { background: 'var(--bad-text)', borderColor: 'var(--bad-text)' } : undefined}>
           {busy ? 'Saving…' : confirm}
         </button>
@@ -69,7 +69,7 @@ export function NameDialog({ title, fieldLabel, initial = '', placeholder, confi
           <input id="dlg-name" className="form-input" style={{ width: '100%' }} value={name} maxLength={60}
             placeholder={placeholder} onChange={e => setName(e.target.value)} />
         </div>
-        <Footer error={error} busy={busy || !name.trim()} confirm={confirm} onClose={onClose} />
+        <Footer error={error} busy={busy} disabled={!name.trim()} confirm={confirm} onClose={onClose} />
       </form>
     </Modal>
   );
@@ -101,7 +101,7 @@ export function FreezerDialog({ initial, onSubmit, onClose }: {
             <input id="fz-temp" className="form-input" style={{ width: '100%' }} type="number" value={temp} onChange={e => setTemp(e.target.value)} />
           </div>
         </div>
-        <Footer error={error} busy={busy || !name.trim() || Number.isNaN(Number(temp))} confirm={initial ? 'Save' : 'Create freezer'} onClose={onClose} />
+        <Footer error={error} busy={busy} disabled={!name.trim() || Number.isNaN(Number(temp))} confirm={initial ? 'Save' : 'Create freezer'} onClose={onClose} />
       </form>
     </Modal>
   );
@@ -144,7 +144,7 @@ export function BoxDialog({ onSubmit, onClose }: { onSubmit: (v: { name: string;
           </label>
           {!valid && <p style={{ color: 'var(--bad-text)', fontSize: 12, margin: '6px 0 0' }}>Rows and columns must be between 1 and 26.</p>}
         </fieldset>
-        <Footer error={error} busy={busy || !name.trim() || !valid} confirm="Create box" onClose={onClose} />
+        <Footer error={error} busy={busy} disabled={!name.trim() || !valid} confirm="Create box" onClose={onClose} />
       </form>
     </Modal>
   );
@@ -170,7 +170,7 @@ export function ConfirmDelete({ title, what, impact, onConfirm, onClose }: {
             : parts.length ? <>This also permanently deletes {parts.join(', ')} inside it.</> : 'It is empty.'}
           {' '}This can't be undone.
         </p>
-        <Footer error={error} busy={busy || impact === undefined} confirm="Delete" onClose={onClose} danger />
+        <Footer error={error} busy={busy} disabled={impact === undefined} confirm="Delete" onClose={onClose} danger />
       </form>
     </Modal>
   );
@@ -229,6 +229,92 @@ export function SampleDialog({ position, existing, defaultOwner, initial, onSave
             <button type="submit" className="btn btn-primary" disabled={save.busy || !ready}>{save.busy ? 'Saving…' : 'Save sample'}</button>
           </span>
         </div>
+      </form>
+    </Modal>
+  );
+}
+
+const ordinal = (n: number) => (n === 1 ? 'Top' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
+
+/** Shelf: pick a ready-made name or type your own, and where it sits counted from the top. */
+export function ShelfDialog({ count, initialName, onSubmit, onClose }: {
+  /** Shelves already in the freezer (new shelf only). Omit when renaming. */
+  count?: number; initialName?: string;
+  onSubmit: (v: { name: string; position?: number }) => Promise<void>; onClose: () => void;
+}) {
+  const adding = count !== undefined;
+  const slots = (count ?? 0) + 1;
+  const [position, setPosition] = useState(slots); // 1 = top; default: new shelf goes at the bottom
+  const [preset, setPreset] = useState<string>(initialName ? 'custom' : slots === 1 ? 'Top shelf' : 'numbered');
+  const [custom, setCustom] = useState(initialName ?? '');
+  const name = preset === 'numbered' ? `${ordinal(position)} shelf` : preset === 'custom' ? custom : preset;
+  const { busy, error, run } = useSubmit(() => onSubmit({ name, position: adding ? position - 1 : undefined }), onClose);
+  return (
+    <Modal title={adding ? 'Add shelf' : 'Rename shelf'} onClose={onClose}>
+      <form onSubmit={run}>
+        {adding && (
+          <div style={field}>
+            <label style={label} htmlFor="sh-pos">Position from the top</label>
+            <select id="sh-pos" className="form-select" style={{ width: '100%' }} value={position} onChange={e => setPosition(Number(e.target.value))}>
+              {Array.from({ length: slots }, (_, i) => i + 1).map(n => (
+                <option key={n} value={n}>{n} — {n === 1 ? 'top' : n === slots ? 'bottom' : `${ordinal(n)} from top`}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div style={field}>
+          <label style={label} htmlFor="sh-name">Shelf name</label>
+          <select id="sh-name" className="form-select" style={{ width: '100%' }} value={preset} onChange={e => setPreset(e.target.value)}>
+            <option value="numbered">Numbered — {ordinal(position)} shelf</option>
+            <option value="Top shelf">Top shelf</option>
+            <option value="Middle shelf">Middle shelf</option>
+            <option value="Bottom shelf">Bottom shelf</option>
+            <option value="custom">Custom…</option>
+          </select>
+          {preset === 'custom' && (
+            <input aria-label="Custom shelf name" className="form-input" style={{ width: '100%', marginTop: 8 }} autoFocus maxLength={60}
+              value={custom} placeholder="Type your own name" onChange={e => setCustom(e.target.value)} />
+          )}
+        </div>
+        <Footer error={error} busy={busy} disabled={!name.trim()} confirm={adding ? 'Add shelf' : 'Save'} onClose={onClose} />
+      </form>
+    </Modal>
+  );
+}
+
+/** Rack: choose its number on the shelf (left to right), keep "Rack #n" or type your own name. */
+export function RackDialog({ count, initialName, onSubmit, onClose }: {
+  count?: number; initialName?: string;
+  onSubmit: (v: { name: string; position?: number }) => Promise<void>; onClose: () => void;
+}) {
+  const adding = count !== undefined;
+  const slots = (count ?? 0) + 1;
+  const [number, setNumber] = useState(slots);
+  const [custom, setCustom] = useState(!!initialName);
+  const [text, setText] = useState(initialName ?? '');
+  const name = custom ? text : `Rack #${number}`;
+  const { busy, error, run } = useSubmit(() => onSubmit({ name, position: adding ? number - 1 : undefined }), onClose);
+  return (
+    <Modal title={adding ? 'Add rack' : 'Rename rack'} onClose={onClose}>
+      <form onSubmit={run}>
+        {adding && (
+          <div style={field}>
+            <label style={label} htmlFor="rk-num">Rack number</label>
+            <select id="rk-num" className="form-select" style={{ width: '100%' }} value={number} onChange={e => setNumber(Number(e.target.value))}>
+              {Array.from({ length: slots }, (_, i) => i + 1).map(n => <option key={n} value={n}>Rack #{n}</option>)}
+            </select>
+          </div>
+        )}
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 10 }}>
+          <input type="checkbox" checked={custom} onChange={e => setCustom(e.target.checked)} /> Use a custom name
+        </label>
+        {custom && (
+          <div style={field}>
+            <label style={label} htmlFor="rk-name">Rack name</label>
+            <input id="rk-name" className="form-input" style={{ width: '100%' }} autoFocus maxLength={60} value={text} placeholder="e.g. Cell lines" onChange={e => setText(e.target.value)} />
+          </div>
+        )}
+        <Footer error={error} busy={busy} disabled={!name.trim()} confirm={adding ? 'Add rack' : 'Save'} onClose={onClose} />
       </form>
     </Modal>
   );

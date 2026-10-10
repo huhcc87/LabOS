@@ -615,8 +615,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.d.ts": {
-    "mtime": 1791664951.750129,
-    "ast_hash": "e428e392cf4234466490ad89d30b1902",
+    "mtime": 1791676064.5276718,
+    "ast_hash": "fcd3ac84ca3e06e45ad962ad00e81952",
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.js": {
@@ -705,8 +705,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/freezer.ts": {
-    "mtime": 1791675536.5080783,
-    "ast_hash": "7e2b83dc56a71213eb82c18102bd65eb",
+    "mtime": 1791676191.0894842,
+    "ast_hash": "3493e7dce448eded46fd2962762092d1",
     "semantic_hash": ""
   },
   "frontend/convex/funding.ts": {
@@ -810,8 +810,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/schema.ts": {
-    "mtime": 1791675497.7850344,
-    "ast_hash": "e13ce24d152e17006c766ecdcfb42840",
+    "mtime": 1791676011.7976725,
+    "ast_hash": "cb61e3032f2fcbb8c640b6b8f22a209e",
     "semantic_hash": ""
   },
   "frontend/convex/search.ts": {
@@ -950,8 +950,8 @@
     "semantic_hash": ""
   },
   "frontend/src/App.tsx": {
-    "mtime": 1791653924.5512412,
-    "ast_hash": "8f000882f05c3f6b68a4b0b7e11dd30d",
+    "mtime": 1791676380.8007686,
+    "ast_hash": "4335b886e2e166c13fd1b4341af21de1",
     "semantic_hash": ""
   },
   "frontend/src/components/AIChatPanel.tsx": {
@@ -1025,8 +1025,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/Layout.tsx": {
-    "mtime": 1791653983.206225,
-    "ast_hash": "3fa7eaf8b91a97b8f55613c158bb64f9",
+    "mtime": 1791676370.0886958,
+    "ast_hash": "0df6b380f1313db1e7601078a70ff317",
     "semantic_hash": ""
   },
   "frontend/src/components/MarkdownRenderer.tsx": {
@@ -1770,8 +1770,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/FreezerBiobankPage.tsx": {
-    "mtime": 1791675671.9882,
-    "ast_hash": "86c72de38fcc3389e0ed0714a894a3fa",
+    "mtime": 1791676427.702967,
+    "ast_hash": "67bd1c35059a27f4d6dbd9d4e7d8c8c3",
     "semantic_hash": ""
   },
   "frontend/src/pages/FundingOpportunitiesPage.tsx": {
@@ -1865,8 +1865,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LabelPrinterPage.tsx": {
-    "mtime": 1791596450.351821,
-    "ast_hash": "9209979f6751b509edfc9170ee0c48b8",
+    "mtime": 1791676389.5073016,
+    "ast_hash": "1925141d79c26f9399c4ae7b0ccbe9a0",
     "semantic_hash": ""
   },
   "frontend/src/pages/LoginPage.tsx": {
@@ -1975,8 +1975,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/SampleHubPage.tsx": {
-    "mtime": 1791596450.3081725,
-    "ast_hash": "4c25fd4fea10310d10abd476f5c6049c",
+    "mtime": 1791676380.796759,
+    "ast_hash": "061630c2bcdbda88210cd94a12f7cfa6",
     "semantic_hash": ""
   },
   "frontend/src/pages/SamplesPage.tsx": {
@@ -2605,8 +2605,8 @@
     "semantic_hash": ""
   },
   "frontend/src/features/freezer/dialogs.tsx": {
-    "mtime": 1791675607.639678,
-    "ast_hash": "bb51e8420b0c8d45aa891e63ebd88ec4",
+    "mtime": 1791676179.6818793,
+    "ast_hash": "d52233e2a2a0a6e8b1cde78d15de3b85",
     "semantic_hash": ""
   },
   "frontend/src/lib/errors.ts": {
@@ -2617,6 +2617,31 @@
   "PRODUCT.md": {
     "mtime": 1791674087.1745915,
     "ast_hash": "912cd331dfa1e8942be15d2dbc044b60",
+    "semantic_hash": ""
+  },
+  "frontend/convex/labels.ts": {
+    "mtime": 1791676314.4282973,
+    "ast_hash": "a860196c7ba383d2a93cd77a7fb0c4ed",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/labels/LocationPicker.tsx": {
+    "mtime": 1791676095.3907914,
+    "ast_hash": "41c9428cec36d00e16b58476f6be82e7",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/labels/ScanStore.tsx": {
+    "mtime": 1791676349.4769642,
+    "ast_hash": "828d37eec8be836aeb852e27ab2809c0",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/labels/scanCode.ts": {
+    "mtime": 1791676314.4318595,
+    "ast_hash": "229184df98bf32264caec6f6915720e5",
+    "semantic_hash": ""
+  },
+  "frontend/src/pages/LabelsPage.tsx": {
+    "mtime": 1791676364.0188215,
+    "ast_hash": "4d07832227fd1f797f386d7097b497d3",
     "semantic_hash": ""
   }
 }

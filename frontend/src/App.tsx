@@ -37,7 +37,7 @@ const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
 const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
-const LabelPrinterPage       = lazy(() => import('./pages/LabelPrinterPage'));
+const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
@@ -100,6 +100,8 @@ function AppInner() {
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   // Invite links look like /?invite=<token>
   const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
+  // Someone scanned a label QR code with their phone camera: open Labels once signed in
+  useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('labels'); }, [user]);
 
   // A11y: skip-to-content link
   useEffect(() => { setupSkipToContent(); }, []);
@@ -147,7 +149,7 @@ function AppInner() {
       // Sample Hub
       case 'samples': return <SampleHubPage />;
       case 'sample-events': return <SampleHubPage />;
-      case 'print-labels': return <SampleHubPage />;
+      case 'print-labels': return <LabelsPage />;
       case 'batch-import': return <SampleHubPage />;
       // Resources Hub
       case 'inventory': return <ResourcesHubPage />;
@@ -211,7 +213,8 @@ function AppInner() {
       // Tier 1 — AI Research Intelligence
       case 'eln': return <ELNPage />;
       case 'iot-dashboard': return <IoTDashboardPage />;
-      case 'label-printer': return <LabelPrinterPage />;
+      case 'label-printer': return <LabelsPage />;
+      case 'labels': return <LabelsPage />;
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
       case 'payment-methods': return <PaymentMethodsPage />;

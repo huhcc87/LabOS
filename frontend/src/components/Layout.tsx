@@ -86,7 +86,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { key: 'samples', label: 'Samples', icon: '🧪', minRole: 'trainee' },
       { key: 'freezer-biobank', label: 'Freezer / Biobank', icon: '🧊', minRole: 'trainee' },
-      { key: 'label-printer', label: 'Label Printer', icon: '🏷️', minRole: 'trainee', advanced: true },
+      { key: 'labels', label: 'Labels', icon: '🏷️', minRole: 'trainee' },
     ]
   },
   {
@@ -143,7 +143,7 @@ const NAV_CATEGORIES: NavCategory[] = [
 const EXTRA_PAGE_HUB: Record<string, string> = {
   instruments: 'Lab Hub', bookings: 'Lab Hub', sops: 'Lab Hub', maintenance: 'Lab Hub',
   'lab-notebook': 'Lab Hub', 'storage-map': 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Lab Hub',
-  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'batch-import': 'Sample Hub',
+  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
   'grant-hub': 'Grant Hub', 'grant-budget': 'Grant Hub', 'funding-opportunities': 'Grant Hub', 'reviewer-feedback': 'Grant Hub',
   'collaborator-network': 'Grant Hub', 'reference-manager': 'Grant Hub', 'biosketch-generator': 'Grant Hub', 'grant-calendar': 'Grant Hub',
   'budget-calculator': 'Grant Hub', 'progress-reports': 'Grant Hub', 'support-letters': 'Grant Hub', 'success-analytics': 'Grant Hub',
@@ -327,7 +327,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const PAGE_PARENT: Record<string, string> = {
     'protocols': 'lab-hub', 'eln': 'lab-hub', 'experiments': 'lab-hub',
     'equipment': 'lab-hub', 'lab-meetings': 'lab-hub',
-    'freezer-biobank': 'samples', 'label-printer': 'samples',
+    'freezer-biobank': 'samples', 'labels': 'samples', 'label-printer': 'samples',
     'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
     'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
     'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',

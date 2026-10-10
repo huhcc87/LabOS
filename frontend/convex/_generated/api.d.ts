@@ -33,6 +33,7 @@ import type * as invites from "../invites.js";
 import type * as iot from "../iot.js";
 import type * as labMembers from "../labMembers.js";
 import type * as labNotebook from "../labNotebook.js";
+import type * as labels from "../labels.js";
 import type * as maintenance from "../maintenance.js";
 import type * as meetings from "../meetings.js";
 import type * as notifications from "../notifications.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   iot: typeof iot;
   labMembers: typeof labMembers;
   labNotebook: typeof labNotebook;
+  labels: typeof labels;
   maintenance: typeof maintenance;
   meetings: typeof meetings;
   notifications: typeof notifications;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import toast from 'react-hot-toast';
 import { api } from '../../convex/_generated/api';
 import type { Doc, Id } from '../../convex/_generated/dataModel';
@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 import { errText } from '../lib/errors';
 import {
-  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, SampleDialog, type SampleValues,
+  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
 } from '../features/freezer/dialogs';
 
 type Shelf = Doc<'freezer_shelves'>;
@@ -88,6 +88,29 @@ export default function FreezerBiobankPage() {
   /** Run a quick action and surface errors as a toast. */
   const act = async (work: () => Promise<unknown>) => { try { await work(); } catch (e) { toast.error(errText(e)); } };
 
+  const convex = useConvex();
+  const [exporting, setExporting] = useState(false);
+  /** One .xlsx per freezer: a Samples sheet (with where each one is) and a Layout sheet. */
+  const exportExcel = async () => {
+    if (!freezer) return;
+    setExporting(true);
+    try {
+      const data = await convex.query(api.freezer.exportRows, { token: t, freezer_id: freezer._id });
+      const XLSX = await import('xlsx');
+      const base = ['Shelf', 'Rack', 'Box', 'Position', 'Sample ID', 'Name', 'Type', 'Owner', 'Volume', 'Expiry', 'Barcode', 'Label code', 'Notes'];
+      const extra = [...new Set(data.samples.flatMap(r => Object.keys(r)))].filter(k => !base.includes(k));
+      const wb = XLSX.utils.book_new();
+      const samples = XLSX.utils.json_to_sheet(data.samples, { header: [...base, ...extra] });
+      samples['!cols'] = [...base, ...extra].map(h => ({ wch: Math.max(h.length + 2, 14) }));
+      XLSX.utils.book_append_sheet(wb, samples, 'Samples');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.layout, { header: ['Shelf', 'Rack', 'Box', 'Size', 'Positions used', 'Positions total'] }), 'Layout');
+      const safe = freezer.name.replace(/[^\w\-. ()]+/g, '').trim() || 'freezer';
+      XLSX.writeFile(wb, `${safe} - ${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(`Exported ${data.samples.length} sample${data.samples.length === 1 ? '' : 's'}`);
+    } catch (e) { toast.error(errText(e)); }
+    setExporting(false);
+  };
+
   const loading = freezers === undefined;
   const sampleValues = (s: Slot | undefined): SampleValues => ({
     sample_id: s?.sample_id ?? '', label: s?.label ?? '', sample_type: s?.sample_type ?? '', owner: s?.owner ?? user?.full_name ?? '',
@@ -158,12 +181,18 @@ export default function FreezerBiobankPage() {
                 <div style={{ fontWeight: 700, fontSize: 16 }}>{freezer.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{[freezer.location, freezer.temperature !== undefined ? `${freezer.temperature}°C` : ''].filter(Boolean).join(' · ') || 'No location set'}</div>
               </div>
-              {canBuild && (
-                <span>
-                  <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
-                  <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
-                </span>
-              )}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 4 }}
+                  onClick={exportExcel} disabled={exporting} title="Download every sample in this freezer as an Excel file">
+                  <Icon name="download" size={14} /> {exporting ? 'Preparing…' : 'Export Excel'}
+                </button>
+                {canBuild && (
+                  <>
+                    <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
+                    <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
+                  </>
+                )}
+              </span>
             </header>
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
               {structure === undefined ? <p style={{ color: 'var(--text-muted)', margin: 0 }}>Loading…</p>
@@ -303,17 +332,17 @@ export default function FreezerBiobankPage() {
           onConfirm={async () => { await m.removeFreezer({ token: t, id: freezer._id }); setFreezerId(null); setRackId(null); setBoxId(null); }} />
       )}
       {dialog?.kind === 'newShelf' && freezer && (
-        <NameDialog title="Add shelf" fieldLabel="Shelf name" placeholder={structure?.shelves.length ? `Shelf ${structure.shelves.length + 1}` : 'Top shelf'} confirm="Add shelf"
-          onClose={close} onSubmit={name => m.addShelf({ token: t, freezer_id: freezer._id, name }).then(() => undefined)} />
+        <ShelfDialog count={structure?.shelves.length ?? 0} onClose={close}
+          onSubmit={v => m.addShelf({ token: t, freezer_id: freezer._id, name: v.name, position: v.position }).then(() => undefined)} />
       )}
-      {dialog?.kind === 'renameShelf' && <NameDialog title="Rename shelf" fieldLabel="Shelf name" initial={dialog.shelf.name} confirm="Save" onClose={close} onSubmit={name => m.renameShelf({ token: t, id: dialog.shelf._id, name })} />}
+      {dialog?.kind === 'renameShelf' && <ShelfDialog initialName={dialog.shelf.name} onClose={close} onSubmit={v => m.renameShelf({ token: t, id: dialog.shelf._id, name: v.name })} />}
       {dialog?.kind === 'deleteShelf' && <ConfirmDelete title="Delete shelf" what={dialog.shelf.name} impact={impact} onClose={close}
         onConfirm={async () => { await m.removeShelf({ token: t, id: dialog.shelf._id }); if (rack?.shelf_id === dialog.shelf._id) { setRackId(null); setBoxId(null); } }} />}
       {dialog?.kind === 'newRack' && (
-        <NameDialog title={`Add rack to ${dialog.shelf.name}`} fieldLabel="Rack name" initial={`Rack #${(racksByShelf.get(dialog.shelf._id)?.length ?? 0) + 1}`} confirm="Add rack"
-          onClose={close} onSubmit={async name => { const id = await m.addRack({ token: t, shelf_id: dialog.shelf._id, name }); setRackId(id); setBoxId(null); }} />
+        <RackDialog count={racksByShelf.get(dialog.shelf._id)?.length ?? 0} onClose={close}
+          onSubmit={async v => { const id = await m.addRack({ token: t, shelf_id: dialog.shelf._id, name: v.name, position: v.position }); setRackId(id); setBoxId(null); }} />
       )}
-      {dialog?.kind === 'renameRack' && <NameDialog title="Rename rack" fieldLabel="Rack name" initial={dialog.rack.name} confirm="Save" onClose={close} onSubmit={name => m.renameRack({ token: t, id: dialog.rack._id, name })} />}
+      {dialog?.kind === 'renameRack' && <RackDialog initialName={dialog.rack.name} onClose={close} onSubmit={v => m.renameRack({ token: t, id: dialog.rack._id, name: v.name })} />}
       {dialog?.kind === 'deleteRack' && <ConfirmDelete title="Delete rack" what={dialog.rack.name} impact={impact} onClose={close}
         onConfirm={async () => { await m.removeRack({ token: t, id: dialog.rack._id }); if (rackId === dialog.rack._id) { setRackId(null); setBoxId(null); } }} />}
       {dialog?.kind === 'newBox' && <BoxDialog onClose={close} onSubmit={async v => { const id = await m.addBox({ token: t, rack_id: dialog.rack._id, ...v }); setBoxId(id); }} />}

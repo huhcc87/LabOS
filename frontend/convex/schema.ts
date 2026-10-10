@@ -574,11 +574,25 @@ export default defineSchema({
     barcode: v.optional(v.string()),
     expiry_date: v.optional(v.number()),
     notes: v.optional(v.string()),
+    // Set when the sample was stored by scanning a printed label
+    label_code: v.optional(v.string()),
+    // Extra fields from the label (origin, purpose, lot, hazard…)
+    details: v.optional(v.record(v.string(), v.string())),
     updated_at: v.number(),
   })
     .index("by_freezer", ["freezer_id"])
     .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"])
-    .index("by_box", ["box_id", "row", "col"]),
+    .index("by_box", ["box_id", "row", "col"])
+    .index("by_label", ["label_code"]),
+
+  // Printed labels: the code in the QR/barcode, what was written on it, and where it went.
+  sample_labels: defineTable({
+    code: v.string(),
+    details: v.record(v.string(), v.string()),
+    slot_id: v.optional(v.id("freezer_slots")),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }).index("by_code", ["code"]),
 
   // ── Grants ───────────────────────────────────────────────────────────
   grant_versions: defineTable({

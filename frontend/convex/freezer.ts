@@ -160,14 +160,20 @@ export const structure = query({
   },
 });
 
+/** Make room at `index` (0-based) by moving later items down one place; returns the index to use. */
+async function openSlot<T extends { _id: Id<any>; position: number }>(ctx: MutationCtx, items: T[], wanted: number | undefined): Promise<number> {
+  const index = wanted === undefined ? items.length : Math.max(0, Math.min(items.length, Math.floor(wanted)));
+  await Promise.all(items.filter((i) => i.position >= index).map((i) => ctx.db.patch(i._id, { position: i.position + 1 })));
+  return index;
+}
+
 export const addShelf = mutation({
-  args: { token: v.optional(v.string()), freezer_id: v.id("freezers"), name: v.string() },
-  handler: async (ctx, { token, freezer_id, name }) => {
+  args: { token: v.optional(v.string()), freezer_id: v.id("freezers"), name: v.string(), position: v.optional(v.number()) },
+  handler: async (ctx, { token, freezer_id, name, position }) => {
     await requireRole(ctx, token, "staff");
     const existing = await ctx.db.query("freezer_shelves").withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id)).collect();
-    return await ctx.db.insert("freezer_shelves", {
-      freezer_id, name: cleanName(name, "Shelf"), position: existing.length, created_at: Date.now(),
-    });
+    const index = await openSlot(ctx, existing, position);
+    return await ctx.db.insert("freezer_shelves", { freezer_id, name: cleanName(name, "Shelf"), position: index, created_at: Date.now() });
   },
 });
 
@@ -188,16 +194,17 @@ export const removeShelf = mutation({
 });
 
 export const addRack = mutation({
-  args: { token: v.optional(v.string()), shelf_id: v.id("freezer_shelves"), name: v.optional(v.string()) },
-  handler: async (ctx, { token, shelf_id, name }) => {
+  args: { token: v.optional(v.string()), shelf_id: v.id("freezer_shelves"), name: v.optional(v.string()), position: v.optional(v.number()) },
+  handler: async (ctx, { token, shelf_id, name, position }) => {
     await requireRole(ctx, token, "staff");
     const shelf = await ctx.db.get(shelf_id);
     if (!shelf) throw new ConvexError("Shelf not found");
     const existing = await ctx.db.query("freezer_racks").withIndex("by_shelf", (q) => q.eq("shelf_id", shelf_id)).collect();
+    const index = await openSlot(ctx, existing, position);
     return await ctx.db.insert("freezer_racks", {
       freezer_id: shelf.freezer_id, shelf_id,
-      name: name?.trim() ? cleanName(name, "Rack") : `Rack #${existing.length + 1}`,
-      position: existing.length, created_at: Date.now(),
+      name: name?.trim() ? cleanName(name, "Rack") : `Rack #${index + 1}`,
+      position: index, created_at: Date.now(),
     });
   },
 });
@@ -309,7 +316,7 @@ export const clearSlot = mutation({
 const rowLetter = (n: number) => String.fromCharCode(65 + n);
 
 /** "ULT Freezer › Top Shelf › Rack #1 › Box A › B3" for a slot. */
-async function describe(ctx: QueryCtx, slot: Doc<"freezer_slots">): Promise<string> {
+export async function describe(ctx: QueryCtx, slot: Doc<"freezer_slots">): Promise<string> {
   const freezer = await ctx.db.get(slot.freezer_id);
   if (!slot.box_id) return freezer?.name ?? "Unknown freezer";
   const box = await ctx.db.get(slot.box_id);
@@ -345,5 +352,58 @@ export const search = query({
     const hits = slots.filter((s) =>
       [s.label, s.barcode, s.sample_id, s.sample_type, s.owner].some((f) => f?.toLowerCase().includes(term)));
     return await Promise.all(hits.slice(0, 100).map(async (s) => ({ ...s, path: await describe(ctx, s) })));
+  },
+});
+
+// ── Excel export ──────────────────────────────────────────────────────────
+
+/** Everything in one freezer as flat rows (the page turns these into an .xlsx file). */
+export const exportRows = query({
+  args: { token: v.optional(v.string()), freezer_id: v.id("freezers") },
+  handler: async (ctx, { token, freezer_id }) => {
+    await requireAuth(ctx, token);
+    const freezer = await ctx.db.get(freezer_id);
+    if (!freezer) throw new ConvexError("Freezer not found");
+    const [shelves, racks, boxes, slots] = await Promise.all([
+      ctx.db.query("freezer_shelves").withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id)).collect(),
+      ctx.db.query("freezer_racks").withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id)).collect(),
+      ctx.db.query("freezer_boxes").withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id)).collect(),
+      ctx.db.query("freezer_slots").withIndex("by_freezer", (q) => q.eq("freezer_id", freezer_id)).collect(),
+    ]);
+    const shelfById = new Map(shelves.map((s) => [s._id, s]));
+    const rackById = new Map(racks.map((r) => [r._id, r]));
+    const boxById = new Map(boxes.map((b) => [b._id, b]));
+    const used = new Map<string, number>();
+    for (const s of slots) if (s.box_id) used.set(s.box_id, (used.get(s.box_id) ?? 0) + 1);
+
+    const layout = boxes.map((b) => {
+      const rack = rackById.get(b.rack_id);
+      const shelf = rack ? shelfById.get(rack.shelf_id) : undefined;
+      return {
+        shelfPos: shelf?.position ?? 0, rackPos: rack?.position ?? 0, boxPos: b.position,
+        Shelf: shelf?.name ?? "", Rack: rack?.name ?? "", Box: b.name, Size: `${b.rows} × ${b.cols}`,
+        "Positions used": used.get(b._id) ?? 0, "Positions total": b.rows * b.cols,
+      };
+    }).sort((a, b) => a.shelfPos - b.shelfPos || a.rackPos - b.rackPos || a.boxPos - b.boxPos)
+      .map(({ shelfPos: _s, rackPos: _r, boxPos: _b, ...row }) => row);
+
+    const samples = slots.filter((s) => s.box_id && boxById.has(s.box_id)).map((s) => {
+      const box = boxById.get(s.box_id!)!;
+      const rack = rackById.get(box.rack_id);
+      const shelf = rack ? shelfById.get(rack.shelf_id) : undefined;
+      return {
+        sort: [shelf?.position ?? 0, rack?.position ?? 0, box.position, s.row, s.col],
+        row: {
+          Shelf: shelf?.name ?? "", Rack: rack?.name ?? "", Box: box.name, Position: `${rowLetter(s.row)}${s.col + 1}`,
+          "Sample ID": s.sample_id ?? "", Name: s.label ?? "", Type: s.sample_type ?? "", Owner: s.owner ?? "", Volume: s.volume ?? "",
+          Expiry: s.expiry_date ? new Date(s.expiry_date).toISOString().slice(0, 10) : "", Barcode: s.barcode ?? "",
+          "Label code": s.label_code ?? "", Notes: s.notes ?? "",
+          ...Object.fromEntries(Object.entries(s.details ?? {}).map(([k, val]) => [k.charAt(0).toUpperCase() + k.slice(1), val])),
+        } as Record<string, string>,
+      };
+    }).sort((a, b) => { for (let i = 0; i < 5; i++) if (a.sort[i] !== b.sort[i]) return a.sort[i] - b.sort[i]; return 0; })
+      .map((x) => x.row);
+
+    return { freezer: { name: freezer.name, location: freezer.location ?? "", temperature: freezer.temperature }, samples, layout };
   },
 });

@@ -789,7 +789,6 @@ export default function SampleHubPage() {
   const tabs = [
     { key: 'samples', label: 'Samples', icon: '🧪', count: samples.length },
     { key: 'events', label: 'Chain of Custody', icon: '⏱', count: events.length },
-    { key: 'labels', label: 'Print Labels', icon: '🏷️' },
     { key: 'import', label: 'Batch Import', icon: '📤' },
     { key: 'analytics', label: 'Analytics', icon: '📊' },
   ];
@@ -874,7 +873,7 @@ export default function SampleHubPage() {
       {/* Quick actions */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
-          { icon: '🏷️', label: 'Print Labels', action: () => setActiveTab('labels') },
+          { icon: '🏷️', label: 'Labels', action: () => navigate('labels') },
           { icon: '📥', label: 'Batch Import', action: () => setActiveTab('import') },
           { icon: '📊', label: 'Analytics', action: () => setActiveTab('analytics') },
           { icon: '📋', label: 'Protocols', action: () => navigate('protocols') },
