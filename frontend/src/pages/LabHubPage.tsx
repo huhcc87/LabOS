@@ -1198,11 +1198,11 @@ export default function LabHubPage() {
                       {p.approval && p.approval.state !== 'approved' && canDecide(p.approval, user) && (
                         <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }} onClick={() => decideApproval(p, 'approved')} title="Approve this protocol">✓ Approve</button>
                       )}
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View">👁️</button>
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit">✏️</button>
+                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View" aria-label="View protocol">👁️</button>
+                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit" aria-label="Edit protocol">✏️</button>
                       <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: 'none' }} onClick={() => runProtocol(p)} title={isApproved(p.approval) ? 'Execute' : 'Needs approval first'}>▶ Run</button>
                       <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'none' }} onClick={() => markAsUsed(p.id)} title="Mark as used today">✓ Used</button>
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => duplicateProtocol(p)} title="Duplicate">📋</button>
+                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => duplicateProtocol(p)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
                       <button
                         className="btn btn-sm"
                         style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none' }}
@@ -1346,7 +1346,7 @@ export default function LabHubPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(false); }}>👁️ View</button>
                   <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(true); }}>✏️ Edit</button>
-                  <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate">📋</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
                   <button
                     className="btn btn-sm"
                     style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none', padding: '4px 8px' }}
@@ -1819,7 +1819,7 @@ export default function LabHubPage() {
                 className="card"
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  borderLeft: m.status === 'overdue' ? '4px solid #ef4444' : selectedMaintenance.has(m.id) ? '4px solid var(--accent)' : '4px solid var(--border)',
+                  border: m.status === 'overdue' ? '1px solid #ef4444' : selectedMaintenance.has(m.id) ? '1px solid var(--accent)' : '1px solid var(--border)',
                   background: selectedMaintenance.has(m.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
                 }}
               >
@@ -2839,7 +2839,7 @@ export default function LabHubPage() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
                           {protocolVersions.map((v: any) => (
-                            <div key={v.id} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px', borderLeft: '3px solid var(--accent)' }}>
+                            <div key={v.id} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '8px 12px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>v{v.version}</span>
                                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(v.created_at).toLocaleDateString()} by {v.created_by}</span>

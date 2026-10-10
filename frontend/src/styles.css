@@ -75,7 +75,7 @@
   --table-row-alt: rgba(255, 255, 255, 0.03);
   --table-row-hover: rgba(61, 155, 233, 0.08);
 
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  font-family: 'Lato', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   font-size: 15px;
   line-height: 1.6;
   color: var(--text);
@@ -393,8 +393,7 @@ a:hover { text-decoration: underline; }
 .nav-item.active {
   background: color-mix(in srgb, var(--hub-color, var(--accent)) 14%, transparent);
   color: var(--hub-color, var(--accent));
-  border-left: 3px solid var(--hub-color, var(--accent));
-  padding-left: 9px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hub-color, var(--accent)) 35%, transparent);
   font-weight: 600;
 }
 
@@ -3020,3 +3019,24 @@ a:hover { text-decoration: underline; }
 }
 @keyframes app-loading-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .app-loading-spinner { animation-duration: 2.7s; } }
+
+/* ── Accessibility baseline ── */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Touch & pointer comfort ── */
+button, [role="button"], select, summary { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+@media (pointer: coarse) {
+  .btn, .btn-sm, .nav-item, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+}

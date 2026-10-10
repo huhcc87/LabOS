@@ -190,8 +190,7 @@ export default function DashboardPage() {
           {priorities.map((p, i) => (
             <div key={i} style={{
               background: p.severity === 'high' ? 'rgba(239,68,68,0.08)' : p.severity === 'medium' ? 'rgba(245,158,11,0.08)' : 'rgba(99,102,241,0.08)',
-              border: `1px solid ${p.color}40`,
-              borderLeft: `4px solid ${p.color}`,
+              border: `1px solid ${p.color}66`,
               borderRadius: 10,
               padding: '12px 16px',
               display: 'flex',
@@ -277,7 +276,7 @@ export default function DashboardPage() {
                 const isOffline = eq.status === 'offline';
                 const color = isOffline ? '#ef4444' : '#f59e0b';
                 return (
-                  <div key={eq._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                  <div key={eq._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 7, border: `1px solid ${color}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{eq.name}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
@@ -344,7 +343,7 @@ export default function DashboardPage() {
                 const daysLeft = Math.ceil((new Date(g.deadline_date).getTime() - Date.now()) / 86_400_000);
                 const color = daysLeft <= 7 ? '#ef4444' : daysLeft <= 14 ? '#f59e0b' : '#22c55e';
                 return (
-                  <div key={g._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}10`, borderRadius: 7, borderLeft: `3px solid ${color}` }}>
+                  <div key={g._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${color}10`, borderRadius: 7, border: `1px solid ${color}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.title ?? g.grant_type}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{g.deadline_date}</div>
@@ -468,7 +467,7 @@ export default function DashboardPage() {
                   padding: '10px 12px',
                   background: 'var(--surface2)',
                   borderRadius: 8,
-                  borderLeft: `3px solid ${p.color}`,
+                  border: `1px solid ${p.color}`,
                 }}>
                   <span style={{ fontSize: 16 }}>{p.icon}</span>
                   <div style={{ flex: 1 }}>
@@ -583,7 +582,7 @@ export default function DashboardPage() {
                 const sc = statusColors[task.status] || '#94a3b8';
                 const pc = priorityColors[task.priority] || '#94a3b8';
                 return (
-                  <div key={task._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--surface2)', borderRadius: 8, borderLeft: `3px solid ${sc}` }}>
+                  <div key={task._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--surface2)', borderRadius: 8, border: `1px solid ${sc}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</div>
                       <div style={{ display: 'flex', gap: 6, marginTop: 3, alignItems: 'center' }}>
