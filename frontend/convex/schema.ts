@@ -41,6 +41,17 @@ export default defineSchema({
     .index("by_role", ["role"])
     .index("by_pi", ["pi_id"]),
 
+  // One-time sign-up links: an invited user opens the link and sets their own password.
+  invites: defineTable({
+    user_id: v.id("users"),
+    token: v.string(),
+    expires_at: v.number(),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_user", ["user_id"]),
+
   // ── Protocols ────────────────────────────────────────────────────────
   protocols: defineTable({
     title: v.string(),

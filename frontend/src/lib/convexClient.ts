@@ -844,6 +844,11 @@ export const usersAdminApi = {
   create: authApi.createUser,
   update: authApi.updateUser,
   delete: authApi.deleteUser,
+  /** Fresh one-time sign-up link token for a user who hasn't joined yet. */
+  newInvite: async (id: IdLike) => {
+    const result = await client.mutation(api.invites.regenerate, { token: getToken(), user_id: id as any });
+    return { data: result };
+  },
 };
 
 export const trainingApi = crudApi(api.training.list, api.training.create, api.training.update, api.training.remove, api.training.get);

@@ -30,7 +30,8 @@ export const register = action({
     full_name: v.string(),
     role: v.optional(v.string()),
   },
-  handler: async (ctx, { email, password, full_name, role }): Promise<{ token: string; user_id: string }> => {
+  // `role` is accepted for backward compatibility but ignored: self-sign-up must never pick its own role.
+  handler: async (ctx, { email, password, full_name }): Promise<{ token: string; user_id: string }> => {
     const normalizedEmail = email.trim().toLowerCase();
     checkRateLimit(`register:${normalizedEmail}`);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new ConvexError("Invalid email format");
@@ -42,10 +43,10 @@ export const register = action({
     const token = generateToken();
 
     const result = await ctx.runMutation(internal.customAuth.createUserAndSession, {
-      email,
+      email: normalizedEmail,
       hashed_password,
       full_name,
-      role: (role as any) ?? "staff",
+      role: "staff",
       token,
       expires_at: Date.now() + SESSION_TTL_MS,
     });

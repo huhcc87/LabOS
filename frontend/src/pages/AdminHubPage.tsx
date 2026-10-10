@@ -11,6 +11,7 @@ interface User {
   role: string;
   department: string;
   position: string;
+  invitePending: boolean;
   status: 'active' | 'inactive';
   joinDate: string;
   lastActive: string;
@@ -62,9 +63,38 @@ interface SystemSetting {
 }
 
 // Constants
-const ROLES = ['PI', 'Admin', 'Manager', 'Staff', 'Trainee', 'Guest'];
+// Roles decide permissions, so they are a fixed list ("Guest" was removed: the server never accepted it).
+const ROLES = ['PI', 'Admin', 'Manager', 'Staff', 'Trainee'];
+const CUSTOM = '__custom__';
+const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
+
+/** A dropdown with a "+ Custom…" choice that switches to a text box. */
+function SelectOrCustom({ value, options, onChange, noneLabel }: {
+  value: string; options: string[]; onChange: (v: string) => void; noneLabel?: string;
+}) {
+  const [typing, setTyping] = useState(() => !!value && !options.includes(value));
+  if (typing) {
+    return (
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input className="form-input" autoFocus placeholder="Type your own…" value={value}
+          onChange={e => onChange(e.target.value)} style={{ flex: 1 }} />
+        <button type="button" className="btn btn-sm btn-secondary" title="Back to the list"
+          onClick={() => { setTyping(false); onChange(noneLabel !== undefined ? '' : options[0]); }}>↩ List</button>
+      </div>
+    );
+  }
+  return (
+    <select className="form-select" style={{ width: '100%' }} value={value}
+      onChange={e => { if (e.target.value === CUSTOM) { setTyping(true); onChange(''); } else onChange(e.target.value); }}>
+      {noneLabel !== undefined && <option value="">{noneLabel}</option>}
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+      <option value={CUSTOM}>+ Custom…</option>
+    </select>
+  );
+}
 // Academic position — a label shown alongside the role; it doesn't change permissions.
 const POSITIONS = ['BSc', 'MSc', 'PG', 'PhD', 'Postdoc'];
+const inviteUrl = (token: string) => `${window.location.origin}/?invite=${encodeURIComponent(token)}`;
 const roleLabel = (r?: string) => (r === 'pi' ? 'PI' : r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Staff');
 const DEPARTMENTS = ['Research', 'Lab Operations', 'Quality Control', 'IT', 'Administration', 'Other'];
 const FILE_CATEGORIES = ['Manual', 'Protocol', 'Report', 'Form', 'Policy', 'Training', 'Other'];
@@ -88,6 +118,8 @@ export default function AdminHubPage() {
   const [newUser, setNewUser] = useState({
     name: '', email: '', role: 'Staff', department: 'Research', position: ''
   });
+  // Sign-up link shown after adding a user (or on request for someone who hasn't joined).
+  const [inviteLink, setInviteLink] = useState<{ name: string; email: string; url: string } | null>(null);
 
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -135,11 +167,13 @@ export default function AdminHubPage() {
         role: roleLabel(u.role),
         department: u.department || 'Research',
         position: u.position || '',
+        invitePending: !!u.invite_pending,
         status: u.is_active ? 'active' : 'inactive',
-        joinDate: u.created_at?.slice(0, 10) || '',
-        lastActive: u.last_login?.slice(0, 10) || 'Never',
+        // Convex stores timestamps as epoch milliseconds, not strings.
+        joinDate: u.created_at ? new Date(u.created_at).toISOString().slice(0, 10) : '',
+        lastActive: u.last_login ? new Date(u.last_login).toISOString().slice(0, 10) : 'Never',
       })));
-    } catch { /* no-op */ }
+    } catch (e: any) { showToast(e?.data || e?.message || 'Could not load users', 'error'); }
   }, []);
 
   const fetchAuditLogs = useCallback(async () => {
@@ -174,16 +208,24 @@ export default function AdminHubPage() {
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email) { showToast('Please fill required fields', 'error'); return; }
     try {
-      await usersAdminApi.create({
+      const res = await usersAdminApi.create({
         full_name: newUser.name, email: newUser.email.trim().toLowerCase(), role: newUser.role.toLowerCase(),
         department: newUser.department, position: newUser.position || undefined,
       });
       await fetchUsers();
       addAuditLog('created user', newUser.name, 'user', `Role: ${newUser.role}`);
+      setInviteLink({ name: newUser.name, email: newUser.email.trim().toLowerCase(), url: inviteUrl((res.data as any).invite_token) });
       setNewUser({ name: '', email: '', role: 'Staff', department: 'Research', position: '' });
       setShowUserModal(false);
-      showToast('User added! Set their password above so they can sign in.');
+      showToast('User added — send them the invite link');
     } catch (e: any) { showToast(e?.data || e?.message || 'Failed to create user', 'error'); }
+  };
+
+  const handleInviteLink = async (user: User) => {
+    try {
+      const res = await usersAdminApi.newInvite(user.id);
+      setInviteLink({ name: user.name, email: user.email, url: inviteUrl(res.data as string) });
+    } catch (e: any) { showToast(e?.data || e?.message || 'Could not create invite link', 'error'); }
   };
 
   const handleUpdateUser = async () => {
@@ -280,6 +322,10 @@ export default function AdminHubPage() {
     addAuditLog('updated system settings', 'System Configuration', 'settings');
     showToast('Settings saved!');
   };
+
+  // Custom departments/positions typed for earlier users become list choices too.
+  const departmentOptions = uniq([...DEPARTMENTS, ...users.map(u => u.department)]);
+  const positionOptions = uniq([...POSITIONS, ...users.map(u => u.position)]);
 
   // Filtered users
   const filteredUsers = users.filter(u => {
@@ -403,7 +449,7 @@ export default function AdminHubPage() {
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                 </optgroup>
                 <optgroup label="Student / position">
-                  {POSITIONS.map(p => <option key={p} value={`pos:${p}`}>{p}</option>)}
+                  {positionOptions.map(p => <option key={p} value={`pos:${p}`}>{p}</option>)}
                 </optgroup>
               </select>
               <select
@@ -482,9 +528,15 @@ export default function AdminHubPage() {
                           <span style={{ color: user.status === 'active' ? '#4ade80' : '#9ca3af' }}>●</span>
                           <span style={{ fontSize: 13 }}>{user.status}</span>
                         </button>
+                        {user.invitePending && (
+                          <span style={{ fontSize: 11, color: '#fbbf24' }} title="Hasn't opened their invite link and set a password yet">⏳ Not joined yet</span>
+                        )}
                       </td>
                       <td style={{ padding: 12, textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          {user.invitePending && (
+                            <button className="btn btn-sm btn-secondary" title="Get a new sign-up link for this person" onClick={() => handleInviteLink(user)}>🔗 Invite link</button>
+                          )}
                           <button className="btn btn-sm btn-secondary" onClick={() => setEditingUser(user)}>✏️ Edit</button>
                           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteUser(user)}>🗑️</button>
                         </div>
@@ -665,6 +717,31 @@ export default function AdminHubPage() {
         </div>
       )}
 
+      {/* Invite link modal */}
+      {inviteLink && (
+        <div style={modalStyle} onClick={() => setInviteLink(null)}>
+          <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>🔗 Invite link for {inviteLink.name}</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              Send this link to <strong>{inviteLink.email}</strong>. They open it, choose their own password, and from then on sign in with that email.
+              It works once and expires in 7 days.
+            </p>
+            <input className="form-input" readOnly value={inviteLink.url} onFocus={e => e.target.select()} style={{ width: '100%', marginBottom: 12, fontSize: 12 }} />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={async () => {
+                try { await navigator.clipboard.writeText(inviteLink.url); showToast('Link copied'); }
+                catch { showToast('Copy failed — select the link and copy it', 'error'); }
+              }}>📋 Copy link</button>
+              <a className="btn btn-secondary"
+                href={`mailto:${inviteLink.email}?subject=${encodeURIComponent('Your LabOS invitation')}&body=${encodeURIComponent(`Hi ${inviteLink.name},\n\nYou've been added to LabOS. Open this link to set your password and sign in with ${inviteLink.email}:\n\n${inviteLink.url}\n\nThe link works once and expires in 7 days.`)}`}>
+                ✉️ Email it
+              </a>
+              <button className="btn btn-secondary" style={{ marginLeft: 'auto' }} onClick={() => setInviteLink(null)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit User Modal */}
       {(showUserModal || editingUser) && (
         <div style={modalStyle} onClick={() => { setShowUserModal(false); setEditingUser(null); }}>
@@ -681,7 +758,11 @@ export default function AdminHubPage() {
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Email *</label>
                 <input type="email" className="form-input" placeholder="john@lab.edu"
                   value={editingUser ? editingUser.email : newUser.email}
-                  onChange={e => editingUser ? setEditingUser({ ...editingUser, email: e.target.value }) : setNewUser({ ...newUser, email: e.target.value })} />
+                  readOnly={!!editingUser} title={editingUser ? 'Email is the sign-in name and can’t be changed here' : undefined}
+                  onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
+                {!editingUser && (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>They’ll get a link to set their own password and sign in with this email.</div>
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
@@ -691,24 +772,22 @@ export default function AdminHubPage() {
                     onChange={e => editingUser ? setEditingUser({ ...editingUser, role: e.target.value }) : setNewUser({ ...newUser, role: e.target.value })}>
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Sets permissions. Use Position for custom titles.</div>
                 </div>
                 <div>
                   <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Department</label>
-                  <select className="form-select" style={{ width: '100%' }}
+                  <SelectOrCustom
+                    options={departmentOptions}
                     value={editingUser ? editingUser.department : newUser.department}
-                    onChange={e => editingUser ? setEditingUser({ ...editingUser, department: e.target.value }) : setNewUser({ ...newUser, department: e.target.value })}>
-                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                    onChange={v => editingUser ? setEditingUser({ ...editingUser, department: v }) : setNewUser({ ...newUser, department: v })} />
                 </div>
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Student / position (optional)</label>
-                <select className="form-select" style={{ width: '100%' }}
+                <SelectOrCustom
+                  options={positionOptions} noneLabel="None"
                   value={editingUser ? editingUser.position : newUser.position}
-                  onChange={e => editingUser ? setEditingUser({ ...editingUser, position: e.target.value }) : setNewUser({ ...newUser, position: e.target.value })}>
-                  <option value="">None</option>
-                  {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                  onChange={v => editingUser ? setEditingUser({ ...editingUser, position: v }) : setNewUser({ ...newUser, position: v })} />
               </div>
               {editingUser && (
                 <div>

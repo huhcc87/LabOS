@@ -43,6 +43,7 @@ const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
 const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
+const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
@@ -97,12 +98,26 @@ function AppInner() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState('dashboard');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  // Invite links look like /?invite=<token>
+  const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
 
   // A11y: skip-to-content link
   useEffect(() => { setupSkipToContent(); }, []);
 
   // Analytics: track page views
   useEffect(() => { trackPageView(page); }, [page]);
+
+  if (invite) {
+    const leaveInvite = () => {
+      window.history.replaceState(null, '', window.location.pathname);
+      setInvite(null);
+    };
+    return (
+      <Suspense fallback={null}>
+        <AcceptInvitePage invite={invite} onDone={leaveInvite} />
+      </Suspense>
+    );
+  }
 
   if (loading) {
     return (
