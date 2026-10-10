@@ -6,9 +6,12 @@ import { useAuth } from '../context/AuthContext';
 import { ProtocolFormFields, type ProtocolDetails } from '../components/ProtocolFormFields';
 import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
+import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
+import type { Id } from '../../convex/_generated/dataModel';
 
 // Types
-interface Protocol extends ProtocolDetails { id: number; name: string; version: string; status?: 'active' | 'draft' | 'archived'; lastUpdated: string; description?: string; category?: string; }
+// Protocols are saved in Convex (shared with the whole lab); see useLabProtocols.
+type Protocol = LabProtocol;
 interface SOP { id: number; title: string; category: string; version: string; description?: string; }
 interface Instrument { id: number; name: string; location: string; status: 'available' | 'in_use' | 'maintenance'; type?: string; }
 interface Booking { id: number; instrument: string; user: string; date: string; time: string; status: 'confirmed' | 'pending'; purpose?: string; }
@@ -131,7 +134,9 @@ const LAB_LOCATIONS = [
 
 export default function LabHubPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const labProtocols = useLabProtocols(token);
+  const protocols = labProtocols.protocols;
   const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
 
   // Modal states
@@ -163,7 +168,7 @@ export default function LabHubPage() {
   }, [viewProtocol?.id]);
 
   // Delete confirmation state
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: number; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: number | string; name: string } | null>(null);
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -173,7 +178,7 @@ export default function LabHubPage() {
   };
 
   // Bulk Selection States
-  const [selectedProtocols, setSelectedProtocols] = useState<Set<number>>(new Set());
+  const [selectedProtocols, setSelectedProtocols] = useState<Set<Id<'protocols'>>>(new Set());
   const [selectedSOPs, setSelectedSOPs] = useState<Set<number>>(new Set());
   const [selectedInstruments, setSelectedInstruments] = useState<Set<number>>(new Set());
   const [selectedBookings, setSelectedBookings] = useState<Set<number>>(new Set());
@@ -195,8 +200,6 @@ export default function LabHubPage() {
   // Help Guide
   const [showHelpGuide, setShowHelpGuide] = useState(false);
 
-  // Feature: Usage tracking
-  const [usageLogs, setUsageLogs] = useState<Record<number, number>>({});
   // Feature: Booking calendar view
   const [bookingView, setBookingView] = useState<'list' | 'calendar'>('list');
   const [calendarWeekStart, setCalendarWeekStart] = useState<Date>(() => {
@@ -228,12 +231,22 @@ export default function LabHubPage() {
   });
 
   // Data states
-  const [protocols, setProtocols] = useState<Protocol[]>([
-    { id: 1, name: 'PCR Amplification', version: '2.1', status: 'active', lastUpdated: '2024-03-15', category: 'Molecular Biology', duration: '2 hours', materials: 'Template DNA\nPrimers\nTaq polymerase mix', steps: '1. Thaw reagents on ice\n2. Prepare master mix\n3. Add template DNA\n4. Run thermocycler 2 hours', safety: 'Wear gloves. Dispose of tips as biohazard waste.' },
-    { id: 2, name: 'Western Blot Analysis', version: '1.5', status: 'active', lastUpdated: '2024-02-20', category: 'Protein Analysis', steps: '1. Run SDS-PAGE gel\n2. Transfer to membrane\n3. Block membrane 1 hour\n4. Incubate primary antibody overnight\n5. Wash 3 times\n6. Incubate secondary antibody 1 hour\n7. Develop and image' },
-    { id: 3, name: 'Cell Culture Maintenance', version: '3.0', status: 'active', lastUpdated: '2024-01-10', category: 'Cell Biology', steps: '1. Warm medium to 37°C\n2. Check cells under microscope\n3. Aspirate old medium\n4. Add fresh medium\n5. Return flask to incubator' },
-    { id: 4, name: 'RNA Extraction', version: '1.2', status: 'draft', lastUpdated: '2024-03-18', category: 'Molecular Biology', steps: '1. Lyse sample in TRIzol\n2. Add chloroform and spin 15 min\n3. Precipitate RNA with isopropanol\n4. Wash pellet with 75% ethanol\n5. Resuspend in RNase-free water' },
-  ]);
+  // Starter protocols a lab can add with one click when its list is empty.
+  const SAMPLE_PROTOCOLS: ProtocolInput[] = [
+    { name: 'PCR Amplification', version: '2.1', status: 'active', category: 'Molecular Biology', duration: '2 hours', materials: 'Template DNA\nPrimers\nTaq polymerase mix', steps: '1. Thaw reagents on ice\n2. Prepare master mix\n3. Add template DNA\n4. Run thermocycler 2 hours', safety: 'Wear gloves. Dispose of tips as biohazard waste.' },
+    { name: 'Western Blot Analysis', version: '1.5', status: 'active', category: 'Protein Analysis', steps: '1. Run SDS-PAGE gel\n2. Transfer to membrane\n3. Block membrane 1 hour\n4. Incubate primary antibody overnight\n5. Wash 3 times\n6. Incubate secondary antibody 1 hour\n7. Develop and image' },
+    { name: 'Cell Culture Maintenance', version: '3.0', status: 'active', category: 'Cell Biology', steps: '1. Warm medium to 37°C\n2. Check cells under microscope\n3. Aspirate old medium\n4. Add fresh medium\n5. Return flask to incubator' },
+    { name: 'RNA Extraction', version: '1.2', status: 'draft', category: 'Molecular Biology', steps: '1. Lyse sample in TRIzol\n2. Add chloroform and spin 15 min\n3. Precipitate RNA with isopropanol\n4. Wash pellet with 75% ethanol\n5. Resuspend in RNase-free water' },
+  ];
+
+  /** Runs a protocol save and reports the result; returns false on failure. */
+  const saveProtocol = async (work: () => Promise<unknown>, success: string): Promise<boolean> => {
+    try { await work(); showToast(success, 'success'); return true; }
+    catch (e) { showToast(errText(e), 'error'); return false; }
+  };
+
+  const addSampleProtocols = () =>
+    saveProtocol(() => Promise.all(SAMPLE_PROTOCOLS.map(p => labProtocols.create(p))), 'Sample protocols added');
 
   const [sops, setSOPs] = useState<SOP[]>([
     { id: 1, title: 'Biosafety Level 2 Procedures', category: 'Safety', version: '4.0' },
@@ -306,7 +319,7 @@ export default function LabHubPage() {
   };
 
   // Handlers
-  const handleCreateProtocol = () => {
+  const handleCreateProtocol = async () => {
     if (!newProtocol.name.trim()) return;
     if (newProtocol.approval?.mode === 'user' && !newProtocol.approval.approver?.trim()) {
       showToast('Enter who must approve this protocol', 'error');
@@ -314,23 +327,21 @@ export default function LabHubPage() {
     }
     const template = PROTOCOL_TEMPLATES.find(t => t.name === newProtocol.name);
     const category = newProtocol.category === '__custom__' ? newProtocol.customCategory : newProtocol.category;
-    setProtocols(prev => [...prev, {
-      id: Date.now(),
+    const ok = await saveProtocol(() => labProtocols.create({
       name: newProtocol.name,
       version: newProtocol.version,
-      status: newProtocol.status || undefined,
-      lastUpdated: new Date().toISOString().slice(0, 10),
+      status: newProtocol.status,
       description: newProtocol.description,
       category: template?.category || category || 'General',
       duration: newProtocol.duration,
       materials: newProtocol.materials,
       steps: newProtocol.steps,
       safety: newProtocol.safety,
-      approval: newProtocol.approval,
-    }]);
+      approval: newProtocol.approval ?? null,
+    }), 'Protocol created successfully!');
+    if (!ok) return;
     setNewProtocol(emptyProtocol);
     setShowProtocolModal(false);
-    showToast('Protocol created successfully!', 'success');
   };
 
   const handleCreateSOP = () => {
@@ -416,10 +427,13 @@ export default function LabHubPage() {
     if (!deleteConfirm) return;
     const itemName = deleteConfirm.name;
 
+    if (deleteConfirm.type === 'protocol') {
+      void saveProtocol(() => labProtocols.remove(deleteConfirm.id as Id<'protocols'>), `"${itemName}" deleted`);
+      setDeleteConfirm(null);
+      return;
+    }
+
     switch (deleteConfirm.type) {
-      case 'protocol':
-        setProtocols(prev => prev.filter(p => p.id !== deleteConfirm.id));
-        break;
       case 'sop':
         setSOPs(prev => prev.filter(s => s.id !== deleteConfirm.id));
         break;
@@ -440,7 +454,7 @@ export default function LabHubPage() {
   // Bulk Selection Handlers
   const selectAllProtocols = () => setSelectedProtocols(new Set(protocols.map(p => p.id)));
   const selectNoneProtocols = () => setSelectedProtocols(new Set());
-  const toggleProtocolSelection = (id: number) => {
+  const toggleProtocolSelection = (id: Id<'protocols'>) => {
     setSelectedProtocols(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -497,11 +511,14 @@ export default function LabHubPage() {
   const handleBulkDelete = () => {
     if (!bulkDeleteConfirm) return;
 
+    if (bulkDeleteConfirm.type === 'protocol') {
+      void saveProtocol(() => labProtocols.removeMany([...selectedProtocols]), `${bulkDeleteConfirm.count} protocol(s) deleted`);
+      setSelectedProtocols(new Set());
+      setBulkDeleteConfirm(null);
+      return;
+    }
+
     switch (bulkDeleteConfirm.type) {
-      case 'protocol':
-        setProtocols(prev => prev.filter(p => !selectedProtocols.has(p.id)));
-        setSelectedProtocols(new Set());
-        break;
       case 'sop':
         setSOPs(prev => prev.filter(s => !selectedSOPs.has(s.id)));
         setSelectedSOPs(new Set());
@@ -527,10 +544,8 @@ export default function LabHubPage() {
   const bulkChangeStatus = (type: string, newStatus: string) => {
     switch (type) {
       case 'protocol':
-        setProtocols(prev => prev.map(p =>
-          selectedProtocols.has(p.id) ? { ...p, status: newStatus as Protocol['status'], lastUpdated: new Date().toISOString().slice(0, 10) } : p
-        ));
-        showToast(`${selectedProtocols.size} protocol(s) updated to ${newStatus}`, 'success');
+        void saveProtocol(() => labProtocols.setStatusMany([...selectedProtocols], newStatus),
+          `${selectedProtocols.size} protocol(s) updated to ${newStatus}`);
         setSelectedProtocols(new Set());
         break;
       case 'booking':
@@ -552,16 +567,19 @@ export default function LabHubPage() {
 
   // Duplicate/Clone Handler
   const duplicateProtocol = (protocol: Protocol) => {
-    const newProtocol = {
-      ...protocol,
-      id: Date.now(),
+    // A copy keeps who must approve it but always starts as a pending draft.
+    void saveProtocol(() => labProtocols.create({
       name: `${protocol.name} (Copy)`,
-      status: 'draft' as const,
-      approval: protocol.approval && { mode: protocol.approval.mode, approver: protocol.approval.approver, state: 'pending' as const },
-      lastUpdated: new Date().toISOString().slice(0, 10),
-    };
-    setProtocols(prev => [...prev, newProtocol]);
-    showToast('Protocol duplicated successfully', 'success');
+      version: protocol.version,
+      status: 'draft',
+      description: protocol.description,
+      category: protocol.category,
+      duration: protocol.duration,
+      materials: protocol.materials,
+      steps: protocol.steps,
+      safety: protocol.safety,
+      approval: protocol.approval ? { mode: protocol.approval.mode, approver: protocol.approval.approver } : null,
+    }), 'Protocol duplicated successfully');
   };
 
   const duplicateSOP = (sop: SOP) => {
@@ -661,32 +679,45 @@ export default function LabHubPage() {
   };
 
   // Update/Save Handlers
-  // Content changed: anyone other than the approver sends it back for approval.
-  const revalidate = (p: Protocol): Protocol =>
-    p.approval && p.approval.state !== 'pending' && !canDecide(p.approval, user)
-      ? { ...p, approval: { ...p.approval, state: 'pending', decidedBy: undefined, decidedAt: undefined } }
-      : p;
-
-  const handleUpdateProtocol = (updatedProtocol: Protocol) => {
+  // The server resets approval to pending when anyone but the approver edits content (convex/protocolRules.ts).
+  const handleUpdateProtocol = async (updatedProtocol: Protocol) => {
     if (updatedProtocol.approval?.mode === 'user' && !updatedProtocol.approval.approver?.trim()) {
       showToast('Enter who must approve this protocol', 'error');
       return;
     }
-    const saved = revalidate({ ...updatedProtocol, lastUpdated: new Date().toISOString().slice(0, 10) });
-    setProtocols(prev => prev.map(p => p.id === saved.id ? saved : p));
-    setViewProtocol(null);
-    setEditMode(false);
-    showToast(saved.approval?.state === 'pending' && updatedProtocol.approval?.state !== 'pending'
-      ? 'Saved — sent back for approval' : 'Protocol saved successfully!', 'success');
+    const before = protocols.find(p => p.id === updatedProtocol.id)?.approval?.state;
+    try {
+      const saved = await labProtocols.update(updatedProtocol.id, {
+        name: updatedProtocol.name,
+        version: updatedProtocol.version,
+        status: updatedProtocol.status ?? '',
+        description: updatedProtocol.description ?? '',
+        category: updatedProtocol.category ?? '',
+        duration: updatedProtocol.duration ?? '',
+        materials: updatedProtocol.materials ?? '',
+        steps: updatedProtocol.steps ?? '',
+        safety: updatedProtocol.safety ?? '',
+        approval: updatedProtocol.approval
+          ? { mode: updatedProtocol.approval.mode, approver: updatedProtocol.approval.approver }
+          : null,
+      });
+      setViewProtocol(null);
+      setEditMode(false);
+      showToast(saved?.approval?.state === 'pending' && before && before !== 'pending'
+        ? 'Saved — sent back for approval' : 'Protocol saved successfully!', 'success');
+    } catch (e) {
+      showToast(errText(e), 'error');
+    }
   };
 
-  const decideApproval = (p: Protocol, state: 'approved' | 'rejected') => {
+  const decideApproval = async (p: Protocol, state: 'approved' | 'rejected') => {
     if (!p.approval) return;
-    const decidedBy = user?.full_name || user?.email || 'Unknown';
-    const updated: Protocol = { ...p, approval: { ...p.approval, state, decidedBy, decidedAt: new Date().toISOString() } };
-    setProtocols(prev => prev.map(x => x.id === p.id ? updated : x));
-    setViewProtocol(v => v && v.id === p.id ? updated : v);
-    showToast(`Protocol ${state}`, 'success');
+    const ok = await saveProtocol(() => labProtocols.decide(p.id, state), `Protocol ${state}`);
+    if (ok) {
+      const decidedBy = user?.full_name || user?.email || 'Unknown';
+      setViewProtocol(v => v && v.id === p.id
+        ? { ...v, approval: { ...p.approval!, state, decidedBy, decidedAt: new Date().toISOString() } } : v);
+    }
   };
 
   // Run (and with it full screen, edit and download) is only open once any required approval is given.
@@ -702,10 +733,8 @@ export default function LabHubPage() {
 
   const saveRunSteps = (content: string) => {
     if (!executingProtocol) return;
-    const next = revalidate({ ...executingProtocol, steps: content, lastUpdated: new Date().toISOString().slice(0, 10) });
-    setExecutingProtocol(next);
-    setProtocols(prev => prev.map(p => p.id === next.id ? next : p));
-    showToast('Steps saved', 'success');
+    setExecutingProtocol({ ...executingProtocol, steps: content });
+    void saveProtocol(() => labProtocols.update(executingProtocol.id, { steps: content }), 'Steps saved');
   };
 
   const protocolSubtitle = (p: Protocol) =>
@@ -748,28 +777,27 @@ export default function LabHubPage() {
     scheduled: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
     overdue: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
   };
+  // Saved records can carry statuses this page doesn't know (e.g. older data); show them in neutral gray.
+  const statusColor = (s?: string) => (s && statusColors[s]) || { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' };
 
   // Feature 7: mark protocol as used
-  const markAsUsed = (protocolId: number) => {
-    setUsageLogs(prev => ({ ...prev, [protocolId]: (prev[protocolId] || 0) + 1 }));
-    showToast('Protocol marked as used!', 'success');
-  };
+  const markAsUsed = (protocolId: Id<'protocols'>) =>
+    void saveProtocol(() => labProtocols.markUsed(protocolId), 'Protocol marked as used!');
 
-  // Feature 1: import external protocol into local list
-  const importLibProtocol = (ep: ExternalProtocol) => {
+  // Feature 1: import external protocol into the lab's saved protocols
+  const importLibProtocol = async (ep: ExternalProtocol) => {
     const exists = protocols.find(p => p.name === ep.title);
     if (exists) { showToast('Protocol already in your library', 'error'); return; }
-    setProtocols(prev => [...prev, {
-      id: Date.now(),
+    const ok = await saveProtocol(() => labProtocols.create({
       name: ep.title,
       version: '1.0',
       status: 'active',
-      lastUpdated: new Date().toISOString().slice(0, 10),
-      description: ep.description + '\n\nSteps:\n' + ep.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      description: `${ep.description}\n\nSource: ${ep.source} — ${ep.sourceUrl}`,
       category: ep.category,
-    }]);
-    showToast(`"${ep.title}" imported to My Protocols!`, 'success');
-    setViewLibProtocol(null);
+      duration: ep.duration,
+      steps: ep.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+    }), `"${ep.title}" imported to My Protocols!`);
+    if (ok) setViewLibProtocol(null);
   };
 
   // Feature 4: quick instrument status cycle
@@ -1146,7 +1174,7 @@ export default function LabHubPage() {
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>v{p.version}</td>
                     <td style={{ padding: 12 }}>
                       {p.status ? (
-                        <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[p.status].bg, color: statusColors[p.status].text }}>
+                        <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(p.status).bg, color: statusColor(p.status).text }}>
                           {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
                         </span>
                       ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
@@ -1162,9 +1190,9 @@ export default function LabHubPage() {
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{new Date(p.lastUpdated).toLocaleDateString()}</td>
                     <td style={{ padding: 12, textAlign: 'right' }}>
                       {/* Feature 7: usage count badge */}
-                      {(usageLogs[p.id] || 0) > 0 && (
+                      {p.useCount > 0 && (
                         <span style={{ marginRight: 6, padding: '2px 8px', borderRadius: 10, background: 'rgba(16,185,129,0.15)', color: '#34d399', fontSize: 11, fontWeight: 600 }}>
-                          ✓ used {usageLogs[p.id]}×
+                          ✓ used {p.useCount}×
                         </span>
                       )}
                       {p.approval && p.approval.state !== 'approved' && canDecide(p.approval, user) && (
@@ -1189,7 +1217,12 @@ export default function LabHubPage() {
                 {filterAndSortProtocols().length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No protocols found matching your criteria
+                      {labProtocols.loading ? 'Loading protocols…' : protocols.length > 0 ? 'No protocols found matching your criteria' : (
+                        <>
+                          <div style={{ marginBottom: 12 }}>No protocols yet. Create one, import from the Protocol Library, or start with examples.</div>
+                          <button className="btn btn-secondary" onClick={addSampleProtocols}>Add 4 sample protocols</button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 )}
@@ -1449,7 +1482,7 @@ export default function LabHubPage() {
                   <button
                     onClick={() => cycleInstrumentStatus(inst.id)}
                     title="Click to change status"
-                    style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[inst.status].bg, color: statusColors[inst.status].text, border: 'none', cursor: 'pointer' }}
+                    style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(inst.status).bg, color: statusColor(inst.status).text, border: 'none', cursor: 'pointer' }}
                   >
                     {inst.status === 'available' ? '✓ Available' : inst.status === 'in_use' ? '⏳ In Use' : '🔧 Maintenance'}
                   </button>
@@ -1649,7 +1682,7 @@ export default function LabHubPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[b.status].bg, color: statusColors[b.status].text }}>
+                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(b.status).bg, color: statusColor(b.status).text }}>
                     {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
                   </span>
                   <button
@@ -1810,7 +1843,7 @@ export default function LabHubPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[m.status].bg, color: statusColors[m.status].text }}>
+                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(m.status).bg, color: statusColor(m.status).text }}>
                     {m.status.charAt(0).toUpperCase() + m.status.slice(1)}
                   </span>
                   {m.status !== 'completed' && (
@@ -2656,8 +2689,8 @@ export default function LabHubPage() {
                   {viewProtocol.status && (
                     <span style={{
                       padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500,
-                      background: statusColors[viewProtocol.status].bg,
-                      color: statusColors[viewProtocol.status].text
+                      background: statusColor(viewProtocol.status).bg,
+                      color: statusColor(viewProtocol.status).text
                     }}>
                       {viewProtocol.status.charAt(0).toUpperCase() + viewProtocol.status.slice(1)}
                     </span>

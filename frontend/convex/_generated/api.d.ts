@@ -40,6 +40,7 @@ import type * as org from "../org.js";
 import type * as payments from "../payments.js";
 import type * as piAccess from "../piAccess.js";
 import type * as procurement from "../procurement.js";
+import type * as protocolRules from "../protocolRules.js";
 import type * as protocols from "../protocols.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as reagentCart from "../reagentCart.js";
@@ -100,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   piAccess: typeof piAccess;
   procurement: typeof procurement;
+  protocolRules: typeof protocolRules;
   protocols: typeof protocols;
   rateLimit: typeof rateLimit;
   reagentCart: typeof reagentCart;

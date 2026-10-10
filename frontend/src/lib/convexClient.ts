@@ -573,7 +573,7 @@ export const protocolsApi = {
     api.protocols.get
   ),
   listVersions: async (id: IdLike) => {
-    const result = await client.query(api.protocols.listVersions, { protocolId: id as any });
+    const result = await client.query(api.protocols.listVersions, { token: getToken(), protocolId: id as any });
     return { data: (result ?? []).map(adapt) };
   },
   createVersion: async (id: IdLike, data: any) => {

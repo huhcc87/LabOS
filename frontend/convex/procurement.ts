@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAuth, requireRole } from "./authHelper";
+import { hubGuard } from "./authHelper";
+// Students only reach this module if their PI allowed this hub.
+const { requireAuth, requireRole } = hubGuard("Resources");
 
 // ── Pending Approvals (purchase_orders with status "pending") ────────────────
 

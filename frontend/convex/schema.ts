@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { approvalValidator } from "./protocolRules";
 
 export default defineSchema({
   // ── Sessions (custom password auth) ──────────────────────────────────
@@ -60,9 +61,15 @@ export default defineSchema({
     description: v.optional(v.string()),
     category: v.optional(v.string()),
     version: v.string(),
-    status: v.string(),
+    // Optional: a protocol may have no status ("active" | "draft" | "archived" otherwise).
+    status: v.optional(v.string()),
     content: v.optional(v.string()),
     steps: v.optional(v.string()),
+    materials: v.optional(v.string()),
+    safety: v.optional(v.string()),
+    duration: v.optional(v.string()),
+    approval: v.optional(approvalValidator),
+    use_count: v.optional(v.number()),
     author_id: v.id("users"),
     tags: v.optional(v.string()),
     estimated_duration: v.optional(v.number()),

@@ -1,7 +1,9 @@
 import { query, mutation, action } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireAuth, requireRole } from "./authHelper";
+import { hubGuard } from "./authHelper";
 import { internal } from "./_generated/api";
+// Students only reach this module if their PI allowed this hub.
+const { requireAuth, requireRole } = hubGuard("Grant Hub");
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
 
