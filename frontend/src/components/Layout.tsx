@@ -8,6 +8,8 @@ import { AIChatPanel } from './AIChatPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useHubAccess } from '../lib/useHubAccess';
+import { isHub } from '../../convex/hubs';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -37,6 +39,8 @@ interface NavItem {
   label: string;
   icon: string;
   minRole: UserRole;
+  /** Hidden in Simple view; shown in Full view. */
+  advanced?: boolean;
 }
 
 interface NavCategory {
@@ -71,7 +75,7 @@ const NAV_CATEGORIES: NavCategory[] = [
       { key: 'eln', label: 'Lab Notebook', icon: '📓', minRole: 'trainee' },
       { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
       { key: 'equipment', label: 'Equipment', icon: '🔭', minRole: 'trainee' },
-      { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
+      { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee', advanced: true },
     ]
   },
   {
@@ -82,7 +86,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { key: 'samples', label: 'Samples', icon: '🧪', minRole: 'trainee' },
       { key: 'freezer-biobank', label: 'Freezer / Biobank', icon: '🧊', minRole: 'trainee' },
-      { key: 'label-printer', label: 'Label Printer', icon: '🏷️', minRole: 'trainee' },
+      { key: 'label-printer', label: 'Label Printer', icon: '🏷️', minRole: 'trainee', advanced: true },
     ]
   },
   {
@@ -101,8 +105,8 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'GLP, compliance & training',
     items: [
       { key: 'incidents', label: 'Incidents', icon: '⚠️', minRole: 'trainee' },
-      { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee' },
-      { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff' },
+      { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee', advanced: true },
+      { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff', advanced: true },
       { key: 'training-cert', label: 'Training & Certs', icon: '🎓', minRole: 'trainee' },
     ]
   },
@@ -113,10 +117,10 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Inventory, procurement & IoT sensors',
     items: [
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
-      { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
+      { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee', advanced: true },
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
-      { key: 'procurement-hub', label: 'Procurement', icon: '🏛', minRole: 'staff' },
-      { key: 'payment-methods', label: 'Payment Methods', icon: '💳', minRole: 'staff' },
+      { key: 'procurement-hub', label: 'Procurement', icon: '🏛', minRole: 'staff', advanced: true },
+      { key: 'payment-methods', label: 'Payment Methods', icon: '💳', minRole: 'staff', advanced: true },
     ]
   },
   {
@@ -126,13 +130,31 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Users, audit & settings',
     items: [
       { key: 'users', label: 'Users', icon: '👥', minRole: 'admin' },
-      { key: 'lab-members', label: 'Lab Members (PI)', icon: '🔑', minRole: 'staff' },
-      { key: 'org-hierarchy', label: 'Org & Sites', icon: '🏢', minRole: 'admin' },
-      { key: 'audit', label: 'Audit Trail', icon: '🔍', minRole: 'admin' },
+      { key: 'my-students', label: 'My Students (PI)', icon: '🎓', minRole: 'pi' },
+      { key: 'lab-members', label: 'Lab Members (PI)', icon: '🔑', minRole: 'staff', advanced: true },
+      { key: 'org-hierarchy', label: 'Org & Sites', icon: '🏢', minRole: 'admin', advanced: true },
+      { key: 'audit', label: 'Audit Trail', icon: '🔍', minRole: 'admin', advanced: true },
       { key: 'email-settings', label: 'Settings', icon: '⚙️', minRole: 'admin' },
     ]
   },
 ];
+
+// Routed pages that aren't in the sidebar, mapped to the hub that owns them (for the student access check).
+const EXTRA_PAGE_HUB: Record<string, string> = {
+  instruments: 'Lab Hub', bookings: 'Lab Hub', sops: 'Lab Hub', maintenance: 'Lab Hub',
+  'lab-notebook': 'Lab Hub', 'storage-map': 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Lab Hub',
+  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'batch-import': 'Sample Hub',
+  'grant-hub': 'Grant Hub', 'grant-budget': 'Grant Hub', 'funding-opportunities': 'Grant Hub', 'reviewer-feedback': 'Grant Hub',
+  'collaborator-network': 'Grant Hub', 'reference-manager': 'Grant Hub', 'biosketch-generator': 'Grant Hub', 'grant-calendar': 'Grant Hub',
+  'budget-calculator': 'Grant Hub', 'progress-reports': 'Grant Hub', 'support-letters': 'Grant Hub', 'success-analytics': 'Grant Hub',
+  'irb-tracker': 'Grant Hub', 'subcontract-manager': 'Grant Hub', 'era-commons': 'Grant Hub', 'writing-resources': 'Grant Hub',
+  'version-history': 'Grant Hub', 'grant-compose': 'Grant Hub',
+  compliance: 'Safety & Quality', training: 'Safety & Quality',
+  templates: 'Resources', 'cost-tracking': 'Resources', suppliers: 'Resources', 'supplier-directory': 'Resources', 'vendor-intelligence': 'Resources',
+};
+
+const hubOfPage = (page: string): string | undefined =>
+  NAV_CATEGORIES.find(c => c.items.some(i => i.key === page))?.category ?? EXTRA_PAGE_HUB[page];
 
 interface LayoutProps {
   activePage: string;
@@ -282,9 +304,20 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     });
   };
 
-  const visibleCategories = NAV_CATEGORIES.map(cat => ({
+  // Simple view hides advanced pages; Full view shows everything.
+  const [navMode, setNavMode] = useState<'simple' | 'full'>(() =>
+    localStorage.getItem('labos_nav_mode') === 'full' ? 'full' : 'simple');
+  useEffect(() => { localStorage.setItem('labos_nav_mode', navMode); }, [navMode]);
+
+  // Students only see the hubs their PI allows (Home and Admin are never hubs).
+  const access = useHubAccess(token);
+  const hubAllowed = (hub?: string) => !access.restricted || !hub || !isHub(hub) || access.hubs.includes(hub);
+  const pageBlocked = !hubAllowed(hubOfPage(activePage));
+
+  const visibleCategories = NAV_CATEGORIES.filter(cat => hubAllowed(cat.category)).map(cat => ({
     ...cat,
-    items: cat.items.filter(item => hasRole(item.minRole))
+    items: cat.items.filter(item =>
+      hasRole(item.minRole) && (navMode === 'full' || !item.advanced || item.key === activePage))
   })).filter(cat => cat.items.length > 0);
 
   const pageTitle = NAV_CATEGORIES.flatMap(c => c.items).find(i => i.key === activePage)?.label || 'Dashboard';
@@ -369,6 +402,24 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           })}
         </nav>
         <div className="sidebar-footer">
+          {/* Simple / Full menu */}
+          <div style={{ padding: '8px 12px' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Menu</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {(['simple', 'full'] as const).map(mode => (
+                <button key={mode} onClick={() => setNavMode(mode)} aria-pressed={navMode === mode}
+                  title={mode === 'simple' ? 'Show the main pages only' : 'Show every page'}
+                  style={{
+                    flex: 1, background: navMode === mode ? 'var(--accent)' : 'var(--surface2)',
+                    border: `1px solid ${navMode === mode ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 6, color: navMode === mode ? '#fff' : 'var(--text-muted)',
+                    padding: '5px 4px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  }}>
+                  {mode === 'simple' ? 'Simple' : 'Full'}
+                </button>
+              ))}
+            </div>
+          </div>
           {/* Theme toggle */}
           <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
             <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Theme</div>
@@ -565,7 +616,16 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
         </header>
 
         <div className="page-container">
-          {children}
+          {pageBlocked ? (
+            <div className="card" style={{ maxWidth: 520, margin: '60px auto', padding: 32, textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No access to {hubOfPage(activePage)}</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+                Your PI{access.piName ? ` (${access.piName})` : ''} hasn't turned this on for your account. Ask them to enable it under My Students.
+              </p>
+              <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>Go to Dashboard</button>
+            </div>
+          ) : children}
         </div>
 
         {/* Floating Quick-Add Button */}

@@ -95,6 +95,7 @@ export const create = mutation({
       v.literal("trainee")
     ),
     department: v.optional(v.string()),
+    position: v.optional(v.string()),
     phone: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     data_classification_clearance: v.optional(v.string()),
@@ -111,6 +112,7 @@ export const create = mutation({
       full_name: args.full_name,
       role: args.role,
       department: args.department,
+      position: args.position,
       phone: args.phone,
       avatar_url: args.avatar_url,
       data_classification_clearance: args.data_classification_clearance,
@@ -139,6 +141,7 @@ export const update = mutation({
       )
     ),
     department: v.optional(v.string()),
+    position: v.optional(v.string()),
     phone: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     is_active: v.optional(v.boolean()),

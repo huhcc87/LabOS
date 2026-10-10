@@ -42,6 +42,7 @@ const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
+const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
@@ -221,6 +222,7 @@ function AppInner() {
       case 'payment-methods': return <PaymentMethodsPage />;
       case 'procurement-hub': return <ProcurementHubPage />;
       case 'lab-members': return <LabMembersPage />;
+      case 'my-students': return <MyStudentsPage />;
       // Tier 2 — Clinical & Translational Research
       case 'clinical-research': return <ClinicalResearchHubPage />;
       // Tier 4 — Operational Excellence

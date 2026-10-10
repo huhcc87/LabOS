@@ -31,6 +31,8 @@ export type UserRole = "superadmin" | "admin" | "pi" | "manager" | "staff" | "tr
 const ROLE_ORDER: UserRole[] = ["trainee", "staff", "manager", "pi", "admin", "superadmin"];
 
 export function hasRole(userRole: string, minRole: UserRole): boolean {
+  // A PI has full access to everything except super-admin-only functions.
+  if (userRole === "pi" && minRole !== "superadmin") return true;
   return ROLE_ORDER.indexOf(userRole as UserRole) >= ROLE_ORDER.indexOf(minRole);
 }
 

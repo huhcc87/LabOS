@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { ProtocolExecutionModal } from '../components/ProtocolExecutionModal';
 import { protocolsApi } from '../lib/api';
 import { useNavigate } from '../context/NavigationContext';
+import { useAuth } from '../context/AuthContext';
+import { ProtocolFormFields, type ProtocolDetails } from '../components/ProtocolFormFields';
+import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
+import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 
 // Types
-interface Protocol { id: number; name: string; version: string; status: 'active' | 'draft' | 'archived'; lastUpdated: string; description?: string; category?: string; }
+interface Protocol extends ProtocolDetails { id: number; name: string; version: string; status?: 'active' | 'draft' | 'archived'; lastUpdated: string; description?: string; category?: string; }
 interface SOP { id: number; title: string; category: string; version: string; description?: string; }
 interface Instrument { id: number; name: string; location: string; status: 'available' | 'in_use' | 'maintenance'; type?: string; }
 interface Booking { id: number; instrument: string; user: string; date: string; time: string; status: 'confirmed' | 'pending'; purpose?: string; }
@@ -127,6 +131,7 @@ const LAB_LOCATIONS = [
 
 export default function LabHubPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
 
   // Modal states
@@ -207,9 +212,8 @@ export default function LabHubPage() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   // Form states with enhanced fields
-  const [newProtocol, setNewProtocol] = useState<{ name: string; version: string; status: 'draft' | 'active'; description: string; category: string; useTemplate: boolean; customCategory: string }>({
-    name: '', version: '1.0', status: 'draft', description: '', category: '', useTemplate: true, customCategory: ''
-  });
+  const emptyProtocol = { name: '', version: '1.0', status: '' as '' | 'draft' | 'active', description: '', category: '', useTemplate: true, customCategory: '' };
+  const [newProtocol, setNewProtocol] = useState<typeof emptyProtocol & ProtocolDetails>(emptyProtocol);
   const [newSOP, setNewSOP] = useState({
     title: '', category: 'Safety', version: '1.0', description: '', useTemplate: true
   });
@@ -225,10 +229,10 @@ export default function LabHubPage() {
 
   // Data states
   const [protocols, setProtocols] = useState<Protocol[]>([
-    { id: 1, name: 'PCR Amplification', version: '2.1', status: 'active', lastUpdated: '2024-03-15', category: 'Molecular Biology' },
-    { id: 2, name: 'Western Blot Analysis', version: '1.5', status: 'active', lastUpdated: '2024-02-20', category: 'Protein Analysis' },
-    { id: 3, name: 'Cell Culture Maintenance', version: '3.0', status: 'active', lastUpdated: '2024-01-10', category: 'Cell Biology' },
-    { id: 4, name: 'RNA Extraction', version: '1.2', status: 'draft', lastUpdated: '2024-03-18', category: 'Molecular Biology' },
+    { id: 1, name: 'PCR Amplification', version: '2.1', status: 'active', lastUpdated: '2024-03-15', category: 'Molecular Biology', duration: '2 hours', materials: 'Template DNA\nPrimers\nTaq polymerase mix', steps: '1. Thaw reagents on ice\n2. Prepare master mix\n3. Add template DNA\n4. Run thermocycler 2 hours', safety: 'Wear gloves. Dispose of tips as biohazard waste.' },
+    { id: 2, name: 'Western Blot Analysis', version: '1.5', status: 'active', lastUpdated: '2024-02-20', category: 'Protein Analysis', steps: '1. Run SDS-PAGE gel\n2. Transfer to membrane\n3. Block membrane 1 hour\n4. Incubate primary antibody overnight\n5. Wash 3 times\n6. Incubate secondary antibody 1 hour\n7. Develop and image' },
+    { id: 3, name: 'Cell Culture Maintenance', version: '3.0', status: 'active', lastUpdated: '2024-01-10', category: 'Cell Biology', steps: '1. Warm medium to 37°C\n2. Check cells under microscope\n3. Aspirate old medium\n4. Add fresh medium\n5. Return flask to incubator' },
+    { id: 4, name: 'RNA Extraction', version: '1.2', status: 'draft', lastUpdated: '2024-03-18', category: 'Molecular Biology', steps: '1. Lyse sample in TRIzol\n2. Add chloroform and spin 15 min\n3. Precipitate RNA with isopropanol\n4. Wash pellet with 75% ethanol\n5. Resuspend in RNase-free water' },
   ]);
 
   const [sops, setSOPs] = useState<SOP[]>([
@@ -304,18 +308,27 @@ export default function LabHubPage() {
   // Handlers
   const handleCreateProtocol = () => {
     if (!newProtocol.name.trim()) return;
+    if (newProtocol.approval?.mode === 'user' && !newProtocol.approval.approver?.trim()) {
+      showToast('Enter who must approve this protocol', 'error');
+      return;
+    }
     const template = PROTOCOL_TEMPLATES.find(t => t.name === newProtocol.name);
     const category = newProtocol.category === '__custom__' ? newProtocol.customCategory : newProtocol.category;
     setProtocols(prev => [...prev, {
       id: Date.now(),
       name: newProtocol.name,
       version: newProtocol.version,
-      status: newProtocol.status,
+      status: newProtocol.status || undefined,
       lastUpdated: new Date().toISOString().slice(0, 10),
       description: newProtocol.description,
       category: template?.category || category || 'General',
+      duration: newProtocol.duration,
+      materials: newProtocol.materials,
+      steps: newProtocol.steps,
+      safety: newProtocol.safety,
+      approval: newProtocol.approval,
     }]);
-    setNewProtocol({ name: '', version: '1.0', status: 'draft', description: '', category: '', useTemplate: true, customCategory: '' });
+    setNewProtocol(emptyProtocol);
     setShowProtocolModal(false);
     showToast('Protocol created successfully!', 'success');
   };
@@ -544,6 +557,7 @@ export default function LabHubPage() {
       id: Date.now(),
       name: `${protocol.name} (Copy)`,
       status: 'draft' as const,
+      approval: protocol.approval && { mode: protocol.approval.mode, approver: protocol.approval.approver, state: 'pending' as const },
       lastUpdated: new Date().toISOString().slice(0, 10),
     };
     setProtocols(prev => [...prev, newProtocol]);
@@ -608,7 +622,7 @@ export default function LabHubPage() {
     let filtered = protocols.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.category || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || (statusFilter === 'none' ? !p.status : p.status === statusFilter);
       const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -619,7 +633,7 @@ export default function LabHubPage() {
         case 'name': comparison = a.name.localeCompare(b.name); break;
         case 'version': comparison = a.version.localeCompare(b.version); break;
         case 'date': comparison = a.lastUpdated.localeCompare(b.lastUpdated); break;
-        case 'status': comparison = a.status.localeCompare(b.status); break;
+        case 'status': comparison = (a.status ?? '').localeCompare(b.status ?? ''); break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -647,15 +661,71 @@ export default function LabHubPage() {
   };
 
   // Update/Save Handlers
+  // Content changed: anyone other than the approver sends it back for approval.
+  const revalidate = (p: Protocol): Protocol =>
+    p.approval && p.approval.state !== 'pending' && !canDecide(p.approval, user)
+      ? { ...p, approval: { ...p.approval, state: 'pending', decidedBy: undefined, decidedAt: undefined } }
+      : p;
+
   const handleUpdateProtocol = (updatedProtocol: Protocol) => {
-    setProtocols(prev => prev.map(p =>
-      p.id === updatedProtocol.id
-        ? { ...updatedProtocol, lastUpdated: new Date().toISOString().slice(0, 10) }
-        : p
-    ));
+    if (updatedProtocol.approval?.mode === 'user' && !updatedProtocol.approval.approver?.trim()) {
+      showToast('Enter who must approve this protocol', 'error');
+      return;
+    }
+    const saved = revalidate({ ...updatedProtocol, lastUpdated: new Date().toISOString().slice(0, 10) });
+    setProtocols(prev => prev.map(p => p.id === saved.id ? saved : p));
     setViewProtocol(null);
     setEditMode(false);
-    showToast('Protocol saved successfully!', 'success');
+    showToast(saved.approval?.state === 'pending' && updatedProtocol.approval?.state !== 'pending'
+      ? 'Saved — sent back for approval' : 'Protocol saved successfully!', 'success');
+  };
+
+  const decideApproval = (p: Protocol, state: 'approved' | 'rejected') => {
+    if (!p.approval) return;
+    const decidedBy = user?.full_name || user?.email || 'Unknown';
+    const updated: Protocol = { ...p, approval: { ...p.approval, state, decidedBy, decidedAt: new Date().toISOString() } };
+    setProtocols(prev => prev.map(x => x.id === p.id ? updated : x));
+    setViewProtocol(v => v && v.id === p.id ? updated : v);
+    showToast(`Protocol ${state}`, 'success');
+  };
+
+  // Run (and with it full screen, edit and download) is only open once any required approval is given.
+  const runProtocol = (p: Protocol) => {
+    if (!isApproved(p.approval)) {
+      showToast(`Needs ${p.approval?.mode === 'pi' ? 'PI' : 'user'} approval before it can be run`, 'error');
+      return;
+    }
+    setExecutingProtocol(p);
+    setViewProtocol(null);
+    setEditMode(false);
+  };
+
+  const saveRunSteps = (content: string) => {
+    if (!executingProtocol) return;
+    const next = revalidate({ ...executingProtocol, steps: content, lastUpdated: new Date().toISOString().slice(0, 10) });
+    setExecutingProtocol(next);
+    setProtocols(prev => prev.map(p => p.id === next.id ? next : p));
+    showToast('Steps saved', 'success');
+  };
+
+  const protocolSubtitle = (p: Protocol) =>
+    [`v${p.version}`, p.category, p.status, approvalBadge(p.approval)?.text.replace(/^\S+\s/, '')].filter(Boolean).join(' · ');
+
+  const downloadProtocol = (p: Protocol) => {
+    if (!isApproved(p.approval)) {
+      showToast(`Needs ${p.approval?.mode === 'pi' ? 'PI' : 'user'} approval before it can be downloaded`, 'error');
+      return;
+    }
+    const section = (title: string, body?: string) => (body?.trim() ? [`## ${title}`, body.trim(), ''] : []);
+    downloadTextFile(protocolFilename(p.name), [
+      `# ${p.name}`,
+      `_${protocolSubtitle(p)}${p.duration ? ` · ${p.duration}` : ''}_`,
+      '',
+      ...section('Purpose', p.description),
+      ...section('Materials', p.materials),
+      ...section('Steps', p.steps),
+      ...section('Safety', p.safety),
+    ].join('\n'));
   };
 
   const handleUpdateSOP = (updatedSOP: SOP) => {
@@ -929,6 +999,7 @@ export default function LabHubPage() {
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
                 <option value="archived">Archived</option>
+                <option value="none">No status</option>
               </select>
               <select
                 className="form-select"
@@ -1054,6 +1125,7 @@ export default function LabHubPage() {
                   <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Category</th>
                   <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Version</th>
                   <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Status</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Approval</th>
                   <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Last Updated</th>
                   <th style={{ padding: 12, textAlign: 'right', fontSize: 12, fontWeight: 600 }}>Actions</th>
                 </tr>
@@ -1073,9 +1145,19 @@ export default function LabHubPage() {
                     <td style={{ padding: 12, fontSize: 12, color: 'var(--text-muted)' }}>{p.category || 'General'}</td>
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>v{p.version}</td>
                     <td style={{ padding: 12 }}>
-                      <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[p.status].bg, color: statusColors[p.status].text }}>
-                        {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
-                      </span>
+                      {p.status ? (
+                        <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColors[p.status].bg, color: statusColors[p.status].text }}>
+                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                        </span>
+                      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                    </td>
+                    <td style={{ padding: 12 }}>
+                      {(() => {
+                        const b = approvalBadge(p.approval);
+                        return b
+                          ? <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: b.bg, color: b.color, whiteSpace: 'nowrap' }}>{b.text}</span>
+                          : <span style={{ color: 'var(--text-muted)' }}>—</span>;
+                      })()}
                     </td>
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{new Date(p.lastUpdated).toLocaleDateString()}</td>
                     <td style={{ padding: 12, textAlign: 'right' }}>
@@ -1085,9 +1167,12 @@ export default function LabHubPage() {
                           ✓ used {usageLogs[p.id]}×
                         </span>
                       )}
+                      {p.approval && p.approval.state !== 'approved' && canDecide(p.approval, user) && (
+                        <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }} onClick={() => decideApproval(p, 'approved')} title="Approve this protocol">✓ Approve</button>
+                      )}
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View">👁️</button>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit">✏️</button>
-                      <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: 'none' }} onClick={() => { setExecutingProtocol(p); setViewProtocol(null); }} title="Execute">▶ Run</button>
+                      <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: 'none' }} onClick={() => runProtocol(p)} title={isApproved(p.approval) ? 'Execute' : 'Needs approval first'}>▶ Run</button>
                       <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'none' }} onClick={() => markAsUsed(p.id)} title="Mark as used today">✓ Used</button>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => duplicateProtocol(p)} title="Duplicate">📋</button>
                       <button
@@ -1103,7 +1188,7 @@ export default function LabHubPage() {
                 ))}
                 {filterAndSortProtocols().length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
                       No protocols found matching your criteria
                     </td>
                   </tr>
@@ -1995,12 +2080,13 @@ export default function LabHubPage() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Status</label>
+                <label style={labelStyle}>Status (optional)</label>
                 <select
                   className="form-select"
                   value={newProtocol.status}
-                  onChange={e => setNewProtocol({ ...newProtocol, status: e.target.value as 'draft' | 'active' })}
+                  onChange={e => setNewProtocol({ ...newProtocol, status: e.target.value as '' | 'draft' | 'active' })}
                 >
+                  <option value="">No status</option>
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
                 </select>
@@ -2034,6 +2120,8 @@ export default function LabHubPage() {
                 style={{ resize: 'vertical', fontFamily: 'inherit' }}
               />
             </div>
+
+            <ProtocolFormFields value={newProtocol} onChange={patch => setNewProtocol(prev => ({ ...prev, ...patch }))} />
 
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
               <button className="btn btn-secondary" onClick={() => setShowProtocolModal(false)} style={{ flex: 1 }}>Cancel</button>
@@ -2565,13 +2653,15 @@ export default function LabHubPage() {
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>
                     {editMode ? 'Edit Protocol' : 'Protocol Details'}
                   </h3>
-                  <span style={{
-                    padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500,
-                    background: statusColors[viewProtocol.status].bg,
-                    color: statusColors[viewProtocol.status].text
-                  }}>
-                    {viewProtocol.status.charAt(0).toUpperCase() + viewProtocol.status.slice(1)}
-                  </span>
+                  {viewProtocol.status && (
+                    <span style={{
+                      padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500,
+                      background: statusColors[viewProtocol.status].bg,
+                      color: statusColors[viewProtocol.status].text
+                    }}>
+                      {viewProtocol.status.charAt(0).toUpperCase() + viewProtocol.status.slice(1)}
+                    </span>
+                  )}
                 </div>
               </div>
               <button onClick={() => { setViewProtocol(null); setEditMode(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: 'var(--text-muted)' }}>×</button>
@@ -2608,12 +2698,13 @@ export default function LabHubPage() {
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Status</label>
+                    <label style={labelStyle}>Status (optional)</label>
                     <select
                       className="form-select"
-                      value={viewProtocol.status}
-                      onChange={e => setViewProtocol({ ...viewProtocol, status: e.target.value as 'active' | 'draft' | 'archived' })}
+                      value={viewProtocol.status ?? ''}
+                      onChange={e => setViewProtocol({ ...viewProtocol, status: (e.target.value || undefined) as Protocol['status'] })}
                     >
+                      <option value="">No status</option>
                       <option value="draft">Draft</option>
                       <option value="active">Active</option>
                       <option value="archived">Archived</option>
@@ -2630,6 +2721,7 @@ export default function LabHubPage() {
                     style={{ resize: 'vertical', fontFamily: 'inherit' }}
                   />
                 </div>
+                <ProtocolFormFields value={viewProtocol} onChange={patch => setViewProtocol({ ...viewProtocol, ...patch })} />
                 <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                   <button className="btn btn-secondary" onClick={() => { setViewProtocol(null); setEditMode(false); }} style={{ flex: 1 }}>Cancel</button>
                   <button
@@ -2668,6 +2760,36 @@ export default function LabHubPage() {
                     {viewProtocol.description || 'No description available. Click Edit to add one.'}
                   </div>
                 </div>
+
+                {([['Materials', viewProtocol.materials], ['Steps', viewProtocol.steps], ['Safety notes', viewProtocol.safety]] as const).map(([title, body]) => body?.trim() && (
+                  <div key={title} style={{ marginBottom: 20 }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--text-soft)' }}>{title}</h4>
+                    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{body}</div>
+                  </div>
+                ))}
+                {viewProtocol.duration && <div style={{ marginBottom: 20, fontSize: 13, color: 'var(--text-muted)' }}>⏱ Duration: {viewProtocol.duration}</div>}
+
+                {viewProtocol.approval && (() => {
+                  const b = approvalBadge(viewProtocol.approval)!;
+                  const mayDecide = canDecide(viewProtocol.approval, user);
+                  return (
+                    <div style={{ marginBottom: 20, padding: 14, borderRadius: 10, background: b.bg, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: b.color }}>{b.text}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          {viewProtocol.approval.mode === 'pi' ? 'Needs PI approval to run or download.' : `Needs approval from ${viewProtocol.approval.approver} to run or download.`}
+                          {viewProtocol.approval.decidedAt && ` ${new Date(viewProtocol.approval.decidedAt).toLocaleString()}`}
+                        </div>
+                      </div>
+                      {mayDecide && viewProtocol.approval.state !== 'approved' && (
+                        <button className="btn btn-sm btn-primary" onClick={() => decideApproval(viewProtocol, 'approved')}>✓ Approve</button>
+                      )}
+                      {mayDecide && viewProtocol.approval.state !== 'rejected' && (
+                        <button className="btn btn-sm btn-secondary" onClick={() => decideApproval(viewProtocol, 'rejected')}>✗ Reject</button>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Version History */}
                 <div style={{ marginBottom: 16 }}>
@@ -2736,10 +2858,11 @@ export default function LabHubPage() {
                   <button
                     className="btn btn-primary"
                     style={{ flex: 1, background: '#6366f1' }}
-                    onClick={() => { setExecutingProtocol(viewProtocol); setViewProtocol(null); setEditMode(false); }}
+                    onClick={() => runProtocol(viewProtocol)}
                   >
                     ▶ Execute
                   </button>
+                  <button className="btn btn-secondary" onClick={() => downloadProtocol(viewProtocol)} style={{ flex: 1 }}>⬇ Download</button>
                   <button className="btn btn-primary" onClick={() => setEditMode(true)} style={{ flex: 1 }}>
                     ✏️ Edit
                   </button>
@@ -3081,7 +3204,9 @@ export default function LabHubPage() {
       {executingProtocol && (
         <ProtocolExecutionModal
           protocolTitle={executingProtocol.name}
-          protocolContent={executingProtocol.description || ''}
+          protocolContent={executingProtocol.steps?.trim() ? executingProtocol.steps : executingProtocol.description || ''}
+          subtitle={protocolSubtitle(executingProtocol)}
+          onSave={saveRunSteps}
           onClose={() => setExecutingProtocol(null)}
         />
       )}

@@ -10,6 +10,7 @@ interface User {
   email: string;
   role: string;
   department: string;
+  position: string;
   status: 'active' | 'inactive';
   joinDate: string;
   lastActive: string;
@@ -61,7 +62,10 @@ interface SystemSetting {
 }
 
 // Constants
-const ROLES = ['Admin', 'Manager', 'Staff', 'Trainee', 'Guest'];
+const ROLES = ['PI', 'Admin', 'Manager', 'Staff', 'Trainee', 'Guest'];
+// Academic position — a label shown alongside the role; it doesn't change permissions.
+const POSITIONS = ['BSc', 'MSc', 'PG', 'PhD', 'Postdoc'];
+const roleLabel = (r?: string) => (r === 'pi' ? 'PI' : r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Staff');
 const DEPARTMENTS = ['Research', 'Lab Operations', 'Quality Control', 'IT', 'Administration', 'Other'];
 const FILE_CATEGORIES = ['Manual', 'Protocol', 'Report', 'Form', 'Policy', 'Training', 'Other'];
 
@@ -82,7 +86,7 @@ export default function AdminHubPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userFilter, setUserFilter] = useState({ role: '', status: '' });
   const [newUser, setNewUser] = useState({
-    name: '', email: '', role: 'Staff', department: 'Research'
+    name: '', email: '', role: 'Staff', department: 'Research', position: ''
   });
 
   // Audit logs state
@@ -128,8 +132,9 @@ export default function AdminHubPage() {
       const items = (res.data as any).items || [];
       setUsers(items.map((u: any) => ({
         id: u.id, name: u.full_name, email: u.email,
-        role: u.role?.charAt(0).toUpperCase() + u.role?.slice(1) || 'Staff',
+        role: roleLabel(u.role),
         department: u.department || 'Research',
+        position: u.position || '',
         status: u.is_active ? 'active' : 'inactive',
         joinDate: u.created_at?.slice(0, 10) || '',
         lastActive: u.last_login?.slice(0, 10) || 'Never',
@@ -169,24 +174,31 @@ export default function AdminHubPage() {
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email) { showToast('Please fill required fields', 'error'); return; }
     try {
-      await usersAdminApi.create({ full_name: newUser.name, email: newUser.email, role: newUser.role.toLowerCase(), password: 'LabOS2024!', is_active: true });
+      await usersAdminApi.create({
+        full_name: newUser.name, email: newUser.email.trim().toLowerCase(), role: newUser.role.toLowerCase(),
+        department: newUser.department, position: newUser.position || undefined,
+      });
       await fetchUsers();
       addAuditLog('created user', newUser.name, 'user', `Role: ${newUser.role}`);
-      setNewUser({ name: '', email: '', role: 'Staff', department: 'Research' });
+      setNewUser({ name: '', email: '', role: 'Staff', department: 'Research', position: '' });
       setShowUserModal(false);
-      showToast('User added!');
-    } catch (e: any) { showToast(e?.response?.data?.detail || 'Failed to create user', 'error'); }
+      showToast('User added! Set their password above so they can sign in.');
+    } catch (e: any) { showToast(e?.data || e?.message || 'Failed to create user', 'error'); }
   };
 
   const handleUpdateUser = async () => {
     if (!editingUser) return;
     try {
-      await usersAdminApi.update(editingUser.id, { full_name: editingUser.name, email: editingUser.email, role: editingUser.role.toLowerCase() });
+      await usersAdminApi.update(editingUser.id, {
+        full_name: editingUser.name, role: editingUser.role.toLowerCase(),
+        department: editingUser.department, position: editingUser.position,
+        is_active: editingUser.status === 'active',
+      });
       await fetchUsers();
       addAuditLog('updated user', editingUser.name, 'user');
       setEditingUser(null);
       showToast('User updated!');
-    } catch { showToast('Failed to update user', 'error'); }
+    } catch (e: any) { showToast(e?.data || e?.message || 'Failed to update user', 'error'); }
   };
 
   const handleDeleteUser = async (user: User) => {
@@ -271,12 +283,15 @@ export default function AdminHubPage() {
 
   // Filtered users
   const filteredUsers = users.filter(u => {
-    if (userFilter.role && u.role !== userFilter.role) return false;
+    if (userFilter.role.startsWith('pos:')) {
+      if (u.position !== userFilter.role.slice(4)) return false;
+    } else if (userFilter.role && u.role !== userFilter.role) return false;
     if (userFilter.status && u.status !== userFilter.status) return false;
     return true;
   });
 
   const roleColors: Record<string, { bg: string; text: string }> = {
+    PI: { bg: 'rgba(234,179,8,0.15)', text: '#fbbf24' },
     Admin: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
     Manager: { bg: 'rgba(168,85,247,0.15)', text: '#a855f7' },
     Staff: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
@@ -384,7 +399,12 @@ export default function AdminHubPage() {
                 style={{ minWidth: 120 }}
               >
                 <option value="">All Roles</option>
-                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                <optgroup label="Role">
+                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </optgroup>
+                <optgroup label="Student / position">
+                  {POSITIONS.map(p => <option key={p} value={`pos:${p}`}>{p}</option>)}
+                </optgroup>
               </select>
               <select
                 className="form-select"
@@ -449,6 +469,9 @@ export default function AdminHubPage() {
                       <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{user.email}</td>
                       <td style={{ padding: 12 }}>
                         <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: roleColors[user.role]?.bg, color: roleColors[user.role]?.text }}>{user.role}</span>
+                        {user.position && (
+                          <span style={{ marginLeft: 6, padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: 'rgba(14,165,233,0.15)', color: '#38bdf8' }}>🎓 {user.position}</span>
+                        )}
                       </td>
                       <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{user.department}</td>
                       <td style={{ padding: 12 }}>
@@ -677,6 +700,15 @@ export default function AdminHubPage() {
                     {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Student / position (optional)</label>
+                <select className="form-select" style={{ width: '100%' }}
+                  value={editingUser ? editingUser.position : newUser.position}
+                  onChange={e => editingUser ? setEditingUser({ ...editingUser, position: e.target.value }) : setNewUser({ ...newUser, position: e.target.value })}>
+                  <option value="">None</option>
+                  {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
               {editingUser && (
                 <div>

@@ -29,11 +29,17 @@ export default defineSchema({
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
     stripe_customer_id: v.optional(v.string()),
+    // Academic position (BSc, MSc, PG, PhD, Postdoc) — a label, separate from the permission role.
+    position: v.optional(v.string()),
+    // PI-controlled access: the student's PI and the hubs that PI allows.
+    pi_id: v.optional(v.id("users")),
+    allowed_hubs: v.optional(v.array(v.string())),
     created_at: v.number(),
     updated_at: v.number(),
   })
     .index("by_email", ["email"])
-    .index("by_role", ["role"]),
+    .index("by_role", ["role"])
+    .index("by_pi", ["pi_id"]),
 
   // ── Protocols ────────────────────────────────────────────────────────
   protocols: defineTable({

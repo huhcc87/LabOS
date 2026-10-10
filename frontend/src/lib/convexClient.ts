@@ -96,6 +96,7 @@ export const authApi = {
   },
   listUsers: async (page = 1, perPage = 20, search = '') => {
     const result = await client.query(api.users.list, {
+      token: getToken(),
       search: search || undefined,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -103,16 +104,16 @@ export const authApi = {
     return paginated(items, page, perPage);
   },
   createUser: async (data: any) => {
-    const result = await client.mutation(api.users.create, data);
+    const result = await client.mutation(api.users.create, { token: getToken(), ...data });
     return { data: result };
   },
   updateUser: async (id: IdLike, data: any) => {
     const { id: _id, ...fields } = data;
-    const result = await client.mutation(api.users.update, { id: id as any, ...fields });
+    const result = await client.mutation(api.users.update, { token: getToken(), id: id as any, ...fields });
     return { data: adapt(result) };
   },
   deleteUser: async (id: IdLike) => {
-    await client.mutation(api.users.remove, { id: id as any });
+    await client.mutation(api.users.remove, { token: getToken(), id: id as any });
     return { data: { success: true } };
   },
 };
