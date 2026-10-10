@@ -130,8 +130,8 @@ export const create = mutation({
       updated_at: now,
     });
     // The new user signs up through this one-time link and picks their own password.
-    const invite_token = await issueInvite(ctx, id, caller._id);
-    return { id, invite_token };
+    const { token: invite_token, emailed } = await issueInvite(ctx, id, caller._id);
+    return { id, invite_token, emailed };
   },
 });
 

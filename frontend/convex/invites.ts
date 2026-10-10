@@ -8,6 +8,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { requireRole } from "./authHelper";
+import { emailConfigured } from "./inviteEmail";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 /** Password placeholder for accounts that haven't accepted their invite yet. */
@@ -24,13 +25,26 @@ function newToken(): string {
  * ponytail: token stored as-is in its own table and never returned with user records;
  * hash it at rest if the database itself is ever exposed to less-trusted readers.
  */
-export async function issueInvite(ctx: MutationCtx, userId: Id<"users">, createdBy: Id<"users">): Promise<string> {
+export async function issueInvite(
+  ctx: MutationCtx, userId: Id<"users">, createdBy: Id<"users">
+): Promise<{ token: string; emailed: boolean }> {
   const old = await ctx.db.query("invites").withIndex("by_user", (q) => q.eq("user_id", userId)).collect();
   await Promise.all(old.map((i) => ctx.db.delete(i._id)));
   const token = newToken();
   const now = Date.now();
   await ctx.db.insert("invites", { user_id: userId, token, expires_at: now + INVITE_TTL_MS, created_by: createdBy, created_at: now });
-  return token;
+
+  // Email it automatically when Brevo is configured (sent right after this mutation commits).
+  const emailed = emailConfigured();
+  if (emailed) {
+    const [user, inviter] = await Promise.all([ctx.db.get(userId), ctx.db.get(createdBy)]);
+    if (user) {
+      await ctx.scheduler.runAfter(0, internal.inviteEmail.sendInvite, {
+        to: user.email, name: user.full_name, token, invitedBy: inviter?.full_name ?? "Your PI",
+      });
+    }
+  }
+  return { token, emailed };
 }
 
 /** New link for someone who hasn't joined yet (e.g. the first one expired or was lost). */

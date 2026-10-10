@@ -119,7 +119,7 @@ export default function AdminHubPage() {
     name: '', email: '', role: 'Staff', department: 'Research', position: ''
   });
   // Sign-up link shown after adding a user (or on request for someone who hasn't joined).
-  const [inviteLink, setInviteLink] = useState<{ name: string; email: string; url: string } | null>(null);
+  const [inviteLink, setInviteLink] = useState<{ name: string; email: string; url: string; emailed: boolean } | null>(null);
 
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -214,7 +214,8 @@ export default function AdminHubPage() {
       });
       await fetchUsers();
       addAuditLog('created user', newUser.name, 'user', `Role: ${newUser.role}`);
-      setInviteLink({ name: newUser.name, email: newUser.email.trim().toLowerCase(), url: inviteUrl((res.data as any).invite_token) });
+      const created = res.data as { invite_token: string; emailed: boolean };
+      setInviteLink({ name: newUser.name, email: newUser.email.trim().toLowerCase(), url: inviteUrl(created.invite_token), emailed: created.emailed });
       setNewUser({ name: '', email: '', role: 'Staff', department: 'Research', position: '' });
       setShowUserModal(false);
       showToast('User added — send them the invite link');
@@ -224,7 +225,8 @@ export default function AdminHubPage() {
   const handleInviteLink = async (user: User) => {
     try {
       const res = await usersAdminApi.newInvite(user.id);
-      setInviteLink({ name: user.name, email: user.email, url: inviteUrl(res.data as string) });
+      const { token, emailed } = res.data as { token: string; emailed: boolean };
+      setInviteLink({ name: user.name, email: user.email, url: inviteUrl(token), emailed });
     } catch (e: any) { showToast(e?.data || e?.message || 'Could not create invite link', 'error'); }
   };
 
@@ -722,8 +724,13 @@ export default function AdminHubPage() {
         <div style={modalStyle} onClick={() => setInviteLink(null)}>
           <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>🔗 Invite link for {inviteLink.name}</h3>
+            {inviteLink.emailed && (
+              <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: '#4ade80', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                ✉️ Invite emailed to {inviteLink.email}. You can also copy the link below.
+              </div>
+            )}
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-              Send this link to <strong>{inviteLink.email}</strong>. They open it, choose their own password, and from then on sign in with that email.
+              {inviteLink.emailed ? 'Link' : 'Send this link'} for <strong>{inviteLink.email}</strong>. They open it, choose their own password, and from then on sign in with that email.
               It works once and expires in 7 days.
             </p>
             <input className="form-input" readOnly value={inviteLink.url} onFocus={e => e.target.select()} style={{ width: '100%', marginBottom: 12, fontSize: 12 }} />
