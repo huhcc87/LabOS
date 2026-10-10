@@ -1,425 +1,419 @@
-import { useState, useEffect, useCallback } from 'react';
-import { freezerApi } from '../lib/api';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import toast from 'react-hot-toast';
+import { api } from '../../convex/_generated/api';
+import type { Doc, Id } from '../../convex/_generated/dataModel';
+import { useAuth } from '../context/AuthContext';
+import { Icon } from '../components/Icon';
+import { errText } from '../lib/errors';
+import {
+  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, SampleDialog, type SampleValues,
+} from '../features/freezer/dialogs';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface FreezerUnit {
-  id: string;
-  name: string;
-  location: string;
-  temp: string;
-  type: 'ult' | 'freezer' | 'fridge' | 'ln2';
-  racks: number;
-  boxes: number;
-  capacity: number;
-  used: number;
+type Shelf = Doc<'freezer_shelves'>;
+type Rack = Doc<'freezer_racks'>;
+type Box = Doc<'freezer_boxes'> & { filled: number };
+type Slot = Doc<'freezer_slots'>;
+
+/** What the open dialog is for (one at a time). */
+type Dialog =
+  | { kind: 'newFreezer' } | { kind: 'editFreezer' } | { kind: 'deleteFreezer' }
+  | { kind: 'newShelf' } | { kind: 'renameShelf'; shelf: Shelf } | { kind: 'deleteShelf'; shelf: Shelf }
+  | { kind: 'newRack'; shelf: Shelf } | { kind: 'renameRack'; rack: Rack } | { kind: 'deleteRack'; rack: Rack }
+  | { kind: 'newBox'; rack: Rack } | { kind: 'renameBox'; box: Box } | { kind: 'deleteBox'; box: Box }
+  | { kind: 'sample'; box: Box; row: number; col: number };
+
+const letter = (n: number) => String.fromCharCode(65 + n);
+const DAY = 86400000;
+
+function slotState(s: Slot | undefined): 'empty' | 'ok' | 'soon' | 'expired' {
+  if (!s) return 'empty';
+  if (s.expiry_date === undefined) return 'ok';
+  const left = s.expiry_date - Date.now();
+  return left < 0 ? 'expired' : left < 30 * DAY ? 'soon' : 'ok';
 }
-
-interface BoxCell {
-  row: number;
-  col: number;
-  sampleId?: string;
-  sampleType?: string;
-  date?: string;
-  owner?: string;
-  expiry?: string;
-  volume?: string;
-}
-
-interface Sample {
-  id: string;
-  type: string;
-  date: string;
-  owner: string;
-  expiry: string;
-  volume: string;
-  status: 'ok' | 'expiring_soon' | 'expired';
-  freezer: string;
-  rack: string;
-  box: string;
-  position: string;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const FREEZERS: FreezerUnit[] = [
-  { id: 'f1', name: 'ULT Freezer 1', location: 'Room 204', temp: '-80°C', type: 'ult', racks: 4, boxes: 48, capacity: 480, used: 312 },
-  { id: 'f2', name: 'ULT Freezer 2', location: 'Room 204', temp: '-80°C', type: 'ult', racks: 4, boxes: 48, capacity: 480, used: 198 },
-  { id: 'f3', name: '-20°C Freezer', location: 'Room 202', temp: '-20°C', type: 'freezer', racks: 3, boxes: 30, capacity: 300, used: 211 },
-  { id: 'f4', name: 'Sample Fridge', location: 'Room 201', temp: '+4°C', type: 'fridge', racks: 2, boxes: 20, capacity: 200, used: 87 },
-  { id: 'f5', name: 'LN₂ Dewar', location: 'Storage B', temp: '-196°C', type: 'ln2', racks: 6, boxes: 60, capacity: 600, used: 421 },
-];
-
-const SAMPLE_TYPES = ['DNA', 'RNA', 'Protein', 'Serum', 'Plasma', 'FFPE', 'Cell Line', 'PDX', 'Organoid', 'Other'];
-
-function makeBoxCells(freezerId: string, rack: number, box: number): BoxCell[] {
-  const cells: BoxCell[] = [];
-  const seed = freezerId.charCodeAt(1) + rack * 7 + box * 13;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const idx = r * 9 + c;
-      const occupied = (seed + idx * 17) % 5 !== 0;
-      if (occupied) {
-        const sampleTypes = SAMPLE_TYPES;
-        const typeIdx = (seed + idx) % sampleTypes.length;
-        const daysAgo = (seed + idx * 3) % 730;
-        const expDays = (seed + idx * 7) % 365 - 100;
-        const owners = ['Lab Member 1', 'Lab Member 2', 'Lab Member 3', 'Lab Member 4', 'Lab Member 5'];
-        cells.push({
-          row: r, col: c,
-          sampleId: `S${String(seed + idx).slice(-5)}`,
-          sampleType: sampleTypes[typeIdx],
-          date: new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10),
-          owner: owners[(seed + idx) % owners.length],
-          expiry: new Date(Date.now() + expDays * 86400000).toISOString().slice(0, 10),
-          volume: `${((seed + idx) % 9 + 1) * 50} µL`,
-        });
-      } else {
-        cells.push({ row: r, col: c });
-      }
-    }
-  }
-  return cells;
-}
-
-const MOCK_EXPIRING: Sample[] = [];
-
-const INP: React.CSSProperties = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
-
-const ROWS = ['A','B','C','D','E','F','G','H','I'];
-const COLS = Array.from({ length: 9 }, (_, i) => i + 1);
+const STATE_STYLE = {
+  ok: { bg: 'var(--ok-bg)', fg: 'var(--ok-text)', mark: '' },
+  soon: { bg: 'var(--warn-bg)', fg: 'var(--warn-text)', mark: '!' },
+  expired: { bg: 'var(--bad-bg)', fg: 'var(--bad-text)', mark: '!!' },
+} as const;
 
 export default function FreezerBiobankPage() {
-  const [freezers, setFreezers] = useState<FreezerUnit[]>(FREEZERS);
-  const [selectedFreezer, setSelectedFreezer] = useState<FreezerUnit>(FREEZERS[0]);
-  const [selectedRack, setSelectedRack] = useState(1);
-  const [selectedBox, setSelectedBox] = useState(1);
-  const [selectedCell, setSelectedCell] = useState<BoxCell | null>(null);
-  const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'map' | 'expiry' | 'search'>('map');
-  const [apiSlots, setApiSlots] = useState<BoxCell[]>([]);
-  const [expiringList, setExpiringList] = useState<Sample[]>(MOCK_EXPIRING);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showAddFreezer, setShowAddFreezer] = useState(false);
-  const [newFreezerName, setNewFreezerName] = useState('');
-  const [newFreezerLocation, setNewFreezerLocation] = useState('');
-  const [newFreezerTemp, setNewFreezerTemp] = useState('-80°C');
-  const [savingCell, setSavingCell] = useState(false);
-  const [editCell, setEditCell] = useState<BoxCell | null>(null);
+  const { token, user, hasRole } = useAuth();
+  const canBuild = hasRole('staff'); // add/delete freezers, shelves, racks, boxes
+  const t = token ?? undefined;
+  const skip = token ? undefined : 'skip';
 
-  const fetchFreezers = useCallback(async () => {
-    try {
-      const res = await freezerApi.list();
-      const data = res.data as any[];
-      if (data.length > 0) {
-        const mapped: FreezerUnit[] = data.map(f => ({
-          id: String(f.id), name: f.name, location: f.location, temp: f.temp_setting,
-          type: f.freezer_type as any, racks: f.total_racks, boxes: f.boxes_per_rack * f.total_racks,
-          capacity: f.total_slots, used: f.used_slots,
-        }));
-        setFreezers(mapped);
-        setSelectedFreezer(mapped[0]);
-      }
-    } catch { /* use defaults */ }
-  }, []);
+  const freezers = useQuery(api.freezer.list, skip ?? { token: t });
+  const [freezerId, setFreezerId] = useState<Id<'freezers'> | null>(null);
+  const freezer = freezers?.find(f => f._id === freezerId) ?? freezers?.[0];
+  const structure = useQuery(api.freezer.structure, freezer && token ? { token: t, freezer_id: freezer._id } : 'skip');
 
-  const fetchSlots = useCallback(async () => {
-    if (!selectedFreezer || selectedFreezer.id.startsWith('f')) return;
-    try {
-      const res = await freezerApi.getSlots(Number(selectedFreezer.id), selectedRack, selectedBox);
-      const slots = res.data as any[];
-      const cells: BoxCell[] = slots.map(s => ({
-        row: s.row_idx, col: s.col_idx, sampleId: s.sample_id || undefined,
-        sampleType: s.sample_type || undefined, date: s.date_stored || undefined,
-        owner: s.owner || undefined, expiry: s.expiry_date || undefined, volume: s.volume || undefined,
-      }));
-      setApiSlots(cells);
-    } catch { setApiSlots([]); }
-  }, [selectedFreezer, selectedRack, selectedBox]);
+  const [rackId, setRackId] = useState<Id<'freezer_racks'> | null>(null);
+  const [boxId, setBoxId] = useState<Id<'freezer_boxes'> | null>(null);
+  const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [tab, setTab] = useState<'storage' | 'expiring' | 'search'>('storage');
 
-  const fetchExpiring = useCallback(async () => {
-    try {
-      const res = await freezerApi.getExpiring(30);
-      if ((res.data as any[]).length > 0) setExpiringList(res.data as any);
-    } catch { /* use mock */ }
-  }, []);
+  const racksByShelf = useMemo(() => {
+    const m = new Map<string, Rack[]>();
+    for (const r of structure?.racks ?? []) m.set(r.shelf_id, [...(m.get(r.shelf_id) ?? []), r]);
+    return m;
+  }, [structure]);
+  const rack = structure?.racks.find(r => r._id === rackId);
+  const boxes = (structure?.boxes ?? []).filter(b => b.rack_id === rack?._id);
+  const box = (structure?.boxes ?? []).find(b => b._id === boxId && b.rack_id === rack?._id);
+  const shelf = structure?.shelves.find(s => s._id === rack?.shelf_id);
 
-  useEffect(() => { fetchFreezers(); fetchExpiring(); }, [fetchFreezers, fetchExpiring]);
-  useEffect(() => { fetchSlots(); }, [fetchSlots]);
+  const slots = useQuery(api.freezer.boxSlots, box && token ? { token: t, box_id: box._id } : 'skip');
+  const slotAt = useMemo(() => new Map((slots ?? []).map(s => [`${s.row}:${s.col}`, s])), [slots]);
 
-  const handleSearch = async () => {
-    if (!search) return;
-    try {
-      const res = await freezerApi.search(search);
-      setSearchResults(res.data as any[]);
-    } catch { setSearchResults([]); }
+  // Impact counts for the delete confirmation (only queried while that dialog is open)
+  const impactTarget =
+    dialog?.kind === 'deleteFreezer' && freezer ? { kind: 'freezer' as const, id: freezer._id }
+    : dialog?.kind === 'deleteShelf' ? { kind: 'shelf' as const, id: dialog.shelf._id }
+    : dialog?.kind === 'deleteRack' ? { kind: 'rack' as const, id: dialog.rack._id }
+    : dialog?.kind === 'deleteBox' ? { kind: 'box' as const, id: dialog.box._id }
+    : null;
+  const impact = useQuery(api.freezer.impact, impactTarget && token ? { token: t, ...impactTarget } : 'skip');
+
+  const m = {
+    createFreezer: useMutation(api.freezer.create), updateFreezer: useMutation(api.freezer.update), removeFreezer: useMutation(api.freezer.remove),
+    addShelf: useMutation(api.freezer.addShelf), renameShelf: useMutation(api.freezer.renameShelf), removeShelf: useMutation(api.freezer.removeShelf),
+    addRack: useMutation(api.freezer.addRack), renameRack: useMutation(api.freezer.renameRack), removeRack: useMutation(api.freezer.removeRack),
+    addBox: useMutation(api.freezer.addBox), renameBox: useMutation(api.freezer.renameBox), removeBox: useMutation(api.freezer.removeBox),
+    setSlot: useMutation(api.freezer.setSlot), clearSlot: useMutation(api.freezer.clearSlot),
   };
+  const close = () => setDialog(null);
 
-  const handleCellSave = async () => {
-    if (!editCell || selectedFreezer.id.startsWith('f')) return;
-    setSavingCell(true);
-    try {
-      await freezerApi.upsertSlot(Number(selectedFreezer.id), selectedRack, selectedBox, editCell.row, editCell.col, {
-        sample_id: editCell.sampleId || '', sample_type: editCell.sampleType || '',
-        date_stored: editCell.date || '', owner: editCell.owner || '',
-        expiry_date: editCell.expiry || '', volume: editCell.volume || '', notes: '',
-      });
-      await fetchSlots();
-      setSelectedCell(editCell);
-      setEditCell(null);
-    } catch { /* no-op */ }
-    setSavingCell(false);
-  };
+  /** Run a quick action and surface errors as a toast. */
+  const act = async (work: () => Promise<unknown>) => { try { await work(); } catch (e) { toast.error(errText(e)); } };
 
-  const resolvedCells = apiSlots.length > 0 ? apiSlots : makeBoxCells(selectedFreezer.id, selectedRack, selectedBox);
-  const cells = resolvedCells;
-  const usedCells = cells.filter(c => c.sampleId).length;
-  const totalCells = cells.length;
-
-  const getCellColor = (cell: BoxCell) => {
-    if (!cell.sampleId) return 'var(--surface2)';
-    if (!cell.expiry) return '#4ade80';
-    const daysToExpiry = Math.ceil((new Date(cell.expiry).getTime() - Date.now()) / 86400000);
-    if (daysToExpiry < 0) return '#ef4444';
-    if (daysToExpiry < 30) return '#fbbf24';
-    return '#4ade80';
-  };
-
-  const expiringCount = expiringList.filter(s => s.status === 'expiring_soon').length;
-  const expiredCount = expiringList.filter(s => s.status === 'expired').length;
+  const loading = freezers === undefined;
+  const sampleValues = (s: Slot | undefined): SampleValues => ({
+    sample_id: s?.sample_id ?? '', label: s?.label ?? '', sample_type: s?.sample_type ?? '', owner: s?.owner ?? user?.full_name ?? '',
+    volume: s?.volume ?? '', barcode: s?.barcode ?? '',
+    expiry: s?.expiry_date ? new Date(s.expiry_date).toISOString().slice(0, 10) : '', notes: s?.notes ?? '',
+  });
 
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Freezer & Biobank Map</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>Visual sample location tracking · Expiry monitoring · Quick retrieval</p>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Storage Units', value: freezers.length, color: 'var(--text)', icon: '🧊' },
-          { label: 'Total Samples', value: freezers.reduce((a, f) => a + f.used, 0), color: '#60a5fa', icon: '🧪' },
-          { label: 'Expiring Soon', value: expiringCount, color: '#fbbf24', icon: '⏰' },
-          { label: 'Expired', value: expiredCount, color: '#f87171', icon: '⚠️' },
-        ].map(s => (
-          <div key={s.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 22 }}>{s.icon}</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
-        {[{ key: 'map' as const, label: '🗺️ Visual Map' }, { key: 'expiry' as const, label: '⏰ Expiry Tracker' }, { key: 'search' as const, label: '🔍 Sample Search' }].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ padding: '10px 18px', fontSize: 14, fontWeight: tab === t.key ? 600 : 400, border: 'none', background: 'none', cursor: 'pointer', color: tab === t.key ? 'var(--primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t.key ? 'var(--primary)' : 'transparent'}` }}>
-            {t.label}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Freezers</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>Freezer → shelf → rack → box → position. Add what you store, delete what you don't.</p>
+        </div>
+        {canBuild && (
+          <button className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDialog({ kind: 'newFreezer' })}>
+            <Icon name="plus" /> New freezer
           </button>
+        )}
+      </div>
+
+      {/* Freezer picker */}
+      {freezers && freezers.length > 0 && (
+        <div role="tablist" aria-label="Freezers" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          {freezers.map(f => {
+            const on = f._id === freezer?._id;
+            return (
+              <button key={f._id} role="tab" aria-selected={on} className="chip-link"
+                onClick={() => { setFreezerId(f._id); setRackId(null); setBoxId(null); }}
+                style={on ? { borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--accent-light)', fontWeight: 700 } : undefined}>
+                {f.name}{f.temperature !== undefined ? <span style={{ opacity: 0.8 }}>· {f.temperature}°C</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        {([['storage', 'Storage'], ['expiring', 'Expiring soon'], ['search', 'Find a sample']] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
+            padding: '10px 16px', background: 'none', border: 0, cursor: 'pointer', fontSize: 14, marginBottom: -1,
+            borderBottom: `2px solid ${tab === k ? 'var(--accent)' : 'transparent'}`,
+            color: tab === k ? 'var(--accent)' : 'var(--text-muted)', fontWeight: tab === k ? 700 : 400,
+          }}>{l}</button>
         ))}
       </div>
 
-      {/* ── VISUAL MAP ── */}
-      {tab === 'map' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20 }}>
-          {/* Freezer sidebar */}
-          <div>
-            <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>Storage Units</h4>
-              {freezers.map(f => {
-                const pct = Math.round((f.used / f.capacity) * 100);
-                const icons = { ult: '🧊', freezer: '❄️', fridge: '🌡️', ln2: '💨' };
-                return (
-                  <div key={f.id} onClick={() => { setSelectedFreezer(f); setSelectedRack(1); setSelectedBox(1); setSelectedCell(null); }}
-                    style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 6, background: selectedFreezer.id === f.id ? 'rgba(99,102,241,0.12)' : 'var(--surface2)', border: `1px solid ${selectedFreezer.id === f.id ? 'var(--primary)' : 'transparent'}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{icons[f.type]} {f.name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.temp}</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{f.location}</div>
-                    <div style={{ height: 4, background: 'var(--border)', borderRadius: 2 }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: pct > 90 ? '#ef4444' : pct > 70 ? '#fbbf24' : '#4ade80', borderRadius: 2 }} />
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3, textAlign: 'right' }}>{pct}% full</div>
-                  </div>
-                );
-              })}
-            </div>
+      {tab === 'expiring' && <Expiring token={t} />}
+      {tab === 'search' && <Search token={t} />}
 
-            {/* Rack / Box selectors */}
-            <div className="card" style={{ padding: 12 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>Navigate</h4>
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>RACK</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {Array.from({ length: selectedFreezer.racks }, (_, i) => i + 1).map(r => (
-                    <button key={r} onClick={() => { setSelectedRack(r); setSelectedBox(1); setSelectedCell(null); }}
-                      style={{ width: 34, height: 34, borderRadius: 6, border: '1px solid', borderColor: selectedRack === r ? 'var(--primary)' : 'var(--border)', background: selectedRack === r ? 'rgba(99,102,241,0.15)' : 'none', color: selectedRack === r ? 'var(--primary)' : 'var(--text)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {tab === 'storage' && (loading ? (
+        <p style={{ color: 'var(--text-muted)' }}>Loading freezers…</p>
+      ) : !freezer ? (
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+          <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>No freezers yet</h2>
+          <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>
+            {canBuild ? 'Add your first freezer, then its shelves, racks and boxes.' : 'Ask a lab manager or your PI to add the lab’s freezers.'}
+          </p>
+          {canBuild && <button className="btn btn-primary" onClick={() => setDialog({ kind: 'newFreezer' })}>New freezer</button>}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, alignItems: 'start' }}>
+          {/* Shelves, top to bottom */}
+          <section className="card" style={{ padding: 0 }} aria-label={`${freezer.name} layout`}>
+            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>BOX</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {Array.from({ length: Math.ceil(selectedFreezer.boxes / selectedFreezer.racks) }, (_, i) => i + 1).map(b => (
-                    <button key={b} onClick={() => { setSelectedBox(b); setSelectedCell(null); }}
-                      style={{ width: 34, height: 34, borderRadius: 6, border: '1px solid', borderColor: selectedBox === b ? 'var(--primary)' : 'var(--border)', background: selectedBox === b ? 'rgba(99,102,241,0.15)' : 'none', color: selectedBox === b ? 'var(--primary)' : 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-                      {b}
-                    </button>
-                  ))}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{freezer.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{[freezer.location, freezer.temperature !== undefined ? `${freezer.temperature}°C` : ''].filter(Boolean).join(' · ') || 'No location set'}</div>
               </div>
-            </div>
-          </div>
-
-          {/* Box grid */}
-          <div>
-            <div className="card" style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{selectedFreezer.name} · Rack {selectedRack} · Box {selectedBox}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{usedCells}/{totalCells} positions occupied ({Math.round(usedCells/totalCells*100)}%)</div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
-                  {[{ color: '#4ade80', label: 'OK' }, { color: '#fbbf24', label: '<30 days' }, { color: '#ef4444', label: 'Expired' }, { color: 'var(--surface2)', label: 'Empty' }].map(l => (
-                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
-                      <span style={{ color: 'var(--text-muted)' }}>{l.label}</span>
+              {canBuild && (
+                <span>
+                  <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
+                  <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
+                </span>
+              )}
+            </header>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {structure === undefined ? <p style={{ color: 'var(--text-muted)', margin: 0 }}>Loading…</p>
+                : structure.shelves.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                    No shelves yet.{canBuild ? ' Add the top shelf to start.' : ''}
+                  </p>
+                ) : structure.shelves.map(s => (
+                  <div key={s._id}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>{s.name}</h3>
+                      {canBuild && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setDialog({ kind: 'newRack', shelf: s })}>
+                            <Icon name="plus" size={13} /> Add rack
+                          </button>
+                          <button className="icon-btn" aria-label={`Rename ${s.name}`} title="Rename shelf" onClick={() => setDialog({ kind: 'renameShelf', shelf: s })}><Icon name="pencil" /></button>
+                          <button className="icon-btn danger" aria-label={`Delete ${s.name}`} title="Delete shelf" onClick={() => setDialog({ kind: 'deleteShelf', shelf: s })}><Icon name="trash" /></button>
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8 }}>
+                      {(racksByShelf.get(s._id) ?? []).map(r => {
+                        const n = structure.boxes.filter(b => b.rack_id === r._id).length;
+                        const on = r._id === rack?._id;
+                        return (
+                          <button key={r._id} onClick={() => { setRackId(r._id); setBoxId(null); }} aria-pressed={on}
+                            style={{
+                              padding: '12px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+                              background: on ? 'var(--accent-light)' : 'var(--surface2)', color: 'var(--text)',
+                              border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                            }}>
+                            <div style={{ fontWeight: 700, fontSize: 13 }}>{r.name}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n} box{n === 1 ? '' : 'es'}</div>
+                          </button>
+                        );
+                      })}
+                      {(racksByShelf.get(s._id) ?? []).length === 0 && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>No racks on this shelf.</span>}
+                    </div>
+                  </div>
+                ))}
+              {canBuild && (
+                <button className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDialog({ kind: 'newShelf' })}>
+                  <Icon name="plus" /> Add shelf{structure && structure.shelves.length > 0 ? ' below' : ''}
+                </button>
+              )}
+            </div>
+          </section>
 
-              {/* Grid header */}
-              <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(9, 1fr)', gap: 3, marginBottom: 4 }}>
-                <div />
-                {COLS.map(c => <div key={c} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{c}</div>)}
+          {/* Boxes in the chosen rack, then the box itself */}
+          <section aria-label="Rack contents" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {!rack ? (
+              <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+                Pick a rack on the left to see its boxes.
               </div>
-
-              {/* Grid rows */}
-              {ROWS.map((rowLabel, r) => (
-                <div key={r} style={{ display: 'grid', gridTemplateColumns: '24px repeat(9, 1fr)', gap: 3, marginBottom: 3 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{rowLabel}</div>
-                  {COLS.map((_, c) => {
-                    const cell = cells.find(x => x.row === r && x.col === c);
-                    if (!cell) return <div key={c} style={{ aspectRatio: '1', background: 'var(--surface2)', borderRadius: 4 }} />;
-                    const bg = getCellColor(cell);
-                    const isSelected = selectedCell?.row === r && selectedCell?.col === c;
+            ) : (
+              <div className="card" style={{ padding: 0 }}>
+                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{freezer.name} › {shelf?.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{rack.name}</div>
+                  </div>
+                  {canBuild && (
+                    <span>
+                      <button className="icon-btn" aria-label={`Rename ${rack.name}`} title="Rename rack" onClick={() => setDialog({ kind: 'renameRack', rack })}><Icon name="pencil" /></button>
+                      <button className="icon-btn danger" aria-label={`Delete ${rack.name}`} title="Delete rack" onClick={() => setDialog({ kind: 'deleteRack', rack })}><Icon name="trash" /></button>
+                    </span>
+                  )}
+                </header>
+                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                  {boxes.map(b => {
+                    const total = b.rows * b.cols;
+                    const on = b._id === box?._id;
                     return (
-                      <div key={c} onClick={() => setSelectedCell(isSelected ? null : cell)}
-                        title={cell.sampleId ? `${cell.sampleId} · ${cell.sampleType}` : 'Empty'}
-                        style={{ aspectRatio: '1', background: bg, borderRadius: 4, cursor: cell.sampleId ? 'pointer' : 'default', opacity: isSelected ? 0.7 : 1, border: isSelected ? '2px solid white' : '2px solid transparent', transition: 'all 0.1s', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: 'rgba(0,0,0,0.5)', fontWeight: 700 }}>
-                        {cell.sampleId ? rowLabel + (c + 1) : ''}
-                      </div>
+                      <button key={b._id} onClick={() => setBoxId(b._id)} aria-pressed={on} style={{
+                        padding: 12, borderRadius: 8, cursor: 'pointer', textAlign: 'left', color: 'var(--text)',
+                        background: on ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                      }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{b.rows} × {b.cols} · {b.filled}/{total} used</div>
+                        <div style={{ height: 4, borderRadius: 2, background: 'var(--surface3)' }} aria-hidden="true">
+                          <div style={{ width: `${Math.round((b.filled / total) * 100)}%`, height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
+                        </div>
+                      </button>
                     );
                   })}
-                </div>
-              ))}
-            </div>
-
-            {/* Cell detail */}
-            {selectedCell && selectedCell.sampleId && (
-              <div className="card" style={{ borderColor: 'rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.04)' }}>
-                <h4 style={{ fontWeight: 600, marginBottom: 12 }}>Sample Details — {ROWS[selectedCell.row]}{selectedCell.col + 1}</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-                  {[
-                    { label: 'Sample ID', value: selectedCell.sampleId },
-                    { label: 'Type', value: selectedCell.sampleType },
-                    { label: 'Stored Date', value: selectedCell.date },
-                    { label: 'Owner', value: selectedCell.owner },
-                    { label: 'Expiry Date', value: selectedCell.expiry },
-                    { label: 'Volume', value: selectedCell.volume },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>{f.label}</div>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>{f.value || '—'}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>📋 Copy ID</button>
-                  <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>🔖 Print Label</button>
-                  <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>📤 Move Sample</button>
+                  {canBuild && (
+                    <button onClick={() => setDialog({ kind: 'newBox', rack })} style={{
+                      padding: 12, borderRadius: 8, cursor: 'pointer', border: '1px dashed var(--border)', background: 'transparent',
+                      color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 74,
+                    }}><Icon name="plus" /> New box</button>
+                  )}
+                  {boxes.length === 0 && !canBuild && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>No boxes in this rack yet.</span>}
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {/* ── EXPIRY TRACKER ── */}
-      {tab === 'expiry' && (
-        <div>
-          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Expiry Alerts</h3>
-          {expiringList.length === 0 && <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>All samples are within valid date ranges. ✓</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {expiringList.map(s => {
-              const isExpired = s.status === 'expired';
-              return (
-                <div key={s.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderColor: isExpired ? 'rgba(239,68,68,0.3)' : 'rgba(234,179,8,0.3)' }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                    <span style={{ fontSize: 22 }}>{isExpired ? '❌' : '⏰'}</span>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{s.id} · {s.type}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.freezer} · {s.rack} · {s.box} · Position {s.position} · Owner: {s.owner}</div>
-                      <div style={{ fontSize: 12, color: isExpired ? '#f87171' : '#fbbf24', marginTop: 2 }}>
-                        {isExpired ? `Expired: ${s.expiry}` : `Expires: ${s.expiry}`} · Volume: {s.volume}
-                      </div>
-                    </div>
+            {box && (
+              <div className="card" style={{ padding: 0 }}>
+                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{freezer.name} › {shelf?.name} › {rack?.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{box.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{slots ? slots.filter(s => s.sample_id || s.label).length : box.filled} of {box.rows * box.cols} positions used</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>Extend Expiry</button>
-                    <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid #f87171', borderRadius: 6, background: 'none', cursor: 'pointer', color: '#f87171' }}>Mark Discarded</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── SEARCH ── */}
-      {tab === 'search' && (
-        <div>
-          <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
-            <input style={{ ...INP, maxWidth: 500, fontSize: 15, padding: '10px 16px' }} placeholder="Search by sample ID, type, owner..." value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
-            <button onClick={handleSearch} style={{ padding: '10px 20px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Search</button>
-          </div>
-          {searchResults.length > 0 ? (
-            <div className="card" style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Sample ID', 'Type', 'Freezer', 'Location', 'Owner', 'Volume', 'Expiry'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
+                  {canBuild && (
+                    <span>
+                      <button className="icon-btn" aria-label={`Rename ${box.name}`} title="Rename box" onClick={() => setDialog({ kind: 'renameBox', box })}><Icon name="pencil" /></button>
+                      <button className="icon-btn danger" aria-label={`Delete ${box.name}`} title="Delete box" onClick={() => setDialog({ kind: 'deleteBox', box })}><Icon name="trash" /></button>
+                    </span>
+                  )}
+                </header>
+                <div style={{ padding: 16, overflowX: 'auto' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `24px repeat(${box.cols}, minmax(40px, 1fr))`, gap: 4, minWidth: 24 + box.cols * 44 }}>
+                    <span />
+                    {Array.from({ length: box.cols }, (_, c) => <span key={c} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)' }}>{c + 1}</span>)}
+                    {Array.from({ length: box.rows }, (_, r) => (
+                      <RowCells key={r} r={r} box={box} slotAt={slotAt} onPick={(row, col) => setDialog({ kind: 'sample', box, row, col })} />
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {searchResults.map((s, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600 }}>{s.sample_id}</td>
-                      <td style={{ padding: '10px 12px' }}>{s.sample_type}</td>
-                      <td style={{ padding: '10px 12px' }}>{s.freezer}</td>
-                      <td style={{ padding: '10px 12px' }}>Rack {s.rack} · Box {s.box} · {s.position}</td>
-                      <td style={{ padding: '10px 12px' }}>{s.owner}</td>
-                      <td style={{ padding: '10px 12px' }}>{s.volume}</td>
-                      <td style={{ padding: '10px 12px', color: s.expiry_date < new Date().toISOString().slice(0,10) ? '#f87171' : '#4ade80' }}>{s.expiry_date || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : search ? (
-            <div className="card" style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>No samples found for "{search}" — press Search to query</div>
-          ) : (
-            <div className="card" style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Enter a sample ID, type, or owner name and press Search</div>
-          )}
+                  </div>
+                  <ul style={{ display: 'flex', gap: 16, flexWrap: 'wrap', listStyle: 'none', padding: 0, margin: '14px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                    <li>Empty (click to add)</li><li style={{ color: 'var(--ok-text)' }}>■ In storage</li>
+                    <li style={{ color: 'var(--warn-text)' }}>! Expires within 30 days</li><li style={{ color: 'var(--bad-text)' }}>!! Expired</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </section>
         </div>
+      ))}
+
+      {/* Dialogs */}
+      {dialog?.kind === 'newFreezer' && <FreezerDialog onClose={close} onSubmit={async v => { const id = await m.createFreezer({ token: t, ...v }); setFreezerId(id); }} />}
+      {dialog?.kind === 'editFreezer' && freezer && <FreezerDialog initial={freezer} onClose={close} onSubmit={v => m.updateFreezer({ token: t, id: freezer._id, ...v })} />}
+      {dialog?.kind === 'deleteFreezer' && freezer && (
+        <ConfirmDelete title="Delete freezer" what={freezer.name} impact={impact} onClose={close}
+          onConfirm={async () => { await m.removeFreezer({ token: t, id: freezer._id }); setFreezerId(null); setRackId(null); setBoxId(null); }} />
       )}
+      {dialog?.kind === 'newShelf' && freezer && (
+        <NameDialog title="Add shelf" fieldLabel="Shelf name" placeholder={structure?.shelves.length ? `Shelf ${structure.shelves.length + 1}` : 'Top shelf'} confirm="Add shelf"
+          onClose={close} onSubmit={name => m.addShelf({ token: t, freezer_id: freezer._id, name }).then(() => undefined)} />
+      )}
+      {dialog?.kind === 'renameShelf' && <NameDialog title="Rename shelf" fieldLabel="Shelf name" initial={dialog.shelf.name} confirm="Save" onClose={close} onSubmit={name => m.renameShelf({ token: t, id: dialog.shelf._id, name })} />}
+      {dialog?.kind === 'deleteShelf' && <ConfirmDelete title="Delete shelf" what={dialog.shelf.name} impact={impact} onClose={close}
+        onConfirm={async () => { await m.removeShelf({ token: t, id: dialog.shelf._id }); if (rack?.shelf_id === dialog.shelf._id) { setRackId(null); setBoxId(null); } }} />}
+      {dialog?.kind === 'newRack' && (
+        <NameDialog title={`Add rack to ${dialog.shelf.name}`} fieldLabel="Rack name" initial={`Rack #${(racksByShelf.get(dialog.shelf._id)?.length ?? 0) + 1}`} confirm="Add rack"
+          onClose={close} onSubmit={async name => { const id = await m.addRack({ token: t, shelf_id: dialog.shelf._id, name }); setRackId(id); setBoxId(null); }} />
+      )}
+      {dialog?.kind === 'renameRack' && <NameDialog title="Rename rack" fieldLabel="Rack name" initial={dialog.rack.name} confirm="Save" onClose={close} onSubmit={name => m.renameRack({ token: t, id: dialog.rack._id, name })} />}
+      {dialog?.kind === 'deleteRack' && <ConfirmDelete title="Delete rack" what={dialog.rack.name} impact={impact} onClose={close}
+        onConfirm={async () => { await m.removeRack({ token: t, id: dialog.rack._id }); if (rackId === dialog.rack._id) { setRackId(null); setBoxId(null); } }} />}
+      {dialog?.kind === 'newBox' && <BoxDialog onClose={close} onSubmit={async v => { const id = await m.addBox({ token: t, rack_id: dialog.rack._id, ...v }); setBoxId(id); }} />}
+      {dialog?.kind === 'renameBox' && <NameDialog title="Rename box" fieldLabel="Box name" initial={dialog.box.name} confirm="Save" onClose={close} onSubmit={name => m.renameBox({ token: t, id: dialog.box._id, name })} />}
+      {dialog?.kind === 'deleteBox' && <ConfirmDelete title="Delete box" what={dialog.box.name} impact={impact} onClose={close}
+        onConfirm={async () => { await m.removeBox({ token: t, id: dialog.box._id }); if (boxId === dialog.box._id) setBoxId(null); }} />}
+      {dialog?.kind === 'sample' && (() => {
+        const s = slotAt.get(`${dialog.row}:${dialog.col}`);
+        const { box: b, row, col } = dialog;
+        return (
+          <SampleDialog position={`${letter(row)}${col + 1} in ${b.name}`} existing={!!s} initial={sampleValues(s)} defaultOwner={user?.full_name ?? ''} onClose={close}
+            onSave={v => m.setSlot({
+              token: t, box_id: b._id, row, col,
+              sample_id: v.sample_id.trim() || undefined, label: v.label.trim() || undefined, sample_type: v.sample_type.trim() || undefined,
+              owner: v.owner.trim() || undefined, volume: v.volume.trim() || undefined, barcode: v.barcode.trim() || undefined,
+              expiry_date: v.expiry ? new Date(`${v.expiry}T00:00:00`).getTime() : undefined, notes: v.notes.trim() || undefined,
+            }).then(() => undefined)}
+            onDelete={() => m.clearSlot({ token: t, box_id: b._id, row, col })} />
+        );
+      })()}
     </div>
+  );
+}
+
+function RowCells({ r, box, slotAt, onPick }: {
+  r: number; box: Box; slotAt: Map<string, Slot>; onPick: (row: number, col: number) => void;
+}) {
+  return (
+    <>
+      <span style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)' }}>{letter(r)}</span>
+      {Array.from({ length: box.cols }, (_, c) => {
+        const s = slotAt.get(`${r}:${c}`);
+        const st = slotState(s);
+        const pos = `${letter(r)}${c + 1}`;
+        const text = s ? (s.sample_id || s.label || '') : '';
+        const style = st === 'empty'
+          ? { background: 'var(--surface2)', color: 'var(--text-muted)', border: '1px dashed var(--border)' }
+          : { background: STATE_STYLE[st].bg, color: STATE_STYLE[st].fg, border: '1px solid transparent' };
+        return (
+          <button key={c} onClick={() => onPick(r, c)} style={{ ...style, borderRadius: 6, minHeight: 40, padding: 2, fontSize: 11, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            aria-label={s ? `${pos}: ${text}${st === 'soon' ? ', expires soon' : st === 'expired' ? ', expired' : ''}. Open` : `${pos}: empty. Add a sample`}
+            title={s ? `${pos} · ${text}${s.sample_type ? ` · ${s.sample_type}` : ''}` : `${pos} · add a sample`}>
+            {s ? <>{STATE_STYLE[st as 'ok'].mark}{text}</> : <Icon name="plus" size={12} />}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+function Expiring({ token }: { token: string | undefined }) {
+  const [days, setDays] = useState(30);
+  const rows = useQuery(api.freezer.getExpiring, token ? { token, days } : 'skip');
+  return (
+    <section aria-label="Expiring samples">
+      <label style={{ fontSize: 14 }}>Show samples that expire within{' '}
+        <select className="form-select" value={days} onChange={e => setDays(Number(e.target.value))} style={{ width: 120, display: 'inline-block' }}>
+          {[7, 30, 60, 90, 180].map(d => <option key={d} value={d}>{d} days</option>)}
+        </select>
+      </label>
+      <div className="card" style={{ padding: 0, marginTop: 14 }}>
+        {rows === undefined ? <p style={{ padding: 16, margin: 0 }}>Loading…</p>
+          : rows.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Nothing expires in the next {days} days.</p>
+            : <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead><tr style={{ background: 'var(--surface2)', textAlign: 'left' }}>
+                <th style={{ padding: 10 }}>Sample</th><th style={{ padding: 10 }}>Where</th><th style={{ padding: 10 }}>Expires</th>
+              </tr></thead>
+              <tbody>{rows.map(s => (
+                <tr key={s._id} style={{ borderTop: '1px solid var(--border)' }}>
+                  <td style={{ padding: 10, fontWeight: 700 }}>{s.sample_id || s.label}</td>
+                  <td style={{ padding: 10, color: 'var(--text-muted)' }}>{s.path}</td>
+                  <td style={{ padding: 10 }}>
+                    <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: s.expired ? 'var(--bad-bg)' : 'var(--warn-bg)', color: s.expired ? 'var(--bad-text)' : 'var(--warn-text)' }}>
+                      {s.expired ? 'Expired ' : ''}{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : ''}
+                    </span>
+                  </td>
+                </tr>))}</tbody>
+            </table>}
+      </div>
+    </section>
+  );
+}
+
+function Search({ token }: { token: string | undefined }) {
+  const [q, setQ] = useState('');
+  const rows = useQuery(api.freezer.search, token && q.trim().length >= 2 ? { token, query: q } : 'skip');
+  return (
+    <section aria-label="Find a sample">
+      <label htmlFor="fz-search" style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Search by sample ID, name, type, owner or barcode</label>
+      <input id="fz-search" className="form-input" style={{ width: '100%', maxWidth: 520 }} value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. HeLa, S-00123, DNA" />
+      <div className="card" style={{ padding: 0, marginTop: 14 }}>
+        {q.trim().length < 2 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Type at least 2 characters.</p>
+          : rows === undefined ? <p style={{ padding: 16, margin: 0 }}>Searching…</p>
+            : rows.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>No samples match “{q}”.</p>
+              : <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{rows.map(s => (
+                <li key={s._id} style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+                  <strong>{s.sample_id || s.label}</strong>{s.sample_type ? ` · ${s.sample_type}` : ''}{s.owner ? ` · ${s.owner}` : ''}
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.path}</div>
+                </li>))}</ul>}
+      </div>
+    </section>
   );
 }

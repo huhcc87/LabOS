@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersAdminApi, auditApi } from '../lib/api';
+import { Icon } from '../components/Icon';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
 import { AdminPasswordReset } from '../components/AdminPasswordReset';
 
@@ -339,12 +340,12 @@ export default function AdminHubPage() {
   });
 
   const roleColors: Record<string, { bg: string; text: string }> = {
-    PI: { bg: 'rgba(234,179,8,0.15)', text: '#fbbf24' },
-    Admin: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
-    Manager: { bg: 'rgba(168,85,247,0.15)', text: '#a855f7' },
-    Staff: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
-    Trainee: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
-    Guest: { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' },
+    PI: { bg: 'var(--warn-bg)', text: 'var(--warn-text)' },
+    Admin: { bg: 'var(--bad-bg)', text: 'var(--bad-text)' },
+    Manager: { bg: 'var(--purple-bg)', text: 'var(--purple-text)' },
+    Staff: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
+    Trainee: { bg: 'var(--ok-bg)', text: 'var(--ok-text)' },
+    Guest: { bg: 'var(--neutral-bg)', text: 'var(--neutral-text)' },
   };
 
   const tabs = [
@@ -371,7 +372,7 @@ export default function AdminHubPage() {
       {toast && (
         <div style={{
           position: 'fixed', top: 20, right: 20, padding: '12px 20px', borderRadius: 8,
-          background: toast.type === 'success' ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+          background: toast.type === 'success' ? '#166534' : '#b42318',
           color: 'white', fontWeight: 500, fontSize: 14, zIndex: 2000
         }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.message}
@@ -385,24 +386,17 @@ export default function AdminHubPage() {
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage users, settings, and system configuration</p>
         </div>
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
-          ❓ How to Use
+          How to use
         </button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total Users', value: users.length, icon: '👥', color: '#60a5fa' },
-          { label: 'Active Users', value: users.filter(u => u.status === 'active').length, icon: '✅', color: '#4ade80' },
-          { label: 'Files', value: files.length, icon: '📎', color: '#a855f7' },
-          { label: 'Integrations', value: integrations.filter(i => i.connected).length, icon: '🔗', color: '#f472b6' },
-        ].map(stat => (
-          <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
-          </div>
-        ))}
+      {/* At a glance */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }} aria-label="Summary">
+        <span><strong style={{ color: 'var(--text)', fontSize: 16 }}>{users.length}</strong> users</span>
+        <span><strong style={{ color: 'var(--text)', fontSize: 16 }}>{users.filter(u => u.status === 'active').length}</strong> active</span>
+        {users.some(u => u.invitePending) && (
+          <span><strong style={{ color: 'var(--warn-text)', fontSize: 16 }}>{users.filter(u => u.invitePending).length}</strong> not joined yet</span>
+        )}
       </div>
 
       {/* Tabs */}
@@ -419,7 +413,6 @@ export default function AdminHubPage() {
               display: 'flex', alignItems: 'center', gap: 6, marginBottom: -1
             }}
           >
-            <span>{tab.icon}</span>
             <span>{tab.label}</span>
             {tab.count !== undefined && tab.count > 0 && (
               <span style={{
@@ -518,7 +511,7 @@ export default function AdminHubPage() {
                       <td style={{ padding: 12 }}>
                         <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: roleColors[user.role]?.bg, color: roleColors[user.role]?.text }}>{user.role}</span>
                         {user.position && (
-                          <span style={{ marginLeft: 6, padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: 'rgba(14,165,233,0.15)', color: '#38bdf8' }}>🎓 {user.position}</span>
+                          <span style={{ marginLeft: 6, padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: 'var(--info-bg)', color: 'var(--info-text)' }}>🎓 {user.position}</span>
                         )}
                       </td>
                       <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{user.department}</td>
@@ -527,20 +520,20 @@ export default function AdminHubPage() {
                           onClick={() => handleToggleUserStatus(user)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                         >
-                          <span style={{ color: user.status === 'active' ? '#4ade80' : '#9ca3af' }}>●</span>
+                          <span style={{ color: user.status === 'active' ? 'var(--ok-text)' : 'var(--neutral-text)' }}>●</span>
                           <span style={{ fontSize: 13 }}>{user.status}</span>
                         </button>
                         {user.invitePending && (
-                          <span style={{ fontSize: 11, color: '#fbbf24' }} title="Hasn't opened their invite link and set a password yet">⏳ Not joined yet</span>
+                          <span style={{ fontSize: 11, color: 'var(--warn-text)' }} title="Hasn't opened their invite link and set a password yet">⏳ Not joined yet</span>
                         )}
                       </td>
                       <td style={{ padding: 12, textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           {user.invitePending && (
-                            <button className="btn btn-sm btn-secondary" title="Get a new sign-up link for this person" onClick={() => handleInviteLink(user)}>🔗 Invite link</button>
+                            <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Get a new sign-up link for this person" onClick={() => handleInviteLink(user)}><Icon name="link" size={13} /> Invite link</button>
                           )}
-                          <button className="btn btn-sm btn-secondary" onClick={() => setEditingUser(user)}>✏️ Edit</button>
-                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteUser(user)}>🗑️</button>
+                          <button className="icon-btn" onClick={() => setEditingUser(user)} title="Edit" aria-label={`Edit ${user.name}`}><Icon name="pencil" /></button>
+                          <button className="icon-btn danger" onClick={() => handleDeleteUser(user)} title="Deactivate" aria-label={`Deactivate ${user.name}`}><Icon name="trash" /></button>
                         </div>
                       </td>
                     </tr>
@@ -609,7 +602,7 @@ export default function AdminHubPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => handleDownloadFile(file)}>⬇️ Download</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFile(file)}>🗑️</button>
+                    <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFile(file)}>🗑️</button>
                   </div>
                 </div>
               ))}
@@ -659,7 +652,7 @@ export default function AdminHubPage() {
                   <span style={{ fontSize: 32 }}>{integration.icon}</span>
                   <div>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{integration.name}</h3>
-                    <span style={{ fontSize: 11, color: integration.connected ? '#4ade80' : 'var(--text-muted)' }}>
+                    <span style={{ fontSize: 11, color: integration.connected ? 'var(--ok-text)' : 'var(--text-muted)' }}>
                       {integration.connected ? '● Connected' : '○ Not connected'}
                     </span>
                   </div>
@@ -725,7 +718,7 @@ export default function AdminHubPage() {
           <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>🔗 Invite link for {inviteLink.name}</h3>
             {inviteLink.emailed && (
-              <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: '#4ade80', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+              <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--ok-text)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
                 ✉️ Invite emailed to {inviteLink.email}. You can also copy the link below.
               </div>
             )}

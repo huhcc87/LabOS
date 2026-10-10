@@ -23,7 +23,6 @@ export {
   samplesApi,
   maintenanceApi,
   instrumentsApi,
-  freezerApi,
   settingsApi,
   costsApi,
   labMembersApi,

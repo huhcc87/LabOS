@@ -89,7 +89,7 @@ export default function MyStudentsPage() {
       </div>
 
       {error && (
-        <div role="alert" className="card" style={{ padding: 12, marginBottom: 16, borderColor: 'rgba(239,68,68,0.4)', color: '#f87171', fontSize: 13 }}>
+        <div role="alert" className="card" style={{ padding: 12, marginBottom: 16, borderColor: 'rgba(239,68,68,0.4)', color: 'var(--bad-text)', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -121,8 +121,8 @@ export default function MyStudentsPage() {
                       style={{
                         padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
                         border: `1px solid ${on ? '#22c55e' : 'var(--border)'}`,
-                        background: on ? 'rgba(34,197,94,0.15)' : 'var(--surface2)',
-                        color: on ? '#4ade80' : 'var(--text-muted)',
+                        background: on ? 'var(--ok-bg)' : 'var(--surface2)',
+                        color: on ? 'var(--ok-text)' : 'var(--text-muted)',
                       }}
                     >
                       {HUB_ICON[hub]} {hub} {on ? '✓' : ''}

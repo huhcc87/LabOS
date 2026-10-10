@@ -6,7 +6,7 @@ import type { ProtocolApproval } from '../../convex/protocolRules';
 export function approvalBadge(a?: ProtocolApproval): { text: string; bg: string; color: string } | null {
   if (!a) return null;
   const who = a.mode === 'pi' ? 'PI' : (a.approver || 'user');
-  if (a.state === 'approved') return { text: `✓ Approved by ${a.decidedBy || who}`, bg: 'rgba(34,197,94,0.15)', color: '#4ade80' };
-  if (a.state === 'rejected') return { text: `✗ Rejected by ${a.decidedBy || who}`, bg: 'rgba(239,68,68,0.15)', color: '#f87171' };
-  return { text: `⏳ Awaiting ${who} approval`, bg: 'rgba(234,179,8,0.15)', color: '#fbbf24' };
+  if (a.state === 'approved') return { text: `✓ Approved by ${a.decidedBy || who}`, bg: 'var(--ok-bg)', color: 'var(--ok-text)' };
+  if (a.state === 'rejected') return { text: `✗ Rejected by ${a.decidedBy || who}`, bg: 'var(--bad-bg)', color: 'var(--bad-text)' };
+  return { text: `⏳ Awaiting ${who} approval`, bg: 'var(--warn-bg)', color: 'var(--warn-text)' };
 }

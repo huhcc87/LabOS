@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { ProtocolFormFields, type ProtocolDetails } from '../components/ProtocolFormFields';
 import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
+import { Icon } from '../components/Icon';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
 import type { Id } from '../../convex/_generated/dataModel';
 
@@ -765,20 +766,20 @@ export default function LabHubPage() {
   };
 
   const statusColors: Record<string, { bg: string; text: string }> = {
-    active: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
-    draft: { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
-    archived: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
-    available: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
-    in_use: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
-    maintenance: { bg: 'rgba(234,179,8,0.15)', text: '#fbbf24' },
-    confirmed: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
-    pending: { bg: 'rgba(234,179,8,0.15)', text: '#fbbf24' },
-    completed: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
-    scheduled: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
-    overdue: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
+    active: { bg: 'var(--ok-bg)', text: 'var(--ok-text)' },
+    draft: { bg: 'var(--neutral-bg)', text: 'var(--neutral-text)' },
+    archived: { bg: 'var(--bad-bg)', text: 'var(--bad-text)' },
+    available: { bg: 'var(--ok-bg)', text: 'var(--ok-text)' },
+    in_use: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
+    maintenance: { bg: 'var(--warn-bg)', text: 'var(--warn-text)' },
+    confirmed: { bg: 'var(--ok-bg)', text: 'var(--ok-text)' },
+    pending: { bg: 'var(--warn-bg)', text: 'var(--warn-text)' },
+    completed: { bg: 'var(--ok-bg)', text: 'var(--ok-text)' },
+    scheduled: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
+    overdue: { bg: 'var(--bad-bg)', text: 'var(--bad-text)' },
   };
   // Saved records can carry statuses this page doesn't know (e.g. older data); show them in neutral gray.
-  const statusColor = (s?: string) => (s && statusColors[s]) || { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' };
+  const statusColor = (s?: string) => (s && statusColors[s]) || { bg: 'var(--neutral-bg)', text: 'var(--neutral-text)' };
 
   // Feature 7: mark protocol as used
   const markAsUsed = (protocolId: Id<'protocols'>) =>
@@ -879,44 +880,26 @@ export default function LabHubPage() {
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage protocols, instruments, and lab resources with AI assistance</p>
         </div>
-        <button
-          onClick={() => setShowHelpGuide(true)}
-          style={{
-            background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 12,
-            padding: '12px 20px',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            boxShadow: '0 4px 12px rgba(6,182,212,0.3)'
-          }}
-        >
-          <span style={{ fontSize: 18 }}>?</span>
-          How to Use
+        <button className="btn btn-secondary" onClick={() => setShowHelpGuide(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="help" /> How to use
         </button>
       </div>
 
-      {/* Stats Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Active Protocols', value: protocols.filter(p => p.status === 'active').length, icon: '📋', color: '#22c55e' },
-          { label: 'SOPs', value: sops.length, icon: '📚', color: '#6366f1' },
-          { label: 'Available Instruments', value: instruments.filter(i => i.status === 'available').length, icon: '🔬', color: '#06b6d4' },
-          { label: 'Pending Bookings', value: bookings.filter(b => b.status === 'pending').length, icon: '📅', color: '#f59e0b' },
-          { label: 'Overdue Maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, icon: '⚠️', color: '#ef4444' },
-        ].map(stat => (
-          <div key={stat.label} className="card" style={{ padding: 16, textAlign: 'center' }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
-          </div>
+      {/* At a glance: one quiet line instead of five big tiles; each count opens its tab */}
+      <nav aria-label="Lab at a glance" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }}>
+        {([
+          { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
+          { tab: 'sops', value: sops.length, label: 'SOPs' },
+          { tab: 'instruments', value: instruments.filter(i => i.status === 'available').length, label: 'instruments available' },
+          { tab: 'bookings', value: bookings.filter(b => b.status === 'pending').length, label: 'pending bookings' },
+          { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
+        ] as const).map(s => (
+          <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
+            style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
+            <strong style={{ color: 'alert' in s && s.value > 0 ? 'var(--bad-text)' : 'var(--text)', fontSize: 16 }}>{s.value}</strong> {s.label}
+          </button>
         ))}
-      </div>
+      </nav>
 
       {/* Feature 6: Maintenance Due Alert Banner */}
       {(() => {
@@ -928,22 +911,22 @@ export default function LabHubPage() {
         return (
           <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
             {overdue.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'rgba(239,68,68,0.12)', borderBottom: upcoming.length > 0 ? '1px solid rgba(239,68,68,0.2)' : 'none' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
-                <span style={{ color: '#f87171', fontWeight: 600, fontSize: 13 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bad-bg)', borderBottom: upcoming.length > 0 ? '1px solid var(--border)' : 'none' }}>
+                <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
+                <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>
                   {overdue.length} overdue maintenance{overdue.length > 1 ? 's' : ''}:
                 </span>
-                <span style={{ color: '#fca5a5', fontSize: 13 }}>{overdue.map(m => m.instrument).join(', ')}</span>
-                <button onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>View →</button>
+                <span style={{ color: 'var(--text)', fontSize: 13 }}>{overdue.map(m => m.instrument).join(', ')}</span>
+                <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
               </div>
             )}
             {upcoming.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'rgba(234,179,8,0.1)' }}>
-                <span style={{ fontSize: 16 }}>🔔</span>
-                <span style={{ color: '#fbbf24', fontWeight: 600, fontSize: 13 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--warn-bg)' }}>
+                <Icon name="clock" style={{ color: 'var(--warn-text)' }} />
+                <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 13 }}>
                   {upcoming.length} maintenance due within 7 days:
                 </span>
-                <span style={{ color: '#fde68a', fontSize: 13 }}>{upcoming.map(m => `${m.instrument} (${m.date})`).join(', ')}</span>
+                <span style={{ color: 'var(--text)', fontSize: 13 }}>{upcoming.map(m => `${m.instrument} (${m.date})`).join(', ')}</span>
               </div>
             )}
           </div>
@@ -952,23 +935,15 @@ export default function LabHubPage() {
 
       {/* More Tools Quick Access */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[
-          { icon: '📓', label: 'Lab Notebook', page: 'lab-notebook', color: '#8b5cf6' },
-          { icon: '🗺️', label: 'Storage Map', page: 'storage-map', color: '#06b6d4' },
-          { icon: '⚗️', label: 'Equipment Hub', page: 'equipment', color: '#f59e0b' },
-          { icon: '🧫', label: 'Experiments', page: 'experiments', color: '#22c55e' },
-          { icon: '📄', label: 'Documents', page: 'documents', color: '#64748b' },
-        ].map(tool => (
-          <button key={tool.page} onClick={() => navigate(tool.page)} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 20,
-            color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontWeight: 500,
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = tool.color; (e.currentTarget as HTMLButtonElement).style.color = tool.color; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
-          >
-            <span>{tool.icon}</span>
+        {([
+          { icon: 'book', label: 'Lab Notebook', page: 'lab-notebook' },
+          { icon: 'map', label: 'Storage Map', page: 'storage-map' },
+          { icon: 'wrench', label: 'Equipment Hub', page: 'equipment' },
+          { icon: 'flask', label: 'Experiments', page: 'experiments' },
+          { icon: 'file', label: 'Documents', page: 'documents' },
+        ] as const).map(tool => (
+          <button key={tool.page} className="chip-link" onClick={() => navigate(tool.page)}>
+            <Icon name={tool.icon} />
             <span>{tool.label}</span>
           </button>
         ))}
@@ -1052,90 +1027,56 @@ export default function LabHubPage() {
                 <option value="version">Sort: Version</option>
               </select>
               <button
-                className="btn btn-sm btn-secondary"
+                className="icon-btn"
+                style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                aria-label={sortOrder === 'asc' ? 'Sorted ascending. Switch to descending' : 'Sorted descending. Switch to ascending'}
                 title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
               >
-                {sortOrder === 'asc' ? '↑' : '↓'}
+                <Icon name={sortOrder === 'asc' ? 'arrowUp' : 'arrowDown'} />
               </button>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('protocols')} title="Export to CSV">
-                📥 Export
+              <button className="btn btn-secondary" onClick={() => exportToCSV('protocols')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="download" /> Export
               </button>
-              <button className="btn btn-primary" onClick={() => setShowProtocolModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>✨</span> New Protocol
+              <button className="btn btn-primary" onClick={() => setShowProtocolModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="plus" /> New protocol
               </button>
             </div>
           </div>
 
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllProtocols}
-                style={{ background: '#6366f1', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneProtocols}
-                style={{ background: 'white', color: '#6366f1', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
+          {/* Bulk actions: only appear once something is selected */}
+          {selectedProtocols.size > 0 && (
+            <div role="region" aria-label="Bulk actions" style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
+              background: 'var(--accent-light)', border: '1px solid var(--border)',
+              borderRadius: 8, padding: '8px 14px', marginBottom: 12,
+            }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
                 {selectedProtocols.size} of {filterAndSortProtocols().length} selected
+                <button className="auth-link-reset" onClick={selectNoneProtocols} style={{ marginLeft: 12, fontWeight: 400, color: 'var(--link, var(--accent))' }}>Clear</button>
               </span>
-            </div>
-            {selectedProtocols.size > 0 && (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <select
                   className="form-select"
-                  style={{
-                    width: 180,
-                    height: 38,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    background: 'white',
-                    border: '2px solid #6366f1',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    padding: '0 12px',
-                    color: '#374151'
-                  }}
+                  aria-label="Change status of selected protocols"
+                  style={{ width: 170 }}
                   onChange={e => { if (e.target.value) { bulkChangeStatus('protocol', e.target.value); e.target.value = ''; }}}
                   defaultValue=""
                 >
-                  <option value="" disabled>Change Status</option>
-                  <option value="active">Set Active</option>
-                  <option value="draft">Set Draft</option>
-                  <option value="archived">Set Archived</option>
+                  <option value="" disabled>Change status…</option>
+                  <option value="active">Set active</option>
+                  <option value="draft">Set draft</option>
+                  <option value="archived">Set archived</option>
                 </select>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'protocol', count: selectedProtocols.size })}
-                >
-                  Delete Selected ({selectedProtocols.size})
+                <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: '1px solid transparent', fontWeight: 700 }}
+                  onClick={() => setBulkDeleteConfirm({ type: 'protocol', count: selectedProtocols.size })}>
+                  Delete {selectedProtocols.size}
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1159,61 +1100,61 @@ export default function LabHubPage() {
                 </tr>
               </thead>
               <tbody>
-                {filterAndSortProtocols().map(p => (
-                  <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: selectedProtocols.has(p.id) ? 'rgba(99,102,241,0.08)' : 'transparent' }}>
+                {filterAndSortProtocols().map(p => {
+                  const sc = statusColor(p.status);
+                  const approval = approvalBadge(p.approval);
+                  const canRun = isApproved(p.approval);
+                  const statusLabel = p.status ? p.status.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) : '';
+                  return (
+                  <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: selectedProtocols.has(p.id) ? 'var(--accent-light)' : 'transparent' }}>
                     <td style={{ padding: 12 }}>
                       <input
                         type="checkbox"
+                        aria-label={`Select ${p.name}`}
                         checked={selectedProtocols.has(p.id)}
                         onChange={() => toggleProtocolSelection(p.id)}
                         style={{ cursor: 'pointer' }}
                       />
                     </td>
-                    <td style={{ padding: 12, fontSize: 14, fontWeight: 500 }}>{p.name}</td>
-                    <td style={{ padding: 12, fontSize: 12, color: 'var(--text-muted)' }}>{p.category || 'General'}</td>
+                    <td style={{ padding: 12, fontSize: 14, fontWeight: 700 }}>
+                      <button className="auth-link-reset" onClick={() => { setViewProtocol(p); setEditMode(false); }} style={{ color: 'var(--text)', fontWeight: 700, fontSize: 14 }}>{p.name}</button>
+                      {p.useCount > 0 && <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>Used {p.useCount}×</div>}
+                    </td>
+                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{p.category || 'General'}</td>
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>v{p.version}</td>
                     <td style={{ padding: 12 }}>
                       {p.status ? (
-                        <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(p.status).bg, color: statusColor(p.status).text }}>
-                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
-                        </span>
-                      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                        <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: sc.bg, color: sc.text, whiteSpace: 'nowrap' }}>{statusLabel}</span>
+                      ) : <span style={{ color: 'var(--text-muted)' }} aria-label="No status">—</span>}
                     </td>
                     <td style={{ padding: 12 }}>
-                      {(() => {
-                        const b = approvalBadge(p.approval);
-                        return b
-                          ? <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: b.bg, color: b.color, whiteSpace: 'nowrap' }}>{b.text}</span>
-                          : <span style={{ color: 'var(--text-muted)' }}>—</span>;
-                      })()}
+                      {approval
+                        ? <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: approval.bg, color: approval.color, whiteSpace: 'nowrap' }}>{approval.text}</span>
+                        : <span style={{ color: 'var(--text-muted)' }} aria-label="No approval needed">—</span>}
                     </td>
-                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{new Date(p.lastUpdated).toLocaleDateString()}</td>
-                    <td style={{ padding: 12, textAlign: 'right' }}>
-                      {/* Feature 7: usage count badge */}
-                      {p.useCount > 0 && (
-                        <span style={{ marginRight: 6, padding: '2px 8px', borderRadius: 10, background: 'rgba(16,185,129,0.15)', color: '#34d399', fontSize: 11, fontWeight: 600 }}>
-                          ✓ used {p.useCount}×
-                        </span>
-                      )}
+                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(p.lastUpdated).toLocaleDateString()}</td>
+                    <td style={{ padding: 12, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {p.approval && p.approval.state !== 'approved' && canDecide(p.approval, user) && (
-                        <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }} onClick={() => decideApproval(p, 'approved')} title="Approve this protocol">✓ Approve</button>
+                        <button className="btn btn-sm btn-primary" style={{ marginRight: 6 }} onClick={() => decideApproval(p, 'approved')}>Approve</button>
                       )}
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View" aria-label="View protocol">👁️</button>
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit" aria-label="Edit protocol">✏️</button>
-                      <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: 'none' }} onClick={() => runProtocol(p)} title={isApproved(p.approval) ? 'Execute' : 'Needs approval first'}>▶ Run</button>
-                      <button className="btn btn-sm" style={{ marginRight: 4, background: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'none' }} onClick={() => markAsUsed(p.id)} title="Mark as used today">✓ Used</button>
-                      <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => duplicateProtocol(p)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
                       <button
-                        className="btn btn-sm"
-                        style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none' }}
-                        onClick={() => setDeleteConfirm({ type: 'protocol', id: p.id, name: p.name })}
-                        title="Delete"
+                        className={canRun ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
+                        style={{ marginRight: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        onClick={() => runProtocol(p)}
+                        title={canRun ? 'Run this protocol' : 'Needs approval first'}
+                        aria-disabled={!canRun}
                       >
-                        🗑️
+                        <Icon name={canRun ? 'play' : 'lock'} size={13} /> Run
                       </button>
+                      <button className="icon-btn" onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View details" aria-label={`View ${p.name}`}><Icon name="eye" /></button>
+                      <button className="icon-btn" onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit" aria-label={`Edit ${p.name}`}><Icon name="pencil" /></button>
+                      <button className="icon-btn" onClick={() => markAsUsed(p.id)} title="Log that it was used" aria-label={`Log use of ${p.name}`}><Icon name="check" /></button>
+                      <button className="icon-btn" onClick={() => duplicateProtocol(p)} title="Duplicate" aria-label={`Duplicate ${p.name}`}><Icon name="copy" /></button>
+                      <button className="icon-btn danger" onClick={() => setDeleteConfirm({ type: 'protocol', id: p.id, name: p.name })} title="Delete" aria-label={`Delete ${p.name}`}><Icon name="trash" /></button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {filterAndSortProtocols().length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1273,18 +1214,18 @@ export default function LabHubPage() {
               <button
                 className="btn btn-sm"
                 onClick={selectAllSOPs}
-                style={{ background: '#6366f1', color: 'white', border: 'none', fontWeight: 500 }}
+                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
               >
                 Select All
               </button>
               <button
                 className="btn btn-sm"
                 onClick={selectNoneSOPs}
-                style={{ background: 'white', color: '#6366f1', border: '1px solid #6366f1', fontWeight: 500 }}
+                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
               >
                 Clear Selection
               </button>
-              <span style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
+              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
                 {selectedSOPs.size} of {sops.length} selected
               </span>
             </div>
@@ -1335,8 +1276,8 @@ export default function LabHubPage() {
                 <div style={{
                   position: 'absolute', top: 12, right: 12,
                   padding: '4px 10px', borderRadius: 12, fontSize: 10, fontWeight: 600,
-                  background: sop.category === 'Safety' ? 'rgba(239,68,68,0.15)' : sop.category === 'Quality' ? 'rgba(59,130,246,0.15)' : 'rgba(34,197,94,0.15)',
-                  color: sop.category === 'Safety' ? '#f87171' : sop.category === 'Quality' ? '#60a5fa' : '#4ade80',
+                  background: sop.category === 'Safety' ? 'var(--bad-bg)' : sop.category === 'Quality' ? 'var(--info-bg)' : 'var(--ok-bg)',
+                  color: sop.category === 'Safety' ? 'var(--bad-text)' : sop.category === 'Quality' ? 'var(--info-text)' : 'var(--ok-text)',
                 }}>
                   {sop.category}
                 </div>
@@ -1349,7 +1290,7 @@ export default function LabHubPage() {
                   <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
                   <button
                     className="btn btn-sm"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none', padding: '4px 8px' }}
+                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none', padding: '4px 8px' }}
                     onClick={() => setDeleteConfirm({ type: 'sop', id: sop.id, name: sop.title })}
                     title="Delete SOP"
                   >
@@ -1385,9 +1326,9 @@ export default function LabHubPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
-                { label: 'Available', value: instruments.filter(i => i.status === 'available').length, color: '#4ade80' },
-                { label: 'In Use', value: instruments.filter(i => i.status === 'in_use').length, color: '#60a5fa' },
-                { label: 'Maintenance', value: instruments.filter(i => i.status === 'maintenance').length, color: '#fbbf24' },
+                { label: 'Available', value: instruments.filter(i => i.status === 'available').length, color: 'var(--ok-text)' },
+                { label: 'In Use', value: instruments.filter(i => i.status === 'in_use').length, color: 'var(--info-text)' },
+                { label: 'Maintenance', value: instruments.filter(i => i.status === 'maintenance').length, color: 'var(--warn-text)' },
               ].map(stat => (
                 <div key={stat.label} style={{
                   background: 'var(--surface2)', borderRadius: 8, padding: '8px 16px',
@@ -1415,18 +1356,18 @@ export default function LabHubPage() {
               <button
                 className="btn btn-sm"
                 onClick={selectAllInstruments}
-                style={{ background: '#6366f1', color: 'white', border: 'none', fontWeight: 500 }}
+                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
               >
                 Select All
               </button>
               <button
                 className="btn btn-sm"
                 onClick={selectNoneInstruments}
-                style={{ background: 'white', color: '#6366f1', border: '1px solid #6366f1', fontWeight: 500 }}
+                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
               >
                 Clear Selection
               </button>
-              <span style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
+              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
                 {selectedInstruments.size} of {instruments.length} selected
               </span>
             </div>
@@ -1504,7 +1445,7 @@ export default function LabHubPage() {
                   </button>
                   <button
                     className="btn btn-sm"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none' }}
+                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
                     onClick={() => setDeleteConfirm({ type: 'instrument', id: inst.id, name: inst.name })}
                     title="Delete Instrument"
                   >
@@ -1569,18 +1510,18 @@ export default function LabHubPage() {
               <button
                 className="btn btn-sm"
                 onClick={selectAllBookings}
-                style={{ background: '#6366f1', color: 'white', border: 'none', fontWeight: 500 }}
+                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
               >
                 Select All
               </button>
               <button
                 className="btn btn-sm"
                 onClick={selectNoneBookings}
-                style={{ background: 'white', color: '#6366f1', border: '1px solid #6366f1', fontWeight: 500 }}
+                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
               >
                 Clear Selection
               </button>
-              <span style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
+              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
                 {selectedBookings.size} of {filterBookings().length} selected
               </span>
             </div>
@@ -1634,14 +1575,14 @@ export default function LabHubPage() {
                     const dayBookings = bookings.filter(b => b.date === dayStr);
                     const isToday = dayStr === fmt(new Date());
                     return (
-                      <div key={dayStr} style={{ background: isToday ? 'rgba(99,102,241,0.1)' : 'var(--surface)', border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 10, minHeight: 100 }}>
+                      <div key={dayStr} style={{ background: isToday ? 'var(--accent-light)' : 'var(--surface)', border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 10, minHeight: 100 }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 6 }}>
                           {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
                         </div>
                         {dayBookings.length === 0 ? (
                           <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>Free</div>
                         ) : dayBookings.map(b => (
-                          <div key={b.id} style={{ background: b.status === 'confirmed' ? 'rgba(34,197,94,0.15)' : 'rgba(234,179,8,0.15)', border: `1px solid ${b.status === 'confirmed' ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}`, borderRadius: 6, padding: '4px 6px', marginBottom: 4 }}>
+                          <div key={b.id} style={{ background: b.status === 'confirmed' ? 'var(--ok-bg)' : 'var(--warn-bg)', border: `1px solid ${b.status === 'confirmed' ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}`, borderRadius: 6, padding: '4px 6px', marginBottom: 4 }}>
                             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{b.instrument}</div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.time}</div>
                           </div>
@@ -1699,7 +1640,7 @@ export default function LabHubPage() {
                   </button>
                   <button
                     className="btn btn-sm"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none' }}
+                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
                     onClick={() => setDeleteConfirm({ type: 'booking', id: b.id, name: `${b.instrument} - ${b.date}` })}
                     title="Cancel Booking"
                   >
@@ -1757,18 +1698,18 @@ export default function LabHubPage() {
               <button
                 className="btn btn-sm"
                 onClick={selectAllMaintenance}
-                style={{ background: '#6366f1', color: 'white', border: 'none', fontWeight: 500 }}
+                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
               >
                 Select All
               </button>
               <button
                 className="btn btn-sm"
                 onClick={selectNoneMaintenance}
-                style={{ background: 'white', color: '#6366f1', border: '1px solid #6366f1', fontWeight: 500 }}
+                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
               >
                 Clear Selection
               </button>
-              <span style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
+              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
                 {selectedMaintenance.size} of {filterMaintenance().length} selected
               </span>
             </div>
@@ -1832,7 +1773,7 @@ export default function LabHubPage() {
                   />
                   <div style={{
                     width: 48, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                    background: m.status === 'overdue' ? 'rgba(239,68,68,0.15)' : m.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'var(--surface2)',
+                    background: m.status === 'overdue' ? 'var(--bad-bg)' : m.status === 'completed' ? 'var(--ok-bg)' : 'var(--surface2)',
                   }}>
                     {m.status === 'completed' ? '✅' : m.status === 'overdue' ? '⚠️' : '🔧'}
                   </div>
@@ -1861,7 +1802,7 @@ export default function LabHubPage() {
                   )}
                   <button
                     className="btn btn-sm"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'none' }}
+                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
                     onClick={() => setDeleteConfirm({ type: 'maintenance', id: m.id, name: `${m.instrument} - ${m.type}` })}
                     title="Delete Maintenance Log"
                   >
@@ -2594,10 +2535,10 @@ export default function LabHubPage() {
             {/* AI Suggestions */}
             {aiSuggestions.length > 0 && (
               <div style={{
-                background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                background: 'var(--accent-light)', border: '1px solid rgba(99,102,241,0.2)',
                 borderRadius: 8, padding: 12, marginBottom: 16
               }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
                   ✨ AI Suggestions
                 </div>
                 {aiSuggestions.map((suggestion, i) => (
@@ -2890,7 +2831,7 @@ export default function LabHubPage() {
                   </button>
                   <button
                     className="btn btn-primary"
-                    style={{ flex: 1, background: '#6366f1' }}
+                    style={{ flex: 1, background: 'var(--accent)' }}
                     onClick={() => runProtocol(viewProtocol)}
                   >
                     ▶ Execute
@@ -2919,8 +2860,8 @@ export default function LabHubPage() {
                   </h3>
                   <span style={{
                     padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500,
-                    background: viewSOP.category === 'Safety' ? 'rgba(239,68,68,0.15)' : viewSOP.category === 'Quality' ? 'rgba(59,130,246,0.15)' : 'rgba(34,197,94,0.15)',
-                    color: viewSOP.category === 'Safety' ? '#f87171' : viewSOP.category === 'Quality' ? '#60a5fa' : '#4ade80',
+                    background: viewSOP.category === 'Safety' ? 'var(--bad-bg)' : viewSOP.category === 'Quality' ? 'var(--info-bg)' : 'var(--ok-bg)',
+                    color: viewSOP.category === 'Safety' ? 'var(--bad-text)' : viewSOP.category === 'Quality' ? 'var(--info-text)' : 'var(--ok-text)',
                   }}>
                     {viewSOP.category}
                   </span>
@@ -3041,7 +2982,7 @@ export default function LabHubPage() {
             <p style={{ fontWeight: 600, marginBottom: 24, color: 'var(--text-soft)' }}>
               "{deleteConfirm.name}"
             </p>
-            <p style={{ fontSize: 12, color: '#f87171', marginBottom: 24 }}>
+            <p style={{ fontSize: 12, color: 'var(--bad-text)', marginBottom: 24 }}>
               This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -3194,7 +3135,7 @@ export default function LabHubPage() {
 
             {/* Bulk Actions */}
             <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#6366f1' }}>Bulk Actions</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: 'var(--accent)' }}>Bulk Actions</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 <div style={{ background: 'white', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Select All</div>

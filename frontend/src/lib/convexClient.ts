@@ -670,44 +670,6 @@ export const instrumentsApi = {
   },
 };
 
-export const freezerApi = {
-  list: async () => {
-    const result = await client.query(api.freezer.list, {});
-    return { data: (result ?? []).map(adapt) };
-  },
-  create: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.freezer.create, { token, ...data });
-    return { data: result };
-  },
-  delete: async (id: IdLike) => {
-    const token = getToken();
-    await client.mutation(api.freezer.remove, { token, id: id as any });
-    return { data: { success: true } };
-  },
-  getSlots: async (freezerId: IdLike, rack: number, box: number) => {
-    const result = await client.query(api.freezer.getSlots, { freezer_id: freezerId as any, rack, box });
-    return { data: (result ?? []).map(adapt) };
-  },
-  upsertSlot: async (freezerId: IdLike, rack: number, box: number, row: number, col: number, data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.freezer.upsertSlot, {
-      token,
-      freezer_id: freezerId as any,
-      rack, box, row, col, ...data,
-    });
-    return { data: result };
-  },
-  getExpiring: async (days = 30) => {
-    const result = await client.query(api.freezer.getExpiring, { days });
-    return { data: (result ?? []).map(adapt) };
-  },
-  search: async (q: string) => {
-    const result = await client.query(api.freezer.search, { query: q });
-    return { data: (result ?? []).map(adapt) };
-  },
-};
-
 export const settingsApi = {
   list: async (page = 1, perPage = 100, category = '') => {
     const token = getToken();

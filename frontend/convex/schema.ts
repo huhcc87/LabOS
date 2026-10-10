@@ -528,21 +528,57 @@ export default defineSchema({
     created_at: v.number(),
   }),
 
+  // Freezer → Shelf (top to bottom) → Rack → Box → positions (freezer_slots)
+  freezer_shelves: defineTable({
+    freezer_id: v.id("freezers"),
+    name: v.string(),
+    position: v.number(), // 0 = top shelf
+    created_at: v.number(),
+  }).index("by_freezer", ["freezer_id", "position"]),
+
+  freezer_racks: defineTable({
+    freezer_id: v.id("freezers"),
+    shelf_id: v.id("freezer_shelves"),
+    name: v.string(),
+    position: v.number(),
+    created_at: v.number(),
+  })
+    .index("by_shelf", ["shelf_id", "position"])
+    .index("by_freezer", ["freezer_id"]),
+
+  freezer_boxes: defineTable({
+    freezer_id: v.id("freezers"),
+    rack_id: v.id("freezer_racks"),
+    name: v.string(),
+    rows: v.number(),
+    cols: v.number(),
+    position: v.number(),
+    created_at: v.number(),
+  })
+    .index("by_rack", ["rack_id", "position"])
+    .index("by_freezer", ["freezer_id"]),
+
   freezer_slots: defineTable({
     freezer_id: v.id("freezers"),
-    rack: v.number(),
-    box: v.number(),
+    // New slots live in a box (row/col are 0-based inside it). Old numeric rack/box slots keep working.
+    box_id: v.optional(v.id("freezer_boxes")),
+    rack: v.optional(v.number()),
+    box: v.optional(v.number()),
     row: v.number(),
     col: v.number(),
     sample_id: v.optional(v.string()),
     label: v.optional(v.string()),
+    sample_type: v.optional(v.string()),
+    owner: v.optional(v.string()),
+    volume: v.optional(v.string()),
     barcode: v.optional(v.string()),
     expiry_date: v.optional(v.number()),
     notes: v.optional(v.string()),
     updated_at: v.number(),
   })
     .index("by_freezer", ["freezer_id"])
-    .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"]),
+    .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"])
+    .index("by_box", ["box_id", "row", "col"]),
 
   // ── Grants ───────────────────────────────────────────────────────────
   grant_versions: defineTable({

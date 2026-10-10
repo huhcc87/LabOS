@@ -705,8 +705,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/freezer.ts": {
-    "mtime": 1791665073.3448856,
-    "ast_hash": "d15948aa03f96fbdf6898968a2fa8565",
+    "mtime": 1791675536.5080783,
+    "ast_hash": "7e2b83dc56a71213eb82c18102bd65eb",
     "semantic_hash": ""
   },
   "frontend/convex/funding.ts": {
@@ -810,8 +810,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/schema.ts": {
-    "mtime": 1791664769.0311832,
-    "ast_hash": "27d838eed9b9f35de4423bb9ef199be4",
+    "mtime": 1791675497.7850344,
+    "ast_hash": "e13ce24d152e17006c766ecdcfb42840",
     "semantic_hash": ""
   },
   "frontend/convex/search.ts": {
@@ -1565,8 +1565,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/api.ts": {
-    "mtime": 1791596450.3214257,
-    "ast_hash": "8bb4adb3ad60704622345e0e59ff6b94",
+    "mtime": 1791675677.9660668,
+    "ast_hash": "0bafb97c1a2763c95ff42cfcd96f08df",
     "semantic_hash": ""
   },
   "frontend/src/lib/comingSoon.ts": {
@@ -1580,8 +1580,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/convexClient.ts": {
-    "mtime": 1791664787.3558733,
-    "ast_hash": "1a4641f24466648f1df796fe4aed0945",
+    "mtime": 1791675677.9616435,
+    "ast_hash": "b739b4da468379363f2e412fd23675e9",
     "semantic_hash": ""
   },
   "frontend/src/lib/errorTracker.ts": {
@@ -1650,8 +1650,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/AdminHubPage.tsx": {
-    "mtime": 1791640388.0676806,
-    "ast_hash": "c07d67c1923b7cade78cbb614dec8c84",
+    "mtime": 1791675815.4505758,
+    "ast_hash": "9c076d27eb3385b034b67cb3d1f3cb22",
     "semantic_hash": ""
   },
   "frontend/src/pages/AuditPage.tsx": {
@@ -1720,8 +1720,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardPage.tsx": {
-    "mtime": 1791596450.3029149,
-    "ast_hash": "8e9b926c96a778179cf3a9a29b4ac32a",
+    "mtime": 1791674163.9529448,
+    "ast_hash": "18cfd6c42fe12efb230278a16e20da68",
     "semantic_hash": ""
   },
   "frontend/src/pages/DocumentsPage.tsx": {
@@ -1770,8 +1770,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/FreezerBiobankPage.tsx": {
-    "mtime": 1791596450.3243103,
-    "ast_hash": "ff6481fc3cce7929fd0ae5f78b8a28bc",
+    "mtime": 1791675671.9882,
+    "ast_hash": "86c72de38fcc3389e0ed0714a894a3fa",
     "semantic_hash": ""
   },
   "frontend/src/pages/FundingOpportunitiesPage.tsx": {
@@ -1845,8 +1845,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LabHubPage.tsx": {
-    "mtime": 1791665123.6626093,
-    "ast_hash": "d0e7fe610c7a65ca1a93eb5a4ae227bc",
+    "mtime": 1791675359.7488697,
+    "ast_hash": "bc228fb55162f7a3660a8944dc5a1b40",
     "semantic_hash": ""
   },
   "frontend/src/pages/LabMeetingsPage.tsx": {
@@ -2295,8 +2295,8 @@
     "semantic_hash": ""
   },
   "frontend/index.html": {
-    "mtime": 1791653827.8354068,
-    "ast_hash": "dd70397404b6ca42ebdf119cffc78b06",
+    "mtime": 1791674136.887838,
+    "ast_hash": "ebfeb1854dc3c581bf91cf06a42304e8",
     "semantic_hash": ""
   },
   "frontend/ios/App/CapApp-SPM/README.md": {
@@ -2555,8 +2555,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/protocolApproval.ts": {
-    "mtime": 1791664733.9171057,
-    "ast_hash": "2cdcc3d8401b68110bfdde603fd47f6f",
+    "mtime": 1791675223.0065322,
+    "ast_hash": "b278845c107f7be2727fb250794cdc16",
     "semantic_hash": ""
   },
   "frontend/src/lib/protocolFile.ts": {
@@ -2580,8 +2580,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/MyStudentsPage.tsx": {
-    "mtime": 1791638724.5417545,
-    "ast_hash": "e2b42f8999d22161d61e74b7c03a3455",
+    "mtime": 1791675196.5233529,
+    "ast_hash": "39ab88ef742ae883cc856a77162dc8db",
     "semantic_hash": ""
   },
   "frontend/tests/unit/hubAccess.test.ts": {
@@ -2597,6 +2597,26 @@
   "frontend/tests/unit/protocolApproval.test.ts": {
     "mtime": 1791637186.3561888,
     "ast_hash": "7ff6509163a9dbc4a3ac932453503fad",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Icon.tsx": {
+    "mtime": 1791675246.3678505,
+    "ast_hash": "93801b4ea06fefa43e3e94c79283b748",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/freezer/dialogs.tsx": {
+    "mtime": 1791675607.639678,
+    "ast_hash": "bb51e8420b0c8d45aa891e63ebd88ec4",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/errors.ts": {
+    "mtime": 1791675594.1143034,
+    "ast_hash": "6a2bb85def95fcc4eece392372a74c09",
+    "semantic_hash": ""
+  },
+  "PRODUCT.md": {
+    "mtime": 1791674087.1745915,
+    "ast_hash": "912cd331dfa1e8942be15d2dbc044b60",
     "semantic_hash": ""
   }
 }

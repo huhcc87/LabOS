@@ -3040,3 +3040,63 @@ button:disabled { cursor: not-allowed; }
 @media (pointer: coarse) {
   .btn, .btn-sm, .nav-item, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
 }
+
+/* ── Semantic status colors (AA contrast in each theme) ──
+   Use these instead of hard-coded pastel hex values. */
+:root, [data-theme="dark"] {
+  --ok-text: #4ade80;      --ok-bg: rgba(34, 197, 94, 0.16);
+  --warn-text: #fbbf24;    --warn-bg: rgba(245, 158, 11, 0.16);
+  --bad-text: #f87171;     --bad-bg: rgba(239, 68, 68, 0.16);
+  --info-text: #7db8f5;    --info-bg: rgba(59, 130, 246, 0.16);
+  --neutral-text: #b4c0cc; --neutral-bg: rgba(148, 163, 184, 0.16);
+  --purple-text: #c4a5fb;  --purple-bg: rgba(168, 85, 247, 0.16);
+}
+[data-theme="light"] {
+  --ok-text: #166534;      --ok-bg: rgba(22, 163, 74, 0.12);
+  --warn-text: #8a4b08;    --warn-bg: rgba(217, 119, 6, 0.13);
+  --bad-text: #b42318;     --bad-bg: rgba(220, 38, 38, 0.1);
+  --info-text: #1d4ed8;    --info-bg: rgba(37, 99, 235, 0.1);
+  --neutral-text: #475467; --neutral-bg: rgba(71, 84, 103, 0.1);
+  --purple-text: #6d28d9;  --purple-bg: rgba(109, 40, 217, 0.1);
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --ok-text: #166534;      --ok-bg: rgba(22, 163, 74, 0.12);
+    --warn-text: #8a4b08;    --warn-bg: rgba(217, 119, 6, 0.13);
+    --bad-text: #b42318;     --bad-bg: rgba(220, 38, 38, 0.1);
+    --info-text: #1d4ed8;    --info-bg: rgba(37, 99, 235, 0.1);
+    --neutral-text: #475467; --neutral-bg: rgba(71, 84, 103, 0.1);
+    --purple-text: #6d28d9;  --purple-bg: rgba(109, 40, 217, 0.1);
+  }
+}
+
+/* ── Small reusable pieces ── */
+.auth-link-reset { background: none; border: 0; font: inherit; cursor: pointer; text-align: left; }
+.auth-link-reset:hover strong { text-decoration: underline; }
+.chip-link {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.chip-link:hover { border-color: var(--accent); color: var(--accent); }
+/* Icon-only action buttons in table rows */
+.icon-btn {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: var(--text-muted); cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.icon-btn:hover { background: var(--surface2); border-color: var(--border); color: var(--text); }
+.icon-btn.danger:hover { background: var(--bad-bg); color: var(--bad-text); border-color: transparent; }
+@media (pointer: coarse) { .icon-btn { width: 44px; height: 44px; } }
+
+/* ── Modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(0, 31, 42, 0.45);
+}
+.modal-panel {
+  max-width: 100%; max-height: 90vh; overflow: auto; padding: 24px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+}
