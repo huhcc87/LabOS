@@ -16,18 +16,26 @@ const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export const sendInvite = internalAction({
-  args: { to: v.string(), name: v.string(), token: v.string(), invitedBy: v.string() },
-  handler: async (_ctx, { to, name, token, invitedBy }) => {
+  args: {
+    to: v.string(), name: v.string(), token: v.string(), invitedBy: v.string(),
+    kind: v.optional(v.union(v.literal("invite"), v.literal("reset"))),
+  },
+  handler: async (_ctx, { to, name, token, invitedBy, kind = "invite" }) => {
     if (!emailConfigured()) return;
     const link = `${process.env.APP_URL!.replace(/\/+$/, "")}/?invite=${encodeURIComponent(token)}`;
-    const text =
-      `Hi ${name},\n\n${invitedBy} added you to LabOS. Open this link to choose your password and sign in with ${to}:\n\n` +
-      `${link}\n\nThe link works once and expires in 7 days.`;
+    const isReset = kind === "reset";
+    const intro = isReset
+      ? "Someone (hopefully you) asked to reset your LabOS password. If it wasn't you, ignore this email."
+      : `${invitedBy} added you to LabOS. Choose your password to sign in with ${to}.`;
+    const expiry = isReset ? "1 hour" : "7 days";
+    const subject = isReset ? "Reset your LabOS password" : "You're invited to LabOS";
+    const button = isReset ? "Choose a new password" : "Set my password";
+    const text = `Hi ${name},\n\n${intro}\n\n${link}\n\nThe link works once and expires in ${expiry}.`;
     const html =
-      `<p>Hi ${escapeHtml(name)},</p>` +
-      `<p>${escapeHtml(invitedBy)} added you to <strong>LabOS</strong>. Click below to choose your password and sign in with ${escapeHtml(to)}.</p>` +
-      `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none">Set my password</a></p>` +
-      `<p style="color:#666;font-size:13px">Or paste this link: ${escapeHtml(link)}<br>It works once and expires in 7 days.</p>`;
+      `<div style="font-family:Lato,Arial,sans-serif;color:#15192D;max-width:480px">` +
+      `<p>Hi ${escapeHtml(name)},</p><p>${escapeHtml(intro)}</p>` +
+      `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:10px 18px;background:#005CC5;color:#fff;border-radius:6px;text-decoration:none">${button}</a></p>` +
+      `<p style="color:#6b7085;font-size:13px">Or paste this link: ${escapeHtml(link)}<br>It works once and expires in ${expiry}.</p></div>`;
 
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -35,7 +43,7 @@ export const sendInvite = internalAction({
       body: JSON.stringify({
         sender: { email: process.env.INVITE_FROM_EMAIL, name: "LabOS" },
         to: [{ email: to, name }],
-        subject: "You're invited to LabOS",
+        subject,
         htmlContent: html,
         textContent: text,
       }),

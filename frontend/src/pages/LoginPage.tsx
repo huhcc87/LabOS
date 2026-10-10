@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ConvexError } from 'convex/values';
+import { useAction } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
+import { AuthBrand } from '../components/AuthBrand';
+import '../styles/auth.css';
 
-function loginErrorMessage(err: unknown): string {
+function errorMessage(err: unknown): string {
   if (err instanceof ConvexError && typeof err.data === 'string') return err.data;
   return err instanceof Error ? err.message : '';
 }
@@ -12,23 +16,16 @@ function loginErrorMessage(err: unknown): string {
 interface LoginForm {
   email: string;
   password: string;
+  remember: boolean;
 }
 
 const DEMO_USERS = import.meta.env.DEV ? [
-  { label: 'Admin', email: 'admin@lab.local', password: 'Admin123!', color: '#ef4444' },
-  { label: 'PI', email: 'pi@lab.local', password: 'Pi123!', color: '#8b5cf6' },
-  { label: 'Manager', email: 'manager@lab.local', password: 'Manager123!', color: '#0071bc' },
-  { label: 'Staff', email: 'staff@lab.local', password: 'Staff123!', color: '#22c55e' },
-  { label: 'Trainee', email: 'trainee@lab.local', password: 'Trainee123!', color: '#f59e0b' },
+  { label: 'Admin', email: 'admin@lab.local', password: 'Admin123!' },
+  { label: 'PI', email: 'pi@lab.local', password: 'Pi123!' },
+  { label: 'Manager', email: 'manager@lab.local', password: 'Manager123!' },
+  { label: 'Staff', email: 'staff@lab.local', password: 'Staff123!' },
+  { label: 'Trainee', email: 'trainee@lab.local', password: 'Trainee123!' },
 ] : [];
-
-const FEATURES = [
-  { icon: '🔬', title: 'Lab Hub', desc: 'Protocols, instruments & bookings' },
-  { icon: '🧪', title: 'Sample Hub', desc: 'Full sample lifecycle tracking' },
-  { icon: '📝', title: 'Grant Hub', desc: 'NIH & NSF grant management' },
-  { icon: '🛡️', title: 'Safety & Compliance', desc: 'GLP, 21 CFR Part 11, ISO 17025' },
-  { icon: '📈', title: 'Reports & Analytics', desc: 'Live dashboards and KPI tracking' },
-];
 
 interface Props {
   onCreateAccount: () => void;
@@ -36,255 +33,179 @@ interface Props {
 
 export default function LoginPage({ onCreateAccount }: Props) {
   const { login, totpRequired, clearTotpRequired } = useAuth();
+  const requestReset = useAction(api.invites.requestReset);
+  const [view, setView] = useState<'login' | 'forgot'>('login');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [totpCode, setTotpCode] = useState('');
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>({
-    defaultValues: { email: '', password: '' },
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetResult, setResetResult] = useState<'sent' | 'no-email' | null>(null);
+  const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<LoginForm>({
+    defaultValues: { email: '', password: '', remember: true },
   });
 
   async function onSubmit(data: LoginForm) {
     setLoading(true);
     try {
-      await login(data.email, data.password);
-      if (!totpRequired) toast.success('Welcome to LabOS v3!');
+      await login(data.email.trim(), data.password, undefined, data.remember);
     } catch (err) {
-      const msg = loginErrorMessage(err);
-      if (msg.includes('Invalid email') || msg.includes('password')) {
-        toast.error('Invalid email or password.');
-      } else if (msg.includes('disabled')) {
-        toast.error('This account has been disabled. Contact your administrator.');
-      } else {
-        toast.error(msg || 'Login failed. Please try again.');
-      }
+      const msg = errorMessage(err);
+      if (msg.includes('Invalid email') || msg.includes('password')) toast.error('Invalid email or password.');
+      else if (msg.includes('disabled')) toast.error('This account has been disabled. Contact your PI or administrator.');
+      else toast.error(msg || 'Sign in failed. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   async function onTotpSubmit() {
-    if (!totpRequired || !totpCode) return;
+    if (!totpRequired || totpCode.length !== 6) return;
     setLoading(true);
     try {
-      await login(totpRequired.email, totpRequired.password, totpCode);
-      toast.success('Welcome to LabOS v3!');
+      await login(totpRequired.email, totpRequired.password, totpCode, totpRequired.remember);
     } catch (err) {
-      const msg = loginErrorMessage(err);
-      if (msg.includes('two-factor')) {
-        toast.error('Invalid two-factor code. Please try again.');
-      } else {
-        toast.error(msg || 'Login failed.');
-      }
+      const msg = errorMessage(err);
+      toast.error(msg.includes('two-factor') ? 'Invalid verification code. Please try again.' : msg || 'Sign in failed.');
     } finally {
       setLoading(false);
       setTotpCode('');
     }
   }
 
+  async function onResetSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetEmail.trim()) return;
+    setLoading(true);
+    try {
+      const { emailEnabled } = await requestReset({ email: resetEmail });
+      setResetResult(emailEnabled ? 'sent' : 'no-email');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Could not send the reset link. Try again shortly.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const openForgot = () => {
+    setResetEmail(getValues('email'));
+    setResetResult(null);
+    setView('forgot');
+  };
+
   return (
-    <div className="login-shell">
-      {/* Accent stripe */}
-      <div className="login-top-stripe" />
-
-      <div className="login-split">
-        {/* ── Left panel: branding ── */}
-        <div className="login-panel-left">
-          <div className="login-left-inner">
-            {/* Logo */}
-            <div className="login-brand-row">
-              <div className="login-logo-box">⬡</div>
-              <div>
-                <div className="login-brand-name">LabOS <span className="login-brand-v">v3</span></div>
-                <div className="login-brand-sub">Laboratory Operations System</div>
-              </div>
+    <main className="auth">
+      <AuthBrand />
+      <div className="auth-card">
+        {totpRequired ? (
+          <>
+            <h1 className="auth-title">Verification code</h1>
+            <p className="auth-sub">Enter the 6-digit code from your authenticator app.</p>
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="totp">Code</label>
+              <input
+                id="totp" className="auth-input code" value={totpCode} autoFocus maxLength={6}
+                inputMode="numeric" autoComplete="one-time-code" placeholder="000000"
+                onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => { if (e.key === 'Enter') onTotpSubmit(); }}
+              />
             </div>
-
-            <h1 className="login-left-headline">
-              Research-grade lab management for modern institutions
-            </h1>
-            <p className="login-left-desc">
-              Centralize your protocols, samples, instruments, grants, safety records,
-              and team collaboration — all in one secure platform.
+            <button type="button" className="auth-btn" disabled={loading || totpCode.length !== 6} onClick={onTotpSubmit}>
+              {loading ? <><span className="auth-spinner" />Verifying…</> : 'Verify and sign in'}
+            </button>
+            <p className="auth-foot">
+              <button type="button" className="auth-link" onClick={() => { clearTotpRequired(); setTotpCode(''); }}>Back to sign in</button>
             </p>
-
-            {/* Feature list */}
-            <div className="login-features">
-              {FEATURES.map(f => (
-                <div key={f.title} className="login-feature-row">
-                  <span className="login-feature-icon">{f.icon}</span>
-                  <div>
-                    <div className="login-feature-title">{f.title}</div>
-                    <div className="login-feature-desc">{f.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Standards badges */}
-            <div className="login-compliance">
-              {['GLP Workflows', '21 CFR Part 11', 'HIPAA-Ready', 'GDPR Tools', 'On-Premise', 'Audit Trail'].map(b => (
-                <span key={b} className="login-compliance-badge">{b}</span>
-              ))}
-            </div>
-            <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
-              Designed to support these workflows. Compliance is achieved through your institution's practices and policies.
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right panel: form ── */}
-        <div className="login-panel-right">
-          <div className="login-form-card">
-            {totpRequired ? (
-              <>
-                <div className="login-form-header">
-                  <div className="login-secure-badge">
-                    <span>🔐</span> Two-Factor Authentication
-                  </div>
-                  <h2 className="login-form-title">Enter verification code</h2>
-                  <p className="login-form-subtitle">Open your authenticator app and enter the 6-digit code</p>
-                </div>
-                <div className="login-form" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div className="lf-group">
-                    <label className="lf-label">Verification Code</label>
-                    <div className="lf-input-wrap">
-                      <span className="lf-icon">🔢</span>
-                      <input
-                        className="lf-input"
-                        value={totpCode}
-                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        placeholder="000000"
-                        autoFocus
-                        maxLength={6}
-                        inputMode="numeric"
-                        style={{ letterSpacing: 8, fontSize: 20, fontWeight: 700, textAlign: 'center' }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && totpCode.length === 6) onTotpSubmit(); }}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="login-submit-btn"
-                    disabled={loading || totpCode.length !== 6}
-                    onClick={onTotpSubmit}
-                  >
-                    {loading ? (
-                      <span className="login-btn-loading"><span className="login-spinner" /> Verifying…</span>
-                    ) : 'Verify & Sign In'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { clearTotpRequired(); setTotpCode(''); }}
-                    style={{
-                      background: 'none', border: 'none', color: 'var(--text-muted)',
-                      cursor: 'pointer', fontSize: 13, textDecoration: 'underline',
-                    }}
-                  >
-                    Back to login
-                  </button>
-                </div>
-              </>
-            ) : (
-            <>
-            <div className="login-form-header">
-              <div className="login-secure-badge">
-                <span>🔒</span> Secure Sign In
+          </>
+        ) : view === 'forgot' ? (
+          <>
+            <h1 className="auth-title">Reset password</h1>
+            <p className="auth-sub">Enter your account email and we'll send you a link to choose a new password.</p>
+            {resetResult === 'sent' && (
+              <p className="auth-note" role="status">
+                If an account exists for <strong>{resetEmail.trim()}</strong>, a reset link is on its way. It expires in 1 hour — check your spam folder too.
+              </p>
+            )}
+            {resetResult === 'no-email' && (
+              <p className="auth-note warn" role="status">
+                Email isn't set up for this lab yet. Ask your PI or administrator to reset your password from Admin → Users.
+              </p>
+            )}
+            <form onSubmit={onResetSubmit} noValidate>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="reset-email">Email</label>
+                <input id="reset-email" className="auth-input" type="email" autoComplete="email" required autoFocus
+                  value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" />
               </div>
-              <h2 className="login-form-title">Welcome back</h2>
-              <p className="login-form-subtitle">Sign in to your LabOS account to continue</p>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="login-form">
-              <div className="lf-group">
-                <label className="lf-label">Email Address</label>
-                <div className="lf-input-wrap">
-                  <span className="lf-icon">✉</span>
-                  <input
-                    className={`lf-input ${errors.email ? 'lf-input-error' : ''}`}
-                    {...register('email', { required: 'Email is required' })}
-                    placeholder="user@institution.edu"
-                    autoComplete="email"
-                    type="email"
-                  />
-                </div>
-                {errors.email && <span className="lf-error">{errors.email.message}</span>}
-              </div>
-
-              <div className="lf-group">
-                <label className="lf-label">Password</label>
-                <div className="lf-input-wrap">
-                  <span className="lf-icon">🔑</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className={`lf-input ${errors.password ? 'lf-input-error' : ''}`}
-                    {...register('password', { required: 'Password is required' })}
-                    placeholder="••••••••••"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="lf-toggle-pw"
-                    onClick={() => setShowPassword(v => !v)}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? '🙈' : '👁'}
-                  </button>
-                </div>
-                {errors.password && <span className="lf-error">{errors.password.message}</span>}
-              </div>
-
-              <button type="submit" className="login-submit-btn" disabled={loading}>
-                {loading ? (
-                  <span className="login-btn-loading">
-                    <span className="login-spinner" /> Signing in…
-                  </span>
-                ) : (
-                  'Sign In to LabOS'
-                )}
+              <button type="submit" className="auth-btn" disabled={loading || !resetEmail.trim()}>
+                {loading ? <><span className="auth-spinner" />Sending…</> : 'Send reset link'}
               </button>
             </form>
-
-            <button
-              type="button"
-              onClick={onCreateAccount}
-              style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)',
-                cursor: 'pointer', fontSize: 13, textDecoration: 'underline', marginTop: 12,
-              }}
-            >
-              Don't have an account? Create one
-            </button>
-
-            {/* Demo accounts — dev only */}
-            {DEMO_USERS.length > 0 && <div className="login-demo-section">
-              <div className="login-demo-divider">
-                <span>Quick demo access</span>
+            <p className="auth-foot">
+              <button type="button" className="auth-link" onClick={() => setView('login')}>Back to sign in</button>
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="auth-title">Sign in</h1>
+            <p className="auth-sub">Use the email your lab registered for you — any provider, including Gmail.</p>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="email">Email</label>
+                <input
+                  id="email" type="email" className="auth-input" autoComplete="email" placeholder="you@example.com"
+                  aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-err' : undefined}
+                  {...register('email', { required: 'Enter your email' })}
+                />
+                {errors.email && <span id="email-err" className="auth-error">{errors.email.message}</span>}
               </div>
-              <div className="login-demo-pills">
-                {DEMO_USERS.map(u => (
-                  <button
-                    key={u.label}
-                    className="login-demo-pill"
-                    style={{ '--pill-color': u.color } as React.CSSProperties}
-                    onClick={() => { setValue('email', u.email); setValue('password', u.password); }}
-                    type="button"
-                  >
-                    {u.label}
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="password">Password</label>
+                <div className="auth-input-wrap">
+                  <input
+                    id="password" type={showPassword ? 'text' : 'password'} className="auth-input"
+                    autoComplete="current-password" style={{ paddingRight: 56 }}
+                    aria-invalid={!!errors.password} aria-describedby={errors.password ? 'password-err' : undefined}
+                    {...register('password', { required: 'Enter your password' })}
+                  />
+                  <button type="button" className="auth-reveal" onClick={() => setShowPassword(v => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
-                ))}
+                </div>
+                {errors.password && <span id="password-err" className="auth-error">{errors.password.message}</span>}
               </div>
-            </div>}
+              <div className="auth-row">
+                <label className="auth-check">
+                  <input type="checkbox" {...register('remember')} /> Remember me
+                </label>
+                <button type="button" className="auth-link" onClick={openForgot}>Forgot password?</button>
+              </div>
+              <button type="submit" className="auth-btn" disabled={loading}>
+                {loading ? <><span className="auth-spinner" />Signing in…</> : 'Login'}
+              </button>
+            </form>
+            <p className="auth-foot">
+              Don't have an account?{' '}
+              <button type="button" className="auth-link" onClick={onCreateAccount}>Sign up</button>
+            </p>
 
-            <div className="login-form-footer">
-              <span>🔒 256-bit SSL encrypted</span>
-              <span>·</span>
-              <span>Data stays on your server</span>
-            </div>
-            </>
+            {DEMO_USERS.length > 0 && (
+              <div className="auth-demo">
+                <div className="auth-demo-label">Demo accounts (development only)</div>
+                <div className="auth-demo-pills">
+                  {DEMO_USERS.map(u => (
+                    <button key={u.label} type="button" className="auth-demo-pill"
+                      onClick={() => { setValue('email', u.email); setValue('password', u.password); }}>
+                      {u.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </div>
-    </div>
+      <p className="auth-legal">Encrypted connection · Your lab's data stays in your workspace</p>
+    </main>
   );
 }

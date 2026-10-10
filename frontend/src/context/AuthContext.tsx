@@ -6,12 +6,22 @@ import { hasRole } from '../lib/utils';
 
 const TOKEN_KEY = 'labos_auth_token';
 
+/** "Remember me" keeps the session in localStorage; otherwise it lasts until the browser closes. */
+function saveToken(token: string, remember: boolean) {
+  (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
+  (remember ? sessionStorage : localStorage).removeItem(TOKEN_KEY);
+}
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
 interface AuthContextValue {
   user: any | null;
   loading: boolean;
   token: string | null;
-  totpRequired: { email: string; password: string } | null;
-  login: (email: string, password: string, totp_code?: string) => Promise<void>;
+  totpRequired: { email: string; password: string; remember: boolean } | null;
+  login: (email: string, password: string, totp_code?: string, remember?: boolean) => Promise<void>;
   register: (email: string, password: string, full_name: string) => Promise<void>;
   clearTotpRequired: () => void;
   logout: () => Promise<void>;
@@ -21,9 +31,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
-  const [totpRequired, setTotpRequired] = useState<{ email: string; password: string } | null>(null);
+  const [totpRequired, setTotpRequired] = useState<{ email: string; password: string; remember: boolean } | null>(null);
 
   const loginAction = useAction(api.customAuth.login);
   const registerAction = useAction(api.customAuth.register);
@@ -47,21 +57,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!token) setLoading(false);
   }, [token]);
 
-  const login = useCallback(async (email: string, password: string, totp_code?: string) => {
+  const login = useCallback(async (email: string, password: string, totp_code?: string, remember = true) => {
     const result = await loginAction({ email, password, totp_code });
     if (result.totp_required) {
-      setTotpRequired({ email, password });
+      setTotpRequired({ email, password, remember });
       return;
     }
     setTotpRequired(null);
-    localStorage.setItem(TOKEN_KEY, result.token);
+    saveToken(result.token, remember);
     setToken(result.token);
     setLoading(true);
   }, [loginAction]);
 
   const register = useCallback(async (email: string, password: string, full_name: string) => {
     const result = await registerAction({ email, password, full_name });
-    localStorage.setItem(TOKEN_KEY, result.token);
+    saveToken(result.token, true);
     setToken(result.token);
     setLoading(true);
   }, [registerAction]);
@@ -74,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       try { await logoutMutation({ token }); } catch (_) { /* ignore */ }
     }
-    localStorage.removeItem(TOKEN_KEY);
+    clearToken();
     setToken(null);
   }, [token, logoutMutation]);
 

@@ -164,7 +164,7 @@ interface LayoutProps {
 
 export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const { user, token, logout, hasRole } = useAuth();
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'dark');
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('labos_theme') as Theme) || 'light');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');

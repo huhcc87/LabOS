@@ -45,6 +45,8 @@ export default defineSchema({
   invites: defineTable({
     user_id: v.id("users"),
     token: v.string(),
+    // "invite" = first sign-up (default when missing), "reset" = forgot password.
+    kind: v.optional(v.union(v.literal("invite"), v.literal("reset"))),
     expires_at: v.number(),
     created_by: v.id("users"),
     created_at: v.number(),

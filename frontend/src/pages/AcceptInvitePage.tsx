@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useAction, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
+import { AuthBrand } from '../components/AuthBrand';
+import '../styles/auth.css';
 
 interface Props {
   invite: string;
@@ -11,7 +13,7 @@ interface Props {
 const errText = (e: unknown) =>
   (e as { data?: string })?.data ?? (e instanceof Error ? e.message : 'Something went wrong');
 
-/** Opened from an invite link: the invited person sets their own password, then is signed in. */
+/** Opened from an invite or password-reset link: choose a password, then get signed in. */
 export default function AcceptInvitePage({ invite, onDone }: Props) {
   const info = useQuery(api.invites.lookup, { invite });
   const accept = useAction(api.invites.accept);
@@ -20,6 +22,7 @@ export default function AcceptInvitePage({ invite, onDone }: Props) {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const isReset = info?.kind === 'reset';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,40 +40,42 @@ export default function AcceptInvitePage({ invite, onDone }: Props) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'var(--bg)' }}>
-      <div className="card" style={{ width: '100%', maxWidth: 420, padding: 28 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>⬡</div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Join LabOS</h1>
-
+    <main className="auth">
+      <AuthBrand />
+      <div className="auth-card">
         {info === undefined ? (
-          <p style={{ color: 'var(--text-muted)' }}>Checking your invite…</p>
+          <p className="auth-sub" role="status"><span className="auth-spinner" />Checking your link…</p>
         ) : info === null ? (
           <>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
-              This invite link is invalid, expired or already used. Ask your PI to send a new one.
-            </p>
-            <button className="btn btn-secondary" onClick={onDone}>Go to sign in</button>
+            <h1 className="auth-title">Link not valid</h1>
+            <p className="auth-sub">This link is invalid, expired or already used. Ask your PI for a new invite, or use “Forgot password” on the sign-in page.</p>
+            <button className="auth-btn" onClick={onDone}>Go to sign in</button>
           </>
         ) : (
-          <form onSubmit={submit}>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
-              Welcome, <strong style={{ color: 'var(--text)' }}>{info.full_name}</strong>. Choose a password for{' '}
-              <strong style={{ color: 'var(--text)' }}>{info.email}</strong> — you'll sign in with this email from now on.
+          <form onSubmit={submit} noValidate>
+            <h1 className="auth-title">{isReset ? 'Choose a new password' : 'Join LabOS'}</h1>
+            <p className="auth-sub">
+              {isReset ? 'For ' : <>Welcome, <strong>{info.full_name}</strong>. Set a password for </>}
+              <strong>{info.email}</strong>{isReset ? '.' : ' — you\'ll sign in with this email.'}
             </p>
-            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Password</label>
-            <input type="password" className="form-input" autoComplete="new-password" required minLength={8}
-              value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', marginBottom: 12 }} />
-            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Confirm password</label>
-            <input type="password" className="form-input" autoComplete="new-password" required minLength={8}
-              value={confirm} onChange={e => setConfirm(e.target.value)} style={{ width: '100%', marginBottom: 8 }} />
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>At least 8 characters, including a number.</div>
-            {error && <div role="alert" style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <button type="submit" className="btn btn-primary" disabled={busy} style={{ width: '100%' }}>
-              {busy ? 'Setting up…' : 'Set password & sign in'}
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="pw">Password</label>
+              <input id="pw" type="password" className="auth-input" autoComplete="new-password" autoFocus
+                value={password} onChange={e => setPassword(e.target.value)} />
+              <div className="auth-hint">At least 8 characters, including a number.</div>
+            </div>
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="pw2">Confirm password</label>
+              <input id="pw2" type="password" className="auth-input" autoComplete="new-password"
+                value={confirm} onChange={e => setConfirm(e.target.value)} />
+            </div>
+            {error && <p className="auth-error" role="alert" style={{ marginBottom: 12 }}>{error}</p>}
+            <button type="submit" className="auth-btn" disabled={busy || !password || !confirm}>
+              {busy ? <><span className="auth-spinner" />Saving…</> : isReset ? 'Save and sign in' : 'Set password and sign in'}
             </button>
           </form>
         )}
       </div>
-    </div>
+    </main>
   );
 }

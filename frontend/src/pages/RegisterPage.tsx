@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ConvexError } from 'convex/values';
 import { useAuth } from '../context/AuthContext';
+import { AuthBrand } from '../components/AuthBrand';
+import '../styles/auth.css';
 
 interface RegisterForm {
   full_name: string;
@@ -22,116 +24,58 @@ export default function RegisterPage({ onBackToLogin }: Props) {
   async function onSubmit(data: RegisterForm) {
     setLoading(true);
     try {
-      await registerAccount(data.email, data.password, data.full_name);
-      toast.success('Welcome to LabOS v3!');
+      await registerAccount(data.email.trim(), data.password, data.full_name.trim());
+      toast.success('Welcome to LabOS');
     } catch (err) {
-      const msg = err instanceof ConvexError && typeof err.data === 'string' ? err.data : 'Registration failed. Please try again.';
-      toast.error(msg);
+      toast.error(err instanceof ConvexError && typeof err.data === 'string' ? err.data : 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="login-shell">
-      <div className="login-top-stripe" />
-      <div className="login-split">
-        <div className="login-panel-left">
-          <div className="login-left-inner">
-            <div className="login-brand-row">
-              <div className="login-logo-box">⬡</div>
-              <div>
-                <div className="login-brand-name">LabOS <span className="login-brand-v">v3</span></div>
-                <div className="login-brand-sub">Laboratory Operations System</div>
-              </div>
-            </div>
-            <h1 className="login-left-headline">Join your lab's workspace</h1>
-            <p className="login-left-desc">
-              Create your account to access protocols, samples, instruments, grants, and
-              safety records — all in one secure platform.
-            </p>
+    <main className="auth">
+      <AuthBrand />
+      <div className="auth-card">
+        <h1 className="auth-title">Create your account</h1>
+        <p className="auth-sub">Any email works, including Gmail. Your PI can give you access to more of LabOS later.</p>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="full_name">Full name</label>
+            <input id="full_name" className="auth-input" autoComplete="name"
+              aria-invalid={!!errors.full_name}
+              {...register('full_name', { required: 'Enter your name', minLength: { value: 2, message: 'Too short' } })} />
+            {errors.full_name && <span className="auth-error">{errors.full_name.message}</span>}
           </div>
-        </div>
-
-        <div className="login-panel-right">
-          <div className="login-form-card">
-            <div className="login-form-header">
-              <div className="login-secure-badge">
-                <span>🔒</span> Secure Sign Up
-              </div>
-              <h2 className="login-form-title">Create your account</h2>
-              <p className="login-form-subtitle">Sign up for LabOS to get started</p>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="login-form">
-              <div className="lf-group">
-                <label className="lf-label">Full Name</label>
-                <div className="lf-input-wrap">
-                  <span className="lf-icon">👤</span>
-                  <input
-                    className={`lf-input ${errors.full_name ? 'lf-input-error' : ''}`}
-                    {...register('full_name', { required: 'Name is required', minLength: { value: 2, message: 'Too short' } })}
-                    placeholder="Jane Doe"
-                    autoComplete="name"
-                  />
-                </div>
-                {errors.full_name && <span className="lf-error">{errors.full_name.message}</span>}
-              </div>
-
-              <div className="lf-group">
-                <label className="lf-label">Email Address</label>
-                <div className="lf-input-wrap">
-                  <span className="lf-icon">✉</span>
-                  <input
-                    type="email"
-                    className={`lf-input ${errors.email ? 'lf-input-error' : ''}`}
-                    {...register('email', { required: 'Email is required' })}
-                    placeholder="user@institution.edu"
-                    autoComplete="email"
-                  />
-                </div>
-                {errors.email && <span className="lf-error">{errors.email.message}</span>}
-              </div>
-
-              <div className="lf-group">
-                <label className="lf-label">Password</label>
-                <div className="lf-input-wrap">
-                  <span className="lf-icon">🔑</span>
-                  <input
-                    type="password"
-                    className={`lf-input ${errors.password ? 'lf-input-error' : ''}`}
-                    {...register('password', {
-                      required: 'Password is required',
-                      minLength: { value: 8, message: 'Min. 8 characters' },
-                      pattern: { value: /\d/, message: 'Must contain a digit' },
-                    })}
-                    placeholder="At least 8 characters, 1 digit"
-                    autoComplete="new-password"
-                  />
-                </div>
-                {errors.password && <span className="lf-error">{errors.password.message}</span>}
-              </div>
-
-              <button type="submit" className="login-submit-btn" disabled={loading}>
-                {loading ? (
-                  <span className="login-btn-loading"><span className="login-spinner" /> Creating account…</span>
-                ) : 'Create Account'}
-              </button>
-            </form>
-
-            <button
-              type="button"
-              onClick={onBackToLogin}
-              style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)',
-                cursor: 'pointer', fontSize: 13, textDecoration: 'underline', marginTop: 16,
-              }}
-            >
-              ← Back to sign in
-            </button>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="email">Email</label>
+            <input id="email" type="email" className="auth-input" autoComplete="email" placeholder="you@example.com"
+              aria-invalid={!!errors.email}
+              {...register('email', { required: 'Enter your email', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } })} />
+            {errors.email && <span className="auth-error">{errors.email.message}</span>}
           </div>
-        </div>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="password">Password</label>
+            <input id="password" type="password" className="auth-input" autoComplete="new-password"
+              aria-invalid={!!errors.password}
+              {...register('password', {
+                required: 'Choose a password',
+                minLength: { value: 8, message: 'At least 8 characters' },
+                pattern: { value: /\d/, message: 'Include at least one number' },
+              })} />
+            {errors.password
+              ? <span className="auth-error">{errors.password.message}</span>
+              : <div className="auth-hint">At least 8 characters, including a number.</div>}
+          </div>
+          <button type="submit" className="auth-btn" disabled={loading} style={{ marginTop: 8 }}>
+            {loading ? <><span className="auth-spinner" />Creating account…</> : 'Sign up'}
+          </button>
+        </form>
+        <p className="auth-foot">
+          Already have an account?{' '}
+          <button type="button" className="auth-link" onClick={onBackToLogin}>Sign in</button>
+        </p>
       </div>
-    </div>
+    </main>
   );
 }

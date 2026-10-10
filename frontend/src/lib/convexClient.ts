@@ -6,7 +6,7 @@ const client = new ConvexHttpClient(CONVEX_URL);
 
 const TOKEN_KEY = "labos_auth_token";
 function getToken(): string | undefined {
-  return localStorage.getItem(TOKEN_KEY) ?? undefined;
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? undefined;
 }
 
 type IdLike = string | number;
