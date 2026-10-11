@@ -75,7 +75,7 @@ const NAV_CATEGORIES: NavCategory[] = [
       { key: 'eln', label: 'Lab Notebook', icon: '📓', minRole: 'trainee' },
       { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
       { key: 'equipment', label: 'Equipment', icon: '🔭', minRole: 'trainee' },
-      { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee', advanced: true },
+      { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
     ]
   },
   {
