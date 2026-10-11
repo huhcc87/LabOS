@@ -77,15 +77,11 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
   const [years, setYears] = useState(5);
   const [faRateKey, setFaRateKey] = useState(0);
   const [customFA, setCustomFA] = useState(52);
-  const [personnel, setPersonnel] = useState<PersonnelRow[]>([
-    { id: '1', name: 'Dr. Principal Investigator', role: 'PI', salary: 185000, effort: 10, fringe: 28 },
-    { id: '2', name: 'Postdoctoral Fellow', role: 'Postdoctoral Fellow', salary: 58000, effort: 100, fringe: 22 },
-    { id: '3', name: 'Graduate Student', role: 'Graduate Student', salary: 32000, effort: 50, fringe: 8 },
-  ]);
-  const [supplies, setSupplies] = useState(40000);
-  const [equipment, setEquipment] = useState(15000);
-  const [travel, setTravel] = useState(5000);
-  const [other, setOther] = useState(10000);
+  const [personnel, setPersonnel] = useState<PersonnelRow[]>([]);
+  const [supplies, setSupplies] = useState(0);
+  const [equipment, setEquipment] = useState(0);
+  const [travel, setTravel] = useState(0);
+  const [other, setOther] = useState(0);
   const [subcontracts, setSubcontracts] = useState(0);
   const [escalation, setEscalation] = useState(3);
 

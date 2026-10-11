@@ -1,13 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
 import type { Protocol, ProtocolFilters } from '../types/protocol.types'
-import { MOCK_PROTOCOLS } from '../data/mockProtocols'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
 import { applyFilters, DEFAULT_FILTERS, countBySubcategory } from '../utils/protocolFilters'
 
 export type ViewMode = 'table' | 'grid'
 
 export function useProtocols() {
-  const [allProtocols, setAllProtocols] = useState<Protocol[]>(MOCK_PROTOCOLS)
+  const [allProtocols, setAllProtocols] = useState<Protocol[]>([])
   const [filters, setFilters] = useState<ProtocolFilters>(DEFAULT_FILTERS)
   const [selectedProtocol, setSelectedProtocol] = useState<Protocol | null>(null)
   const [activeCategory, setActiveCategory] = useState<string>('')

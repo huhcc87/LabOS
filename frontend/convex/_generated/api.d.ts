@@ -51,7 +51,6 @@ import type * as reports from "../reports.js";
 import type * as samples from "../samples.js";
 import type * as scheduling from "../scheduling.js";
 import type * as search from "../search.js";
-import type * as seed from "../seed.js";
 import type * as seedProdAdmin from "../seedProdAdmin.js";
 import type * as settings from "../settings.js";
 import type * as sops from "../sops.js";
@@ -116,7 +115,6 @@ declare const fullApi: ApiFromModules<{
   samples: typeof samples;
   scheduling: typeof scheduling;
   search: typeof search;
-  seed: typeof seed;
   seedProdAdmin: typeof seedProdAdmin;
   settings: typeof settings;
   sops: typeof sops;

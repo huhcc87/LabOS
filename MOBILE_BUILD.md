@@ -98,7 +98,7 @@ Connect iPhone → trust device in Xcode → select it as the target → ▶ Run
 - [ ] App icon set (1024×1024 for store + all sizes in Assets.xcassets)
 - [ ] Screenshots for iPhone 6.7" and 6.5" + iPad 12.9"
 - [ ] Age rating set
-- [ ] Review notes: "This is a research lab management system. Demo: admin@lab.local / Admin123!"
+- [ ] Review notes: "This is a research lab management system. A reviewer account is provided in the App Store Connect sign-in fields (create one for the review; never commit its password)."
 
 ---
 

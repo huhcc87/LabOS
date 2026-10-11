@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "convex/_generated/api.d.ts": {
-    "mtime": 1791723846.443869,
-    "ast_hash": "6bdbc464174255d96042955d36b1d518",
+    "mtime": 1791724365.9489963,
+    "ast_hash": "108e7c9ba0a27995f7a758a8fbcb8e91",
     "semantic_hash": ""
   },
   "convex/_generated/api.js": {
@@ -292,11 +292,6 @@
   "convex/search.ts": {
     "mtime": 1791596450.3146188,
     "ast_hash": "ac48803d60798509d41a7a8dd927f866",
-    "semantic_hash": ""
-  },
-  "convex/seed.ts": {
-    "mtime": 1791596450.3156235,
-    "ast_hash": "fe12321d2173371ddc202bfe8a950797",
     "semantic_hash": ""
   },
   "convex/seedProdAdmin.ts": {
@@ -620,8 +615,8 @@
     "semantic_hash": ""
   },
   "src/features/eln-swarm/elnSwarmEngine.ts": {
-    "mtime": 1791596450.2787151,
-    "ast_hash": "e8b342784ce9f2cf4e2874f8d015df9f",
+    "mtime": 1791724489.0175893,
+    "ast_hash": "bfb38f099a63cf57ba557a113a8fe487",
     "semantic_hash": ""
   },
   "src/features/eln-swarm/elnSwarmTypes.ts": {
@@ -665,8 +660,8 @@
     "semantic_hash": ""
   },
   "src/features/lab-meetings/components/CreateMeetingModal.tsx": {
-    "mtime": 1791596450.2849956,
-    "ast_hash": "8b1278879663740d530e75f784a0e187",
+    "mtime": 1791724524.945307,
+    "ast_hash": "8473ee90f32374e67c2358a6761976c1",
     "semantic_hash": ""
   },
   "src/features/lab-meetings/components/MeetingAnalytics.tsx": {
@@ -707,11 +702,6 @@
   "src/features/lab-meetings/components/VideoCallRoom.tsx": {
     "mtime": 1791596450.2964046,
     "ast_hash": "85d47c16191b8237ef8ba0c72d7e5eeb",
-    "semantic_hash": ""
-  },
-  "src/features/lab-meetings/data/mockMeetings.ts": {
-    "mtime": 1791596450.2976751,
-    "ast_hash": "34ddea17035f0ee60e21e536b9e67c21",
     "semantic_hash": ""
   },
   "src/features/lab-meetings/hooks/useMeetings.ts": {
@@ -800,8 +790,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/components/ProtocolAIHelper.tsx": {
-    "mtime": 1791596450.3240454,
-    "ast_hash": "6d15c68eced2ac38c69419eb02fb416c",
+    "mtime": 1791724489.0160275,
+    "ast_hash": "72417698fbc40cb340b28a69118dc56f",
     "semantic_hash": ""
   },
   "src/features/protocols/components/ProtocolAnalyticsDashboard.tsx": {
@@ -880,8 +870,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/components/ProtocolInventoryCheck.tsx": {
-    "mtime": 1791596450.3480332,
-    "ast_hash": "5948b2e8e192e7b6dfab8aa42151b138",
+    "mtime": 1791724489.0155897,
+    "ast_hash": "628363833fb49e7869b3fa72ac44f621",
     "semantic_hash": ""
   },
   "src/features/protocols/components/ProtocolMediaAttachments.tsx": {
@@ -949,11 +939,6 @@
     "ast_hash": "9305f1b13a17c4115d059c4faaa3042f",
     "semantic_hash": ""
   },
-  "src/features/protocols/data/mockProtocols.ts": {
-    "mtime": 1791596450.2939808,
-    "ast_hash": "7f049d517ac6ca970f1c49f9fc22e79a",
-    "semantic_hash": ""
-  },
   "src/features/protocols/hooks/useProtocolGeneration.ts": {
     "mtime": 1791596450.2953672,
     "ast_hash": "8cc220fe42274915e3557ce2a63087a1",
@@ -965,8 +950,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/hooks/useProtocols.ts": {
-    "mtime": 1791596450.2968414,
-    "ast_hash": "1069edef2664692c0db73b35a8ccc8df",
+    "mtime": 1791724489.0141797,
+    "ast_hash": "a78ca6ffc5d3c431980803fe07dd0d00",
     "semantic_hash": ""
   },
   "src/features/protocols/lib/protocolExport.ts": {
@@ -1010,8 +995,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/services/protocolImportService.ts": {
-    "mtime": 1791596450.3042364,
-    "ast_hash": "b340298ba5f0688f851df0c733a72429",
+    "mtime": 1791724489.0145817,
+    "ast_hash": "4cc0f5e89c4725f3ab79efc3ec0daa69",
     "semantic_hash": ""
   },
   "src/features/protocols/services/protocolsIoService.ts": {
@@ -1300,8 +1285,8 @@
     "semantic_hash": ""
   },
   "src/pages/EmailSettingsPage.tsx": {
-    "mtime": 1791596450.3120997,
-    "ast_hash": "9fccf00afc0d64b5ba427d454811e675",
+    "mtime": 1791724489.0204105,
+    "ast_hash": "03ef03e3ca018fdaa9368a093c0b307b",
     "semantic_hash": ""
   },
   "src/pages/EquipmentAnalyticsPage.tsx": {
@@ -1365,8 +1350,8 @@
     "semantic_hash": ""
   },
   "src/pages/GrantTools.tsx": {
-    "mtime": 1791596450.3344343,
-    "ast_hash": "36a10dd42f89d50c70ee9c9b1dddf85e",
+    "mtime": 1791724489.0219774,
+    "ast_hash": "655d519861e5c640f4ada6d94c34441f",
     "semantic_hash": ""
   },
   "src/pages/GrantsPage.tsx": {
@@ -1405,8 +1390,8 @@
     "semantic_hash": ""
   },
   "src/pages/LabHubPage.tsx": {
-    "mtime": 1791675359.7488697,
-    "ast_hash": "bc228fb55162f7a3660a8944dc5a1b40",
+    "mtime": 1791724489.0194633,
+    "ast_hash": "01351fc40062fd285675b0b372c63e06",
     "semantic_hash": ""
   },
   "src/pages/LabMeetingsPage.tsx": {
@@ -1435,8 +1420,8 @@
     "semantic_hash": ""
   },
   "src/pages/LoginPage.tsx": {
-    "mtime": 1791653887.1332772,
-    "ast_hash": "cc9aaac7fe229b2b26f654d693a844d1",
+    "mtime": 1791724489.0135515,
+    "ast_hash": "168c8448ec5d5f391bf1cd85e08a7f8d",
     "semantic_hash": ""
   },
   "src/pages/MaintenancePage.tsx": {

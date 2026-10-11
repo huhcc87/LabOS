@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react'
+import { useQuery } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
+import { useAuth } from '../../../context/AuthContext'
 import type { Protocol } from '../types/protocol.types'
 
-// Mock inventory item type - would come from inventory feature
+// Inventory item as the check needs it
 interface InventoryItem {
   id: string
   name: string
@@ -31,17 +34,20 @@ interface Props {
   onDeductInventory: (items: { itemId: string; quantity: number }[]) => void
 }
 
-// Mock inventory data - would come from API/context
-const MOCK_INVENTORY: InventoryItem[] = [
-  { id: '1', name: 'PBS Buffer 10X', catalogNumber: 'P7059', currentQuantity: 2500, unit: 'mL', minQuantity: 500, location: 'Shelf A-1', status: 'in_stock' },
-  { id: '2', name: 'DMEM Media', catalogNumber: 'D5796', currentQuantity: 100, unit: 'mL', minQuantity: 200, location: 'Fridge 2', status: 'low_stock' },
-  { id: '3', name: 'FBS (Fetal Bovine Serum)', catalogNumber: 'F2442', currentQuantity: 0, unit: 'mL', minQuantity: 50, location: 'Freezer -20', status: 'out_of_stock' },
-  { id: '4', name: 'Trypsin-EDTA 0.25%', catalogNumber: 'T4049', currentQuantity: 150, unit: 'mL', minQuantity: 50, location: 'Fridge 2', status: 'in_stock' },
-  { id: '5', name: 'Penicillin-Streptomycin', catalogNumber: 'P4333', currentQuantity: 80, unit: 'mL', minQuantity: 20, location: 'Freezer -20', status: 'in_stock', expirationDate: '2025-02-15' },
-  { id: '6', name: 'Ethanol 70%', catalogNumber: 'E7023', currentQuantity: 5000, unit: 'mL', minQuantity: 1000, location: 'Cabinet B-2', status: 'in_stock' },
-  { id: '7', name: 'Sodium Chloride', catalogNumber: 'S9888', currentQuantity: 250, unit: 'g', minQuantity: 100, location: 'Shelf C-3', status: 'in_stock' },
-  { id: '8', name: 'Tris Base', catalogNumber: 'T1503', currentQuantity: 45, unit: 'g', minQuantity: 50, location: 'Shelf C-3', status: 'low_stock' },
-]
+/** Your real stock, from Inventory. */
+function useRealInventory(): InventoryItem[] {
+  const { token } = useAuth()
+  const res = useQuery(api.inventory.list, token ? { token, paginationOpts: { numItems: 500, cursor: null } } : 'skip')
+  return useMemo(() => (res?.page ?? []).map(i => {
+    const min = i.minimum_quantity ?? 0
+    const expired = !!i.expiry_date && i.expiry_date < Date.now()
+    return {
+      id: i._id, name: i.name, catalogNumber: i.catalog_number, currentQuantity: i.quantity, unit: i.unit ?? '', minQuantity: min,
+      location: i.location ?? '',
+      status: expired ? 'expired' : i.quantity <= 0 ? 'out_of_stock' : i.quantity <= min ? 'low_stock' : 'in_stock',
+    } as InventoryItem
+  }), [res])
+}
 
 // Smart matching function to link reagents to inventory
 function findBestMatch(reagentName: string, inventory: InventoryItem[]): InventoryItem | undefined {
@@ -83,6 +89,7 @@ function parseQuantity(reagentStr: string): { quantity: number; unit: string } {
 }
 
 export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDeductInventory }: Props) {
+  const inventory = useRealInventory()
   const [showLinkModal, setShowLinkModal] = useState<string | null>(null)
   const [manualLinks, setManualLinks] = useState<Record<string, string>>({})
   const [deductAfterRun, setDeductAfterRun] = useState(true)
@@ -92,8 +99,8 @@ export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDe
     return protocol.reagents.map(reagent => {
       const manualLinkId = manualLinks[reagent]
       const inventoryItem = manualLinkId
-        ? MOCK_INVENTORY.find(i => i.id === manualLinkId)
-        : findBestMatch(reagent, MOCK_INVENTORY)
+        ? inventory.find(i => i.id === manualLinkId)
+        : findBestMatch(reagent, inventory)
 
       const { quantity, unit } = parseQuantity(reagent)
 
@@ -348,7 +355,7 @@ export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDe
               </button>
             </div>
             <div style={{ padding: 16, maxHeight: 400, overflow: 'auto' }}>
-              {MOCK_INVENTORY.map(item => (
+              {inventory.map(item => (
                 <button
                   key={item.id}
                   onClick={() => handleLink(showLinkModal, item.id)}

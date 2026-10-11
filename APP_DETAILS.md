@@ -831,22 +831,9 @@ All variables are loaded from `backend/.env`. See `.env.example` for the full te
 
 ---
 
-## 15. Demo Accounts
+## 15. Accounts
 
-Seeded by `backend/seed.py`:
-
-| Email | Password | Role |
-|---|---|---|
-| `admin@lab.local` | `Admin123!` | admin |
-| `manager@lab.local` | `Manager123!` | manager |
-| `staff@lab.local` | `Staff123!` | staff |
-
-Test accounts used by the test suite:
-
-| Email | Password | Role |
-|---|---|---|
-| `testadmin@lab.local` | `Admin123!` | admin |
-| `teststaff@lab.local` | `Staff123!` | staff |
+There are no built-in demo accounts or published passwords. Create the first admin with `seedProdAdmin:createAdmin` (a strong password of 12+ characters is required) and invite everyone else from the app.
 
 ---
 

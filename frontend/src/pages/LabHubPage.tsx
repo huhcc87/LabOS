@@ -232,22 +232,11 @@ export default function LabHubPage() {
   });
 
   // Data states
-  // Starter protocols a lab can add with one click when its list is empty.
-  const SAMPLE_PROTOCOLS: ProtocolInput[] = [
-    { name: 'PCR Amplification', version: '2.1', status: 'active', category: 'Molecular Biology', duration: '2 hours', materials: 'Template DNA\nPrimers\nTaq polymerase mix', steps: '1. Thaw reagents on ice\n2. Prepare master mix\n3. Add template DNA\n4. Run thermocycler 2 hours', safety: 'Wear gloves. Dispose of tips as biohazard waste.' },
-    { name: 'Western Blot Analysis', version: '1.5', status: 'active', category: 'Protein Analysis', steps: '1. Run SDS-PAGE gel\n2. Transfer to membrane\n3. Block membrane 1 hour\n4. Incubate primary antibody overnight\n5. Wash 3 times\n6. Incubate secondary antibody 1 hour\n7. Develop and image' },
-    { name: 'Cell Culture Maintenance', version: '3.0', status: 'active', category: 'Cell Biology', steps: '1. Warm medium to 37°C\n2. Check cells under microscope\n3. Aspirate old medium\n4. Add fresh medium\n5. Return flask to incubator' },
-    { name: 'RNA Extraction', version: '1.2', status: 'draft', category: 'Molecular Biology', steps: '1. Lyse sample in TRIzol\n2. Add chloroform and spin 15 min\n3. Precipitate RNA with isopropanol\n4. Wash pellet with 75% ethanol\n5. Resuspend in RNase-free water' },
-  ];
-
   /** Runs a protocol save and reports the result; returns false on failure. */
   const saveProtocol = async (work: () => Promise<unknown>, success: string): Promise<boolean> => {
     try { await work(); showToast(success, 'success'); return true; }
     catch (e) { showToast(errText(e), 'error'); return false; }
   };
-
-  const addSampleProtocols = () =>
-    saveProtocol(() => Promise.all(SAMPLE_PROTOCOLS.map(p => labProtocols.create(p))), 'Sample protocols added');
 
   const [sops, setSOPs] = useState<SOP[]>([
     { id: 1, title: 'Biosafety Level 2 Procedures', category: 'Safety', version: '4.0' },
@@ -1160,8 +1149,7 @@ export default function LabHubPage() {
                     <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
                       {labProtocols.loading ? 'Loading protocols…' : protocols.length > 0 ? 'No protocols found matching your criteria' : (
                         <>
-                          <div style={{ marginBottom: 12 }}>No protocols yet. Create one, import from the Protocol Library, or start with examples.</div>
-                          <button className="btn btn-secondary" onClick={addSampleProtocols}>Add 4 sample protocols</button>
+                          <div>No protocols yet. Create one or import from the Protocol Library.</div>
                         </>
                       )}
                     </td>

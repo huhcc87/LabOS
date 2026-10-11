@@ -5,7 +5,6 @@ import { searchCrossref } from './crossrefService'
 import { searchEuropePmc } from './europePmcService'
 import { searchBioProtocol } from './bioProtocolService'
 import { searchJove } from './joveService'
-import { MOCK_PROTOCOLS } from '../data/mockProtocols'
 
 export async function searchAllSources(query: string, sources: SourceType[]): Promise<ImportSearchResult[]> {
   const promises: Promise<ImportSearchResult[]>[] = []
@@ -31,9 +30,9 @@ export function deduplicateResults(results: ImportSearchResult[]): ImportSearchR
   })
 }
 
-export function markAlreadyImported(results: ImportSearchResult[]): ImportSearchResult[] {
-  const existingDois = new Set(MOCK_PROTOCOLS.map(p => p.doi).filter(Boolean))
-  const existingPmids = new Set(MOCK_PROTOCOLS.map(p => p.pmid).filter(Boolean))
+export function markAlreadyImported(results: ImportSearchResult[], existing: Array<{ doi?: string; pmid?: string }> = []): ImportSearchResult[] {
+  const existingDois = new Set(existing.map(p => p.doi).filter(Boolean))
+  const existingPmids = new Set(existing.map(p => p.pmid).filter(Boolean))
   return results.map(r => ({
     ...r,
     alreadyImported: !!(r.doi && existingDois.has(r.doi)) || !!(r.pmid && existingPmids.has(r.pmid)),

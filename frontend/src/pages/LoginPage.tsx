@@ -19,14 +19,6 @@ interface LoginForm {
   remember: boolean;
 }
 
-const DEMO_USERS = import.meta.env.DEV ? [
-  { label: 'Admin', email: 'admin@lab.local', password: 'Admin123!' },
-  { label: 'PI', email: 'pi@lab.local', password: 'Pi123!' },
-  { label: 'Manager', email: 'manager@lab.local', password: 'Manager123!' },
-  { label: 'Staff', email: 'staff@lab.local', password: 'Staff123!' },
-  { label: 'Trainee', email: 'trainee@lab.local', password: 'Trainee123!' },
-] : [];
-
 interface Props {
   onCreateAccount: () => void;
 }
@@ -189,19 +181,6 @@ export default function LoginPage({ onCreateAccount }: Props) {
               <button type="button" className="auth-link" onClick={onCreateAccount}>Sign up</button>
             </p>
 
-            {DEMO_USERS.length > 0 && (
-              <div className="auth-demo">
-                <div className="auth-demo-label">Demo accounts (development only)</div>
-                <div className="auth-demo-pills">
-                  {DEMO_USERS.map(u => (
-                    <button key={u.label} type="button" className="auth-demo-pill"
-                      onClick={() => { setValue('email', u.email); setValue('password', u.password); }}>
-                      {u.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
