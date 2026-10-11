@@ -1985,8 +1985,8 @@
     "semantic_hash": ""
   },
   "convex/tenant.ts": {
-    "mtime": 1791726497.6259902,
-    "ast_hash": "0b3c525b111a08c09e3390112c937f46",
+    "mtime": 1791726685.748506,
+    "ast_hash": "208e3ba242cbc7d7501f05d295d8e41e",
     "semantic_hash": ""
   },
   "convex/tenantTables.ts": {

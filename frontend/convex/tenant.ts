@@ -121,9 +121,9 @@ export function query<A extends PropertyValidators = Record<string, never>, R = 
 }) {
   return rawQuery({
     args: (def.args ?? {}) as A,
-    handler: async (ctx, args: ObjectType<A>) => {
+    handler: async (ctx, args: any) => {
       const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token);
-      return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantQueryCtx, args);
+      return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantQueryCtx, args as ObjectType<A>);
     },
   });
 }
@@ -134,9 +134,9 @@ export function mutation<A extends PropertyValidators = Record<string, never>, R
 }) {
   return rawMutation({
     args: (def.args ?? {}) as A,
-    handler: async (ctx, args: ObjectType<A>) => {
+    handler: async (ctx, args: any) => {
       const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token);
-      return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantMutationCtx, args);
+      return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantMutationCtx, args as ObjectType<A>);
     },
   });
 }

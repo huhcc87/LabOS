@@ -69,4 +69,4 @@ graphify update .                          # refresh the code graph after code c
 - Tooling quirks seen: `node -e`/`python3 -` heredocs are blocked, use script files; Convex dev changes `.env.local`, keep `VITE_CONVEX_URL` in `.env`.
 
 ## Commit history of this session (newest first)
-Tenancy backend (uncommitted at time of writing → see git log) · header controls · AI Manager via header · Video under Resources · Jitsi video + fake data removal · Sensors module · Reports rewire · edit-save fix · label/freezer event logging · Samples/Events on Convex · Labels scan-and-store · freezer storage · PI approvals and student access.
+Tenancy backend (commits "feat: lab separation") · header controls · AI Manager via header · Video under Resources · Jitsi video + fake data removal · Sensors module · Reports rewire · edit-save fix · label/freezer event logging · Samples/Events on Convex · Labels scan-and-store · freezer storage · PI approvals and student access.
