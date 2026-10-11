@@ -2,7 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { hubGuard } from "./authHelper";
 // Students only reach this module if their PI allowed this hub.
-const { requireAuth } = hubGuard("Lab Hub");
+const { requireAuth } = hubGuard("Resources");
 
 export const createRoom = mutation({
   args: {
