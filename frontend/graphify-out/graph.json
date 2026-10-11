@@ -466,8 +466,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_activity",
-      "community": 2,
-      "community_name": "api.d.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "activity.ts"
     },
     {
@@ -477,8 +477,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_activity_list",
-      "community": 2,
-      "community_name": "api.d.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "list"
     },
     {
@@ -488,8 +488,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "convex_activity_recent",
-      "community": 2,
-      "community_name": "api.d.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "recent"
     },
     {
@@ -499,8 +499,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "convex_activity_myactivity",
-      "community": 2,
-      "community_name": "api.d.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "myactivity"
     },
     {
@@ -510,8 +510,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "convex_activity_stats",
-      "community": 2,
-      "community_name": "api.d.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "stats"
     },
     {
@@ -763,8 +763,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "convex_authhelper_asserthub",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "asserthub()"
     },
     {
@@ -774,8 +774,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "convex_authhelper_hubguard",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "hubguard()"
     },
     {
@@ -840,8 +840,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_compliance",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "compliance.ts"
     },
     {
@@ -851,8 +851,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_compliance_requireauth",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "{ requireauth }"
     },
     {
@@ -862,8 +862,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "convex_compliance_list",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "list"
     },
     {
@@ -873,8 +873,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "convex_compliance_create",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "create"
     },
     {
@@ -884,8 +884,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "convex_compliance_update",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "update"
     },
     {
@@ -895,8 +895,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "convex_compliance_remove",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "remove"
     },
     {
@@ -1258,8 +1258,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_files",
-      "community": 60,
-      "community_name": "ProtocolGenerateModal.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "files.ts"
     },
     {
@@ -1269,8 +1269,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_files_list",
-      "community": 60,
-      "community_name": "ProtocolGenerateModal.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "list"
     },
     {
@@ -1280,8 +1280,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "convex_files_upload",
-      "community": 60,
-      "community_name": "ProtocolGenerateModal.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "upload"
     },
     {
@@ -1291,8 +1291,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "convex_files_remove",
-      "community": 60,
-      "community_name": "ProtocolGenerateModal.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "remove"
     },
     {
@@ -1302,8 +1302,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "convex_files_get",
-      "community": 60,
-      "community_name": "ProtocolGenerateModal.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "get"
     },
     {
@@ -2259,8 +2259,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_integrations",
-      "community": 10,
-      "community_name": "authHelper.ts",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "integrations.ts"
     },
     {
@@ -2270,8 +2270,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_integrations_list",
-      "community": 10,
-      "community_name": "authHelper.ts",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "list"
     },
     {
@@ -2281,8 +2281,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "convex_integrations_create",
-      "community": 10,
-      "community_name": "authHelper.ts",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "create"
     },
     {
@@ -2292,8 +2292,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "convex_integrations_update",
-      "community": 10,
-      "community_name": "authHelper.ts",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "update"
     },
     {
@@ -2303,8 +2303,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "convex_integrations_remove",
-      "community": 10,
-      "community_name": "authHelper.ts",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "remove"
     },
     {
@@ -3238,8 +3238,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_notifications",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "notifications.ts"
     },
     {
@@ -3249,8 +3249,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_notifications_list",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "list"
     },
     {
@@ -3260,8 +3260,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "convex_notifications_markread",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "markread"
     },
     {
@@ -3381,8 +3381,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_payments",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "payments.ts"
     },
     {
@@ -3392,8 +3392,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_payments_requireauth",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "{ requireauth }"
     },
     {
@@ -3403,8 +3403,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "convex_payments_status",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "status"
     },
     {
@@ -3414,8 +3414,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "convex_payments_listmethods",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "listmethods"
     },
     {
@@ -3425,8 +3425,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "convex_payments_createmethod",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "createmethod"
     },
     {
@@ -3436,8 +3436,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "convex_payments_deletemethod",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "deletemethod"
     },
     {
@@ -3447,8 +3447,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "convex_payments_setdefault",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "setdefault"
     },
     {
@@ -3458,8 +3458,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "convex_payments_listorders",
-      "community": 97,
-      "community_name": "labNotebook.ts",
+      "community": 110,
+      "community_name": "tasks.ts",
       "norm_label": "listorders"
     },
     {
@@ -4888,8 +4888,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_stripe",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "stripe.ts"
     },
     {
@@ -4899,8 +4899,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "convex_stripe_getstripe",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "getstripe()"
     },
     {
@@ -4910,8 +4910,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "convex_stripe_requiresession",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "requiresession()"
     },
     {
@@ -4921,8 +4921,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "convex_stripe_isconfigured",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "isconfigured"
     },
     {
@@ -4932,8 +4932,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "convex_stripe_createsetupintent",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "createsetupintent"
     },
     {
@@ -4943,8 +4943,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "convex_stripe_createpaymentintent",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "createpaymentintent"
     },
     {
@@ -4954,8 +4954,8 @@
       "source_location": "L126",
       "_origin": "ast",
       "id": "convex_stripe_listpaymentmethods",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "listpaymentmethods"
     },
     {
@@ -4965,8 +4965,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "convex_stripe_detachpaymentmethod",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "detachpaymentmethod"
     },
     {
@@ -4976,8 +4976,8 @@
       "source_location": "L177",
       "_origin": "ast",
       "id": "convex_stripe_savecustomerid",
-      "community": 184,
-      "community_name": "jsdom",
+      "community": 42,
+      "community_name": "api.js",
       "norm_label": "savecustomerid"
     },
     {
@@ -5163,8 +5163,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_tasks",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "tasks.ts"
     },
     {
@@ -5174,8 +5174,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_tasks_list",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "list"
     },
     {
@@ -5185,8 +5185,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "convex_tasks_get",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "get"
     },
     {
@@ -5196,8 +5196,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "convex_tasks_create",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "create"
     },
     {
@@ -5207,8 +5207,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "convex_tasks_update",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "update"
     },
     {
@@ -5218,8 +5218,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "convex_tasks_complete",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "complete"
     },
     {
@@ -5229,8 +5229,8 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "convex_tasks_remove",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "remove"
     },
     {
@@ -5240,8 +5240,8 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "convex_tasks_mytasks",
-      "community": 110,
-      "community_name": "tasks.ts",
+      "community": 60,
+      "community_name": "ProtocolGenerateModal.tsx",
       "norm_label": "mytasks"
     },
     {
@@ -5427,8 +5427,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "convex_training",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "training.ts"
     },
     {
@@ -5438,8 +5438,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "convex_training_requireauth",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "{ requireauth }"
     },
     {
@@ -5449,8 +5449,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "convex_training_list",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "list"
     },
     {
@@ -5460,8 +5460,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "convex_training_get",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "get"
     },
     {
@@ -5471,8 +5471,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "convex_training_create",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "create"
     },
     {
@@ -5482,8 +5482,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "convex_training_update",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "update"
     },
     {
@@ -5493,8 +5493,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "convex_training_remove",
-      "community": 265,
-      "community_name": "training.ts",
+      "community": 263,
+      "community_name": "incidents.ts",
       "norm_label": "remove"
     },
     {
@@ -7388,8 +7388,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "package_dependencies_axios",
-      "community": 34,
-      "community_name": "dependencies",
+      "community": 270,
+      "community_name": "@playwright/test",
       "norm_label": "axios"
     },
     {
@@ -7399,8 +7399,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "axios",
-      "community": 34,
-      "community_name": "dependencies",
+      "community": 270,
+      "community_name": "@playwright/test",
       "norm_label": "axios"
     },
     {
@@ -7432,8 +7432,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "package_dependencies_bwip_js",
-      "community": 161,
-      "community_name": "bwip-js",
+      "community": 34,
+      "community_name": "dependencies",
       "norm_label": "bwip-js"
     },
     {
@@ -7443,8 +7443,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "bwip_js",
-      "community": 161,
-      "community_name": "bwip-js",
+      "community": 34,
+      "community_name": "dependencies",
       "norm_label": "bwip-js"
     },
     {
@@ -8213,8 +8213,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "package_devdependencies_playwright_test",
-      "community": 270,
-      "community_name": "@playwright/test",
+      "community": 59,
+      "community_name": "devDependencies",
       "norm_label": "@playwright/test"
     },
     {
@@ -8224,8 +8224,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "playwright_test",
-      "community": 270,
-      "community_name": "@playwright/test",
+      "community": 59,
+      "community_name": "devDependencies",
       "norm_label": "@playwright/test"
     },
     {
@@ -8433,8 +8433,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "package_devdependencies_jsdom",
-      "community": 59,
-      "community_name": "devDependencies",
+      "community": 271,
+      "community_name": "jsdom",
       "norm_label": "jsdom"
     },
     {
@@ -8444,8 +8444,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "jsdom",
-      "community": 59,
-      "community_name": "devDependencies",
+      "community": 271,
+      "community_name": "jsdom",
       "norm_label": "jsdom"
     },
     {
@@ -14084,8 +14084,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_labels_scancode",
-      "community": 46,
-      "community_name": "LabelPrinterPage.tsx",
+      "community": 53,
+      "community_name": "ScanStore.tsx",
       "norm_label": "scancode.ts"
     },
     {
@@ -16196,8 +16196,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocolmediaattachments",
-      "community": 39,
-      "community_name": "components/index.ts",
+      "community": 184,
+      "community_name": "jsdom",
       "norm_label": "protocolmediaattachments.tsx"
     },
     {
@@ -16207,8 +16207,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocolmediaattachments_mediaattachment",
-      "community": 39,
-      "community_name": "components/index.ts",
+      "community": 184,
+      "community_name": "jsdom",
       "norm_label": "mediaattachment"
     },
     {
@@ -16218,8 +16218,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocolmediaattachments_props",
-      "community": 39,
-      "community_name": "components/index.ts",
+      "community": 184,
+      "community_name": "jsdom",
       "norm_label": "props"
     },
     {
@@ -16229,8 +16229,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocolmediaattachments_formatfilesize",
-      "community": 39,
-      "community_name": "components/index.ts",
+      "community": 184,
+      "community_name": "jsdom",
       "norm_label": "formatfilesize()"
     },
     {
@@ -16240,8 +16240,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocolmediaattachments_protocolmediaattachments",
-      "community": 39,
-      "community_name": "components/index.ts",
+      "community": 184,
+      "community_name": "jsdom",
       "norm_label": "protocolmediaattachments()"
     },
     {
@@ -16515,8 +16515,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_features_protocols_components_protocoltable_props",
-      "community": 11,
-      "community_name": "ProtocolBadges.tsx",
+      "community": 29,
+      "community_name": "Protocol",
       "norm_label": "props"
     },
     {
@@ -18649,8 +18649,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_convexclient_gettoken",
-      "community": 7,
-      "community_name": "api.ts",
+      "community": 265,
+      "community_name": "training.ts",
       "norm_label": "gettoken()"
     },
     {
@@ -18671,8 +18671,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_convexclient_tostr",
-      "community": 7,
-      "community_name": "api.ts",
+      "community": 265,
+      "community_name": "training.ts",
       "norm_label": "tostr()"
     },
     {
@@ -18682,8 +18682,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_lib_convexclient_adapt",
-      "community": 7,
-      "community_name": "api.ts",
+      "community": 265,
+      "community_name": "training.ts",
       "norm_label": "adapt()"
     },
     {
@@ -18693,8 +18693,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_convexclient_paginated",
-      "community": 7,
-      "community_name": "api.ts",
+      "community": 265,
+      "community_name": "training.ts",
       "norm_label": "paginated()"
     },
     {
@@ -18715,8 +18715,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_lib_convexclient_crudapi",
-      "community": 7,
-      "community_name": "api.ts",
+      "community": 265,
+      "community_name": "training.ts",
       "norm_label": "crudapi()"
     },
     {
@@ -18924,8 +18924,8 @@
       "source_location": "L590",
       "_origin": "ast",
       "id": "src_lib_convexclient_inventoryapi",
-      "community": 77,
-      "community_name": "VendorIntelligencePage.tsx",
+      "community": 116,
+      "community_name": "StorageMapPage.tsx",
       "norm_label": "inventoryapi"
     },
     {
@@ -20266,8 +20266,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_uselabsamples",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "uselabsamples.ts"
     },
     {
@@ -20288,8 +20288,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_sampleinput",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "sampleinput"
     },
     {
@@ -20299,8 +20299,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_meta",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "meta"
     },
     {
@@ -20310,8 +20310,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_parsemeta",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "parsemeta()"
     },
     {
@@ -20321,8 +20321,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_tolab",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "tolab()"
     },
     {
@@ -20332,8 +20332,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_toargs",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "toargs()"
     },
     {
@@ -20343,8 +20343,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_lib_uselabsamples_uselabsamples",
-      "community": 28,
-      "community_name": "SampleHubPage.tsx",
+      "community": 161,
+      "community_name": "bwip-js",
       "norm_label": "uselabsamples()"
     },
     {
@@ -23665,8 +23665,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "src_pages_granthubpage_granthubpage",
-      "community": 71,
-      "community_name": "exportDocx.ts",
+      "community": 94,
+      "community_name": "GrantHubPage.tsx",
       "norm_label": "granthubpage()"
     },
     {
@@ -27545,7 +27545,7 @@
       "label": "EVENT_ICONS",
       "file_type": "code",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L79",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "src_pages_samplehubpage_event_icons",
       "community": 28,
@@ -27553,10 +27553,32 @@
       "norm_label": "event_icons"
     },
     {
+      "label": "FIELD_LABELS",
+      "file_type": "code",
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "src_pages_samplehubpage_field_labels",
+      "community": 28,
+      "community_name": "SampleHubPage.tsx",
+      "norm_label": "field_labels"
+    },
+    {
+      "label": "diffEvents()",
+      "file_type": "code",
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "src_pages_samplehubpage_diffevents",
+      "community": 28,
+      "community_name": "SampleHubPage.tsx",
+      "norm_label": "diffevents()"
+    },
+    {
       "label": "BarcodePreview()",
       "file_type": "code",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L86",
+      "source_location": "L102",
       "_origin": "ast",
       "id": "src_pages_samplehubpage_barcodepreview",
       "community": 28,
@@ -27567,7 +27589,7 @@
       "label": "SampleHubPage()",
       "file_type": "code",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L116",
+      "source_location": "L132",
       "_origin": "ast",
       "id": "src_pages_samplehubpage_samplehubpage",
       "community": 28,
@@ -30606,8 +30628,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "convex_generated_server_mutation",
-      "community": 125,
-      "community_name": "FeedbackPage.tsx",
+      "community": 2,
+      "community_name": "api.d.ts",
       "norm_label": "mutation"
     },
     {
@@ -51615,7 +51637,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L122",
+      "source_location": "L138",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -51889,7 +51911,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L117",
+      "source_location": "L133",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -71910,7 +71932,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L312",
+      "source_location": "L328",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -72040,7 +72062,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L940",
+      "source_location": "L966",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -72112,7 +72134,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L944",
+      "source_location": "L970",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -73937,7 +73959,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L132",
+      "source_location": "L148",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -74057,6 +74079,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L438",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_pages_samplehubpage_samplehubpage",
+      "target": "src_lib_uselabsamples_labsample"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -74110,7 +74144,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L123",
+      "source_location": "L139",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage_samplehubpage",
@@ -82225,7 +82259,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L86",
+      "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage",
@@ -82247,7 +82281,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L79",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_pages_samplehubpage",
+      "target": "src_pages_samplehubpage_diffevents",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L80",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage",
@@ -82263,6 +82308,17 @@
       "_origin": "ast",
       "source": "src_pages_samplehubpage",
       "target": "src_pages_samplehubpage_event_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L88",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_pages_samplehubpage",
+      "target": "src_pages_samplehubpage_field_labels",
       "confidence_score": 1.0
     },
     {
@@ -82313,7 +82369,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/SampleHubPage.tsx",
-      "source_location": "L116",
+      "source_location": "L132",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_pages_samplehubpage",
@@ -82340,6 +82396,18 @@
       "_origin": "ast",
       "source": "src_pages_samplehubpage",
       "target": "src_pages_samplehubpage_temperature_options",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SampleHubPage.tsx",
+      "source_location": "L348",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_pages_samplehubpage_samplehubpage",
+      "target": "src_pages_samplehubpage_diffevents",
       "confidence_score": 1.0
     },
     {
@@ -85178,5 +85246,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6686346d557a1562a4e16681c3bd254fc198179d"
+  "built_at_commit": "c529d22faac3b550d78bfcb8e93f3af60c92d6c6"
 }

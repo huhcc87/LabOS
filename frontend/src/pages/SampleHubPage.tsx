@@ -73,6 +73,7 @@ const EVENT_TYPES = [
   'Created', 'Processed', 'Aliquoted', 'Stored', 'Retrieved',
   'Shipped', 'Received', 'Disposed', 'Quality Check', 'Thawed',
   'Frozen', 'Transferred', 'Split', 'Pooled', 'Labeled',
+  'Status Changed', 'Moved', 'Updated',
 ];
 
 // Event Icons
@@ -80,7 +81,22 @@ const EVENT_ICONS: Record<string, string> = {
   'Created': '🆕', 'Processed': '⚗️', 'Aliquoted': '🧫', 'Stored': '📦', 'Retrieved': '📤',
   'Shipped': '🚚', 'Received': '📥', 'Disposed': '🗑️', 'Quality Check': '✅', 'Thawed': '🌡️',
   'Frozen': '❄️', 'Transferred': '🔄', 'Split': '✂️', 'Pooled': '🔗', 'Labeled': '🏷️',
+  'Status Changed': '🔁', 'Moved': '📍', 'Updated': '✏️',
 };
+
+// What changed between two versions of a sample, as chain-of-custody events.
+const FIELD_LABELS: Array<[keyof LabSample, string]> = [
+  ['type', 'Type'], ['owner', 'Owner'], ['quantity', 'Quantity'], ['unit', 'Unit'],
+  ['temperature', 'Temperature'], ['notes', 'Notes'], ['date', 'Date'],
+];
+function diffEvents(a: LabSample, b: LabSample): Array<{ event: string; details: string }> {
+  const out: Array<{ event: string; details: string }> = [];
+  if (a.status !== b.status) out.push({ event: 'Status Changed', details: `${a.status} → ${b.status}` });
+  if (a.location !== b.location) out.push({ event: 'Moved', details: `${a.location || '(none)'} → ${b.location || '(none)'}` });
+  const other = FIELD_LABELS.filter(([k]) => a[k] !== b[k]).map(([k, l]) => `${l}: ${a[k] || '—'} → ${b[k] || '—'}`);
+  if (other.length) out.push({ event: 'Updated', details: other.join('; ') });
+  return out;
+}
 
 // Real barcode using bwip-js
 const BarcodePreview = ({ type, sampleId }: { type: string; sampleId: string }) => {
@@ -325,7 +341,13 @@ export default function SampleHubPage() {
     if (!viewSample) return;
     try {
       const { id, ...rest } = viewSample;
-      await lab.update(id, { ...rest, type: rest.type.trim(), location: rest.location.trim(), status: rest.status.trim() || 'processing' });
+      const next = { ...rest, type: rest.type.trim(), location: rest.location.trim(), status: rest.status.trim() || 'processing' };
+      const before = samples.find(x => x.id === id);
+      await lab.update(id, next);
+      if (before) {
+        const changes = diffEvents(before, { ...before, ...next });
+        await Promise.all(changes.map(c => evLab.add(before.sampleId, c.event, c.details)));
+      }
     } catch (e) { showToast(errText(e), 'error'); return; }
     setViewSample(null);
     setEditMode(false);
@@ -353,7 +375,11 @@ export default function SampleHubPage() {
   const handleBulkStatusChange = async (newStatus: string) => {
     const ids = [...selectedSamples];
     try {
-      await Promise.all(ids.map(id => lab.update(id as Sample['id'], { status: newStatus })));
+      await Promise.all(ids.map(async id => {
+        const before = samples.find(x => x.id === id);
+        await lab.update(id as Sample['id'], { status: newStatus });
+        if (before && before.status !== newStatus) await evLab.add(before.sampleId, 'Status Changed', `${before.status} → ${newStatus}`);
+      }));
       showToast(`${ids.length} samples updated to ${newStatus}`, 'success');
     } catch (e) { showToast(errText(e), 'error'); }
     setSelectedSamples(new Set());

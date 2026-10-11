@@ -269,5 +269,6 @@
   "267": "SettingsPage.tsx",
   "268": "ActivityPage.tsx",
   "269": "@capacitor/keyboard",
-  "270": "@playwright/test"
+  "270": "@playwright/test",
+  "271": "jsdom"
 }
