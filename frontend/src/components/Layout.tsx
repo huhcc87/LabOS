@@ -309,6 +309,40 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     localStorage.getItem('labos_nav_mode') === 'full' ? 'full' : 'simple');
   useEffect(() => { localStorage.setItem('labos_nav_mode', navMode); }, [navMode]);
 
+  // Menu / theme / account controls: shown in the header on desktop, in the sidebar footer on phones.
+  const menuToggle = (
+    <div className="hdr-group" role="group" aria-label="Menu size">
+      <span className="hdr-label">Menu</span>
+      {(['simple', 'full'] as const).map(mode => (
+        <button key={mode} type="button" onClick={() => setNavMode(mode)} aria-pressed={navMode === mode}
+          title={mode === 'simple' ? 'Show the main pages only' : 'Show every page'}
+          className={`hdr-seg ${navMode === mode ? 'on' : ''}`}>
+          {mode === 'simple' ? 'Simple' : 'Full'}
+        </button>
+      ))}
+    </div>
+  );
+  const themeToggle = (
+    <div className="hdr-group" role="group" aria-label="Theme">
+      {THEME_OPTIONS.map(opt => (
+        <button key={opt.value} type="button" onClick={() => setTheme(opt.value)} title={opt.label} aria-label={`${opt.label} theme`}
+          aria-pressed={theme === opt.value} className={`hdr-seg icon ${theme === opt.value ? 'on' : ''}`}>
+          {opt.icon}
+        </button>
+      ))}
+    </div>
+  );
+  const accountBlock = user ? (
+    <div className="hdr-account">
+      <div className="user-avatar hdr-avatar" aria-hidden="true">{(user.full_name ?? user.email ?? '?').charAt(0).toUpperCase()}</div>
+      <div className="hdr-who">
+        <span className="hdr-name">{user.full_name ?? user.email}</span>
+        <RoleBadge role={user.role} />
+      </div>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={logout}>Logout</button>
+    </div>
+  ) : null;
+
   // Students only see the hubs their PI allows (Home and Admin are never hubs).
   const access = useHubAccess(token);
   const hubAllowed = (hub?: string) => !access.restricted || !hub || !isHub(hub) || access.hubs.includes(hub);
@@ -401,52 +435,10 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
             );
           })}
         </nav>
-        <div className="sidebar-footer">
-          {/* Simple / Full menu */}
-          <div style={{ padding: '8px 12px' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Menu</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {(['simple', 'full'] as const).map(mode => (
-                <button key={mode} onClick={() => setNavMode(mode)} aria-pressed={navMode === mode}
-                  title={mode === 'simple' ? 'Show the main pages only' : 'Show every page'}
-                  style={{
-                    flex: 1, background: navMode === mode ? 'var(--accent)' : 'var(--surface2)',
-                    border: `1px solid ${navMode === mode ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: 6, color: navMode === mode ? '#fff' : 'var(--text-muted)',
-                    padding: '5px 4px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  }}>
-                  {mode === 'simple' ? 'Simple' : 'Full'}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Theme toggle */}
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Theme</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {THEME_OPTIONS.map(opt => (
-                <button key={opt.value} onClick={() => setTheme(opt.value)} title={opt.label} style={{
-                  flex: 1, background: theme === opt.value ? 'var(--accent)' : 'var(--surface2)',
-                  border: `1px solid ${theme === opt.value ? 'var(--accent)' : 'var(--border)'}`,
-                  borderRadius: 6, color: theme === opt.value ? '#fff' : 'var(--text-muted)',
-                  padding: '5px 4px', cursor: 'pointer', fontSize: 13, transition: 'all 0.15s',
-                }}>
-                  {opt.icon}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {user && (
-            <div className="user-info">
-              <div className="user-avatar">{(user.full_name ?? user.email ?? '?').charAt(0).toUpperCase()}</div>
-              <div className="user-details">
-                <div className="user-name">{user.full_name ?? user.email}</div>
-                <RoleBadge role={user.role} />
-              </div>
-            </div>
-          )}
-          <button className="btn btn-secondary btn-sm logout-btn" onClick={logout}>Logout</button>
+        <div className="sidebar-footer sidebar-footer-mobile">
+          {menuToggle}
+          {themeToggle}
+          {accountBlock}
         </div>
       </aside>
       <main className="main-content">
@@ -611,6 +603,12 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="header-controls">
+              {menuToggle}
+              {themeToggle}
+              {accountBlock}
             </div>
           </div>
         </header>
