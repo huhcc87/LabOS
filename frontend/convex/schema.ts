@@ -585,6 +585,20 @@ export default defineSchema({
     .index("by_box", ["box_id", "row", "col"])
     .index("by_label", ["label_code"]),
 
+  // Saved setups on the Reports page (what to include, how often). "Generate" downloads the data.
+  report_configs: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    type: v.string(),
+    schedule: v.string(),
+    sources: v.array(v.string()),
+    enabled: v.boolean(),
+    recipients: v.optional(v.string()),
+    last_generated: v.optional(v.number()),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }),
+
   // Stored / moved / removed history of a label, kept even when there is no Samples-page record behind it.
   label_events: defineTable({
     code: v.string(),

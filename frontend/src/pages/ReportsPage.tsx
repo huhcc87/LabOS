@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Doc } from '../../convex/_generated/dataModel';
+import { useAuth } from '../context/AuthContext';
+import { errText } from '../lib/errors';
 import { ExportMenu } from '../components/ExportMenu';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -28,20 +33,19 @@ interface DashboardSummary {
 }
 
 interface TaskItem {
-  id: number;
+  id: string;
   title: string;
   status: string;
   priority: string;
-  assigned_to: number | null;
+  assigned_to: string | null;
   assignee_name: string | null;
   due_date: string | null;
 }
 
 interface LabUser {
-  id: number;
+  id: string;
   full_name: string;
   role: string;
-  email: string;
 }
 
 interface KpiGoal {
@@ -52,36 +56,11 @@ interface KpiGoal {
   getValue: (s: DashboardSummary) => number;
 }
 
-interface ReportConfig {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  lastGenerated: string;
-  schedule: string;
-  enabled: boolean;
-}
+type ReportConfig = Doc<'report_configs'>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280'];
-
-const SAFETY_TRENDS = [
-  { month: 'Jan', incidents: 2, nearMisses: 5, audits: 1 },
-  { month: 'Feb', incidents: 1, nearMisses: 3, audits: 0 },
-  { month: 'Mar', incidents: 3, nearMisses: 4, audits: 2 },
-  { month: 'Apr', incidents: 1, nearMisses: 2, audits: 1 },
-  { month: 'May', incidents: 2, nearMisses: 3, audits: 0 },
-  { month: 'Jun', incidents: 0, nearMisses: 1, audits: 1 },
-];
-
-const EQUIPMENT_UTILIZATION = [
-  { name: 'Centrifuge', utilization: 85, maintenance: 15 },
-  { name: 'PCR Machine', utilization: 92, maintenance: 8 },
-  { name: 'Microscope', utilization: 68, maintenance: 12 },
-  { name: 'Spectrophotometer', utilization: 74, maintenance: 6 },
-  { name: 'Incubator', utilization: 88, maintenance: 10 },
-];
 
 const DEFAULT_KPI_GOALS: KpiGoal[] = [
   { id: 'samples', label: 'Total Samples', target: 100, unit: 'samples', getValue: (s) => s.samples },
@@ -90,25 +69,25 @@ const DEFAULT_KPI_GOALS: KpiGoal[] = [
   { id: 'protocols', label: 'Protocols', target: 10, unit: 'protocols', getValue: (s) => s.protocols },
 ];
 
-const INITIAL_REPORTS: ReportConfig[] = [
-  { id: 'R001', name: 'Monthly Sample Summary', description: 'Overview of sample collection, processing, and storage', type: 'summary', lastGenerated: '2024-01-25', schedule: 'monthly', enabled: true },
-  { id: 'R002', name: 'Equipment Utilization', description: 'Equipment usage rates and maintenance schedules', type: 'trend', lastGenerated: '2024-01-24', schedule: 'weekly', enabled: true },
-  { id: 'R003', name: 'Experiment Progress', description: 'Status and progress of all active experiments', type: 'summary', lastGenerated: '2024-01-25', schedule: 'daily', enabled: true },
-  { id: 'R004', name: 'Safety & Compliance', description: 'Incident reports and compliance metrics', type: 'comparison', lastGenerated: '2024-01-20', schedule: 'monthly', enabled: true },
-  { id: 'R005', name: 'Inventory Levels', description: 'Stock levels and reorder alerts', type: 'distribution', lastGenerated: '2024-01-25', schedule: 'weekly', enabled: true },
-  { id: 'R006', name: 'User Activity', description: 'Login patterns and system usage', type: 'trend', lastGenerated: '2024-01-24', schedule: 'weekly', enabled: false },
+// Data a saved report can include, and ready-made starting points.
+const SOURCES = ['Samples', 'Equipment', 'Tasks', 'Safety', 'Compliance', 'Users'] as const;
+const TEMPLATES = [
+  { name: 'Weekly Sample Report', description: 'Sample processing and storage metrics', type: 'summary', schedule: 'weekly', sources: ['Samples'] },
+  { name: 'Monthly Equipment Review', description: 'Equipment utilization and calibration', type: 'trend', schedule: 'monthly', sources: ['Equipment'] },
+  { name: 'Daily Activity Summary', description: 'Tasks and their owners', type: 'summary', schedule: 'daily', sources: ['Tasks', 'Users'] },
+  { name: 'Quarterly Compliance', description: 'Compliance status and incidents', type: 'comparison', schedule: 'monthly', sources: ['Compliance', 'Safety'] },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function api<T>(path: string): Promise<T> {
-  return fetch(`/api${path}`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('lab_token') ?? ''}` },
-  }).then((r) => {
-    if (!r.ok) throw new Error(`API ${path} failed`);
-    return r.json() as Promise<T>;
-  });
-}
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const isOverdue = (t: TaskItem, today = ymd(new Date())) =>
+  t.status !== 'completed' && t.status !== 'cancelled' && (t.status === 'overdue' || (!!t.due_date && t.due_date < today));
+const KPI_KEY = 'labos_report_kpi_targets';
+const loadTargets = (): Record<string, number> => {
+  const base = { samples: 100, tasks_open: 10, instruments: 5, protocols: 10 };
+  try { return { ...base, ...JSON.parse(localStorage.getItem(KPI_KEY) || '{}') }; } catch { return base; }
+};
 
 function kpiColor(pct: number, invertBad = false): string {
   if (invertBad) {
@@ -126,42 +105,29 @@ function kpiColor(pct: number, invertBad = false): string {
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [users, setUsers] = useState<LabUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [reports, setReports] = useState<ReportConfig[]>(INITIAL_REPORTS);
+  const { token } = useAuth();
+  const t = token ?? undefined;
+  const summary = useQuery(api.dashboard.summary, token ? { token } : 'skip') as DashboardSummary | undefined;
+  const live = useQuery(api.reports.data, token ? { token } : 'skip');
+  const reports = useQuery(api.reports.list, token ? { token } : 'skip') ?? [];
+  const createReport = useMutation(api.reports.create);
+  const updateReport = useMutation(api.reports.update);
+  const removeReport = useMutation(api.reports.remove);
+  const markGenerated = useMutation(api.reports.markGenerated);
+  const loading = summary === undefined || live === undefined;
+  const tasks: TaskItem[] = live?.tasks ?? [];
+  const users: LabUser[] = live?.users ?? [];
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportConfig | null>(null);
-  const [kpiTargets, setKpiTargets] = useState<Record<string, number>>({ samples: 100, tasks_open: 10, instruments: 5, protocols: 10 });
+  const [draft, setDraft] = useState({ name: '', description: '', type: 'summary', schedule: 'manual', sources: [] as string[] });
+  const [kpiTargets, setKpiTargets] = useState<Record<string, number>>(loadTargets);
   const [editingKpi, setEditingKpi] = useState<string | null>(null);
+  useEffect(() => { try { localStorage.setItem(KPI_KEY, JSON.stringify(kpiTargets)); } catch { /* private mode */ } }, [kpiTargets]);
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 180 * 86400000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0],
+    start: ymd(new Date(Date.now() - 180 * 86400000)),
+    end: ymd(new Date()),
   });
   const printRef = useRef<HTMLDivElement>(null);
-
-  // ── Fetch live data ──────────────────────────────────────────────────────────
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [sum, taskRes, userRes] = await Promise.all([
-        api<DashboardSummary>('/dashboard/summary'),
-        api<{ items: TaskItem[] }>('/tasks?per_page=500'),
-        api<{ items: LabUser[] }>('/auth/users?per_page=200'),
-      ]);
-      setSummary(sum);
-      setTasks(taskRes.items);
-      setUsers(userRes.items);
-    } catch (e) {
-      toast.error('Failed to load analytics data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   // ── Derived data ─────────────────────────────────────────────────────────────
 
@@ -207,7 +173,7 @@ export default function ReportsPage() {
       role: u.role,
       completed: userTasks.filter((t) => t.status === 'completed').length,
       inProgress: userTasks.filter((t) => t.status === 'in_progress').length,
-      overdue: userTasks.filter((t) => t.status === 'overdue').length,
+      overdue: userTasks.filter((t) => isOverdue(t)).length,
       total: userTasks.length,
     };
   }).sort((a, b) => b.completed - a.completed);
@@ -233,8 +199,8 @@ export default function ReportsPage() {
     },
     {
       metric: 'Overdue',
-      current: thisPeriodTasks.filter((t) => t.status === 'overdue').length,
-      previous: prevPeriodTasks.filter((t) => t.status === 'overdue').length,
+      current: thisPeriodTasks.filter((t) => isOverdue(t)).length,
+      previous: prevPeriodTasks.filter((t) => isOverdue(t)).length,
     },
     {
       metric: 'High Priority',
@@ -243,19 +209,80 @@ export default function ReportsPage() {
     },
   ];
 
+  // Equipment: booked hours in the date range ÷ working hours (8 h × weekdays)
+  const rangeStart = new Date(`${dateRange.start}T00:00:00`).getTime();
+  const rangeEnd = new Date(`${dateRange.end}T23:59:59`).getTime();
+  let workdays = 0;
+  for (let d = rangeStart; d <= rangeEnd; d += 86400000) { const w = new Date(d).getDay(); if (w !== 0 && w !== 6) workdays++; }
+  const workHours = Math.max(1, workdays * 8);
+  const equipmentRows = (live?.instruments ?? []).map((i) => {
+    const ms = (live?.bookings ?? []).filter((b) => b.instrument_id === i.id && b.status !== 'cancelled')
+      .reduce((sum, b) => sum + Math.max(0, Math.min(b.end, rangeEnd) - Math.max(b.start, rangeStart)), 0);
+    const hours = Math.round(ms / 360000) / 10;
+    const daysLeft = i.next_calibration ? Math.ceil((i.next_calibration - Date.now()) / 86400000) : null;
+    return { name: i.name, status: i.status, hours, utilization: Math.min(100, Math.round((hours / workHours) * 100)), next: i.next_calibration ? ymd(new Date(i.next_calibration)) : null, daysLeft };
+  }).sort((a, b) => b.utilization - a.utilization);
+  const calibrationDue = equipmentRows.filter((e) => e.daysLeft !== null && e.daysLeft <= 30).sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+
+  // Safety: incidents per month (last 6 months) and compliance by regulation
+  const safetyTrend = Array.from({ length: 6 }, (_, k) => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5 - k));
+    const next = new Date(d); next.setMonth(next.getMonth() + 1);
+    const inMonth = (live?.incidents ?? []).filter((i) => i.occurred_at >= d.getTime() && i.occurred_at < next.getTime());
+    return {
+      month: d.toLocaleString('en', { month: 'short' }),
+      incidents: inMonth.length,
+      serious: inMonth.filter((i) => i.severity === 'high' || i.severity === 'critical').length,
+      resolved: inMonth.filter((i) => i.resolved).length,
+    };
+  });
+  const complianceByReg = Object.values((live?.compliance ?? []).reduce<Record<string, { standard: string; total: number; done: number }>>((acc, c) => {
+    const row = (acc[c.regulation] ??= { standard: c.regulation, total: 0, done: 0 });
+    row.total++; if (c.completed) row.done++;
+    return acc;
+  }, {})).map((r) => ({ ...r, score: Math.round((r.done / r.total) * 100) }));
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleGenerateReport = (id: string) => {
-    setReports((prev) => prev.map((r) => r.id === id ? { ...r, lastGenerated: new Date().toISOString().split('T')[0] } : r));
-    toast.success('Report generated successfully');
+  // Build an Excel file with the data the report includes.
+  const sheetsFor = (sources: string[]) => {
+    const sheets: Record<string, Record<string, unknown>[]> = {};
+    for (const src of sources) {
+      if (src === 'Samples') sheets.Samples = (summary ? Object.entries(summary.samples_by_status).map(([status, count]) => ({ Status: status, Count: count })) : []).concat(
+        (summary?.sample_intake_by_week ?? []).map((w) => ({ Status: `Intake week of ${w.week}`, Count: w.count })));
+      if (src === 'Equipment') sheets.Equipment = equipmentRows.map((e) => ({ Instrument: e.name, Status: e.status, 'Utilization %': e.utilization, 'Booked hours': e.hours, 'Next calibration': e.next ?? '' }));
+      if (src === 'Tasks') sheets.Tasks = filteredTasks.map((x) => ({ Title: x.title, Status: x.status, Priority: x.priority, Assignee: x.assignee_name ?? '', Due: x.due_date ?? '', Overdue: isOverdue(x) ? 'yes' : '' }));
+      if (src === 'Safety') sheets.Safety = (live?.incidents ?? []).map((i) => ({ Title: i.title, Severity: i.severity, Status: i.status, Date: ymd(new Date(i.occurred_at)), Resolved: i.resolved ?? '' }));
+      if (src === 'Compliance') sheets.Compliance = (live?.compliance ?? []).map((c) => ({ Item: c.title, Regulation: c.regulation, Status: c.status, Due: c.due_date ? ymd(new Date(c.due_date)) : '', Done: c.completed ? 'yes' : '' }));
+      if (src === 'Users') sheets.Users = leaderboard.map((u) => ({ Name: u.name, Role: u.role, Completed: u.completed, 'In progress': u.inProgress, Overdue: u.overdue, Total: u.total }));
+    }
+    return sheets;
   };
 
-  const handleToggleReport = (id: string) => {
-    setReports((prev) => prev.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  const handleGenerateReport = async (r: ReportConfig) => {
+    const sheets = sheetsFor(r.sources);
+    if (!Object.keys(sheets).length) { toast.error('This report has no data sources — configure it first'); return; }
+    try {
+      const XLSX = await import('xlsx');
+      const wb = XLSX.utils.book_new();
+      for (const [name, rows] of Object.entries(sheets)) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ Note: 'No data yet' }]), name);
+      XLSX.writeFile(wb, `${r.name.replace(/[\\/:*?"<>|]/g, '-')} - ${ymd(new Date())}.xlsx`);
+      await markGenerated({ token: t, id: r._id });
+      toast.success('Report downloaded');
+    } catch (e) { toast.error(errText(e)); }
+  };
+
+  const handleToggleReport = async (r: ReportConfig) => {
+    try { await updateReport({ token: t, id: r._id, enabled: !r.enabled }); } catch (e) { toast.error(errText(e)); }
+  };
+
+  const addReport = async (d: { name: string; description: string; type: string; schedule: string; sources: string[] }) => {
+    try { await createReport({ token: t, ...d, enabled: true }); toast.success('Report saved'); return true; }
+    catch (e) { toast.error(errText(e)); return false; }
   };
 
   // ── Live metric cards ─────────────────────────────────────────────────────────
@@ -324,12 +351,6 @@ export default function ReportsPage() {
             />
           </div>
           <button
-            onClick={loadData}
-            style={{ padding: '10px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}
-          >
-            Refresh
-          </button>
-          <button
             onClick={handlePrint}
             style={{ padding: '10px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}
           >
@@ -376,7 +397,7 @@ export default function ReportsPage() {
                   <div key={i} style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
                     <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{m.label}</div>
                     <div style={{ fontSize: 32, fontWeight: 700, color: m.color }}>{m.value}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Live · from API</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Live</div>
                   </div>
                 ))}
               </div>
@@ -514,7 +535,7 @@ export default function ReportsPage() {
                   { label: 'Total (filtered)', value: filteredTasks.length, color: '#3b82f6' },
                   { label: 'Completed', value: filteredTasks.filter((t) => t.status === 'completed').length, color: '#10b981' },
                   { label: 'In Progress', value: filteredTasks.filter((t) => t.status === 'in_progress').length, color: '#f59e0b' },
-                  { label: 'Overdue', value: filteredTasks.filter((t) => t.status === 'overdue').length, color: '#ef4444' },
+                  { label: 'Overdue', value: filteredTasks.filter((t) => isOverdue(t)).length, color: '#ef4444' },
                   { label: 'High Priority', value: filteredTasks.filter((t) => t.priority === 'high').length, color: '#8b5cf6' },
                 ].map((c, i) => (
                   <div key={i} style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
@@ -664,35 +685,47 @@ export default function ReportsPage() {
           {/* ── EQUIPMENT TAB ────────────────────────────────────────────────── */}
           {activeTab === 'equipment' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
                 <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Equipment Utilization Rate</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={EQUIPMENT_UTILIZATION} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis type="number" domain={[0, 100]} stroke="var(--text-muted)" fontSize={12} />
-                      <YAxis type="category" dataKey="name" stroke="var(--text-muted)" fontSize={12} width={120} />
-                      <Tooltip {...chartTooltipStyle} />
-                      <Legend />
-                      <Bar dataKey="utilization" fill="#3b82f6" name="Utilization %" radius={[0, 4, 4, 0]} />
-                      <Bar dataKey="maintenance" fill="#f59e0b" name="Maintenance %" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Equipment Utilization (booked hours ÷ working hours, selected dates)</h3>
+                  {equipmentRows.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>No instruments yet. Add them in Lab Hub → Equipment.</p> : (
+                    <ResponsiveContainer width="100%" height={Math.max(220, equipmentRows.length * 44)}>
+                      <BarChart data={equipmentRows} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis type="number" domain={[0, 100]} stroke="var(--text-muted)" fontSize={12} />
+                        <YAxis type="category" dataKey="name" stroke="var(--text-muted)" fontSize={12} width={130} />
+                        <Tooltip {...chartTooltipStyle} />
+                        <Bar dataKey="utilization" fill="#3b82f6" name="Utilization %" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
 
                 <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Instrument Count — Live</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Calibration due within 30 days</h3>
+                  {calibrationDue.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>Nothing due or overdue.</p> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {calibrationDue.map((e) => (
+                        <div key={e.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ flex: 1, color: 'var(--text)' }}>{e.name}</span>
+                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{e.next}</span>
+                          <span style={{ fontWeight: 700, color: (e.daysLeft ?? 0) < 0 ? 'var(--bad-text)' : 'var(--warn-text)' }}>
+                            {(e.daysLeft ?? 0) < 0 ? `${Math.abs(e.daysLeft ?? 0)} d overdue` : `in ${e.daysLeft} d`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 20 }}>
                     {[
-                      { status: 'Total Instruments', count: summary?.instruments ?? 0, color: '#3b82f6' },
-                      { status: 'Active Bookings', count: summary?.bookings ?? 0, color: '#10b981' },
-                      { status: 'Inventory Items', count: summary?.inventory_items ?? 0, color: '#f59e0b' },
-                      { status: 'Low Stock Alerts', count: summary?.low_stock_items ?? 0, color: '#ef4444' },
-                    ].map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: item.color }} />
-                        <span style={{ flex: 1, color: 'var(--text)' }}>{item.status}</span>
-                        <span style={{ fontWeight: 700, color: item.color, fontSize: 18 }}>{item.count}</span>
+                      { label: 'Instruments', count: summary?.instruments ?? 0 },
+                      { label: 'Bookings', count: summary?.bookings ?? 0 },
+                      { label: 'Inventory items', count: summary?.inventory_items ?? 0 },
+                      { label: 'Low stock', count: summary?.low_stock_items ?? 0 },
+                    ].map((x) => (
+                      <div key={x.label} style={{ background: 'var(--surface2)', padding: 12, borderRadius: 10 }}>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{x.count}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{x.label}</div>
                       </div>
                     ))}
                   </div>
@@ -704,60 +737,58 @@ export default function ReportsPage() {
           {/* ── SAFETY TAB ───────────────────────────────────────────────────── */}
           {activeTab === 'safety' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 24 }}>
                 <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Safety Trends</h3>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Incidents, last 6 months</h3>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={SAFETY_TRENDS}>
+                    <LineChart data={safetyTrend}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={12} />
-                      <YAxis stroke="var(--text-muted)" fontSize={12} />
+                      <YAxis allowDecimals={false} stroke="var(--text-muted)" fontSize={12} />
                       <Tooltip {...chartTooltipStyle} />
                       <Legend />
-                      <Line type="monotone" dataKey="incidents" stroke="#ef4444" strokeWidth={2} name="Incidents" />
-                      <Line type="monotone" dataKey="nearMisses" stroke="#f59e0b" strokeWidth={2} name="Near Misses" />
-                      <Line type="monotone" dataKey="audits" stroke="#3b82f6" strokeWidth={2} name="Audits" />
+                      <Line type="monotone" dataKey="incidents" stroke="#f59e0b" strokeWidth={2} name="Incidents" />
+                      <Line type="monotone" dataKey="serious" stroke="#ef4444" strokeWidth={2} name="High / critical" />
+                      <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} name="Resolved" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
 
                 <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Compliance Scorecard</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {[
-                      { standard: 'GLP Compliance', score: 100, color: '#10b981' },
-                      { standard: '21 CFR Part 11', score: 98, color: '#10b981' },
-                      { standard: 'ISO 17025', score: 95, color: '#10b981' },
-                      { standard: 'Biosafety Level 2', score: 100, color: '#10b981' },
-                      { standard: 'Chemical Safety', score: 92, color: '#f59e0b' },
-                    ].map((item, i) => (
-                      <div key={i}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <span style={{ color: 'var(--text)' }}>{item.standard}</span>
-                          <span style={{ fontWeight: 600, color: item.color }}>{item.score}%</span>
-                        </div>
-                        <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ width: `${item.score}%`, height: '100%', background: item.color, borderRadius: 4 }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>Compliance completion by regulation</h3>
+                  {complianceByReg.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>No compliance items yet. Add them in Compliance.</p> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {complianceByReg.map((item) => {
+                        const color = item.score >= 90 ? '#10b981' : item.score >= 60 ? '#f59e0b' : '#ef4444';
+                        return (
+                          <div key={item.standard}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={{ color: 'var(--text)' }}>{item.standard} <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({item.done}/{item.total})</span></span>
+                              <span style={{ fontWeight: 600, color }}>{item.score}%</span>
+                            </div>
+                            <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${item.score}%`, height: '100%', background: color, borderRadius: 4 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Live incident counts from API */}
               <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Live Incident Stats</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Incidents by severity</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-                  {Object.entries(summary?.incidents_by_severity ?? {}).map(([sev, count], i) => (
-                    <div key={i} style={{ background: 'var(--surface2)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+                  {Object.entries(summary?.incidents_by_severity ?? {}).map(([sev, count]) => (
+                    <div key={sev} style={{ background: 'var(--surface2)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
                       <div style={{ fontSize: 32, fontWeight: 700, color: sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : '#10b981' }}>{count}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize', marginTop: 4 }}>{sev}</div>
                     </div>
                   ))}
                   <div style={{ background: 'var(--surface2)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
                     <div style={{ fontSize: 32, fontWeight: 700, color: '#3b82f6' }}>{summary?.incident_reports ?? 0}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Total Reports</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Total reports</div>
                   </div>
                 </div>
               </div>
@@ -768,34 +799,31 @@ export default function ReportsPage() {
           {activeTab === 'custom' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Scheduled Reports</h2>
-                <button onClick={() => setShowReportModal(true)} className="btn btn-primary" style={{ padding: '10px 20px' }}>
-                  + Create Report
-                </button>
+                <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Saved Reports</h2>
+                <button onClick={() => setShowReportModal(true)} className="btn btn-primary" style={{ padding: '10px 20px' }}>+ Create Report</button>
               </div>
 
+              {reports.length === 0 && <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>No saved reports yet. Create one, or start from a template below. Generate downloads an Excel file with the latest data.</p>}
               <div style={{ display: 'grid', gap: 16, marginBottom: 32 }}>
                 {reports.map((report) => (
-                  <div key={report.id} style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
+                  <div key={report._id} style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 220 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{report.id}</span>
-                          <span style={{ padding: '3px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: report.enabled ? '#166534' : '#374151', color: report.enabled ? '#86efac' : '#9ca3af' }}>
-                            {report.enabled ? 'ACTIVE' : 'DISABLED'}
-                          </span>
-                          <span style={{ padding: '3px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: 'var(--surface2)', color: 'var(--text-muted)' }}>
-                            {report.schedule.toUpperCase()}
-                          </span>
+                          <span className={report.enabled ? 'badge badge-ok' : 'badge badge-neutral'} style={{ padding: '3px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600 }}>{report.enabled ? 'ACTIVE' : 'PAUSED'}</span>
+                          <span style={{ padding: '3px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: 'var(--surface2)', color: 'var(--text-muted)' }}>{report.schedule.toUpperCase()}</span>
                         </div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>{report.name}</h3>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 10px' }}>{report.description}</p>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Last generated: <strong>{report.lastGenerated}</strong></div>
+                        {report.description && <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 8px' }}>{report.description}</p>}
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          Includes: {report.sources.join(', ') || 'nothing yet'} · Last generated: <strong>{report.last_generated ? new Date(report.last_generated).toLocaleString() : 'never'}</strong>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <button onClick={() => handleGenerateReport(report.id)} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>Generate</button>
-                        <button onClick={() => handleToggleReport(report.id)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>{report.enabled ? 'Disable' : 'Enable'}</button>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                        <button onClick={() => handleGenerateReport(report)} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>Generate</button>
+                        <button onClick={() => handleToggleReport(report)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>{report.enabled ? 'Pause' : 'Resume'}</button>
                         <button onClick={() => setSelectedReport(report)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>Configure</button>
+                        <button onClick={async () => { if (confirm(`Delete "${report.name}"?`)) { try { await removeReport({ token: t, id: report._id }); } catch (e) { toast.error(errText(e)); } } }} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>Delete</button>
                       </div>
                     </div>
                   </div>
@@ -804,20 +832,13 @@ export default function ReportsPage() {
 
               <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Quick Templates</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-                {[
-                  { name: 'Daily Activity Summary', description: 'All activities from the past 24 hours' },
-                  { name: 'Weekly Sample Report', description: 'Sample processing and storage metrics' },
-                  { name: 'Monthly Equipment Review', description: 'Equipment utilization and maintenance' },
-                  { name: 'Quarterly Compliance', description: 'Compliance status and audit results' },
-                ].map((t, i) => (
-                  <div key={i} onClick={() => toast.success(`Generating ${t.name}…`)}
-                    style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20, cursor: 'pointer' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-                  >
-                    <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>{t.name}</h4>
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{t.description}</p>
-                  </div>
+                {TEMPLATES.map((tpl) => (
+                  <button key={tpl.name} type="button" onClick={() => addReport({ ...tpl })}
+                    style={{ textAlign: 'left', background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 20, cursor: 'pointer' }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>{tpl.name}</h4>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{tpl.description}</p>
+                    <p style={{ fontSize: 12, color: 'var(--accent)', margin: '8px 0 0' }}>+ Save as a report</p>
+                  </button>
                 ))}
               </div>
             </div>
@@ -827,44 +848,36 @@ export default function ReportsPage() {
 
       {/* ── Create Report Modal ──────────────────────────────────────────────── */}
       {showReportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 24 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 20px' }}>Create Custom Report</h2>
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Create report" style={{ padding: 20 }}>
+          <div className="modal-panel" style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 24 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 20px' }}>Create Report</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Report Name</label>
-                <input type="text" placeholder="Enter report name" style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }} />
+                <label htmlFor="rp-name" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Report name</label>
+                <input id="rp-name" type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Monthly lab summary" style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Description</label>
-                <textarea placeholder="Describe the report…" rows={3} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', resize: 'vertical', boxSizing: 'border-box' }} />
+                <label htmlFor="rp-desc" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Description</label>
+                <textarea id="rp-desc" rows={2} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Report Type</label>
-                  <select style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>
-                    <option value="summary">Summary</option>
-                    <option value="trend">Trend Analysis</option>
-                    <option value="comparison">Comparison</option>
-                    <option value="distribution">Distribution</option>
+                  <label htmlFor="rp-type" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Report type</label>
+                  <select id="rp-type" value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }}>
+                    <option value="summary">Summary</option><option value="trend">Trend</option><option value="comparison">Comparison</option><option value="distribution">Distribution</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Schedule</label>
-                  <select style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>
-                    <option value="manual">Manual</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
+                  <label htmlFor="rp-sched" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Schedule</label>
+                  <select id="rp-sched" value={draft.schedule} onChange={(e) => setDraft({ ...draft, schedule: e.target.value })} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }}><option value="manual">Manual</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Data Sources</label>
+                <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Include data from</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {['Samples', 'Equipment', 'Tasks', 'Inventory', 'Safety', 'Users'].map((src) => (
+                  {SOURCES.map((src) => (
                     <label key={src} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'var(--surface2)', borderRadius: 6, cursor: 'pointer' }}>
-                      <input type="checkbox" />
+                      <input type="checkbox" checked={draft.sources.includes(src)} onChange={() => setDraft({ ...draft, sources: draft.sources.includes(src) ? draft.sources.filter((x) => x !== src) : [...draft.sources, src] })} />
                       <span style={{ fontSize: 13, color: 'var(--text)' }}>{src}</span>
                     </label>
                   ))}
@@ -873,7 +886,8 @@ export default function ReportsPage() {
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
               <button onClick={() => setShowReportModal(false)} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
-              <button onClick={() => { toast.success('Report created'); setShowReportModal(false); }} className="btn btn-primary" style={{ padding: '10px 20px' }}>Create</button>
+              <button disabled={!draft.name.trim() || draft.sources.length === 0} className="btn btn-primary" style={{ padding: '10px 20px' }}
+                onClick={async () => { if (await addReport(draft)) { setShowReportModal(false); setDraft({ name: '', description: '', type: 'summary', schedule: 'manual', sources: [] }); } }}>Create</button>
             </div>
           </div>
         </div>
@@ -881,35 +895,59 @@ export default function ReportsPage() {
 
       {/* ── Configure Modal ──────────────────────────────────────────────────── */}
       {selectedReport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 24 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 20px' }}>Configure: {selectedReport.name}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Schedule</label>
-                <select defaultValue={selectedReport.schedule} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>
-                  <option value="manual">Manual</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Email Recipients</label>
-                <input type="text" placeholder="email@example.com, another@example.com" style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' }} />
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input type="checkbox" defaultChecked={selectedReport.enabled} />
-                <span style={{ color: 'var(--text)' }}>Enable automatic generation</span>
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedReport(null)} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
-              <button onClick={() => { toast.success('Configuration saved'); setSelectedReport(null); }} className="btn btn-primary" style={{ padding: '10px 20px' }}>Save</button>
+        <ConfigureReport report={selectedReport} onClose={() => setSelectedReport(null)}
+          onSave={async (patch) => { try { await updateReport({ token: t, id: selectedReport._id, ...patch }); toast.success('Saved'); setSelectedReport(null); } catch (e) { toast.error(errText(e)); } }} />
+      )}
+    </div>
+  );
+}
+
+function ConfigureReport({ report, onClose, onSave }: {
+  report: ReportConfig; onClose: () => void;
+  onSave: (patch: { schedule: string; sources: string[]; enabled: boolean; recipients: string }) => void;
+}) {
+  const [schedule, setSchedule] = useState(report.schedule);
+  const [sources, setSources] = useState<string[]>(report.sources);
+  const [enabled, setEnabled] = useState(report.enabled);
+  const [recipients, setRecipients] = useState(report.recipients ?? '');
+  const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', boxSizing: 'border-box' };
+  const lbl: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 };
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configure report" style={{ padding: 20 }}>
+      <div className="modal-panel" style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 20px' }}>Configure: {report.name}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <label htmlFor="cf-sched" style={lbl}>Schedule</label>
+            <select id="cf-sched" value={schedule} onChange={(e) => setSchedule(e.target.value)} style={inp}>
+              <option value="manual">Manual</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <span style={lbl}>Include data from</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {SOURCES.map((src) => (
+                <label key={src} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'var(--surface2)', borderRadius: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={sources.includes(src)} onChange={() => setSources(sources.includes(src) ? sources.filter((x) => x !== src) : [...sources, src])} />
+                  <span style={{ fontSize: 13, color: 'var(--text)' }}>{src}</span>
+                </label>
+              ))}
             </div>
           </div>
+          <div>
+            <label htmlFor="cf-rcpt" style={lbl}>Email recipients (saved for scheduled sending)</label>
+            <input id="cf-rcpt" type="text" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="name@example.com, other@example.com" style={inp} />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+            <span style={{ color: 'var(--text)' }}>Active</span>
+          </label>
         </div>
-      )}
+        <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
+          <button onClick={() => onSave({ schedule, sources, enabled, recipients })} className="btn btn-primary" style={{ padding: '10px 20px' }}>Save</button>
+        </div>
+      </div>
     </div>
   );
 }
