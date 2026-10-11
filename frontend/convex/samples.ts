@@ -17,6 +17,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token); // was readable without signing in
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -195,5 +196,14 @@ export const deleteEvent = mutation({
     await requireAuth(ctx, token);
     await ctx.db.delete(id);
     return { success: true };
+  },
+});
+
+/** The whole sample registry for the Samples page (newest first). */
+export const listAll = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    return await ctx.db.query("samples").order("desc").take(2000);
   },
 });
