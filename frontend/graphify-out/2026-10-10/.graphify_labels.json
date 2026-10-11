@@ -267,7 +267,11 @@
   "265": "@capacitor/app",
   "266": "ProtocolWorkflowBuilder.tsx",
   "267": "@testing-library/jest-dom",
+  "268": "AIChatPanel.tsx",
   "269": "@capacitor/keyboard",
   "270": "@playwright/test",
-  "271": "jsdom"
+  "271": "jsdom",
+  "272": "crudApi",
+  "273": "bcryptjs",
+  "274": "@playwright/test"
 }

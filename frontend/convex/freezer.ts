@@ -70,12 +70,22 @@ export const update = mutation({
 
 // ── Cascading deletes ─────────────────────────────────────────────────────
 
+/** Note on a scanned label's own history that its slot is gone, and detach it so it can be stored again. */
+async function releaseLabel(ctx: MutationCtx, userId: Id<"users">, slot: Doc<"freezer_slots">, path: string, why: string) {
+  const code = slot.label_code;
+  if (!code) return;
+  await ctx.db.insert("label_events", { code, event_type: "Retrieved", description: `Removed from ${path} (${why})`, performed_by: userId, performed_at: Date.now() });
+  const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
+  if (label?.slot_id === slot._id) await ctx.db.patch(label._id, { slot_id: undefined });
+}
+
 /** Log "removed" for each sample in these slots (while their path still exists), then delete the slots. */
 async function dropSlots(ctx: MutationCtx, userId: Id<"users">, slots: Doc<"freezer_slots">[], why: string) {
   for (const slot of slots) {
-    if (slot.sample_id) {
+    if (slot.sample_id || slot.label_code) {
       const path = await describe(ctx, slot);
       await logMove(ctx, userId, slot.sample_id, "Retrieved", `Removed from ${path} (${why})`, "");
+      await releaseLabel(ctx, userId, slot, path, why);
     }
     await ctx.db.delete(slot._id);
   }
@@ -324,6 +334,7 @@ export const clearSlot = mutation({
       const path = await describe(ctx, existing);
       await ctx.db.delete(existing._id);
       await logMove(ctx, userId, existing.sample_id, "Retrieved", `Removed from ${path}`);
+      await releaseLabel(ctx, userId, existing, path, "position cleared");
     }
   },
 });
