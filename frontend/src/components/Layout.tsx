@@ -59,7 +59,6 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Dashboard & overview',
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: '⬡', minRole: 'trainee' },
-      { key: 'ai-manager', label: 'AI Lab Manager', icon: '🤖', minRole: 'trainee' },
       { key: 'tasks', label: 'My Tasks', icon: '✓', minRole: 'trainee' },
       { key: 'reports', label: 'Reports & Analytics', icon: '📈', minRole: 'trainee' },
     ]
@@ -354,7 +353,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
       hasRole(item.minRole) && (navMode === 'full' || !item.advanced || item.key === activePage))
   })).filter(cat => cat.items.length > 0);
 
-  const pageTitle = NAV_CATEGORIES.flatMap(c => c.items).find(i => i.key === activePage)?.label || 'Dashboard';
+  const pageTitle = NAV_CATEGORIES.flatMap(c => c.items).find(i => i.key === activePage)?.label || (activePage === 'ai-manager' ? 'AI Lab Manager' : 'Dashboard');
   const activeCategory = NAV_CATEGORIES.find(c => c.items.some(i => i.key === activePage));
   const canGoBack = activePage !== 'dashboard';
 
@@ -689,7 +688,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
         </div>
 
         {/* AI Chat Panel */}
-        {aiChatOpen && <AIChatPanel onClose={() => setAiChatOpen(false)} />}
+        {aiChatOpen && <AIChatPanel onClose={() => setAiChatOpen(false)} onOpenManager={() => { setAiChatOpen(false); onNavigate('ai-manager'); }} />}
 
         {/* Onboarding Wizard */}
         {showOnboarding && (
