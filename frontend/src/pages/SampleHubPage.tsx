@@ -6,20 +6,13 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { useLabSamples, type LabSample } from '../lib/useLabSamples';
+import { useLabSampleEvents, type SampleEvent } from '../lib/useLabSampleEvents';
 import { errText } from '../lib/errors';
 import { SelectOrCustom } from '../components/SelectOrCustom';
 
 // Types
 type Sample = LabSample;
 
-interface SampleEvent {
-  id: number;
-  sampleId: string;
-  event: string;
-  user: string;
-  timestamp: string;
-  details?: string;
-}
 
 // Sample Types
 const SAMPLE_TYPES = [
@@ -136,7 +129,8 @@ export default function SampleHubPage() {
   const locationOptions = uniq([...(freezers ?? []).map(fz => fz.name), ...STORAGE_LOCATIONS, ...samples.map(s => s.location)]);
   const statusOptions = uniq([...DEFAULT_STATUSES, ...samples.map(s => s.status)]);
 
-  const [events, setEvents] = useState<SampleEvent[]>([]);
+  const evLab = useLabSampleEvents(token, samples);
+  const events = evLab.events;
 
   // Modal states
   const [showSampleModal, setShowSampleModal] = useState(false);
@@ -148,7 +142,7 @@ export default function SampleHubPage() {
 
   // Selection states
   const [selectedSamples, setSelectedSamples] = useState<Set<string>>(new Set());
-  const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
+  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkEventDeleteConfirm, setBulkEventDeleteConfirm] = useState(false);
 
@@ -288,7 +282,7 @@ export default function SampleHubPage() {
   // Selection handlers - Events
   const selectAllEvents = () => setSelectedEvents(new Set(filteredEvents.map(e => e.id)));
   const selectNoneEvents = () => setSelectedEvents(new Set());
-  const toggleEventSelection = (id: number) => {
+  const toggleEventSelection = (id: string) => {
     setSelectedEvents(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -318,15 +312,8 @@ export default function SampleHubPage() {
     } catch (e) { showToast(errText(e), 'error'); return; }
 
     // Add creation event
-    const event: SampleEvent = {
-      id: Date.now(),
-      sampleId,
-      event: 'Created',
-      user: newSample.owner || 'System',
-      timestamp: new Date().toLocaleString(),
-      details: newSample.parentSampleId ? `Derived from ${newSample.parentSampleId}` : 'New sample registered',
-    };
-    setEvents(prev => [...prev, event]);
+    try { await evLab.add(sampleId, 'Created', newSample.parentSampleId ? `Derived from ${newSample.parentSampleId}` : 'New sample registered'); }
+    catch (e) { showToast(errText(e), 'error'); }
 
     setNewSample({ type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '', status: 'processing' });
     setShowSampleModal(false);
@@ -373,48 +360,41 @@ export default function SampleHubPage() {
   };
 
   // Add event
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!newEvent.sampleId || !newEvent.event) {
       showToast('Please fill in required fields', 'error');
       return;
     }
-
-    const event: SampleEvent = {
-      id: Date.now(),
-      sampleId: newEvent.sampleId,
-      event: newEvent.event,
-      user: 'Current User',
-      timestamp: new Date().toLocaleString(),
-      details: newEvent.details,
-    };
-
-    setEvents(prev => [...prev, event]);
+    try { await evLab.add(newEvent.sampleId, newEvent.event, newEvent.details); }
+    catch (e) { showToast(errText(e), 'error'); return; }
     setNewEvent({ sampleId: '', event: '', details: '' });
     setShowEventModal(false);
     showToast('Event logged successfully!', 'success');
   };
 
   // Update event
-  const handleUpdateEvent = () => {
+  const handleUpdateEvent = async () => {
     if (!viewEvent) return;
-    setEvents(prev => prev.map(e => e.id === viewEvent.id ? viewEvent : e));
+    try { await evLab.update(viewEvent.id, viewEvent.event, viewEvent.details); }
+    catch (e) { showToast(errText(e), 'error'); return; }
     setViewEvent(null);
     setEditEventMode(false);
     showToast('Event updated successfully!', 'success');
   };
 
   // Delete event
-  const handleDeleteEvent = (event: SampleEvent) => {
-    setEvents(prev => prev.filter(e => e.id !== event.id));
-    showToast('Event deleted', 'success');
+  const handleDeleteEvent = async (event: SampleEvent) => {
+    try { await evLab.remove(event.id); showToast('Event deleted', 'success'); }
+    catch (e) { showToast(errText(e), 'error'); }
   };
 
   // Bulk delete events
-  const handleBulkDeleteEvents = () => {
-    setEvents(prev => prev.filter(e => !selectedEvents.has(e.id)));
+  const handleBulkDeleteEvents = async () => {
+    const ids = [...selectedEvents] as SampleEvent['id'][];
+    try { await Promise.all(ids.map(id => evLab.remove(id))); showToast(`${ids.length} events deleted`, 'success'); }
+    catch (e) { showToast(errText(e), 'error'); }
     setSelectedEvents(new Set());
     setBulkEventDeleteConfirm(false);
-    showToast(`${selectedEvents.size} events deleted`, 'success');
   };
 
   // Export samples
@@ -773,15 +753,8 @@ export default function SampleHubPage() {
     catch (e) { showToast(errText(e), 'error'); return; }
 
     // Add import events
-    const newEvents = newSamples.map((s, idx) => ({
-      id: Date.now() + idx + 1000,
-      sampleId: s.sampleId,
-      event: 'Created',
-      user: 'Batch Import',
-      timestamp: new Date().toLocaleString(),
-      details: `Imported from ${importFileName}`,
-    }));
-    setEvents(prev => [...prev, ...newEvents]);
+    try { await Promise.all(newSamples.map(x => evLab.add(x.sampleId, 'Created', `Imported from ${importFileName}`))); }
+    catch (e) { showToast(errText(e), 'error'); }
 
     setShowImportPreview(false);
     setImportedData([]);

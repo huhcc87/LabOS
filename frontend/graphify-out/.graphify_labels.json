@@ -258,5 +258,16 @@
   "256": "envVars.test.ts",
   "257": "sanitization.test.ts",
   "258": "vite.config.ts",
-  "259": "vitest.config.ts"
+  "259": "vitest.config.ts",
+  "260": "ai.ts",
+  "261": "settings.ts",
+  "262": "a11y.ts",
+  "263": "incidents.ts",
+  "264": "reagentCart.ts",
+  "265": "training.ts",
+  "266": "ProtocolWorkflowBuilder.tsx",
+  "267": "SettingsPage.tsx",
+  "268": "ActivityPage.tsx",
+  "269": "@capacitor/keyboard",
+  "270": "@playwright/test"
 }
