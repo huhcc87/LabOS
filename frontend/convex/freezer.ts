@@ -286,7 +286,7 @@ const slotFields = {
 export const setSlot = mutation({
   args: { token: v.optional(v.string()), box_id: v.id("freezer_boxes"), row: v.number(), col: v.number(), ...slotFields },
   handler: async (ctx, { token, box_id, row, col, ...fields }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
     const box = await ctx.db.get(box_id);
     if (!box) throw new ConvexError("Box not found");
     if (row < 0 || row >= box.rows || col < 0 || col >= box.cols) throw new ConvexError("That position isn't in this box");
@@ -297,7 +297,10 @@ export const setSlot = mutation({
       await ctx.db.patch(existing._id, data);
       return existing._id;
     }
-    return await ctx.db.insert("freezer_slots", { freezer_id: box.freezer_id, box_id, row, col, ...data });
+    const slotId = await ctx.db.insert("freezer_slots", { freezer_id: box.freezer_id, box_id, row, col, ...data });
+    const slot = await ctx.db.get(slotId);
+    if (slot) { const path = await describe(ctx, slot); await logMove(ctx, userId, fields.sample_id, "Stored", `Stored at ${path}`, path); }
+    return slotId;
   },
 });
 
@@ -305,13 +308,27 @@ export const setSlot = mutation({
 export const clearSlot = mutation({
   args: { token: v.optional(v.string()), box_id: v.id("freezer_boxes"), row: v.number(), col: v.number() },
   handler: async (ctx, { token, box_id, row, col }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
     const existing = await ctx.db.query("freezer_slots").withIndex("by_box", (q) => q.eq("box_id", box_id).eq("row", row).eq("col", col)).first();
-    if (existing) await ctx.db.delete(existing._id);
+    if (existing) {
+      const path = await describe(ctx, existing);
+      await ctx.db.delete(existing._id);
+      await logMove(ctx, userId, existing.sample_id, "Retrieved", `Removed from ${path}`);
+    }
   },
 });
 
 // ── Expiry and search (with where each sample is) ─────────────────────────
+
+/** Add a chain-of-custody event (and keep the location in step) when a stored sample has a matching Samples record. */
+export async function logMove(ctx: MutationCtx, userId: Id<"users">, sampleCode: string | undefined, event: string, details: string, location?: string) {
+  const code = sampleCode?.trim();
+  if (!code) return;
+  const sample = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", code)).first();
+  if (!sample) return;
+  await ctx.db.insert("sample_events", { sample_id: sample._id, event_type: event, description: details, performed_by: userId, performed_at: Date.now() });
+  if (location !== undefined) await ctx.db.patch(sample._id, { location });
+}
 
 const rowLetter = (n: number) => String.fromCharCode(65 + n);
 

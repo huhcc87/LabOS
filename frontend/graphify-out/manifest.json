@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "convex/freezer.ts": {
-    "mtime": 1791676191.0894842,
-    "ast_hash": "3493e7dce448eded46fd2962762092d1",
+    "mtime": 1791678643.484351,
+    "ast_hash": "95d5a14a92a4fa89fd10a95dd0985e36",
     "semantic_hash": ""
   },
   "convex/funding.ts": {
@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "convex/labels.ts": {
-    "mtime": 1791676314.4282973,
-    "ast_hash": "a860196c7ba383d2a93cd77a7fb0c4ed",
+    "mtime": 1791678643.4850745,
+    "ast_hash": "0a7653b0fa4b67ba3638abe926586d3c",
     "semantic_hash": ""
   },
   "convex/maintenance.ts": {

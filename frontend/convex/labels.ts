@@ -7,7 +7,7 @@ import { query, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
-import { describe } from "./freezer";
+import { describe, logMove } from "./freezer";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth } = hubGuard("Sample Hub");
 
@@ -89,6 +89,8 @@ export const store = mutation({
     const taken = await ctx.db.query("freezer_slots").withIndex("by_box", (q) => q.eq("box_id", box_id).eq("row", row).eq("col", col)).first();
     if (taken && taken.label_code !== code) throw new ConvexError("That position is already used by another sample");
 
+    const oldSlot = await ctx.db.query("freezer_slots").withIndex("by_label", (q) => q.eq("label_code", code)).first();
+    const oldPath = oldSlot ? await describe(ctx, oldSlot) : null;
     await freeUp(ctx, code); // moving: remove from the old position first
     const details = cleanDetails(sample.details ?? {});
     const slotId = await ctx.db.insert("freezer_slots", {
@@ -101,6 +103,11 @@ export const store = mutation({
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (label) await ctx.db.patch(label._id, { slot_id: slotId });
     else await ctx.db.insert("sample_labels", { code, details, slot_id: slotId, created_by: userId, created_at: Date.now() });
+    const newSlot = await ctx.db.get(slotId);
+    if (newSlot) {
+      const path = await describe(ctx, newSlot);
+      await logMove(ctx, userId, sample.sample_id, oldPath ? "Moved" : "Stored", oldPath ? `${oldPath} → ${path}` : `Stored at ${path}`, path);
+    }
     return slotId;
   },
 });
@@ -109,9 +116,12 @@ export const store = mutation({
 export const unstore = mutation({
   args: { token: v.optional(v.string()), code: v.string() },
   handler: async (ctx, { token, code: raw }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
     const code = checkCode(raw);
+    const oldSlot = await ctx.db.query("freezer_slots").withIndex("by_label", (q) => q.eq("label_code", code)).first();
+    const oldPath = oldSlot ? await describe(ctx, oldSlot) : null;
     await freeUp(ctx, code);
+    if (oldSlot && oldPath) await logMove(ctx, userId, oldSlot.sample_id, "Retrieved", `Removed from ${oldPath}`);
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (label?.slot_id) await ctx.db.patch(label._id, { slot_id: undefined });
   },
