@@ -2,7 +2,7 @@
  * PI-controlled access: a PI adds students and chooses which hubs each one can use.
  * A student is any non-PI, non-admin user whose `pi_id` points at a PI.
  */
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";

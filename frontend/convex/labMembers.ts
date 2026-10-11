@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, sanitizeUser } from "./authHelper";
 import type { Id } from "./_generated/dataModel";

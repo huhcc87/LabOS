@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v } from "convex/values";
 import { requireAuth, requireRole } from "./authHelper";
 

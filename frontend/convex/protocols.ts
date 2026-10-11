@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import type { MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";

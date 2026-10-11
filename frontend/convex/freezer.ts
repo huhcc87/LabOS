@@ -3,7 +3,7 @@
  * Everyone with Sample Hub access can see and log samples; changing the structure
  * (adding or deleting freezers, shelves, racks, boxes) needs the staff role or higher.
  */
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";

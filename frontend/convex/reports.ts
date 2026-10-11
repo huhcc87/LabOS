@@ -2,7 +2,7 @@
  * Reports & Analytics: one read for every chart, plus saved report setups
  * ("Generate" downloads an Excel file with the chosen data).
  */
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, requireRole } from "./authHelper";
 

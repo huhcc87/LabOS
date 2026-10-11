@@ -3,7 +3,8 @@
  * http.ts with their own key; the app reads and manages everything else with the signed-in user.
  * Keys are shown once when a sensor is created and only a hash is stored.
  */
-import { query, mutation, internalMutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import type { MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -128,7 +129,7 @@ async function raise(ctx: MutationCtx, sensor: Doc<"iot_sensors">, kind: string,
   // Same problem at the same or higher severity was raised recently: don't repeat it. A worse reading still alerts.
   const rank = (x: string) => (x === "critical" ? 2 : 1);
   if (open.some((o) => o.kind === kind && rank(o.severity) >= rank(severity) && at - o.created_at < ALERT_REPEAT_MS)) return;
-  await ctx.db.insert("iot_alerts", { sensor_id: sensor._id, kind, message, severity, value, is_acknowledged: false, created_at: at });
+  await ctx.db.insert("iot_alerts", { lab_id: sensor.lab_id, sensor_id: sensor._id, kind, message, severity, value, is_acknowledged: false, created_at: at });
 }
 
 /** Called by the HTTP endpoint. The key identifies the sensor; there is no user session. */
@@ -147,7 +148,7 @@ export const ingest = internalMutation({
     // Devices without a clock send nothing; a clock far from ours is ignored.
     const ts = timestamp && Math.abs(timestamp - now) < 24 * 3_600_000 ? timestamp : now;
 
-    await ctx.db.insert("iot_readings", { sensor_id: sensor._id, value, timestamp: ts });
+    await ctx.db.insert("iot_readings", { lab_id: sensor.lab_id, sensor_id: sensor._id, value, timestamp: ts });
     await ctx.db.patch(sensor._id, { last_reading: value, last_reading_at: ts });
 
     const u = sensor.unit ? ` ${sensor.unit}` : "";

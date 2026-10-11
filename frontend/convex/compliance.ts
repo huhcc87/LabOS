@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v } from "convex/values";
 import { hubGuard } from "./authHelper";
 // Students only reach this module if their PI allowed this hub.

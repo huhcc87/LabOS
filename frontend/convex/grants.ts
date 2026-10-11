@@ -1,4 +1,5 @@
-import { query, mutation, action } from "./_generated/server";
+import { action } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
 import { internal } from "./_generated/api";

@@ -65,6 +65,8 @@ export const regenerate = mutation({
     const user = await ctx.db.get(user_id);
     if (!user) throw new ConvexError("User not found");
     if (user.hashed_password !== NO_PASSWORD) throw new ConvexError("This user has already joined");
+    // Only for people in the caller's own lab (a super admin may do it for any lab).
+    if (me.role !== "superadmin" && user.home_lab_id !== me.home_lab_id) throw new ConvexError("User not found");
     return await issueInvite(ctx, user_id, me._id);
   },
 });

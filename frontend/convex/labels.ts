@@ -3,7 +3,7 @@
  * Scanning its QR/barcode later finds it, and "store" puts the sample into a freezer position
  * with the same details.
  */
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import type { MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";

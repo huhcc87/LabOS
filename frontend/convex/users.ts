@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, requireRole, hasRole, sanitizeUser } from "./authHelper";
 import { issueInvite, NO_PASSWORD } from "./invites";
@@ -110,7 +110,8 @@ export const create = mutation({
       throw new ConvexError("Forbidden: cannot grant a role higher than your own");
     }
     const email = args.email.trim().toLowerCase();
-    const existing = await ctx.db.query("users").withIndex("by_email", (q) => q.eq("email", email)).first();
+    // Emails are unique across all labs, so check without the lab filter.
+    const existing = await ctx.rawDb.query("users").withIndex("by_email", (q) => q.eq("email", email)).first();
     if (existing) throw new ConvexError("A user with this email already exists");
     const now = Date.now();
     const id = await ctx.db.insert("users", {

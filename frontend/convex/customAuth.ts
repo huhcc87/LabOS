@@ -155,6 +155,7 @@ export const logout = mutation({
       .first();
     if (session) {
       await ctx.db.insert("audit_logs", {
+        lab_id: (await ctx.db.get(session.user_id))?.home_lab_id,
         user_id: session.user_id,
         action: "LOGOUT",
         entity_type: "auth",
@@ -295,6 +296,7 @@ export const logSecurityEvent = internalMutation({
   },
   handler: async (ctx, { user_id, action, severity, details }) => {
     await ctx.db.insert("audit_logs", {
+      lab_id: (await ctx.db.get(user_id))?.home_lab_id,
       user_id,
       action,
       entity_type: "auth",
@@ -377,6 +379,7 @@ export const forceLogoutAll = mutation({
     }
 
     await ctx.db.insert("audit_logs", {
+      lab_id: (await ctx.db.get(session.user_id))?.home_lab_id,
       user_id: session.user_id,
       action: "ADMIN_FORCE_LOGOUT",
       entity_type: "auth",
