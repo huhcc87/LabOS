@@ -70,32 +70,42 @@ export const update = mutation({
 
 // ── Cascading deletes ─────────────────────────────────────────────────────
 
-async function deleteBox(ctx: MutationCtx, boxId: Id<"freezer_boxes">) {
+/** Log "removed" for each sample in these slots (while their path still exists), then delete the slots. */
+async function dropSlots(ctx: MutationCtx, userId: Id<"users">, slots: Doc<"freezer_slots">[], why: string) {
+  for (const slot of slots) {
+    if (slot.sample_id) {
+      const path = await describe(ctx, slot);
+      await logMove(ctx, userId, slot.sample_id, "Retrieved", `Removed from ${path} (${why})`, "");
+    }
+    await ctx.db.delete(slot._id);
+  }
+}
+async function deleteBox(ctx: MutationCtx, userId: Id<"users">, boxId: Id<"freezer_boxes">, why = "box deleted") {
   const slots = await ctx.db.query("freezer_slots").withIndex("by_box", (q) => q.eq("box_id", boxId)).collect();
-  await Promise.all(slots.map((s) => ctx.db.delete(s._id)));
+  await dropSlots(ctx, userId, slots, why);
   await ctx.db.delete(boxId);
 }
-async function deleteRack(ctx: MutationCtx, rackId: Id<"freezer_racks">) {
+async function deleteRack(ctx: MutationCtx, userId: Id<"users">, rackId: Id<"freezer_racks">, why = "rack deleted") {
   const boxes = await ctx.db.query("freezer_boxes").withIndex("by_rack", (q) => q.eq("rack_id", rackId)).collect();
-  for (const b of boxes) await deleteBox(ctx, b._id);
+  for (const b of boxes) await deleteBox(ctx, userId, b._id, why);
   await ctx.db.delete(rackId);
 }
-async function deleteShelf(ctx: MutationCtx, shelfId: Id<"freezer_shelves">) {
+async function deleteShelf(ctx: MutationCtx, userId: Id<"users">, shelfId: Id<"freezer_shelves">, why = "shelf deleted") {
   const racks = await ctx.db.query("freezer_racks").withIndex("by_shelf", (q) => q.eq("shelf_id", shelfId)).collect();
-  for (const r of racks) await deleteRack(ctx, r._id);
+  for (const r of racks) await deleteRack(ctx, userId, r._id, why);
   await ctx.db.delete(shelfId);
 }
 
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("freezers") },
   handler: async (ctx, { token, id }) => {
-    await requireRole(ctx, token, "staff");
+    const user = await requireRole(ctx, token, "staff");
     if (!(await ctx.db.get(id))) throw new ConvexError("Freezer not found");
     const shelves = await ctx.db.query("freezer_shelves").withIndex("by_freezer", (q) => q.eq("freezer_id", id)).collect();
-    for (const s of shelves) await deleteShelf(ctx, s._id);
+    for (const s of shelves) await deleteShelf(ctx, user._id, s._id, "freezer deleted");
     // Anything left (older numbered slots)
     const rest = await ctx.db.query("freezer_slots").withIndex("by_freezer", (q) => q.eq("freezer_id", id)).collect();
-    await Promise.all(rest.map((s) => ctx.db.delete(s._id)));
+    await dropSlots(ctx, user._id, rest, "freezer deleted");
     await ctx.db.delete(id);
     return id;
   },
@@ -188,8 +198,8 @@ export const renameShelf = mutation({
 export const removeShelf = mutation({
   args: { token: v.optional(v.string()), id: v.id("freezer_shelves") },
   handler: async (ctx, { token, id }) => {
-    await requireRole(ctx, token, "staff");
-    await deleteShelf(ctx, id);
+    const user = await requireRole(ctx, token, "staff");
+    await deleteShelf(ctx, user._id, id);
   },
 });
 
@@ -220,8 +230,8 @@ export const renameRack = mutation({
 export const removeRack = mutation({
   args: { token: v.optional(v.string()), id: v.id("freezer_racks") },
   handler: async (ctx, { token, id }) => {
-    await requireRole(ctx, token, "staff");
-    await deleteRack(ctx, id);
+    const user = await requireRole(ctx, token, "staff");
+    await deleteRack(ctx, user._id, id);
   },
 });
 
@@ -256,8 +266,8 @@ export const renameBox = mutation({
 export const removeBox = mutation({
   args: { token: v.optional(v.string()), id: v.id("freezer_boxes") },
   handler: async (ctx, { token, id }) => {
-    await requireRole(ctx, token, "staff");
-    await deleteBox(ctx, id);
+    const user = await requireRole(ctx, token, "staff");
+    await deleteBox(ctx, user._id, id);
   },
 });
 
