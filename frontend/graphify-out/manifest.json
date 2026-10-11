@@ -1175,8 +1175,8 @@
     "semantic_hash": ""
   },
   "src/lib/useLabSamples.ts": {
-    "mtime": 1791676981.8030875,
-    "ast_hash": "eb760012beba0b91401c3bb94fe5b8d2",
+    "mtime": 1791679755.9514027,
+    "ast_hash": "7835ea03a4dc6b24c3b3af6838d25a4c",
     "semantic_hash": ""
   },
   "src/lib/utils.ts": {
@@ -1550,8 +1550,8 @@
     "semantic_hash": ""
   },
   "src/pages/SampleHubPage.tsx": {
-    "mtime": 1791678286.630627,
-    "ast_hash": "83802ab2f4db3ec4df93404c216a418c",
+    "mtime": 1791679760.8243854,
+    "ast_hash": "51d3f05153f4a452300d37c3f706f38f",
     "semantic_hash": ""
   },
   "src/pages/SamplesPage.tsx": {

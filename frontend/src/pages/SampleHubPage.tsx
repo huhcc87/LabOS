@@ -5,7 +5,7 @@ import { useNavigate } from '../context/NavigationContext';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
-import { useLabSamples, type LabSample } from '../lib/useLabSamples';
+import { useLabSamples, localDate, type LabSample } from '../lib/useLabSamples';
 import { useLabSampleEvents, type SampleEvent } from '../lib/useLabSampleEvents';
 import { errText } from '../lib/errors';
 import { SelectOrCustom } from '../components/SelectOrCustom';
@@ -323,7 +323,7 @@ export default function SampleHubPage() {
         sampleId, type, status: newSample.status.trim() || 'processing', location,
         owner: newSample.owner || 'Unknown', quantity: newSample.quantity || '1', unit: newSample.unit,
         temperature: newSample.temperature || 'Room Temperature (20-25°C)', notes: newSample.notes,
-        parentSampleId: newSample.parentSampleId || undefined, date: new Date().toISOString().slice(0, 10),
+        parentSampleId: newSample.parentSampleId || undefined, date: localDate(new Date()),
       });
     } catch (e) { showToast(errText(e), 'error'); return; }
 
@@ -526,7 +526,7 @@ export default function SampleHubPage() {
       displayName: newLabelData.displayName,
       displayNumber: newLabelData.displayNumber || newLabelData.displayName,
       type: 'Custom',
-      date: new Date().toISOString().slice(0, 10),
+      date: localDate(new Date()),
       location: '',
       owner: '',
       customText: newLabelData.customText,
@@ -767,7 +767,7 @@ export default function SampleHubPage() {
       type: data.type || 'Unknown',
       status: data.status || 'processing',
       location: data.location || 'Lab Bench',
-      date: new Date().toISOString().slice(0, 10),
+      date: localDate(new Date()),
       owner: data.owner || 'Imported',
       quantity: data.quantity || '1',
       unit: data.unit || 'mL',
@@ -1777,7 +1777,7 @@ export default function SampleHubPage() {
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Location</label>
-                  <SelectOrCustom label="Location" options={locationOptions} value={viewSample.location} onChange={v => setViewSample({ ...viewSample, location: v })} />
+                  <SelectOrCustom label="Location" noneLabel="— No location —" options={locationOptions} value={viewSample.location} onChange={v => setViewSample({ ...viewSample, location: v })} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</label>
