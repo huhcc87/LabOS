@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "convex/labels.ts": {
-    "mtime": 1791678643.4850745,
-    "ast_hash": "0a7653b0fa4b67ba3638abe926586d3c",
+    "mtime": 1791678916.544012,
+    "ast_hash": "6d3358a26b306fcc3398a9b308248900",
     "semantic_hash": ""
   },
   "convex/maintenance.ts": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "convex/schema.ts": {
-    "mtime": 1791676011.7976725,
-    "ast_hash": "cb61e3032f2fcbb8c640b6b8f22a209e",
+    "mtime": 1791678916.5433621,
+    "ast_hash": "84fab2185398891386dab0c51923c8d3",
     "semantic_hash": ""
   },
   "convex/search.ts": {
@@ -740,8 +740,8 @@
     "semantic_hash": ""
   },
   "src/features/labels/ScanStore.tsx": {
-    "mtime": 1791676349.4769642,
-    "ast_hash": "828d37eec8be836aeb852e27ab2809c0",
+    "mtime": 1791678916.5446193,
+    "ast_hash": "ab8e5338ac525f5d14c8bcd1b90f0b61",
     "semantic_hash": ""
   },
   "src/features/labels/scanCode.ts": {

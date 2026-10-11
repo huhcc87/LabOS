@@ -6,6 +6,7 @@
 import { query, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { hubGuard } from "./authHelper";
 import { describe, logMove } from "./freezer";
 // Students only reach this module if their PI allowed this hub.
@@ -52,12 +53,24 @@ export const lookup = query({
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (!label) return { code, known: false as const };
     const slot = label.slot_id ? await ctx.db.get(label.slot_id) : null;
+    const events = await ctx.db.query("label_events").withIndex("by_code", (q) => q.eq("code", code)).order("desc").take(20);
+    const names = new Map<string, string>();
+    const history = [];
+    for (const e of events) {
+      if (!names.has(e.performed_by)) names.set(e.performed_by, (await ctx.db.get(e.performed_by))?.full_name ?? "Unknown");
+      history.push({ id: e._id, event: e.event_type, description: e.description, at: e.performed_at, user: names.get(e.performed_by)! });
+    }
     return {
       code, known: true as const, details: label.details,
       stored: slot ? { path: await describe(ctx, slot), slot } : null,
+      history,
     };
   },
 });
+
+async function logLabel(ctx: MutationCtx, userId: Id<"users">, code: string, event: string, description: string) {
+  await ctx.db.insert("label_events", { code, event_type: event, description, performed_by: userId, performed_at: Date.now() });
+}
 
 async function freeUp(ctx: MutationCtx, code: string) {
   const old = await ctx.db.query("freezer_slots").withIndex("by_label", (q) => q.eq("label_code", code)).collect();
@@ -106,7 +119,9 @@ export const store = mutation({
     const newSlot = await ctx.db.get(slotId);
     if (newSlot) {
       const path = await describe(ctx, newSlot);
-      await logMove(ctx, userId, sample.sample_id, oldPath ? "Moved" : "Stored", oldPath ? `${oldPath} → ${path}` : `Stored at ${path}`, path);
+      const what = oldPath ? `${oldPath} → ${path}` : `Stored at ${path}`;
+      await logMove(ctx, userId, sample.sample_id, oldPath ? "Moved" : "Stored", what, path);
+      await logLabel(ctx, userId, code, oldPath ? "Moved" : "Stored", what);
     }
     return slotId;
   },
@@ -121,7 +136,10 @@ export const unstore = mutation({
     const oldSlot = await ctx.db.query("freezer_slots").withIndex("by_label", (q) => q.eq("label_code", code)).first();
     const oldPath = oldSlot ? await describe(ctx, oldSlot) : null;
     await freeUp(ctx, code);
-    if (oldSlot && oldPath) await logMove(ctx, userId, oldSlot.sample_id, "Retrieved", `Removed from ${oldPath}`);
+    if (oldSlot && oldPath) {
+      await logMove(ctx, userId, oldSlot.sample_id, "Retrieved", `Removed from ${oldPath}`);
+      await logLabel(ctx, userId, code, "Retrieved", `Removed from ${oldPath}`);
+    }
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (label?.slot_id) await ctx.db.patch(label._id, { slot_id: undefined });
   },

@@ -90,6 +90,19 @@ export default function ScanStore({ initialCode }: { initialCode?: string }) {
               }}
             />
           )}
+          {result.known && result.history.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 13, margin: '0 0 6px', color: 'var(--text-secondary)' }}>History</h3>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, fontSize: 13 }}>
+                {result.history.map(h => (
+                  <li key={h.id} style={{ padding: '6px 0', borderTop: '1px solid var(--border)' }}>
+                    <strong>{h.event}</strong> · {h.description}
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{h.user} · {new Date(h.at).toLocaleString()}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       ))}
     </div>

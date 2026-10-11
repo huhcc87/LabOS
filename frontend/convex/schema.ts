@@ -585,6 +585,15 @@ export default defineSchema({
     .index("by_box", ["box_id", "row", "col"])
     .index("by_label", ["label_code"]),
 
+  // Stored / moved / removed history of a label, kept even when there is no Samples-page record behind it.
+  label_events: defineTable({
+    code: v.string(),
+    event_type: v.string(),
+    description: v.string(),
+    performed_by: v.id("users"),
+    performed_at: v.number(),
+  }).index("by_code", ["code"]),
+
   // Printed labels: the code in the QR/barcode, what was written on it, and where it went.
   sample_labels: defineTable({
     code: v.string(),
