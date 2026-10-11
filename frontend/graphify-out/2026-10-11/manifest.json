@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "convex/_generated/api.d.ts": {
-    "mtime": 1791676064.5276718,
-    "ast_hash": "fcd3ac84ca3e06e45ad962ad00e81952",
+    "mtime": 1791723646.3312886,
+    "ast_hash": "8c87c5e7b8b59a1e959efb0cc5c37f65",
     "semantic_hash": ""
   },
   "convex/_generated/api.js": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "convex/schema.ts": {
-    "mtime": 1791678916.5433621,
-    "ast_hash": "84fab2185398891386dab0c51923c8d3",
+    "mtime": 1791723481.8664694,
+    "ast_hash": "2ed5c00071ba11cdbae10049adf8eaba",
     "semantic_hash": ""
   },
   "convex/search.ts": {
@@ -1515,8 +1515,8 @@
     "semantic_hash": ""
   },
   "src/pages/ReportsPage.tsx": {
-    "mtime": 1791596450.2894797,
-    "ast_hash": "ada019702e3460140bd4dc0bf3ba6322",
+    "mtime": 1791723674.3394682,
+    "ast_hash": "7093204d011c84b4b4bc4f56746fa611",
     "semantic_hash": ""
   },
   "src/pages/ResearchAITab.tsx": {
@@ -1947,6 +1947,11 @@
   "src/lib/useLabSampleEvents.ts": {
     "mtime": 1791678009.2299056,
     "ast_hash": "a0b84493d3f7046fabe0c2eb4fff683a",
+    "semantic_hash": ""
+  },
+  "convex/reports.ts": {
+    "mtime": 1791723481.811761,
+    "ast_hash": "b31f139220f5a526f47cc8498994c823",
     "semantic_hash": ""
   }
 }

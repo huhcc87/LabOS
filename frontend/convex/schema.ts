@@ -451,11 +451,17 @@ export default defineSchema({
     min_threshold: v.optional(v.number()),
     max_threshold: v.optional(v.number()),
     is_active: v.boolean(),
-    api_key: v.optional(v.string()),
+    api_key: v.optional(v.string()), // keys made before hashing; replaced when rotated
+    api_key_hash: v.optional(v.string()),
+    preset: v.optional(v.string()),
+    freezer_id: v.optional(v.id("freezers")),
+    critical_min: v.optional(v.number()),
+    critical_max: v.optional(v.number()),
+    offline_after_min: v.optional(v.number()),
     last_reading: v.optional(v.number()),
     last_reading_at: v.optional(v.number()),
     created_at: v.number(),
-  }),
+  }).index("by_key_hash", ["api_key_hash"]),
 
   iot_readings: defineTable({
     sensor_id: v.id("iot_sensors"),
@@ -470,6 +476,7 @@ export default defineSchema({
     sensor_id: v.id("iot_sensors"),
     message: v.string(),
     severity: v.string(),
+    kind: v.optional(v.string()), // "high" | "low" | "offline"
     value: v.optional(v.number()),
     is_acknowledged: v.boolean(),
     acknowledged_by: v.optional(v.id("users")),

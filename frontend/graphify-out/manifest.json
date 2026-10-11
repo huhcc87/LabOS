@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "convex/_generated/api.d.ts": {
-    "mtime": 1791723646.3312886,
-    "ast_hash": "8c87c5e7b8b59a1e959efb0cc5c37f65",
+    "mtime": 1791723846.443869,
+    "ast_hash": "6bdbc464174255d96042955d36b1d518",
     "semantic_hash": ""
   },
   "convex/_generated/api.js": {
@@ -200,8 +200,8 @@
     "semantic_hash": ""
   },
   "convex/iot.ts": {
-    "mtime": 1791665073.585812,
-    "ast_hash": "7d98493fea925e590ee9a15fe276b0e5",
+    "mtime": 1791724131.1180346,
+    "ast_hash": "a781895b0faf552879e8b0d43960bbba",
     "semantic_hash": ""
   },
   "convex/labMembers.ts": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "convex/schema.ts": {
-    "mtime": 1791723481.8664694,
-    "ast_hash": "2ed5c00071ba11cdbae10049adf8eaba",
+    "mtime": 1791723826.2862406,
+    "ast_hash": "2420ac2fa554b1dda77f836cd46101ba",
     "semantic_hash": ""
   },
   "convex/search.ts": {
@@ -520,8 +520,8 @@
     "semantic_hash": ""
   },
   "src/components/Layout.tsx": {
-    "mtime": 1791676370.0886958,
-    "ast_hash": "0df6b380f1313db1e7601078a70ff317",
+    "mtime": 1791724110.881564,
+    "ast_hash": "4f629f8a49a81dfc199e3105e482583a",
     "semantic_hash": ""
   },
   "src/components/MarkdownRenderer.tsx": {
@@ -1105,8 +1105,8 @@
     "semantic_hash": ""
   },
   "src/lib/convexClient.ts": {
-    "mtime": 1791675677.9616435,
-    "ast_hash": "b739b4da468379363f2e412fd23675e9",
+    "mtime": 1791724038.3956537,
+    "ast_hash": "1876dcd548ba48cafaf6522a55162faa",
     "semantic_hash": ""
   },
   "src/lib/errorTracker.ts": {
@@ -1400,8 +1400,8 @@
     "semantic_hash": ""
   },
   "src/pages/IoTDashboardPage.tsx": {
-    "mtime": 1791596450.3488138,
-    "ast_hash": "9e02edb6e69f5d649cced0a4a49610da",
+    "mtime": 1791724038.3963695,
+    "ast_hash": "5d7e957cf94adb0cac615787f8f39cca",
     "semantic_hash": ""
   },
   "src/pages/LabHubPage.tsx": {
@@ -1952,6 +1952,41 @@
   "convex/reports.ts": {
     "mtime": 1791723481.811761,
     "ast_hash": "b31f139220f5a526f47cc8498994c823",
+    "semantic_hash": ""
+  },
+  "convex/crons.ts": {
+    "mtime": 1791723826.2313802,
+    "ast_hash": "407ce5e032821578a49bc4a14b38f01c",
+    "semantic_hash": ""
+  },
+  "convex/http.ts": {
+    "mtime": 1791723826.2278373,
+    "ast_hash": "cedc457cb5038e61bcc0c8ac4bb985e5",
+    "semantic_hash": ""
+  },
+  "src/features/iot/AddSensorDialog.tsx": {
+    "mtime": 1791724000.5343459,
+    "ast_hash": "99ddba4ccddfc8fd1e6d9b89bd4e05fe",
+    "semantic_hash": ""
+  },
+  "src/features/iot/ConnectGuide.tsx": {
+    "mtime": 1791723958.0245225,
+    "ast_hash": "482f8f31daf1ac24a8e21640ee56cdcd",
+    "semantic_hash": ""
+  },
+  "src/features/iot/SensorDetail.tsx": {
+    "mtime": 1791724000.5401838,
+    "ast_hash": "f841b73fda4b64626b50e53dab098357",
+    "semantic_hash": ""
+  },
+  "src/features/iot/presets.ts": {
+    "mtime": 1791723921.1602817,
+    "ast_hash": "0259f43942c3ee1420f00614aef0c866",
+    "semantic_hash": ""
+  },
+  "src/features/iot/snippets.ts": {
+    "mtime": 1791723921.1638849,
+    "ast_hash": "c6d1aba1c1d9ed6354d9cfac3ec11869",
     "semantic_hash": ""
   }
 }

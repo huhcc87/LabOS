@@ -1,4 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
+import { sensorState } from '../features/iot/presets';
 import { api } from "../../convex/_generated/api";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
@@ -402,8 +403,8 @@ export const reagentCartApi = {
 
 export const iotApi = {
   listSensors: async () => {
-    const result = await client.query(api.iot.listSensors, {});
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.iot.overview, { token: getToken() });
+    return { data: (result ?? []).map((s) => ({ ...adapt(s), status: sensorState(s) })) };
   },
   createSensor: async (data: any) => {
     const token = getToken();
@@ -421,11 +422,11 @@ export const iotApi = {
     return { data: { success: true } };
   },
   getHistory: async (id: IdLike, hours = 24) => {
-    const result = await client.query(api.iot.getHistory, { sensor_id: id as any, hours });
+    const result = await client.query(api.iot.getHistory, { token: getToken(), sensor_id: id as any, hours });
     return { data: (result ?? []).map(adapt) };
   },
   listAlerts: async (unackOnly = false) => {
-    const result = await client.query(api.iot.listAlerts, { unack_only: unackOnly });
+    const result = await client.query(api.iot.listAlerts, { token: getToken(), unack_only: unackOnly });
     return { data: (result ?? []).map(adapt) };
   },
   acknowledgeAlert: async (id: IdLike) => {

@@ -117,7 +117,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Inventory, procurement & IoT sensors',
     items: [
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
-      { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee', advanced: true },
+      { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
       { key: 'procurement-hub', label: 'Procurement', icon: '🏛', minRole: 'staff', advanced: true },
       { key: 'payment-methods', label: 'Payment Methods', icon: '💳', minRole: 'staff', advanced: true },
