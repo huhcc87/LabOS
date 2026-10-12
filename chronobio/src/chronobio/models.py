@@ -67,11 +67,27 @@ class Publication(Record):
     authors: list[str] = []
     year: int | None = Field(default=None, ge=1600, le=2100)
     journal: str = ""
+    abstract: str = ""
     doi: str | None = None
     pmid: str | None = None
     license: str = "unknown"
     retraction_status: RetractionStatus = RetractionStatus.NOT_CHECKED
     fulltext_location: str | None = None    # local path or URL; never copied into LabOS
+
+
+class SearchLog(Record):
+    """One literature search, kept so any novelty/coverage claim is reproducible."""
+
+    prefix: ClassVar[str] = "sch"
+
+    source: NonEmpty                       # pubmed | europepmc | crossref | openalex …
+    query: NonEmpty
+    run_at: datetime = Field(default_factory=_now)
+    date_from: int | None = None           # publication-year filter used
+    date_to: int | None = None
+    result_count: int = Field(ge=0)
+    returned_count: int = Field(ge=0)      # may be < result_count (page limit)
+    limitations: list[str] = []            # e.g. "abstracts only", "first page of results"
 
 
 class Direction(StrEnum):
@@ -98,15 +114,23 @@ class StudyDesign(StrEnum):
     UNKNOWN = "unknown"
 
 
+class Locator(StrEnum):
+    PDF_EXACT = "pdf_exact"      # passage found verbatim; page, offsets and boxes are real
+    TEXT_ONLY = "text_only"      # passage found verbatim in text without page geometry (e.g. abstract)
+
+
 class EvidenceClaim(Record):
     prefix: ClassVar[str] = "clm"
 
     publication_id: NonEmpty
     claim: NonEmpty
     passage: NonEmpty                      # short verbatim snippet from the source
+    locator: Locator = Locator.TEXT_ONLY
     page: int | None = Field(default=None, ge=1)
-    char_start: int | None = Field(default=None, ge=0)
+    char_start: int | None = Field(default=None, ge=0)   # offsets into that page's text
     char_end: int | None = Field(default=None, ge=0)
+    # Highlight rectangles (x0, top, x1, bottom) in PDF points, one per text line.
+    highlight_boxes: list[tuple[float, float, float, float]] = []
     direction: Direction = Direction.INCONCLUSIVE
     origin: ClaimOrigin = ClaimOrigin.REPORTED
     design: StudyDesign = StudyDesign.UNKNOWN
@@ -121,6 +145,13 @@ class EvidenceClaim(Record):
     def _offsets_ordered(self) -> Self:
         if self.char_start is not None and self.char_end is not None and self.char_end < self.char_start:
             raise ValueError("char_end must be >= char_start")
+        return self
+
+    @model_validator(mode="after")
+    def _exact_locator_needs_geometry(self) -> Self:
+        # Never claim an exact PDF location without a page and highlight boxes.
+        if self.locator == Locator.PDF_EXACT and (self.page is None or not self.highlight_boxes):
+            raise ValueError("pdf_exact claims need a page and highlight_boxes")
         return self
 
 
@@ -286,6 +317,6 @@ class Figure(Record):
 
 RECORD_TYPES: dict[str, type[Record]] = {
     cls.__name__: cls
-    for cls in (Publication, EvidenceClaim, GraphNode, GraphEdge, Hypothesis,
+    for cls in (Publication, SearchLog, EvidenceClaim, GraphNode, GraphEdge, Hypothesis,
                 Dataset, ValidationRun, ExperimentPlan, Figure)
 }

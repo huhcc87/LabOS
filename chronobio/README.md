@@ -2,7 +2,26 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 1 of 9.** This milestone adds the package skeleton, feature flags, data contracts, the local store and local-model access. No agents, ingestion or UI exist yet.
+**Status: Milestone 2 of 9 complete.** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 adds PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. There are no agents, graph or UI yet.
+
+## What Milestone 2 does
+
+| Module | Purpose |
+|---|---|
+| `pdf_ingest.py` | Reads a PDF into words with bounding boxes. Locates a passage and returns its page, character offsets, highlight rectangles (one per text line) and the source's own wording. |
+| `claims.py` | Asks the model for atomic claims, then keeps only those whose passage is found in the source. Sample sizes and effect estimates are kept only if they also appear in the source. |
+| `literature.py` | Europe PMC search with a year filter, DOI/PMID/title de-duplication, and retraction checks (Crossref/Retraction Watch first, Europe PMC publication types as a fallback). Every search is saved as a `SearchLog`. |
+| `ingest.py` | Stores a PDF as a `Publication` plus word geometry under `data/fulltext/`. Re-ingesting the same paper returns the existing record. |
+
+How claim verification works:
+
+- A passage is accepted if it appears in the paper ignoring whitespace and letter-case. The stored passage is always the paper's own text, never the model's copy.
+- A paraphrase, a passage that spans a page break, or text broken by hyphenation is rejected, not guessed at.
+- Everything dropped is returned in `result.rejections` with a reason, so nothing disappears silently.
+- A claim is marked `pdf_exact` only when it has a real page and highlight boxes. Abstract-only claims are marked `text_only`.
+- Scanned PDFs with no selectable text are reported as `no_text` and never sent to the model.
+
+Measured with the real local model (llama3.1 8B) on a generated two-page PDF: 10.4 s, both claims kept with page numbers and highlight boxes, the paper's sample size (n=1,200) carried through, and no rejections. This is one small fixture, not a benchmark; the 20-paper accuracy check from the spec is still to do.
 
 ## Quick start
 
@@ -22,14 +41,14 @@ Every flag defaults to the safe setting. Set them as environment variables.
 | `CHRONOBIO_ENABLED` | `0` | Master switch. When off, no model calls are made. |
 | `CHRONOBIO_DRY_RUN` | `1` | Plans steps but skips model calls and network access. |
 | `CHRONOBIO_ALLOW_CLOUD_LLM` | `0` | Required for any non-localhost model URL. Never use it with patient-level data. |
-| `CHRONOBIO_ALLOW_NETWORK` | `0` | Allows literature API calls (used from Milestone 2). |
+| `CHRONOBIO_ALLOW_NETWORK` | `0` | Allows literature API calls (Europe PMC, Crossref). |
 | `CHRONOBIO_OLLAMA_URL` | `http://127.0.0.1:11434` | Local Ollama server. |
 | `CHRONOBIO_MODEL` | `llama3.1:latest` | One shared model for all agents. |
 | `CHRONOBIO_DATA_DIR` | `chronobio/data` | Separate data directory, gitignored. |
 
 ## Resource budget (16 GB Apple Silicon)
 
-- The model is `llama3.1` 8B, using about 5 GB of RAM. One request took 11.9 s on this Mac.
+- The model is `llama3.1` 8B, using about 5 GB of RAM. A short request took 11.9 s on this Mac; extracting claims from a two-page PDF took about 10-22 s.
 - Agents run one at a time with no parallel model calls.
 - Each prompt is capped at `CHRONOBIO_MAX_CONTEXT_CHARS` (default 12,000). Papers are processed in batches of `CHRONOBIO_MAX_BATCH_PAPERS` (default 5). Agent loops stop after `CHRONOBIO_MAX_AGENT_ITERATIONS` (default 3).
 - Job checkpoints (`Store.checkpoint` / `Store.resume`) let a crashed pipeline resume where it stopped.
