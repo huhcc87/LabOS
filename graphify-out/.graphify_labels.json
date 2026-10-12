@@ -208,6 +208,7 @@
   "206": "BudgetCalculatorPage.tsx",
   "207": "ProgressReportsPage.tsx",
   "208": "check-convex-url.mjs",
+  "209": "require_role",
   "210": "ProgressReportsPage.tsx",
   "211": "ReferenceManagerPage.tsx",
   "212": "ResearchAITab",
@@ -246,6 +247,7 @@
   "245": "Feature 8: Analytics Dashboard",
   "246": "Feature 9: Scheduling & Resource Planning",
   "247": "Quick Start Guide",
+  "248": "templates.py",
   "249": "convexClient.test.ts",
   "250": "11. Session Management",
   "251": "13. Admin Controls",
@@ -281,6 +283,7 @@
   "281": "12. Input Validation",
   "282": "14. Vulnerability Management",
   "283": "15. Security Recommendations",
+  "284": "compliance.py",
   "285": "build-mobile.sh",
   "286": "bwip-js",
   "287": "@capacitor/cli",
@@ -385,5 +388,10 @@
   "386": "vite.config.ts",
   "387": "vitest.config.ts",
   "388": "vitest",
-  "389": "chronobio"
+  "389": "chronobio",
+  "390": "reagents.py",
+  "391": "layout.py",
+  "392": "SuppliersPage.tsx",
+  "393": "payments.ts",
+  "394": "bcryptjs"
 }
