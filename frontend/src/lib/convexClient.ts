@@ -452,8 +452,9 @@ export const grantsApi = {
     return { data: result };
   },
   researchSynthesis: async (data: any) => {
-    // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek with template fallback).
+    // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek; extracted-text-only fallback).
     const result = await client.action(api.grants.researchSynthesis, {
+      token: getToken() ?? undefined,
       texts: (data?.texts ?? []).map((t: any) => ({
         filename: String(t.filename ?? 'source'),
         content: String(t.content ?? ''),

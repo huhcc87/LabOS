@@ -254,7 +254,7 @@ export const aiDraft = action({
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-3-5-haiku-20241022",
+            model: "claude-haiku-5-5",
             max_tokens: 2048,
             system: systemPrompt,
             messages: [{ role: "user", content: userContent }],
@@ -385,11 +385,11 @@ function generateFallbackGrantContent(
 type SwarmModel = "claude-sonnet" | "claude-haiku" | "gpt-4o" | "deepseek" | "auto";
 
 const MODEL_LABELS: Record<string, string> = {
-  "claude-sonnet": "Claude 3.5 Sonnet",
-  "claude-haiku": "Claude 3.5 Haiku",
+  "claude-sonnet": "Claude Sonnet 5.5",
+  "claude-haiku": "Claude Haiku 5.5",
   "gpt-4o": "GPT-4o",
   "deepseek": "DeepSeek V3",
-  "template": "Template Engine",
+  "template": "No AI — extracted text only",
 };
 
 function extractJson(raw: string): any | null {
@@ -498,8 +498,8 @@ async function runProvider(
   user: string
 ): Promise<{ raw: string; source: string } | null> {
   let raw: string | null = null;
-  if (key === "claude-sonnet") raw = await callAnthropic("claude-3-5-sonnet-20241022", system, user);
-  else if (key === "claude-haiku") raw = await callAnthropic("claude-3-5-haiku-20241022", system, user);
+  if (key === "claude-sonnet") raw = await callAnthropic("claude-sonnet-5-5", system, user);
+  else if (key === "claude-haiku") raw = await callAnthropic("claude-haiku-5-5", system, user);
   else if (key === "gpt-4o") raw = await callOpenAI(system, user);
   else if (key === "deepseek") raw = await callDeepSeek(system, user);
   return raw ? { raw, source: key } : null;
@@ -507,8 +507,6 @@ async function runProvider(
 
 function buildSynthesisFallback(
   topic: string,
-  disease: string,
-  grant_type: string,
   texts: { filename: string; content: string }[]
 ) {
   const paper_summaries = texts.slice(0, 25).map((t) => {
@@ -589,43 +587,22 @@ function buildSynthesisFallback(
       relevance: `Relevant to "${topic}".`,
     };
   });
-  const dz = disease || topic;
+  // Without an AI provider we only return what was extracted verbatim from the
+  // sources. Gaps, hypotheses, aims and grant text are left empty rather than
+  // invented — fabricated research directions must never look like real output.
   return {
     paper_summaries,
     field_overview:
-      `Template synthesis for "${topic}"${disease ? ` in the context of ${disease}` : ""}. ` +
-      `${texts.length} source(s) ingested. Configure an ANTHROPIC_API_KEY, OPENAI_API_KEY, or ` +
-      `DEEPSEEK_API_KEY in Convex to unlock full multi-agent AI synthesis with deep paper analysis, ` +
-      `gap mapping and novel hypothesis generation.`,
-    research_gaps: [
-      `Mechanistic drivers of ${dz} remain incompletely defined.`,
-      `Translation of ${topic} findings into validated clinical endpoints is limited.`,
-      `Predictive biomarkers for patient stratification in ${dz} are lacking.`,
-    ],
+      `AI synthesis unavailable — no AI provider responded. ${texts.length} source(s) were ingested ` +
+      `and the paper summaries below are extracted directly from their text. No gaps, hypotheses ` +
+      `or aims were generated. Configure ANTHROPIC_API_KEY, OPENAI_API_KEY or DEEPSEEK_API_KEY in ` +
+      `Convex, then run the swarm again.`,
+    research_gaps: [] as string[],
     web_context: "",
-    novel_hypotheses: [
-      {
-        hypothesis: `Targeting a key pathway implicated in ${topic} will modulate disease progression in ${dz}.`,
-        rationale: "Derived from convergent themes across the ingested literature.",
-        novelty_score: 6,
-        supporting_evidence: `${texts.length} ingested source(s) point to this direction.`,
-        testability: "Testable via in vitro and in vivo models with defined readouts.",
-      },
-    ],
-    specific_aims: [
-      `Aim 1: Characterize the molecular basis of ${topic} in ${dz}.`,
-      `Aim 2: Develop and validate a targeted intervention informed by Aim 1.`,
-      `Aim 3: Evaluate translational potential and candidate biomarkers.`,
-    ],
-    objectives: [
-      `Define the mechanism linking ${topic} to ${dz}.`,
-      `Establish proof-of-concept for intervention.`,
-      `Identify biomarkers for stratification.`,
-    ],
-    grant_sections: {
-      "Specific Aims": generateFallbackGrantContent(grant_type, topic, "specific aims"),
-      "Significance": generateFallbackGrantContent(grant_type, topic, "significance"),
-    },
+    novel_hypotheses: [] as { hypothesis: string; rationale: string; novelty_score: number; supporting_evidence: string; testability: string }[],
+    specific_aims: [] as string[],
+    objectives: [] as string[],
+    grant_sections: {} as Record<string, string>,
     source: "template",
     model_label: MODEL_LABELS["template"],
   };
@@ -633,6 +610,7 @@ function buildSynthesisFallback(
 
 export const researchSynthesis = action({
   args: {
+    token: v.optional(v.string()),
     texts: v.array(v.object({ filename: v.string(), content: v.string() })),
     topic: v.string(),
     disease: v.optional(v.string()),
@@ -646,7 +624,15 @@ export const researchSynthesis = action({
       })
     ),
   },
-  handler: async (_ctx, { texts, topic, disease, grant_type, extra_context, model, feedback }) => {
+  handler: async (ctx, { token, texts, topic, disease, grant_type, extra_context, model, feedback }) => {
+    // Each run spends paid AI-provider credits — require a valid session.
+    const session = token
+      ? await ctx.runQuery(internal.customAuth.getSessionByToken, { token })
+      : null;
+    if (!session || session.expires_at < Date.now()) {
+      throw new ConvexError("Unauthorized");
+    }
+
     const gt = grant_type || "NIH R01";
     const dz = disease || "";
     const chosen = (model || "auto") as SwarmModel;
@@ -732,7 +718,8 @@ export const researchSynthesis = action({
           novel_hypotheses: (parsed.novel_hypotheses ?? []).map((h: any) => ({
             hypothesis: h.hypothesis ?? "",
             rationale: h.rationale ?? "",
-            novelty_score: Number(h.novelty_score) || 5,
+            // 0 = the model gave no score; never default to a made-up value.
+            novelty_score: Number(h.novelty_score) || 0,
             supporting_evidence: h.supporting_evidence ?? "",
             testability: h.testability ?? "",
           })),
@@ -746,6 +733,6 @@ export const researchSynthesis = action({
     }
 
     // All providers unavailable or failed → structured template (never empty).
-    return buildSynthesisFallback(topic, dz, gt, texts);
+    return buildSynthesisFallback(topic, texts);
   },
 });
