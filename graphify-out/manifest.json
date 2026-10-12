@@ -2720,8 +2720,8 @@
     "semantic_hash": ""
   },
   "chronobio/pyproject.toml": {
-    "mtime": 1791836698.29939,
-    "ast_hash": "7d6f83769193960849781d2d65dc508f",
+    "mtime": 1791837621.5943391,
+    "ast_hash": "b5e8ee53d4528859864777b307373b5f",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/__init__.py": {
@@ -2745,8 +2745,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/models.py": {
-    "mtime": 1791836731.9831185,
-    "ast_hash": "33de7d43f5d15f8d1e69963f24e6e959",
+    "mtime": 1791837838.4878328,
+    "ast_hash": "58add7b499adf035b95b6d89efab9676",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/store.py": {
@@ -2777,6 +2777,51 @@
   "frontend/tests/unit/readDocumentText.test.ts": {
     "mtime": 1791836615.320799,
     "ast_hash": "64011b4131fcac04f06583997ae7ea07",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/claims.py": {
+    "mtime": 1791837993.8670456,
+    "ast_hash": "e2e18e6f3d6afc274574a12ea3da18bf",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/ingest.py": {
+    "mtime": 1791837870.2437706,
+    "ast_hash": "42e0e1cec32da4ca6891b1eea2179463",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/literature.py": {
+    "mtime": 1791837869.3270025,
+    "ast_hash": "a890b8ec4ce9dcf8bf1c52891b2981fc",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/pdf_ingest.py": {
+    "mtime": 1791837981.9258354,
+    "ast_hash": "de8ff818bad02590c06c9f2805bbe458",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/conftest.py": {
+    "mtime": 1791837911.6032505,
+    "ast_hash": "1195fd49bf6d5fae17d7cd2ca760da26",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_claims.py": {
+    "mtime": 1791838004.2026985,
+    "ast_hash": "40b88145e98d9a5c51a65844ae12cbc0",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_literature_ingest.py": {
+    "mtime": 1791837914.5743775,
+    "ast_hash": "e8cfd5e6c2bb824c3373c7dfa2244ba3",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_pdf_ingest.py": {
+    "mtime": 1791838005.3747368,
+    "ast_hash": "6f09154210f846be5735f91e374423ee",
+    "semantic_hash": ""
+  },
+  "chronobio/README.md": {
+    "mtime": 1791838035.3343008,
+    "ast_hash": "713697b55d8d3d45e778720bcd5aaaf6",
     "semantic_hash": ""
   }
 }
