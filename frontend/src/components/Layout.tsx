@@ -10,6 +10,7 @@ import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useHubAccess } from '../lib/useHubAccess';
 import { isHub } from '../../convex/hubs';
+import { SearchIcon, AssistantIcon, BellIcon, MoonIcon, SunIcon, MonitorIcon } from './HeaderIcons';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -278,10 +279,10 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     localStorage.setItem('labos_theme', theme);
   }, [theme]);
 
-  const THEME_OPTIONS: { value: Theme; icon: string; label: string }[] = [
-    { value: 'dark', icon: '🌙', label: 'Dark' },
-    { value: 'light', icon: '☀️', label: 'Light' },
-    { value: 'system', icon: '💻', label: 'System' },
+  const THEME_OPTIONS: { value: Theme; icon: React.ReactNode; label: string }[] = [
+    { value: 'dark', icon: <MoonIcon />, label: 'Dark' },
+    { value: 'light', icon: <SunIcon />, label: 'Light' },
+    { value: 'system', icon: <MonitorIcon />, label: 'System' },
   ];
 
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => {
@@ -338,7 +339,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
         <span className="hdr-name">{user.full_name ?? user.email}</span>
         <RoleBadge role={user.role} />
       </div>
-      <button type="button" className="btn btn-secondary btn-sm" onClick={logout}>Logout</button>
+      <button type="button" className="hdr-logout" onClick={logout}>Log out</button>
     </div>
   ) : null;
 
@@ -475,18 +476,21 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           <div className="header-actions">
             {/* Global Search */}
             <div ref={searchRef} className="global-search-wrapper">
-              <div
+              <button
+                type="button"
                 className="global-search-trigger"
                 onClick={() => setSearchOpen(true)}
+                aria-label="Search (Command K)"
               >
-                <span className="search-icon">🔍</span>
-                <span className="search-placeholder">Search... <kbd>⌘K</kbd></span>
-              </div>
+                <span className="search-icon"><SearchIcon /></span>
+                <span className="search-placeholder">Search</span>
+                <kbd>⌘K</kbd>
+              </button>
 
               {searchOpen && (
                 <div className="global-search-modal">
                   <div className="search-input-wrapper">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><SearchIcon /></span>
                     <input
                       type="text"
                       className="search-input"
@@ -528,25 +532,24 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
             {/* AI Chat Toggle */}
             <button
+              type="button"
               onClick={() => setAiChatOpen(v => !v)}
               title="AI Lab Assistant"
-              style={{
-                background: aiChatOpen ? 'var(--accent)' : 'var(--surface2)',
-                border: `1px solid ${aiChatOpen ? 'var(--accent)' : 'var(--border)'}`,
-                borderRadius: 10, width: 38, height: 38, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, transition: 'all 0.15s',
-                color: aiChatOpen ? '#fff' : 'var(--text)',
-              }}
-            >🤖</button>
+              aria-label="AI Lab Assistant"
+              aria-pressed={aiChatOpen}
+              className={`hdr-icon-btn ${aiChatOpen ? 'on' : ''}`}
+            ><AssistantIcon /></button>
 
             {/* Notifications */}
             <div ref={notifRef} className="notifications-wrapper">
               <button
-                className="notifications-trigger"
+                type="button"
+                className="notifications-trigger hdr-icon-btn"
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
+                aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+                title="Notifications"
               >
-                <span>🔔</span>
+                <BellIcon />
                 {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
               </button>
 

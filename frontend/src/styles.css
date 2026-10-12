@@ -949,57 +949,100 @@ a:hover { text-decoration: underline; }
   border-left: 1px solid var(--header-border);
 }
 
+/* Header controls share one size, surface and border so the row reads as a single set. */
+.global-header {
+  --hdr-h: 36px;
+  --hdr-radius: 8px;
+  --hdr-surface: var(--header-hover);
+  --hdr-border: var(--header-border);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 /* Global Search — Professional Style */
 .global-search-wrapper {
   position: relative;
   flex: 1;
-  max-width: 480px;
+  max-width: 320px;
+  min-width: 0;
 }
 
 .global-search-trigger {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: var(--header-hover);
-  border: 1px solid var(--header-border);
-  border-radius: 8px;
+  gap: 8px;
+  width: 100%;
+  height: var(--hdr-h);
+  padding: 0 10px;
+  font: inherit;
+  white-space: nowrap;
+  background: var(--hdr-surface);
+  border: 1px solid var(--hdr-border);
+  border-radius: var(--hdr-radius);
+  color: var(--header-text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.global-search-trigger:hover {
+.global-search-trigger:hover,
+.global-search-trigger:focus-visible {
   background: var(--footer-mid);
   border-color: var(--header-accent);
+  outline: none;
 }
 
 .global-search-trigger .search-icon {
-  font-size: 15px;
-  opacity: 0.9;
+  display: inline-flex;
+  flex: none;
 }
 
 .global-search-trigger .search-placeholder {
-  color: var(--header-text-muted);
-  font-size: 13px;
   flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 13px;
   font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .global-search-trigger kbd {
-  background: var(--footer-mid);
-  border: 1px solid var(--header-border);
-  border-radius: 4px;
-  padding: 3px 8px;
+  flex: none;
+  font: inherit;
   font-size: 11px;
-  color: var(--header-text-muted);
   font-weight: 500;
+  line-height: 1;
+  padding: 3px 6px;
+  border: 1px solid var(--hdr-border);
+  border-radius: 4px;
+  background: var(--header-bg);
+  color: var(--header-text-muted);
 }
+
+/* Square icon buttons (assistant, notifications). */
+.hdr-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--hdr-h);
+  height: var(--hdr-h);
+  padding: 0;
+  background: var(--hdr-surface);
+  border: 1px solid var(--hdr-border);
+  border-radius: var(--hdr-radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.hdr-icon-btn:hover,
+.hdr-icon-btn:focus-visible { background: var(--footer-mid); border-color: var(--header-accent); outline: none; }
+.hdr-icon-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .global-search-modal {
   position: absolute;
@@ -1112,31 +1155,11 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 
-.notifications-trigger {
-  position: relative;
-  background: var(--header-hover);
-  border: 1px solid var(--header-border);
-  border-radius: 8px;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  transition: all 0.2s ease;
-}
-
-.notifications-trigger:hover {
-  background: var(--footer-mid);
-  border-color: var(--header-accent);
-  transform: translateY(-1px);
-}
-
+/* The bell button itself is styled by .hdr-icon-btn (shared header control). */
 .notification-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -5px;
+  right: -5px;
   background: var(--danger);
   color: white;
   font-size: 10px;
@@ -3103,16 +3126,18 @@ button:disabled { cursor: not-allowed; }
 
 
 /* ── Header controls: Menu size, Theme, account ───────────────────────── */
-.header-controls { display: flex; align-items: center; gap: 12px; margin-left: 4px; }
-.hdr-group { display: flex; align-items: center; gap: 4px; padding: 3px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+.header-controls { display: flex; align-items: center; gap: 10px; margin-left: 6px; padding-left: 16px; border-left: 1px solid var(--header-border); }
+.hdr-group { display: inline-flex; align-items: center; gap: 2px; height: var(--hdr-h, 36px); padding: 3px; background: var(--hdr-surface, var(--header-hover)); border: 1px solid var(--hdr-border, var(--header-border)); border-radius: var(--hdr-radius, 8px); }
 .hdr-label { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 0 6px 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
-.hdr-seg { border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 10px; min-height: 32px; border-radius: 7px; cursor: pointer; transition: background .15s, color .15s; }
-.hdr-seg.icon { padding: 6px 8px; font-size: 14px; }
+.hdr-seg { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; font-weight: 600; padding: 0 12px; height: 100%; border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; }
+.hdr-seg.icon { width: 30px; padding: 0; }
 .hdr-seg:hover { color: var(--text); }
 .hdr-seg.on { background: var(--accent); color: #fff; }
-.hdr-seg:focus-visible, .hdr-account .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hdr-seg:focus-visible, .hdr-logout:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hdr-account { display: flex; align-items: center; gap: 10px; }
-.hdr-avatar { width: 32px; height: 32px; flex: none; font-size: 14px; }
+.hdr-avatar { width: var(--hdr-h, 36px); height: var(--hdr-h, 36px); flex: none; font-size: 14px; }
+.hdr-logout { height: var(--hdr-h, 36px); padding: 0 12px; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--text); background: transparent; border: 1px solid var(--hdr-border, var(--header-border)); border-radius: var(--hdr-radius, 8px); cursor: pointer; transition: background .15s, border-color .15s; }
+.hdr-logout:hover { background: var(--footer-mid, var(--surface2)); border-color: var(--header-accent, var(--accent)); }
 .hdr-who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; line-height: 1.15; }
 .hdr-name { font-size: 13px; font-weight: 600; color: var(--text); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-footer-mobile { display: none; }
@@ -3122,9 +3147,9 @@ button:disabled { cursor: not-allowed; }
 /* Narrower desktops: drop the labels first, then the name. */
 @media (max-width: 1480px) { .hdr-label { display: none; } .hdr-who .hdr-name { max-width: 100px; } }
 @media (max-width: 1280px) { .hdr-who { display: none; } .global-search-wrapper { max-width: 220px; } }
-@media (max-width: 1024px) { .header-controls { gap: 8px; } .global-search-wrapper { max-width: 160px; } }
-/* Phones: the header is too tight, so the same controls live at the bottom of the sidebar. */
-@media (max-width: 768px) {
+@media (max-width: 1024px) { .global-search-wrapper { max-width: 160px; } }
+/* Tablets and phones: the header is too tight, so the same controls live at the bottom of the sidebar. */
+@media (max-width: 1024px) {
   .header-controls { display: none; }
   .sidebar-footer-mobile { display: block; }
 }
