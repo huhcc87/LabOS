@@ -237,6 +237,15 @@ def snapshot(
     )
 
 
+def restrict(snap: Snapshot, node_ids: list[str]) -> Snapshot:
+    """The part of a snapshot that lies among `node_ids` (for a per-hypothesis mechanism diagram)."""
+    keep = set(node_ids)
+    edges = tuple(e for e in snap.edges if e.source in keep and e.target in keep)
+    used = {n for e in edges for n in (e.source, e.target)} | keep
+    claim_ids = frozenset(c for e in edges for c, _ in e.evidence)
+    return Snapshot(snap.cutoff, tuple(n for n in snap.nodes if n.id in used), edges, claim_ids, snap.excluded_undated)
+
+
 def suggest_inferred_edges(edges: list[GraphEdge]) -> list[GraphEdge]:
     """Two-hop hypotheses: A activates B and B activates C suggests A is linked to C.
 

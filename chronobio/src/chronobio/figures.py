@@ -10,6 +10,7 @@ colour AND dash pattern so meaning never depends on colour alone.
 from __future__ import annotations
 
 import math
+import re
 from xml.sax.saxutils import escape, quoteattr
 
 from .graph import DisplayEdge, Snapshot
@@ -31,6 +32,22 @@ def _t(text: str, x: float, y: float, *, size: int = 12, anchor: str = "middle",
        weight: str = "400", fill: str = INK, extra: str = "") -> str:
     return (f'<text x="{x:.1f}" y="{y:.1f}" font-size="{size}" text-anchor="{anchor}" '
             f'font-weight="{weight}" fill="{fill}" {FONT} {extra}>{escape(text)}</text>')
+
+
+def _wrap(text: str, width: int, max_lines: int) -> list[str]:
+    """Break text into at most `max_lines` lines on word boundaries; the last line is shortened with an ellipsis."""
+    lines, current = [], ""
+    for word in text.split():
+        if current and len(current) + 1 + len(word) > width:
+            lines.append(current)
+            current = word
+        else:
+            current = f"{current} {word}".strip()
+    lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = _short(lines[-1] + "…", width)
+    return lines
 
 
 def _short(text: str, limit: int) -> str:
@@ -127,30 +144,58 @@ def graph_body(snap: Snapshot, pos: dict[str, Point], nodes: dict[str, GraphNode
     return "".join(parts)
 
 
-def legend(width: float, y: float, *, with_nodes: bool = True) -> str:
-    items = [
-        (GREEN, "", "arrow-pos", "activates (evidence)"),
-        (VERMILION, "", "tbar", "inhibits (evidence)"),
-        (GREY, "", "", "associated / no effect"),
-        (PURPLE, "2 3 9 3", "arrow-con", "contested (conflicting evidence)"),
-        (BLUE, "7 5", "arrow-hyp", "hypothesis — NOT established"),
-    ]
-    out = [f'<g class="legend" role="group" aria-label="Legend"><rect x="8" y="{y - 18:.0f}" width="{width - 16:.0f}" '
-           f'height="{58 if with_nodes else 40}" rx="6" fill="#ffffff" stroke="#d1d5db"/>']
-    x = 20.0
-    for color, dash, marker, text in items:
-        out.append(f'<line x1="{x:.0f}" y1="{y - 2:.0f}" x2="{x + 34:.0f}" y2="{y - 2:.0f}" stroke="{color}" stroke-width="2.4"'
+LEGEND_ITEMS = [
+    (GREEN, "", "arrow-pos", "activates (evidence)"),
+    (VERMILION, "", "tbar", "inhibits (evidence)"),
+    (GREY, "", "", "associated / no effect"),
+    (PURPLE, "2 3 9 3", "arrow-con", "contested (conflicting evidence)"),
+    (BLUE, "7 5", "arrow-hyp", "hypothesis — NOT established"),
+]
+LEGEND_NODE_KINDS = (NodeType.GENE, NodeType.PATHWAY, NodeType.DISEASE, NodeType.INTERVENTION,
+                     NodeType.MEASUREMENT, NodeType.CONCEPT)
+LEGEND_ROW = 22
+
+
+def _flow(widths: list[float], limit: float) -> tuple[list[tuple[float, int]], int]:
+    """Lay items left to right, starting a new row whenever the next would pass `limit`."""
+    placed, x, row = [], 20.0, 0
+    for w in widths:
+        if x + w > limit and x > 20:
+            x, row = 20.0, row + 1
+        placed.append((x, row))
+        x += w
+    return placed, row + 1
+
+
+def _legend_layout(width: float, with_nodes: bool):
+    edge_pos, edge_rows = _flow([48 + 6.2 * len(i[3]) for i in LEGEND_ITEMS], width - 24)
+    node_pos, node_rows = _flow([36 + 6.5 * len(k.value) for k in LEGEND_NODE_KINDS], width - 24) if with_nodes else ([], 0)
+    return edge_pos, edge_rows, node_pos, node_rows
+
+
+def legend_height(width: float, *, with_nodes: bool = True) -> int:
+    """Vertical space a figure of this width must reserve under its drawing for the legend."""
+    _, edge_rows, _, node_rows = _legend_layout(width, with_nodes)
+    return (edge_rows + node_rows) * LEGEND_ROW + 20
+
+
+def legend(width: float, bottom: float, *, with_nodes: bool = True) -> str:
+    """Legend that wraps into rows and sits at the bottom edge of the figure (never clipped)."""
+    edge_pos, edge_rows, node_pos, node_rows = _legend_layout(width, with_nodes)
+    rows = edge_rows + node_rows
+    top = bottom - (rows * LEGEND_ROW + 12)
+    out = [f'<g class="legend" role="group" aria-label="Legend"><rect x="8" y="{top:.0f}" width="{width - 16:.0f}" '
+           f'height="{rows * LEGEND_ROW + 8}" rx="6" fill="#ffffff" stroke="#d1d5db"/>']
+    for (color, dash, marker, text), (px, r) in zip(LEGEND_ITEMS, edge_pos):
+        y = top + 20 + r * LEGEND_ROW
+        out.append(f'<line x1="{px:.0f}" y1="{y - 4:.0f}" x2="{px + 34:.0f}" y2="{y - 4:.0f}" stroke="{color}" stroke-width="2.4"'
                    + (f' stroke-dasharray="{dash}"' if dash else "")
                    + (f' marker-end="url(#{marker})"' if marker else "") + "/>")
-        out.append(_t(text, x + 40, y + 2, size=11, anchor="start"))
-        x += 48 + 6.2 * len(text)
-    if with_nodes:
-        x = 20.0
-        for kind in (NodeType.GENE, NodeType.PATHWAY, NodeType.DISEASE, NodeType.INTERVENTION,
-                     NodeType.MEASUREMENT, NodeType.CONCEPT):
-            out.append(f'<circle cx="{x + 6:.0f}" cy="{y + 22:.0f}" r="6" fill="{NODE_FILL[kind]}" stroke="{INK}"/>')
-            out.append(_t(kind.value, x + 17, y + 26, size=11, anchor="start"))
-            x += 36 + 6.5 * len(kind.value)
+        out.append(_t(text, px + 40, y, size=11, anchor="start"))
+    for kind, (px, r) in zip(LEGEND_NODE_KINDS, node_pos):
+        y = top + 20 + (edge_rows + r) * LEGEND_ROW
+        out.append(f'<circle cx="{px + 6:.0f}" cy="{y - 4:.0f}" r="6" fill="{NODE_FILL[kind]}" stroke="{INK}"/>')
+        out.append(_t(kind.value, px + 17, y, size=11, anchor="start"))
     out.append("</g>")
     return "".join(out)
 
@@ -169,7 +214,7 @@ def graph_svg(
         f'<title id="gt">{escape(title)}</title><desc id="gd">{escape(desc + note)}</desc>'
         f'<rect width="{width}" height="{height}" fill="#ffffff"/>' + _defs()
         + _t(title + (f" — {year}" if snap.cutoff else ""), 16, 24, size=15, anchor="start", weight="700")
-        + graph_body(snap, pos, nodes) + legend(width, height - 40) + "</svg>"
+        + graph_body(snap, pos, nodes) + legend(width, height) + "</svg>"
     )
 
 
@@ -189,7 +234,7 @@ def graph_svg_slider(
         f'<rect width="{width}" height="{height}" fill="#ffffff"/>' + _defs()
         + _t(title, 16, 24, size=15, anchor="start", weight="700")
         + f'<text class="year-label" x="{width - 16}" y="24" font-size="15" text-anchor="end" font-weight="700" fill="{INK}" {FONT}></text>'
-        + groups + legend(width, height - 40) + "</svg>"
+        + groups + legend(width, height) + "</svg>"
     )
 
 
@@ -290,3 +335,109 @@ def matrix_svg(
                    + _t(letter, x + 8, ly + 1, size=11, fill="#fff", weight="700") + _t(text, x + 22, ly + 1, size=11, anchor="start"))
     out.append("</svg>")
     return "".join(out)
+
+
+# ── Hypothesis figures ───────────────────────────────────────────────────────
+
+LEVEL_TINT = {"high": "#c9ecd9", "medium": "#fdf1b8", "low": "#f8d3c0", "not_assessed": "#e5e7eb"}
+STATUS_TINT = {"evidence_supported": "#c9ecd9", "proposed": "#e5e7eb", "contradicted": "#f8d3c0"}
+VERDICT_TINT = {"accept": "#c9ecd9", "revise": "#fdf1b8", "reject": "#f8d3c0"}
+
+
+def _pretty(value: str) -> str:
+    return value.replace("_", " ")
+
+
+def hypothesis_matrix_svg(records: list[dict], *, title: str = "Hypothesis comparison") -> str:
+    """Hypotheses side by side. Each cell has a text label, so colour is never the only signal."""
+    columns = ["status", "critic", "evidence", "falsifiability", "originality", "prior-work search", "validation"]
+    label_w, cell_w, row_h, top = 330, 118, 40, 74
+    width = label_w + cell_w * len(columns) + 20
+    height = top + row_h * max(len(records), 1) + 70
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+           f'role="img" aria-labelledby="hmt hmd"><title id="hmt">{escape(title)}</title>'
+           f'<desc id="hmd">One row per hypothesis. Columns show review status, critic verdict, and separately rated '
+           f'evidence strength, falsifiability and originality, the prior-work search result, and validation status. '
+           f'There is no combined score.</desc><rect width="{width}" height="{height}" fill="#fff"/>',
+           _t(title, 16, 26, size=15, anchor="start", weight="700")]
+    for j, name in enumerate(columns):
+        out.append(_t(name, label_w + j * cell_w + cell_w / 2, top - 12, size=11, weight="600"))
+    if not records:
+        out.append(_t("No hypotheses yet", width / 2, top + 30))
+    for i, r in enumerate(records):
+        y = top + i * row_h
+        out.append(f'<g data-hypothesis={quoteattr(r["id"])}><title>{escape(r["statement"])}</title>'
+                   + _t(f"{i + 1}. " + _short(r["statement"], 52), label_w - 8, y + row_h / 2 + 4, size=11, anchor="end") + "</g>")
+        rank = r.get("ranking") or {}
+        verdict = (r.get("critic") or {}).get("verdict", "not reviewed")
+        cells = [
+            (_pretty(r["status"]), STATUS_TINT.get(r["status"], "#e5e7eb")),
+            (verdict, VERDICT_TINT.get(verdict, "#e5e7eb")),
+            *[((rank.get(k) or {}).get("level", "not_assessed").replace("_", " "),
+               LEVEL_TINT[(rank.get(k) or {}).get("level", "not_assessed")]) for k in ("evidence_strength", "falsifiability", "originality")],
+            (_pretty(r["novelty_status"]), "#e5e7eb"),
+            ("not performed", "#e5e7eb"),
+        ]
+        for j, (text, tint) in enumerate(cells):
+            x = label_w + j * cell_w
+            out.append(f'<rect x="{x + 2}" y="{y + 3}" width="{cell_w - 4}" height="{row_h - 6}" rx="5" fill="{tint}" stroke="#d1d5db"/>'
+                       + _t(_short(text, 16), x + cell_w / 2, y + row_h / 2 + 4, size=11, weight="600"))
+    out.append(_t("Dimensions are rated separately; none is a probability that the hypothesis is true.",
+                  16, height - 24, size=11, anchor="start", fill=GREY))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def workflow_svg(record: dict, *, title: str = "From gap to experiment") -> str:
+    """Pipeline for one hypothesis, showing where it stopped and what has not been done."""
+    verdict = (record.get("critic") or {}).get("verdict")
+    history = record.get("verdict_history") or []
+    passed = verdict == "accept"
+    novelty = record.get("novelty")
+    stages = [
+        ("Gap", (record.get("gap") or {}).get("kind", "none"), "done"),
+        ("Hypothesis", f"drafted, version {record['version']}", "done"),
+        ("Critic", f"{verdict or 'not reviewed'} after {len(history)} round(s)",
+         "done" if passed else "stop" if verdict == "reject" else "open"),
+        ("Prior-work search", _pretty(novelty["status"]) if novelty else "not run",
+         "done" if novelty else "pending"),
+        ("Validation", "NOT PERFORMED", "pending"),
+        ("Experiment plan", "not designed yet", "pending"),
+    ]
+    fill = {"done": "#c9ecd9", "open": "#fdf1b8", "stop": "#f8d3c0", "pending": "#f3f4f6"}
+    word = {"done": "done", "open": "unresolved", "stop": "stopped", "pending": "not reached" if not passed else "not done"}
+    box_w, box_h, gap_x, top = 138, 104, 22, 70
+    width = 20 + len(stages) * (box_w + gap_x)
+    height = 230
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+           f'role="img" aria-labelledby="wft wfd"><title id="wft">{escape(title)}</title>'
+           f'<desc id="wfd">Steps from literature gap to experiment for one hypothesis, with the state of each step.</desc>'
+           f'<rect width="{width}" height="{height}" fill="#fff"/>' + _defs(),
+           _t(title + ": " + _short(record["statement"], 80), 16, 26, size=14, anchor="start", weight="700")]
+    for i, (name, detail, state) in enumerate(stages):
+        x = 20 + i * (box_w + gap_x)
+        dash = ' stroke-dasharray="6 4"' if state == "pending" else ""
+        out.append(f'<g data-stage={quoteattr(name)}><title>{escape(name)}: {escape(detail)} ({word[state]})</title>'
+                   f'<rect x="{x}" y="{top}" width="{box_w}" height="{box_h}" rx="8" fill="{fill[state]}" stroke="{INK}"{dash}/>'
+                   + _t(name, x + box_w / 2, top + 22, size=12, weight="700")
+                   + "".join(_t(line, x + box_w / 2, top + 44 + 14 * k, size=11) for k, line in enumerate(_wrap(detail, 20, 2)))
+                   + _t(word[state], x + box_w / 2, top + box_h - 10, size=11, weight="600", fill=GREY) + "</g>")
+        if i:
+            out.append(f'<line x1="{x - gap_x + 2}" y1="{top + box_h / 2}" x2="{x - 2}" y2="{top + box_h / 2}" '
+                       f'stroke="{INK}" stroke-width="1.6" marker-end="url(#arrow-grey)"/>')
+    out.append(_t("Solid box = step completed; dashed box = not done. Nothing past the critic has been validated.",
+                  16, height - 24, size=11, anchor="start", fill=GREY))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def scope_ids(svg: str, suffix: str) -> str:
+    """Give every id in an inline SVG a unique suffix, so several figures can share one HTML page."""
+    ids = re.findall(r'\bid="([^"]+)"', svg)
+    for old in sorted(set(ids), key=len, reverse=True):
+        svg = svg.replace(f'id="{old}"', f'id="{old}-{suffix}"').replace(f"url(#{old})", f"url(#{old}-{suffix})")
+
+    def fix_labels(m: re.Match) -> str:
+        return 'aria-labelledby="' + " ".join(f"{i}-{suffix}" if i in ids else i for i in m.group(1).split()) + '"'
+
+    return re.sub(r'aria-labelledby="([^"]+)"', fix_labels, svg)

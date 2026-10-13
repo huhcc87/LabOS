@@ -2,9 +2,47 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 4 of 9 complete.** See "What Milestone 4 does" below; earlier milestones follow.
+**Status: Milestone 5 of 9 complete.** See "What Milestone 5 does" below; earlier milestones follow.
 
 **Milestone 3 of 9 (earlier status).** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+
+## What Milestone 5 does
+
+Hypothesis figures, a source-linked Hypotheses tab, and full report exports.
+
+```bash
+cd chronobio
+uv run python -m chronobio report          # data/report/: report.html, .docx, .pdf, .json and figures/
+uv run python -m chronobio viewer          # data/figures/viewer.html (interactive)
+```
+
+| Part | What it gives you |
+|---|---|
+| `figures.py` | Three new editable SVG figures: a hypothesis comparison (one row per hypothesis, every cell labelled in words, no combined score), a gap-to-experiment workflow (shows where a hypothesis stopped and what was not done), and a mechanism diagram around a hypothesis (reported links solid, hypothesized links dashed). |
+| `viewer.py` | A **Hypotheses** tab: each hypothesis with its status, critic verdict, prior-work result, predictions, falsifiers, uncertainty and separately rated dimensions. Every supporting or opposing claim is a button that opens the quoted passage and citation (and the real PDF page with the passage highlighted when the PDF is on this computer). A status filter, and a year slider that hides hypotheses whose evidence is later. |
+| `report.py` | One document model rendered to HTML, Word and JSON, plus PDF. Sections: summary, evidence landscape, gaps, hypotheses with evidence for and against, competing hypotheses, data requirements, limitations (computed from the data), numbered references, an evidence appendix and a figure-source appendix. |
+| `render.py` | PNG and PDF output through a locally installed Chrome, run headless with a throw-away profile and local files only. Optional: without Chrome the report still produces HTML, Word (with a visible note where figures would be), JSON and SVG, and says what it skipped. |
+
+Rules the report enforces:
+
+- Every figure lists the claim ids it draws on (also saved as `figures/figure_sources.json`).
+- References with no DOI or PMID are flagged as unverified in the report.
+- The limitations section is computed: how many claims come only from abstracts, how many sources are retracted, how many references cannot be checked.
+- Computational and experimental validation are always stated as NOT PERFORMED, and feasibility and impact as not assessed.
+- Rejected and unaccepted hypotheses stay in the report with their critic findings.
+- The report HTML contains no script. The viewer's script is allowed only by a content-security-policy hash, and all paper and model text is shown as text.
+
+Bugs the tests caught in this milestone (all fixed, each with a regression test):
+
+- The graph legend's last entry was clipped at the right edge, and at narrow widths its node-type row ran off the figure. Legends now wrap and each figure reserves exactly the height its legend needs.
+- A hypothesis stage in the workflow figure was cut to "accept after 1 round(…", hiding the verdict. Text now wraps.
+- Unaccepted hypotheses showed evidence strength and falsifiability as "not assessed" because only accepted ones were rated; every hypothesis is now rated, and ordering still puts accepted ones first.
+- The viewer's graph, timeline and per-year matrices reused the same SVG ids on one page, which breaks screen-reader labels (a flaw from Milestone 3). Ids are now unique, including in the clones made when a hypothesis card opens.
+- The tall evidence graph split across PDF pages and overflowed a Word page; figures now scale to fit a page.
+
+Measured on the real KRAS data (12 abstracts, 4 unaccepted hypotheses): the report builds in about 7 s to a 13-page PDF, a Word file with 10 sections, 8 tables and 6 embedded figures, HTML and JSON. Checked in a real browser: the Hypotheses tab, evidence links, the status filter and the year slider work, with no duplicate ids and no console errors.
+
+Not done: the report contains no experiment plan (that is a later milestone), PDF and PNG need Chrome, the PDF was checked by rendering its pages but not in Word or Acrobat, and the Word file was opened with python-docx only, not in Microsoft Word.
 
 ## What Milestone 4 does
 
@@ -44,7 +82,7 @@ Known weaknesses:
 - Entity names from the Milestone 3 graph are noisy, and novelty searches use them as exact phrases, so a search can match only the source paper.
 - Every gap in this corpus rests on one paper, so the evidence-strength dimension is "low" for all of them.
 
-Not implemented yet: population gaps (needs structured cohort data), cross-field gaps (needs field metadata), feasibility and impact scoring (later milestones), and a hypotheses tab in the viewer (Milestone 5).
+Not implemented yet: population gaps (needs structured cohort data), cross-field gaps (needs field metadata), and feasibility and impact scoring (later milestones).
 
 ## What Milestone 3 does
 

@@ -23,8 +23,8 @@ def _cite(pub: Publication | None) -> str:
     return f"{pub.title} ({pub.year or 'n.d.'}){' — ' + ids if ids else ''}"
 
 
-def export_swarm(store: Store, result: SwarmResult, out_dir: Path) -> tuple[Path, Path]:
-    out_dir.mkdir(parents=True, exist_ok=True)
+def build_records(store: Store, result: SwarmResult) -> list[dict]:
+    """One plain dict per hypothesis (ranked first), with evidence, critic, novelty and ranking attached."""
     pubs = {p.id: p for p in store.list(Publication)}
     claims = {c.id: c for c in store.list(EvidenceClaim)}
     logs = {g.id: g for g in store.list(SearchLog)}
@@ -43,12 +43,16 @@ def export_swarm(store: Store, result: SwarmResult, out_dir: Path) -> tuple[Path
 
     records = []
     for h in ordered:
-        rev, nov, rank = latest_review.get(h.id), result.novelty.get(h.id), card_by_id.get(h.id)
+        rev, nov, rank = latest_review.get(h.id), result.novelty.get(h.id), result.profiles.get(h.id)
         records.append({
             "id": h.id, "version": h.version, "statement": h.statement, "mechanism": h.mechanism,
             "predictions": h.predictions, "falsifiers": h.falsifiers, "alternative_mechanisms": h.alternative_mechanisms,
             "status": h.review_status.value, "novelty_status": h.novelty_status.value,
-            "gap": {"kind": gaps[h.gap_id].kind.value, "description": gaps[h.gap_id].description} if h.gap_id in gaps else None,
+            "gap": {"id": h.gap_id, "kind": gaps[h.gap_id].kind.value, "description": gaps[h.gap_id].description,
+                    "node_ids": gaps[h.gap_id].node_ids} if h.gap_id in gaps else None,
+            "supporting_ids": h.supporting_claim_ids, "opposing_ids": h.contradicting_claim_ids,
+            "verdict_history": [r.verdict.value for r in sorted(
+                (r for r in result.reviews if r.hypothesis_id == h.id), key=lambda r: r.hypothesis_version)],
             "supporting_evidence": [claim_view(c) for c in h.supporting_claim_ids],
             "opposing_evidence": [claim_view(c) for c in h.contradicting_claim_ids],
             "uncertainty": h.uncertainty,
@@ -61,6 +65,12 @@ def export_swarm(store: Store, result: SwarmResult, out_dir: Path) -> tuple[Path
             "ranking": {k: asdict(v) for k, v in asdict_dims(rank).items()} if rank else None,
             "computational_validation": "NOT PERFORMED",
         })
+    return records
+
+
+def export_swarm(store: Store, result: SwarmResult, out_dir: Path) -> tuple[Path, Path]:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    records = build_records(store, result)
     json_path = out_dir / "hypotheses.json"
     json_path.write_text(json.dumps({"hypotheses": records}, indent=2, ensure_ascii=False))
     md_path = out_dir / "hypotheses.md"

@@ -30,6 +30,7 @@ class SwarmResult:
     reviews: list[Review] = field(default_factory=list)
     novelty: dict[str, NoveltyAssessment] = field(default_factory=dict)
     cards: list[RankCard] = field(default_factory=list)             # accepted hypotheses, ordered
+    profiles: dict[str, RankCard] = field(default_factory=dict)     # separate ratings for every hypothesis
     rejections: list[Rejection] = field(default_factory=list)
 
 
@@ -87,11 +88,28 @@ def run_swarm(
         done.add(gap.id)
         store.checkpoint(job_id, "gap", {"done": sorted(done)})
 
-    gap_ids = {g.id for g in result.gaps}
+    return collect_result(store, result.gaps, claims, pubs, result.rejections)
+
+
+def collect_result(
+    store: Store, gaps: list[Gap], claims: dict[str, EvidenceClaim], pubs: dict[str, Publication],
+    rejections: list[Rejection] | None = None,
+) -> SwarmResult:
+    """Assemble a SwarmResult from stored records (used after a run, and by reports/viewers)."""
+    result = SwarmResult(gaps=gaps, rejections=rejections or [])
+    gap_ids = {g.id for g in gaps}
     result.hypotheses = [h for h in store.list(Hypothesis) if h.gap_id in gap_ids]
     hyp_ids = {h.id for h in result.hypotheses}
     result.reviews = [r for r in store.list(Review) if r.hypothesis_id in hyp_ids]
     result.novelty = {n.hypothesis_id: n for n in store.list(NoveltyAssessment) if n.hypothesis_id in hyp_ids}
     accepted = [h for h in result.hypotheses if h.review_status == HypothesisStatus.EVIDENCE_SUPPORTED]
-    result.cards = order([card(h, result.novelty.get(h.id), claims, pubs) for h in accepted])
+    result.profiles = {h.id: card(h, result.novelty.get(h.id), claims, pubs) for h in result.hypotheses}
+    result.cards = order([result.profiles[h.id] for h in accepted])
     return result
+
+
+def load_result(store: Store) -> SwarmResult:
+    """The stored swarm state, without running any model."""
+    pubs = {p.id: p for p in store.list(Publication)}
+    claims = {c.id: c for c in store.list(EvidenceClaim)}
+    return collect_result(store, store.list(Gap), claims, pubs)
