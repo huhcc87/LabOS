@@ -2,9 +2,28 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 7 of 9 complete.** See "What Milestone 7 does" below; earlier milestones follow.
+**Status: Milestones 1-8 complete; milestone 9 (integration into LabOS) not started, pending your approval.** The standalone interface is the HTML viewer and report, and the acceptance suite below passes on fixtures. See the sections below, newest first.
 
 **Milestone 3 of 9 (earlier status).** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+
+## Acceptance suite (spec criteria A-J)
+
+`tests/test_acceptance.py` has one test per criterion, run on generated fixtures (20 generated PDFs, synthetic data, scripted models, mocked literature APIs). All pass.
+
+| | Criterion | How it is checked |
+|---|---|---|
+| A | Legacy application unchanged | Nothing outside `chronobio/` and `graphify-out/` differs from the base branch; `python -m chronobio regression` also runs the existing frontend tests. |
+| B | 20 papers, exact highlighted passages | 20 generated PDFs: every real finding is found on its page with exact offsets and a highlight box inside the page, all 20 invented quotes are refused, and a re-check of every stored quote against its source gives 100%. |
+| C | Time slider excludes post-cutoff evidence | For every cutoff from 1999 to 2020, no visible claim is newer than the cutoff, and the counts only grow. |
+| D | Hypotheses list evidence, falsifiers, uncertainty | Every exported hypothesis has supporting evidence, an opposing-evidence field, predictions, falsifiers, uncertainty and a critic review. |
+| E | Critic rejects weak and contradicted hypotheses | A one-paper-for, three-against fixture is rejected and marked contradicted; a weak one is never accepted. |
+| F | Novelty queries reproducible | Each search keeps its exact query, ISO timestamp and hit count, plus the "absence of hits is not novelty" limitation. |
+| G | Executed vs proposed validation, no invented metrics | Planned and refused runs carry no numbers and no verdict; only the executed run does. |
+| H | Graphics: legend, source mapping, SVG, hypotheses distinct | Every figure has a title, caption, legend, SVG file and claim list; a hypothesized link is dashed with no claims, reported links are solid and cite claims. |
+| I | Report content | Aims, controls, endpoints and expected outcomes, alternatives, sample size, go/no-go, ethics flags, validation section, references and limitations. |
+| J | Resource limits, resumable jobs | Runtime and memory are within the configured limits; a run killed mid-way leaves earlier data untouched and resumes. |
+
+**These pass on fixtures, not on real literature.** On the real KRAS corpus the system still produces hypotheses that the critic does not accept (see Milestones 4 and 7), so this suite does not show it is "fully functional" for research use. Integration into the LabOS app itself (spec milestone 9) was deliberately not done: the spec requires your explicit approval before touching the existing application.
 
 ## What Milestone 7 does
 
