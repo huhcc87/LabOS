@@ -393,5 +393,8 @@
   "391": "layout.py",
   "392": "SuppliersPage.tsx",
   "393": "payments.ts",
-  "394": "bcryptjs"
+  "394": "bcryptjs",
+  "395": "IntegrationsPage.tsx",
+  "396": "mermaid",
+  "397": "@types/jspdf"
 }
