@@ -6,7 +6,7 @@
  * adapts toward the kinds of hypotheses this user values and away from the ones
  * they down-rated.
  */
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./tenant";
 import { v } from "convex/values";
 import { requireAuth } from "./authHelper";
 

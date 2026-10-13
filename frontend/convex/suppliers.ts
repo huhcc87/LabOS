@@ -1,6 +1,8 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { hubGuard } from "./authHelper";
+// Students only reach this module if their PI allowed this hub.
+const { requireAuth } = hubGuard("Resources");
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 

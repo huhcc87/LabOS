@@ -156,28 +156,18 @@ export default function LabMeetingsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<typeof MEETING_TEMPLATES[0] | null>(null)
 
   // Knowledge Base
-  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>([
-    { id: '1', title: 'Western Blot Protocol Tips', category: 'Protocols', content: 'Key tips from lab meetings about optimizing Western blots...', tags: ['western blot', 'protein'], createdBy: 'Lab Meeting - March 2024', createdAt: '2024-03-15', views: 45 },
-    { id: '2', title: 'qPCR Troubleshooting Guide', category: 'Troubleshooting', content: 'Common issues and solutions discussed in meetings...', tags: ['qPCR', 'molecular biology'], createdBy: 'Journal Club - Feb 2024', createdAt: '2024-02-20', views: 32 },
-    { id: '3', title: 'Cell Culture Best Practices', category: 'Protocols', content: 'Compilation of cell culture tips from various meetings...', tags: ['cell culture', 'tissue culture'], createdBy: 'Weekly Meeting', createdAt: '2024-03-01', views: 67 },
-    { id: '4', title: 'Statistical Analysis Methods', category: 'Analysis', content: 'Statistical approaches discussed in journal clubs...', tags: ['statistics', 'analysis'], createdBy: 'Journal Club', createdAt: '2024-03-10', views: 28 },
-  ])
+  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>([])
   const [knowledgeSearch, setKnowledgeSearch] = useState('')
   const [knowledgeCategory, setKnowledgeCategory] = useState('')
 
   // Polls
-  const [polls, setPolls] = useState<Poll[]>([
-    { id: '1', question: 'Best time for next lab retreat?', options: [{ id: 'a', text: 'June 15-16', votes: 8 }, { id: 'b', text: 'June 22-23', votes: 5 }, { id: 'c', text: 'July 6-7', votes: 3 }], createdBy: 'PI', status: 'active' },
-    { id: '2', question: 'Preferred journal club format?', options: [{ id: 'a', text: 'Single presenter', votes: 4 }, { id: 'b', text: 'Panel discussion', votes: 7 }, { id: 'c', text: 'Rotating sections', votes: 6 }], createdBy: 'Lab Manager', status: 'active' },
-  ])
+  const [polls, setPolls] = useState<Poll[]>([])
   const [showCreatePoll, setShowCreatePoll] = useState(false)
   const [newPollQuestion, setNewPollQuestion] = useState('')
   const [newPollOptions, setNewPollOptions] = useState(['', ''])
 
   // AI Transcription
-  const [transcriptions, setTranscriptions] = useState<{ meetingId: string; text: string; summary: string; actionItems: string[]; timestamp: string }[]>([
-    { meetingId: '1', text: 'Full transcription text...', summary: 'Discussed project timelines and resource allocation. Key decisions made about equipment purchase.', actionItems: ['Order new centrifuge by Friday', 'Schedule training session for new software'], timestamp: '2024-03-20T14:00:00' },
-  ])
+  const [transcriptions, setTranscriptions] = useState<{ meetingId: string; text: string; summary: string; actionItems: string[]; timestamp: string }[]>([])
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false)
   const [selectedTranscription, setSelectedTranscription] = useState<typeof transcriptions[0] | null>(null)
 

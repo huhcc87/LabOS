@@ -1,6 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { grantsApi, fundingApi, swarmFeedbackApi } from '../lib/api';
 import type { SwarmExportOptions } from '../lib/exportDocx';
+import { readDocumentText, isSupportedDocument, UnsupportedDocumentError } from '../lib/readDocumentText';
+
+// Per-paper text budget sent to the swarm (keeps the prompt within model limits).
+const MAX_CHARS_PER_FILE = 8000;
 
 // ─── Disease / Condition list ─────────────────────────────────────────────────
 
@@ -136,8 +140,8 @@ const FUNDING_STATUS_META: Record<GapFunding['status'], { label: string; color: 
 
 const SWARM_MODELS: { id: string; label: string; desc: string }[] = [
   { id: 'auto', label: '⚡ Auto (best available)', desc: 'Tries Claude Sonnet → GPT-4o → DeepSeek' },
-  { id: 'claude-sonnet', label: '🟣 Claude 3.5 Sonnet', desc: 'Deepest reasoning & synthesis' },
-  { id: 'claude-haiku', label: '🟢 Claude 3.5 Haiku', desc: 'Fast & economical' },
+  { id: 'claude-sonnet', label: '🟣 Claude Sonnet 5.5', desc: 'Deepest reasoning & synthesis' },
+  { id: 'claude-haiku', label: '🟢 Claude Haiku 5.5', desc: 'Fast & economical' },
   { id: 'gpt-4o', label: '🔵 GPT-4o', desc: 'OpenAI flagship multimodal' },
   { id: 'deepseek', label: '🔶 DeepSeek V3', desc: 'Strong open-weight reasoning' },
 ];
@@ -169,11 +173,18 @@ function saveLibraries(libs: ArticleLibrary[]) {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function NoveltyBadge({ score }: { score: number }) {
+  if (!score) {
+    return (
+      <span title="The model did not provide a novelty estimate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(107,114,128,0.15)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
+        Novelty not scored
+      </span>
+    );
+  }
   const color = score >= 9 ? '#22c55e' : score >= 7 ? '#f59e0b' : '#6366f1';
   const label = score >= 9 ? 'High Novelty' : score >= 7 ? 'Novel' : 'Incremental';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: `${color}20`, color, border: `1px solid ${color}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-      ⭐ {score}/10 · {label}
+      ⭐ {score}/10 · {label} (AI estimate)
     </span>
   );
 }
@@ -1194,11 +1205,22 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
 
   const addFiles = useCallback(async (incoming: File[]) => {
     const newFiles: LitFile[] = [];
+    const problems: string[] = [];
     for (const f of incoming.slice(0, 100)) {
-      const content = await new Promise<string>(resolve => { const r = new FileReader(); r.onload = e => resolve((e.target?.result as string) || ''); r.readAsText(f, 'utf-8'); });
-      newFiles.push({ id: `${f.name}-${Date.now()}`, filename: f.name, content: content.slice(0, 8000), size: `${(f.size / 1024).toFixed(0)} KB` });
+      if (!isSupportedDocument(f.name)) { problems.push(`${f.name}: only PDF, TXT and MD files are supported`); continue; }
+      try {
+        const doc = await readDocumentText(f, MAX_CHARS_PER_FILE);
+        if (!doc.text.trim()) {
+          problems.push(`${f.name}: no selectable text found (scanned PDF? run OCR first)`);
+          continue;
+        }
+        newFiles.push({ id: `${f.name}-${Date.now()}`, filename: f.name, content: doc.text, size: `${(f.size / 1024).toFixed(0)} KB` });
+      } catch (err) {
+        problems.push(`${f.name}: ${err instanceof UnsupportedDocumentError ? err.message : 'could not be read'}`);
+      }
     }
     setFiles(prev => [...prev, ...newFiles].slice(0, 100));
+    setError(problems.join('\n'));
   }, []);
 
   const handleAddFromSearch = (articles: Article[]) => {
@@ -1259,10 +1281,10 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           </div>
           {result && (() => {
             const isAI = result.source !== 'template';
-            const label = result.model_label || (isAI ? result.source : 'Template Engine');
+            const label = result.model_label || (isAI ? result.source : 'No AI');
             return (
               <span style={{ marginLeft: 'auto', background: isAI ? 'rgba(99,102,241,0.15)' : 'rgba(34,197,94,0.12)', color: isAI ? '#818cf8' : '#4ade80', border: `1px solid ${isAI ? '#6366f140' : '#22c55e40'}`, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
-                {isAI ? `⚡ ${label} Powered` : '📋 Template Mode'}
+                {isAI ? `⚡ ${label} Powered` : '⚠️ No AI — extracted text only'}
               </span>
             );
           })()}
@@ -1290,8 +1312,8 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 style={{ border: `2px dashed ${dragging ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 12, padding: 20, textAlign: 'center', cursor: 'pointer', background: dragging ? 'rgba(99,102,241,0.05)' : 'var(--surface)', transition: 'all 0.2s', marginBottom: 10 }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>📄</div>
                 <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 14, color: 'var(--text)' }}>Drop files here</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>PDF, TXT — up to 20 papers</div>
-                <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md,.doc,.docx" style={{ display: 'none' }} onChange={e => { if (e.target.files) addFiles(Array.from(e.target.files)); }} />
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>PDF, TXT, MD — up to 20 papers</div>
+                <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" style={{ display: 'none' }} onChange={e => { if (e.target.files) addFiles(Array.from(e.target.files)); }} />
               </div>
               {files.length > 0 && (
                 <QueueDisplay files={files} onRemove={id => setFiles(p => p.filter(x => x.id !== id))} onClear={() => setFiles([])} />
@@ -1381,7 +1403,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
         </>
       )}
 
-      {error && <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#f87171', marginBottom: 16, fontSize: 13 }}>⚠️ {error}</div>}
+      {error && <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#f87171', marginBottom: 16, fontSize: 13, whiteSpace: 'pre-line' }}>⚠️ {error}</div>}
 
       {!running && !result && (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>

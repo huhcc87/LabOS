@@ -1,6 +1,7 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, requireRole, hasRole, sanitizeUser } from "./authHelper";
+import { issueInvite, NO_PASSWORD } from "./invites";
 
 export const getMe = query({
   args: { token: v.optional(v.string()) },
@@ -67,7 +68,10 @@ export const list = query({
       );
     }
 
-    return { ...result, page: result.page.map(sanitizeUser) };
+    return {
+      ...result,
+      page: result.page.map((u) => ({ ...sanitizeUser(u), invite_pending: u.hashed_password === NO_PASSWORD })),
+    };
   },
 });
 
@@ -95,6 +99,7 @@ export const create = mutation({
       v.literal("trainee")
     ),
     department: v.optional(v.string()),
+    position: v.optional(v.string()),
     phone: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     data_classification_clearance: v.optional(v.string()),
@@ -104,13 +109,18 @@ export const create = mutation({
     if (!hasRole(caller.role, args.role)) {
       throw new ConvexError("Forbidden: cannot grant a role higher than your own");
     }
+    const email = args.email.trim().toLowerCase();
+    // Emails are unique across all labs, so check without the lab filter.
+    const existing = await ctx.rawDb.query("users").withIndex("by_email", (q) => q.eq("email", email)).first();
+    if (existing) throw new ConvexError("A user with this email already exists");
     const now = Date.now();
-    return await ctx.db.insert("users", {
-      email: args.email,
-      hashed_password: "!",
+    const id = await ctx.db.insert("users", {
+      email,
+      hashed_password: NO_PASSWORD,
       full_name: args.full_name,
       role: args.role,
       department: args.department,
+      position: args.position,
       phone: args.phone,
       avatar_url: args.avatar_url,
       data_classification_clearance: args.data_classification_clearance,
@@ -120,6 +130,9 @@ export const create = mutation({
       created_at: now,
       updated_at: now,
     });
+    // The new user signs up through this one-time link and picks their own password.
+    const { token: invite_token, emailed } = await issueInvite(ctx, id, caller._id);
+    return { id, invite_token, emailed };
   },
 });
 
@@ -139,6 +152,7 @@ export const update = mutation({
       )
     ),
     department: v.optional(v.string()),
+    position: v.optional(v.string()),
     phone: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     is_active: v.optional(v.boolean()),

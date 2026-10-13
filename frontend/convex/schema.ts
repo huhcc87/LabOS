@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { approvalValidator } from "./protocolRules";
 
 export default defineSchema({
   // ── Sessions (custom password auth) ──────────────────────────────────
@@ -29,42 +30,74 @@ export default defineSchema({
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
     stripe_customer_id: v.optional(v.string()),
+    // Academic position (BSc, MSc, PG, PhD, Postdoc) — a label, separate from the permission role.
+    position: v.optional(v.string()),
+    // PI-controlled access: the student's PI and the hubs that PI allows.
+    pi_id: v.optional(v.id("users")),
+    allowed_hubs: v.optional(v.array(v.string())),
+    // The lab this person belongs to. A super admin can look at another lab by setting active_lab_id.
+    home_lab_id: v.optional(v.id("labs")),
+    active_lab_id: v.optional(v.id("labs")),
     created_at: v.number(),
     updated_at: v.number(),
   })
+    .index("by_home_lab", ["home_lab_id"])
     .index("by_email", ["email"])
-    .index("by_role", ["role"]),
+    .index("by_role", ["role"])
+    .index("by_pi", ["pi_id"]),
+
+  // One-time sign-up links: an invited user opens the link and sets their own password.
+  invites: defineTable({
+    user_id: v.id("users"),
+    token: v.string(),
+    // "invite" = first sign-up (default when missing), "reset" = forgot password.
+    kind: v.optional(v.union(v.literal("invite"), v.literal("reset"))),
+    expires_at: v.number(),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_user", ["user_id"]),
 
   // ── Protocols ────────────────────────────────────────────────────────
   protocols: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
     version: v.string(),
-    status: v.string(),
+    // Optional: a protocol may have no status ("active" | "draft" | "archived" otherwise).
+    status: v.optional(v.string()),
     content: v.optional(v.string()),
     steps: v.optional(v.string()),
+    materials: v.optional(v.string()),
+    safety: v.optional(v.string()),
+    duration: v.optional(v.string()),
+    approval: v.optional(approvalValidator),
+    use_count: v.optional(v.number()),
     author_id: v.id("users"),
     tags: v.optional(v.string()),
     estimated_duration: v.optional(v.number()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_author", ["author_id"])
     .index("by_status", ["status"])
     .searchIndex("search_title", { searchField: "title" }),
 
   protocol_versions: defineTable({
+    lab_id: v.optional(v.id("labs")),
     protocol_id: v.id("protocols"),
     version: v.string(),
     content: v.optional(v.string()),
     change_summary: v.optional(v.string()),
     created_by: v.id("users"),
     created_at: v.number(),
-  }).index("by_protocol", ["protocol_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_protocol", ["protocol_id"]),
 
   // ── Instruments ──────────────────────────────────────────────────────
   instruments: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     model: v.optional(v.string()),
     serial_number: v.optional(v.string()),
@@ -75,9 +108,10 @@ export default defineSchema({
     notes: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  }).searchIndex("search_name", { searchField: "name" }),
+  }).index("by_lab", ["lab_id"]).searchIndex("search_name", { searchField: "name" }),
 
   bookings: defineTable({
+    lab_id: v.optional(v.id("labs")),
     instrument_id: v.id("instruments"),
     user_id: v.id("users"),
     start_time: v.number(),
@@ -86,13 +120,14 @@ export default defineSchema({
     status: v.string(),
     notes: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_instrument", ["instrument_id"])
     .index("by_user", ["user_id"])
     .index("by_start", ["start_time"]),
 
   // ── Inventory ────────────────────────────────────────────────────────
   inventory: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     catalog_number: v.optional(v.string()),
     supplier: v.optional(v.string()),
@@ -110,12 +145,13 @@ export default defineSchema({
     created_by: v.optional(v.id("users")),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_category", ["category"])
     .searchIndex("search_name", { searchField: "name" }),
 
   // ── Samples ──────────────────────────────────────────────────────────
   samples: defineTable({
+    lab_id: v.optional(v.id("labs")),
     sample_id: v.string(),
     name: v.string(),
     type: v.optional(v.string()),
@@ -128,22 +164,24 @@ export default defineSchema({
     metadata: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_status", ["status"])
     .index("by_sample_id", ["sample_id"])
     .searchIndex("search_name", { searchField: "name" }),
 
   sample_events: defineTable({
+    lab_id: v.optional(v.id("labs")),
     sample_id: v.id("samples"),
     event_type: v.string(),
     description: v.optional(v.string()),
     performed_by: v.optional(v.id("users")),
     performed_at: v.number(),
     notes: v.optional(v.string()),
-  }).index("by_sample", ["sample_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_sample", ["sample_id"]),
 
   // ── Training ─────────────────────────────────────────────────────────
   training: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     training_name: v.string(),
     category: v.optional(v.string()),
@@ -153,12 +191,13 @@ export default defineSchema({
     score: v.optional(v.number()),
     notes: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_status", ["status"]),
 
   // ── Incidents ────────────────────────────────────────────────────────
   incidents: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     description: v.optional(v.string()),
     severity: v.string(),
@@ -171,12 +210,13 @@ export default defineSchema({
     corrective_action: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_severity", ["severity"])
     .index("by_status", ["status"]),
 
   // ── Tasks ─────────────────────────────────────────────────────────────
   tasks: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     description: v.optional(v.string()),
     status: v.string(),
@@ -188,12 +228,13 @@ export default defineSchema({
     tags: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_assigned", ["assigned_to"])
     .index("by_status", ["status"]),
 
   // ── Scheduling ───────────────────────────────────────────────────────
   calendar_events: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     description: v.optional(v.string()),
     start_time: v.number(),
@@ -204,11 +245,12 @@ export default defineSchema({
     attendees: v.optional(v.string()),
     recurrence: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_start", ["start_time"])
     .index("by_creator", ["created_by"]),
 
   reminders: defineTable({
+    lab_id: v.optional(v.id("labs")),
     entity_type: v.string(),
     entity_id: v.string(),
     message: v.string(),
@@ -218,13 +260,14 @@ export default defineSchema({
     user_id: v.id("users"),
     sent_at: v.optional(v.number()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_status", ["status"])
     .index("by_due", ["due_at"]),
 
   // ── SOPs ─────────────────────────────────────────────────────────────
   sops: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     content: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -236,12 +279,13 @@ export default defineSchema({
     review_date: v.optional(v.number()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_status", ["status"])
     .searchIndex("search_title", { searchField: "title", filterFields: ["status"] }),
 
   // ── Maintenance ──────────────────────────────────────────────────────
   maintenance: defineTable({
+    lab_id: v.optional(v.id("labs")),
     instrument_id: v.optional(v.id("instruments")),
     maintenance_type: v.string(),
     status: v.string(),
@@ -252,10 +296,11 @@ export default defineSchema({
     cost: v.optional(v.number()),
     next_due: v.optional(v.number()),
     created_at: v.number(),
-  }).index("by_instrument", ["instrument_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_instrument", ["instrument_id"]),
 
   // ── Costs ────────────────────────────────────────────────────────────
   costs: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     category: v.string(),
     amount: v.number(),
@@ -268,12 +313,13 @@ export default defineSchema({
     receipt_url: v.optional(v.string()),
     grant_id: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_status", ["status"])
     .index("by_submitter", ["submitted_by"]),
 
   // ── Templates ────────────────────────────────────────────────────────
   templates: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     category: v.string(),
     content: v.string(),
@@ -281,10 +327,11 @@ export default defineSchema({
     created_by: v.id("users"),
     created_at: v.number(),
     updated_at: v.number(),
-  }).searchIndex("search_name", { searchField: "name" }),
+  }).index("by_lab", ["lab_id"]).searchIndex("search_name", { searchField: "name" }),
 
   // ── Notifications ────────────────────────────────────────────────────
   notifications: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     title: v.string(),
     message: v.string(),
@@ -293,12 +340,13 @@ export default defineSchema({
     entity_type: v.optional(v.string()),
     entity_id: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_read", ["is_read"]),
 
   // ── Audit Logs ───────────────────────────────────────────────────────
   audit_logs: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.optional(v.id("users")),
     action: v.string(),
     entity_type: v.string(),
@@ -306,12 +354,13 @@ export default defineSchema({
     details: v.optional(v.string()),
     ip_address: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_entity", ["entity_type"]),
 
   // ── Compliance ───────────────────────────────────────────────────────
   compliance: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     regulation: v.optional(v.string()),
     status: v.string(),
@@ -320,29 +369,32 @@ export default defineSchema({
     assigned_to: v.optional(v.id("users")),
     notes: v.optional(v.string()),
     created_at: v.number(),
-  }).index("by_status", ["status"]),
+  }).index("by_lab", ["lab_id"]).index("by_status", ["status"]),
 
   // ── Workspaces ───────────────────────────────────────────────────────
   workspaces: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     description: v.optional(v.string()),
     capacity: v.optional(v.number()),
     location: v.optional(v.string()),
     status: v.string(),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   // ── Feedback ─────────────────────────────────────────────────────────
   feedback: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.optional(v.id("users")),
     category: v.optional(v.string()),
     message: v.string(),
     rating: v.optional(v.number()),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   // ── Files / Attachments ──────────────────────────────────────────────
   attachments: defineTable({
+    lab_id: v.optional(v.id("labs")),
     entity_type: v.string(),
     entity_id: v.string(),
     filename: v.string(),
@@ -352,10 +404,11 @@ export default defineSchema({
     url: v.optional(v.string()),
     uploaded_by: v.id("users"),
     created_at: v.number(),
-  }).index("by_entity", ["entity_type", "entity_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_entity", ["entity_type", "entity_id"]),
 
   // ── Lab Meetings ─────────────────────────────────────────────────────
   meetings: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     meeting_type: v.string(),
     status: v.string(),
@@ -369,12 +422,13 @@ export default defineSchema({
     recording_url: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_organizer", ["organizer_id"])
     .index("by_scheduled", ["scheduled_at"]),
 
   // ── Suppliers ────────────────────────────────────────────────────────
   suppliers: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     category: v.optional(v.string()),
     contact_email: v.optional(v.string()),
@@ -385,9 +439,10 @@ export default defineSchema({
     notes: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  }).searchIndex("search_name", { searchField: "name" }),
+  }).index("by_lab", ["lab_id"]).searchIndex("search_name", { searchField: "name" }),
 
   purchase_orders: defineTable({
+    lab_id: v.optional(v.id("labs")),
     supplier_id: v.optional(v.id("suppliers")),
     status: v.string(),
     total_amount: v.optional(v.number()),
@@ -398,10 +453,11 @@ export default defineSchema({
     items: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  }).index("by_status", ["status"]),
+  }).index("by_lab", ["lab_id"]).index("by_status", ["status"]),
 
   // ── Lab Notebook ─────────────────────────────────────────────────────
   lab_notebook: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     content: v.optional(v.string()),
     author_id: v.id("users"),
@@ -412,12 +468,13 @@ export default defineSchema({
     is_locked: v.boolean(),
     created_at: v.number(),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_author", ["author_id"])
     .searchIndex("search_title", { searchField: "title", filterFields: ["author_id"] }),
 
   // ── IoT ──────────────────────────────────────────────────────────────
   iot_sensors: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     sensor_type: v.string(),
     location: v.optional(v.string()),
@@ -425,31 +482,40 @@ export default defineSchema({
     min_threshold: v.optional(v.number()),
     max_threshold: v.optional(v.number()),
     is_active: v.boolean(),
-    api_key: v.optional(v.string()),
+    api_key: v.optional(v.string()), // keys made before hashing; replaced when rotated
+    api_key_hash: v.optional(v.string()),
+    preset: v.optional(v.string()),
+    freezer_id: v.optional(v.id("freezers")),
+    critical_min: v.optional(v.number()),
+    critical_max: v.optional(v.number()),
+    offline_after_min: v.optional(v.number()),
     last_reading: v.optional(v.number()),
     last_reading_at: v.optional(v.number()),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]).index("by_key_hash", ["api_key_hash"]),
 
   iot_readings: defineTable({
+    lab_id: v.optional(v.id("labs")),
     sensor_id: v.id("iot_sensors"),
     value: v.number(),
     timestamp: v.number(),
     metadata: v.optional(v.string()),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_sensor", ["sensor_id"])
     .index("by_timestamp", ["timestamp"]),
 
   iot_alerts: defineTable({
+    lab_id: v.optional(v.id("labs")),
     sensor_id: v.id("iot_sensors"),
     message: v.string(),
     severity: v.string(),
+    kind: v.optional(v.string()), // "high" | "low" | "offline"
     value: v.optional(v.number()),
     is_acknowledged: v.boolean(),
     acknowledged_by: v.optional(v.id("users")),
     acknowledged_at: v.optional(v.number()),
     created_at: v.number(),
-  }).index("by_sensor", ["sensor_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_sensor", ["sensor_id"]),
 
   // ── Org Hierarchy ────────────────────────────────────────────────────
   organizations: defineTable({
@@ -469,7 +535,7 @@ export default defineSchema({
   }).index("by_org", ["organization_id"]),
 
   labs: defineTable({
-    site_id: v.id("sites"),
+    site_id: v.optional(v.id("sites")),
     name: v.string(),
     description: v.optional(v.string()),
     pi_user_id: v.optional(v.id("users")),
@@ -493,6 +559,7 @@ export default defineSchema({
 
   // ── Freezer / Biobank ────────────────────────────────────────────────
   freezers: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     location: v.optional(v.string()),
     temperature: v.optional(v.number()),
@@ -500,26 +567,107 @@ export default defineSchema({
     capacity_boxes: v.optional(v.number()),
     notes: v.optional(v.string()),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
+
+  // Freezer → Shelf (top to bottom) → Rack → Box → positions (freezer_slots)
+  freezer_shelves: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    freezer_id: v.id("freezers"),
+    name: v.string(),
+    position: v.number(), // 0 = top shelf
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_freezer", ["freezer_id", "position"]),
+
+  freezer_racks: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    freezer_id: v.id("freezers"),
+    shelf_id: v.id("freezer_shelves"),
+    name: v.string(),
+    position: v.number(),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"])
+    .index("by_shelf", ["shelf_id", "position"])
+    .index("by_freezer", ["freezer_id"]),
+
+  freezer_boxes: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    freezer_id: v.id("freezers"),
+    rack_id: v.id("freezer_racks"),
+    name: v.string(),
+    rows: v.number(),
+    cols: v.number(),
+    position: v.number(),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"])
+    .index("by_rack", ["rack_id", "position"])
+    .index("by_freezer", ["freezer_id"]),
 
   freezer_slots: defineTable({
+    lab_id: v.optional(v.id("labs")),
     freezer_id: v.id("freezers"),
-    rack: v.number(),
-    box: v.number(),
+    // New slots live in a box (row/col are 0-based inside it). Old numeric rack/box slots keep working.
+    box_id: v.optional(v.id("freezer_boxes")),
+    rack: v.optional(v.number()),
+    box: v.optional(v.number()),
     row: v.number(),
     col: v.number(),
     sample_id: v.optional(v.string()),
     label: v.optional(v.string()),
+    sample_type: v.optional(v.string()),
+    owner: v.optional(v.string()),
+    volume: v.optional(v.string()),
     barcode: v.optional(v.string()),
     expiry_date: v.optional(v.number()),
     notes: v.optional(v.string()),
+    // Set when the sample was stored by scanning a printed label
+    label_code: v.optional(v.string()),
+    // Extra fields from the label (origin, purpose, lot, hazard…)
+    details: v.optional(v.record(v.string(), v.string())),
     updated_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_freezer", ["freezer_id"])
-    .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"]),
+    .index("by_freezer_pos", ["freezer_id", "rack", "box", "row", "col"])
+    .index("by_box", ["box_id", "row", "col"])
+    .index("by_label", ["label_code"]),
+
+  // Saved setups on the Reports page (what to include, how often). "Generate" downloads the data.
+  report_configs: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    name: v.string(),
+    description: v.optional(v.string()),
+    type: v.string(),
+    schedule: v.string(),
+    sources: v.array(v.string()),
+    enabled: v.boolean(),
+    recipients: v.optional(v.string()),
+    last_generated: v.optional(v.number()),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]),
+
+  // Stored / moved / removed history of a label, kept even when there is no Samples-page record behind it.
+  label_events: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    code: v.string(),
+    event_type: v.string(),
+    description: v.string(),
+    performed_by: v.id("users"),
+    performed_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_code", ["code"]),
+
+  // Printed labels: the code in the QR/barcode, what was written on it, and where it went.
+  sample_labels: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    code: v.string(),
+    details: v.record(v.string(), v.string()),
+    slot_id: v.optional(v.id("freezer_slots")),
+    created_by: v.id("users"),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_code", ["code"]),
 
   // ── Grants ───────────────────────────────────────────────────────────
   grant_versions: defineTable({
+    lab_id: v.optional(v.id("labs")),
     grant_id: v.string(),
     title: v.string(),
     section: v.string(),
@@ -527,9 +675,10 @@ export default defineSchema({
     version: v.number(),
     created_by: v.id("users"),
     created_at: v.number(),
-  }).index("by_grant", ["grant_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_grant", ["grant_id"]),
 
   grant_submissions: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     agency: v.optional(v.string()),
     grant_type: v.optional(v.string()),
@@ -541,10 +690,11 @@ export default defineSchema({
     submitted_by: v.id("users"),
     created_at: v.number(),
     updated_at: v.number(),
-  }).index("by_submitter", ["submitted_by"]),
+  }).index("by_lab", ["lab_id"]).index("by_submitter", ["submitted_by"]),
 
   // ── Biosketch ────────────────────────────────────────────────────────
   biosketches: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     personal_statement: v.optional(v.string()),
     positions: v.optional(v.string()),
@@ -552,10 +702,11 @@ export default defineSchema({
     research_support: v.optional(v.string()),
     publications: v.optional(v.string()),
     updated_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   // ── Settings ─────────────────────────────────────────────────────────
   settings: defineTable({
+    lab_id: v.optional(v.id("labs")),
     key: v.string(),
     value: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -563,10 +714,11 @@ export default defineSchema({
     description: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  }).index("by_key", ["key"]),
+  }).index("by_lab", ["lab_id"]).index("by_key", ["key"]),
 
   // ── Reagent Cart ─────────────────────────────────────────────────────
   reagent_cart: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     name: v.string(),
     catalog_number: v.optional(v.string()),
@@ -578,10 +730,11 @@ export default defineSchema({
     notes: v.optional(v.string()),
     status: v.string(),
     created_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   // ── CAPA ─────────────────────────────────────────────────────────────
   capa: defineTable({
+    lab_id: v.optional(v.id("labs")),
     title: v.string(),
     description: v.optional(v.string()),
     source: v.optional(v.string()),
@@ -593,42 +746,46 @@ export default defineSchema({
     created_by: v.id("users"),
     created_at: v.number(),
     updated_at: v.number(),
-  }).index("by_status", ["status"]),
+  }).index("by_lab", ["lab_id"]).index("by_status", ["status"]),
 
   // ── Privacy / GDPR ───────────────────────────────────────────────────
   consent_records: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     consent_type: v.string(),
     granted: v.boolean(),
     version: v.optional(v.string()),
     ip_address: v.optional(v.string()),
     created_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   // ── Activity ─────────────────────────────────────────────────────────
   activity: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.optional(v.id("users")),
     action: v.string(),
     entity_type: v.optional(v.string()),
     entity_id: v.optional(v.string()),
     description: v.optional(v.string()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_created", ["created_at"]),
 
   // ── Integrations ─────────────────────────────────────────────────────
   integrations: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     integration_type: v.string(),
     config: v.optional(v.string()),
     status: v.string(),
     last_sync: v.optional(v.number()),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   // ── Procurement ─────────────────────────────────────────────────────
   procurement_rules: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     condition_field: v.string(),
     condition_op: v.string(),
@@ -636,9 +793,10 @@ export default defineSchema({
     action: v.string(),
     created_by: v.id("users"),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   procurement_budgets: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     amount: v.number(),
     spent: v.number(),
@@ -646,17 +804,19 @@ export default defineSchema({
     department: v.optional(v.string()),
     created_by: v.id("users"),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   restricted_chemicals: defineTable({
+    lab_id: v.optional(v.id("labs")),
     name: v.string(),
     cas_number: v.optional(v.string()),
     reason: v.optional(v.string()),
     added_by: v.id("users"),
     created_at: v.number(),
-  }),
+  }).index("by_lab", ["lab_id"]),
 
   borrow_requests: defineTable({
+    lab_id: v.optional(v.id("labs")),
     item_name: v.string(),
     quantity: v.number(),
     unit: v.optional(v.string()),
@@ -666,38 +826,42 @@ export default defineSchema({
     notes: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
-  }).index("by_status", ["status"])
+  }).index("by_lab", ["lab_id"]).index("by_status", ["status"])
     .index("by_requester", ["requester_id"]),
 
   // ── Video Rooms ─────────────────────────────────────────────────────
   video_rooms: defineTable({
+    lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
     meeting_id: v.optional(v.id("meetings")),
     status: v.string(),
     created_by: v.id("users"),
     created_at: v.number(),
     ended_at: v.optional(v.number()),
-  }).index("by_room_id", ["room_id"])
+  }).index("by_lab", ["lab_id"]).index("by_room_id", ["room_id"])
     .index("by_meeting", ["meeting_id"]),
 
   video_chat_messages: defineTable({
+    lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
     user_id: v.id("users"),
     message: v.string(),
     created_at: v.number(),
-  }).index("by_room", ["room_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
 
   // ── Payments ────────────────────────────────────────────────────────
   payment_methods: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     method_type: v.string(),
     label: v.string(),
     last_four: v.optional(v.string()),
     is_default: v.boolean(),
     created_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   payment_orders: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     amount: v.number(),
     currency: v.string(),
@@ -705,41 +869,46 @@ export default defineSchema({
     description: v.optional(v.string()),
     payment_method_id: v.optional(v.id("payment_methods")),
     created_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   // ── Procurement extras ──────────────────────────────────────────────
   alt_prices: defineTable({
+    lab_id: v.optional(v.id("labs")),
     purchase_order_id: v.id("purchase_orders"),
     vendor: v.string(),
     price: v.number(),
     url: v.optional(v.string()),
     created_at: v.number(),
-  }).index("by_order", ["purchase_order_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_order", ["purchase_order_id"]),
 
   sds_records: defineTable({
+    lab_id: v.optional(v.id("labs")),
     entity_id: v.string(),
     url: v.string(),
     hazards: v.optional(v.string()),
     created_at: v.number(),
-  }).index("by_entity", ["entity_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_entity", ["entity_id"]),
 
   recurrence_rules: defineTable({
+    lab_id: v.optional(v.id("labs")),
     entity_id: v.string(),
     pattern: v.string(),
     auto_reorder: v.boolean(),
     created_at: v.number(),
-  }).index("by_entity", ["entity_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_entity", ["entity_id"]),
 
   // ── AI Chat ─────────────────────────────────────────────────────────
   ai_chat_history: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     question: v.string(),
     answer: v.string(),
     created_at: v.number(),
-  }).index("by_user", ["user_id"]),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
   // ── Research AI Swarm: hypothesis ratings (feedback / learning loop) ──
   hypothesis_ratings: defineTable({
+    lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),
     topic: v.string(),
     disease: v.optional(v.string()),
@@ -749,7 +918,7 @@ export default defineSchema({
     novelty_score: v.optional(v.number()),
     unfunded: v.optional(v.boolean()),
     created_at: v.number(),
-  })
+  }).index("by_lab", ["lab_id"])
     .index("by_user", ["user_id"])
     .index("by_topic", ["topic"]),
 });

@@ -37,11 +37,13 @@ const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
 const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
-const LabelPrinterPage       = lazy(() => import('./pages/LabelPrinterPage'));
+const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
+const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
+const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
@@ -96,6 +98,10 @@ function AppInner() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState('dashboard');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  // Invite links look like /?invite=<token>
+  const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
+  // Someone scanned a label QR code with their phone camera: open Labels once signed in
+  useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('labels'); }, [user]);
 
   // A11y: skip-to-content link
   useEffect(() => { setupSkipToContent(); }, []);
@@ -103,32 +109,24 @@ function AppInner() {
   // Analytics: track page views
   useEffect(() => { trackPageView(page); }, [page]);
 
+  if (invite) {
+    const leaveInvite = () => {
+      window.history.replaceState(null, '', window.location.pathname);
+      setInvite(null);
+    };
+    return (
+      <Suspense fallback={null}>
+        <AcceptInvitePage invite={invite} onDone={leaveInvite} />
+      </Suspense>
+    );
+  }
+
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        background: 'linear-gradient(135deg, #0d1b2a 0%, #13293d 100%)',
-        color: '#e8eef4',
-        fontSize: 16,
-        gap: 16
-      }}>
-        <div style={{
-          width: 64,
-          height: 64,
-          background: 'linear-gradient(135deg, #112e51 0%, #1a4480 50%, #205493 100%)',
-          borderRadius: 16,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 32,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-        }}>⬡</div>
-        <div style={{ fontWeight: 600, letterSpacing: '-0.3px' }}>Loading LabOS v3...</div>
-        <div style={{ fontSize: 12, color: '#8fa3b8' }}>Laboratory Operations System</div>
+      // Quiet, centered spinner on light gray — minimal distraction while the session loads.
+      <div role="status" aria-live="polite" className="app-loading">
+        <span className="app-loading-spinner" aria-hidden="true" />
+        <span className="app-loading-text">Loading LabOS…</span>
       </div>
     );
   }
@@ -151,7 +149,7 @@ function AppInner() {
       // Sample Hub
       case 'samples': return <SampleHubPage />;
       case 'sample-events': return <SampleHubPage />;
-      case 'print-labels': return <SampleHubPage />;
+      case 'print-labels': return <LabelsPage />;
       case 'batch-import': return <SampleHubPage />;
       // Resources Hub
       case 'inventory': return <ResourcesHubPage />;
@@ -215,12 +213,14 @@ function AppInner() {
       // Tier 1 — AI Research Intelligence
       case 'eln': return <ELNPage />;
       case 'iot-dashboard': return <IoTDashboardPage />;
-      case 'label-printer': return <LabelPrinterPage />;
+      case 'label-printer': return <LabelsPage />;
+      case 'labels': return <LabelsPage />;
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
       case 'payment-methods': return <PaymentMethodsPage />;
       case 'procurement-hub': return <ProcurementHubPage />;
       case 'lab-members': return <LabMembersPage />;
+      case 'my-students': return <MyStudentsPage />;
       // Tier 2 — Clinical & Translational Research
       case 'clinical-research': return <ClinicalResearchHubPage />;
       // Tier 4 — Operational Excellence

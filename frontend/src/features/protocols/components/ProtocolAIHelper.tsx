@@ -21,18 +21,6 @@ const AI_ACTIONS: AIAction[] = [
   { id: 'controls', label: 'Suggest Controls', icon: '✓', description: 'Recommend positive, negative, and internal controls', placeholder: 'Describe the assay type and detection method...' },
 ]
 
-const MOCK_RESPONSES: Record<string, string> = {
-  generate: '✨ AI Protocol generated successfully. The protocol has been pre-filled with:\n• Objective and scientific principle\n• Biosafety level and PPE requirements\n• Reagents and equipment lists\n• Step-by-step procedure with timing\n• QC checkpoints and expected results\n• Troubleshooting table\n\n⚙️ Connect OpenAI API key in Settings → Integrations to enable live generation.',
-  improve: '⬆️ Protocol improvements identified:\n• Added 3 missing QC checkpoints at critical steps\n• Clarified centrifugation parameters (speed + temperature)\n• Added pause points for safe stopping positions\n• Updated reagent concentrations to current best practice\n\n⚙️ Connect OpenAI API key to apply real improvements.',
-  convert: '📄 SOP conversion complete. Rough notes reformatted into:\n• Standard SOP header with ID, version, author fields\n• Numbered step-by-step procedure\n• Reagent and equipment tables\n• Safety notes section\n• QC acceptance criteria\n\n⚙️ Live conversion requires OpenAI API key.',
-  troubleshoot: '🔧 Troubleshooting table generated with 8 common issues:\n• No amplification → Check primer design, Mg²⁺ concentration\n• Multiple bands → Optimize annealing temperature\n• Contamination → Check negative controls, clean workspace\n\n⚙️ Connect AI to generate protocol-specific troubleshooting.',
-  reagents: '🧪 Reagent table generated with:\n• Catalog numbers from major suppliers (Sigma, Thermo, NEB)\n• Storage conditions and hazard classification\n• Working concentrations and preparation notes\n\n⚙️ Real-time catalog lookup requires API key.',
-  safety: '⚠️ Safety checklist generated:\n• PPE: Gloves, lab coat, eye protection required\n• BSL-2 precautions for human-derived samples\n• Chemical hazards identified and waste disposal instructions\n\n⚙️ Connect AI to generate sample-specific safety documentation.',
-  summarize: '📝 Abstract generated (250 words):\nThis protocol describes a validated procedure for... [AI summary will appear here]\n\n⚙️ Connect OpenAI API key for live summarization.',
-  compare: '🔄 Version comparison:\n• 5 additions in v2.1 vs v2.0\n• 2 modifications to step parameters\n• 1 step removed (now redundant with updated kit)\n\n⚙️ Detailed diff analysis requires API integration.',
-  controls: '✓ Recommended controls:\n• Positive control: Known-positive sample at 100 copies/µL\n• No-template control (NTC): Water blank\n• Internal reference: GAPDH/ACTB for normalization\n• Interplate calibrator: Same sample across all plates\n\n⚙️ Connect AI for assay-specific control design.',
-}
-
 interface Props {
   protocol?: Protocol
   onInsert?: (text: string) => void
@@ -48,9 +36,7 @@ export default function ProtocolAIHelper({ protocol, onInsert }: Props) {
     if (!input.trim() && selectedAction.id !== 'improve') return
     setLoading(true)
     setResult('')
-    // Simulate API call delay
-    await new Promise(r => setTimeout(r, 1200))
-    setResult(MOCK_RESPONSES[selectedAction.id] || '⚙️ AI response will appear here once the OpenAI API key is configured in Settings → Integrations.')
+    setResult('The protocol AI assistant is not connected yet, so nothing was generated. Nothing here is made up: connect an AI provider in Settings → Integrations to use it.')
     setLoading(false)
   }
 

@@ -1,6 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Barcode from '../components/Barcode';
 import toast from 'react-hot-toast';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '../context/AuthContext';
+import { errText } from '../lib/errors';
+import { scanUrl } from '../features/labels/scanCode';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -190,7 +195,7 @@ function LabelCard({
       {/* Left: QR / barcode */}
       {(showQr || showBarcode) && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {showQr && <Barcode value={uid} type="qrcode" width={qrSize} height={qrSize} />}
+          {showQr && <Barcode value={scanUrl(uid)} type="qrcode" width={qrSize} height={qrSize} />}
           {showBarcode && !showQr && (
             <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
               showText textSize={typo.uidPt} />
@@ -257,6 +262,7 @@ function LabelCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LabelPrinterPage() {
+  const { token } = useAuth();
   const [entityType, setEntityType] = useState('sample');
   const [sizeId, setSizeId] = useState('dymo30334');
   const [codeType, setCodeType] = useState<'qrcode' | 'barcode'>('qrcode');
@@ -303,7 +309,15 @@ export default function LabelPrinterPage() {
     setFields(prev => [...prev, { key: `custom${i}`, label: `Custom ${i}`, value: '', show: true }]);
   };
 
-  const handlePrint = () => {
+  // Save each label (code + what's written on it) so scanning it later finds the details.
+  const registerLabels = useMutation(api.labels.registerMany);
+  const handlePrint = async () => {
+    const details = Object.fromEntries(fields.filter(f => f.show && f.value.trim()).map(f => [f.key, f.value.trim()]));
+    try {
+      await registerLabels({ token: token ?? undefined, labels: labelsToPrint.map(l => ({ code: l.uid, details })) });
+    } catch (e) {
+      toast.error(`Printing anyway, but these labels can't be matched when scanned: ${errText(e)}`);
+    }
     setTimeout(() => window.print(), 50);
   };
 

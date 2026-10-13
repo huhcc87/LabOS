@@ -19,7 +19,7 @@ function renderMarkdownInline(text: string) {
     .replace(/\n/g, '<br/>');
 }
 
-export function AIChatPanel({ onClose }: { onClose: () => void }) {
+export function AIChatPanel({ onClose, onOpenManager }: { onClose: () => void; onOpenManager?: () => void }) {
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: 'assistant',
@@ -80,7 +80,8 @@ export function AIChatPanel({ onClose }: { onClose: () => void }) {
           <div style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>LabOS AI Assistant</div>
           <div style={{ fontSize: 11, color: '#8fa3b8' }}>Real-time lab data access</div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8fa3b8', fontSize: 20, cursor: 'pointer' }}>×</button>
+        {onOpenManager && <button onClick={onOpenManager} title="Open the AI Lab Manager page" style={{ background: 'none', border: '1px solid #3b4a5e', borderRadius: 6, color: '#8fa3b8', fontSize: 12, cursor: 'pointer', padding: '4px 8px', marginRight: 8 }}>AI Lab Manager →</button>}
+        <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: '#8fa3b8', fontSize: 20, cursor: 'pointer' }}>×</button>
       </div>
 
       {/* Messages */}

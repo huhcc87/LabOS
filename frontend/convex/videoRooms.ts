@@ -1,6 +1,8 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v } from "convex/values";
-import { requireAuth } from "./authHelper";
+import { hubGuard } from "./authHelper";
+// Students only reach this module if their PI allowed this hub.
+const { requireAuth } = hubGuard("Resources");
 
 export const createRoom = mutation({
   args: {
@@ -9,7 +11,7 @@ export const createRoom = mutation({
   },
   handler: async (ctx, { token, meeting_id }) => {
     const userId = await requireAuth(ctx, token);
-    const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const roomId = `room_${[...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("")}`; // unguessable: the link is the key
     const id = await ctx.db.insert("video_rooms", {
       room_id: roomId,
       meeting_id,

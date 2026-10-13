@@ -9,7 +9,8 @@
  * Environment variables required in Convex:
  *   STRIPE_SECRET_KEY — sk_live_… or sk_test_…
  */
-import { action, mutation, query, internalMutation } from "./_generated/server";
+import { action, internalMutation } from "./_generated/server";
+import { mutation, query } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 

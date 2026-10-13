@@ -1,4 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
+import { sensorState } from '../features/iot/presets';
 import { api } from "../../convex/_generated/api";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
@@ -6,7 +7,7 @@ const client = new ConvexHttpClient(CONVEX_URL);
 
 const TOKEN_KEY = "labos_auth_token";
 function getToken(): string | undefined {
-  return localStorage.getItem(TOKEN_KEY) ?? undefined;
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? undefined;
 }
 
 type IdLike = string | number;
@@ -96,6 +97,7 @@ export const authApi = {
   },
   listUsers: async (page = 1, perPage = 20, search = '') => {
     const result = await client.query(api.users.list, {
+      token: getToken(),
       search: search || undefined,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -103,16 +105,16 @@ export const authApi = {
     return paginated(items, page, perPage);
   },
   createUser: async (data: any) => {
-    const result = await client.mutation(api.users.create, data);
+    const result = await client.mutation(api.users.create, { token: getToken(), ...data });
     return { data: result };
   },
   updateUser: async (id: IdLike, data: any) => {
     const { id: _id, ...fields } = data;
-    const result = await client.mutation(api.users.update, { id: id as any, ...fields });
+    const result = await client.mutation(api.users.update, { token: getToken(), id: id as any, ...fields });
     return { data: adapt(result) };
   },
   deleteUser: async (id: IdLike) => {
-    await client.mutation(api.users.remove, { id: id as any });
+    await client.mutation(api.users.remove, { token: getToken(), id: id as any });
     return { data: { success: true } };
   },
 };
@@ -401,8 +403,8 @@ export const reagentCartApi = {
 
 export const iotApi = {
   listSensors: async () => {
-    const result = await client.query(api.iot.listSensors, {});
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.iot.overview, { token: getToken() });
+    return { data: (result ?? []).map((s) => ({ ...adapt(s), status: sensorState(s) })) };
   },
   createSensor: async (data: any) => {
     const token = getToken();
@@ -420,11 +422,11 @@ export const iotApi = {
     return { data: { success: true } };
   },
   getHistory: async (id: IdLike, hours = 24) => {
-    const result = await client.query(api.iot.getHistory, { sensor_id: id as any, hours });
+    const result = await client.query(api.iot.getHistory, { token: getToken(), sensor_id: id as any, hours });
     return { data: (result ?? []).map(adapt) };
   },
   listAlerts: async (unackOnly = false) => {
-    const result = await client.query(api.iot.listAlerts, { unack_only: unackOnly });
+    const result = await client.query(api.iot.listAlerts, { token: getToken(), unack_only: unackOnly });
     return { data: (result ?? []).map(adapt) };
   },
   acknowledgeAlert: async (id: IdLike) => {
@@ -450,8 +452,9 @@ export const grantsApi = {
     return { data: result };
   },
   researchSynthesis: async (data: any) => {
-    // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek with template fallback).
+    // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek; extracted-text-only fallback).
     const result = await client.action(api.grants.researchSynthesis, {
+      token: getToken() ?? undefined,
       texts: (data?.texts ?? []).map((t: any) => ({
         filename: String(t.filename ?? 'source'),
         content: String(t.content ?? ''),
@@ -572,7 +575,7 @@ export const protocolsApi = {
     api.protocols.get
   ),
   listVersions: async (id: IdLike) => {
-    const result = await client.query(api.protocols.listVersions, { protocolId: id as any });
+    const result = await client.query(api.protocols.listVersions, { token: getToken(), protocolId: id as any });
     return { data: (result ?? []).map(adapt) };
   },
   createVersion: async (id: IdLike, data: any) => {
@@ -666,44 +669,6 @@ export const instrumentsApi = {
     const token = getToken();
     await client.mutation(api.instruments.cancelBooking, { id: id as any });
     return { data: { success: true } };
-  },
-};
-
-export const freezerApi = {
-  list: async () => {
-    const result = await client.query(api.freezer.list, {});
-    return { data: (result ?? []).map(adapt) };
-  },
-  create: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.freezer.create, { token, ...data });
-    return { data: result };
-  },
-  delete: async (id: IdLike) => {
-    const token = getToken();
-    await client.mutation(api.freezer.remove, { token, id: id as any });
-    return { data: { success: true } };
-  },
-  getSlots: async (freezerId: IdLike, rack: number, box: number) => {
-    const result = await client.query(api.freezer.getSlots, { freezer_id: freezerId as any, rack, box });
-    return { data: (result ?? []).map(adapt) };
-  },
-  upsertSlot: async (freezerId: IdLike, rack: number, box: number, row: number, col: number, data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.freezer.upsertSlot, {
-      token,
-      freezer_id: freezerId as any,
-      rack, box, row, col, ...data,
-    });
-    return { data: result };
-  },
-  getExpiring: async (days = 30) => {
-    const result = await client.query(api.freezer.getExpiring, { days });
-    return { data: (result ?? []).map(adapt) };
-  },
-  search: async (q: string) => {
-    const result = await client.query(api.freezer.search, { query: q });
-    return { data: (result ?? []).map(adapt) };
   },
 };
 
@@ -843,6 +808,11 @@ export const usersAdminApi = {
   create: authApi.createUser,
   update: authApi.updateUser,
   delete: authApi.deleteUser,
+  /** Fresh one-time sign-up link token for a user who hasn't joined yet. */
+  newInvite: async (id: IdLike) => {
+    const result = await client.mutation(api.invites.regenerate, { token: getToken(), user_id: id as any });
+    return { data: result };
+  },
 };
 
 export const trainingApi = crudApi(api.training.list, api.training.create, api.training.update, api.training.remove, api.training.get);

@@ -26,10 +26,8 @@ This starter project provides a modular lab operations platform designed for res
 - **Backend:** FastAPI + SQLAlchemy + SQLite
 - **Frontend:** React + Vite + TypeScript
 
-## Demo accounts
-- `admin@lab.local` / `Admin123!`
-- `manager@lab.local` / `Manager123!`
-- `staff@lab.local` / `Staff123!`
+## Accounts
+There are no built-in demo accounts. Create the first admin with the `seedProdAdmin:createAdmin` Convex function (pass a strong password of 12+ characters), then invite everyone else from the app.
 
 ## Run locally
 

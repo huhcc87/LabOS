@@ -10,7 +10,6 @@ interface Props {
 }
 
 const TYPES: MeetingType[] = ['weekly', 'journal_club', 'lab_retreat', 'one_on_one', 'progress_report', 'special']
-const MEMBERS = ['Dr. Sarah Chen', 'Dr. James Wright', 'Alex Kim', 'Priya Patel', 'Marcus Lee']
 
 export default function CreateMeetingModal({ currentUserName, onSave, onClose, editMeeting }: Props) {
   const isEditMode = !!editMeeting
@@ -33,10 +32,11 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
     description: editMeeting?.description || '',
     isRecurring: editMeeting?.isRecurring || false,
     recurringPattern: (editMeeting?.recurringPattern || 'weekly') as 'weekly' | 'biweekly' | 'monthly',
-    selectedAttendees: editMeeting?.attendees?.map(a => a.name) || [...MEMBERS],
+    selectedAttendees: editMeeting?.attendees?.map(a => a.name) || (currentUserName ? [currentUserName] : []),
     tags: editMeeting?.tags?.join(', ') || '',
   })
   const [error, setError] = useState('')
+  const [newAttendee, setNewAttendee] = useState('')
 
   function set(key: string, value: unknown) { setForm(f => ({ ...f, [key]: value })) }
 
@@ -159,17 +159,24 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
           {/* Attendees */}
           <div>
             <label style={lbl}>Attendees</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {MEMBERS.map(m => (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              {form.selectedAttendees.length === 0 && <span style={{ fontSize: 12, color: '#64748b' }}>No attendees yet. Type a name below.</span>}
+              {form.selectedAttendees.map(m => (
                 <button key={m} onClick={() => toggleAttendee(m)} style={{
                   background: form.selectedAttendees.includes(m) ? '#e0e7ff' : '#f8fafc',
                   border: `1px solid ${form.selectedAttendees.includes(m) ? '#6366f1' : '#e2e8f0'}`,
                   borderRadius: 20, color: form.selectedAttendees.includes(m) ? '#6366f1' : '#64748b',
                   padding: '4px 12px', cursor: 'pointer', fontSize: 12,
                 }}>
-                  {form.selectedAttendees.includes(m) ? '✓ ' : ''}{m.split(' ').pop()}
+                  {form.selectedAttendees.includes(m) ? '✓ ' : ''}{m}
                 </button>
               ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input style={inp} value={newAttendee} onChange={e => setNewAttendee(e.target.value)} placeholder="Add an attendee by name"
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const n = newAttendee.trim(); if (n && !form.selectedAttendees.includes(n)) toggleAttendee(n); setNewAttendee('') } }} />
+              <button type="button" onClick={() => { const n = newAttendee.trim(); if (n && !form.selectedAttendees.includes(n)) toggleAttendee(n); setNewAttendee('') }}
+                style={{ border: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: 8, padding: '0 14px', cursor: 'pointer' }}>Add</button>
             </div>
           </div>
 

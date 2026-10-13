@@ -2,31 +2,17 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import * as bwipjs from 'bwip-js';
 import { exportCSV, exportPDF } from '../lib/export';
 import { useNavigate } from '../context/NavigationContext';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '../context/AuthContext';
+import { useLabSamples, localDate, type LabSample } from '../lib/useLabSamples';
+import { useLabSampleEvents, type SampleEvent } from '../lib/useLabSampleEvents';
+import { errText } from '../lib/errors';
+import { SelectOrCustom } from '../components/SelectOrCustom';
 
 // Types
-interface Sample {
-  id: number;
-  sampleId: string;
-  type: string;
-  status: 'processing' | 'stored' | 'disposed' | 'shipped' | 'quarantine';
-  location: string;
-  date: string;
-  owner: string;
-  quantity: string;
-  unit: string;
-  temperature: string;
-  notes: string;
-  parentSampleId?: string;
-}
+type Sample = LabSample;
 
-interface SampleEvent {
-  id: number;
-  sampleId: string;
-  event: string;
-  user: string;
-  timestamp: string;
-  details?: string;
-}
 
 // Sample Types
 const SAMPLE_TYPES = [
@@ -36,14 +22,12 @@ const SAMPLE_TYPES = [
 ];
 
 // Storage Locations
+// Places that aren't freezers (your real freezers are added from Freezer / Biobank)
 const STORAGE_LOCATIONS = [
-  'Freezer A-1', 'Freezer A-2', 'Freezer A-3',
-  'Freezer B-1', 'Freezer B-2', 'Freezer B-3',
-  'Refrigerator 1', 'Refrigerator 2',
-  'Liquid Nitrogen Tank 1', 'Liquid Nitrogen Tank 2',
-  'Room Temperature Shelf A', 'Room Temperature Shelf B',
-  'Lab Bench', 'Processing Area', 'Quarantine Zone',
+  'Refrigerator', 'Room Temperature Shelf', 'Lab Bench', 'Processing Area', 'Quarantine Zone',
 ];
+
+const DEFAULT_STATUSES = ['processing', 'stored', 'shipped', 'quarantine', 'disposed'];
 
 // Temperature Options
 const TEMPERATURE_OPTIONS = [
@@ -89,6 +73,7 @@ const EVENT_TYPES = [
   'Created', 'Processed', 'Aliquoted', 'Stored', 'Retrieved',
   'Shipped', 'Received', 'Disposed', 'Quality Check', 'Thawed',
   'Frozen', 'Transferred', 'Split', 'Pooled', 'Labeled',
+  'Status Changed', 'Moved', 'Updated',
 ];
 
 // Event Icons
@@ -96,7 +81,22 @@ const EVENT_ICONS: Record<string, string> = {
   'Created': '🆕', 'Processed': '⚗️', 'Aliquoted': '🧫', 'Stored': '📦', 'Retrieved': '📤',
   'Shipped': '🚚', 'Received': '📥', 'Disposed': '🗑️', 'Quality Check': '✅', 'Thawed': '🌡️',
   'Frozen': '❄️', 'Transferred': '🔄', 'Split': '✂️', 'Pooled': '🔗', 'Labeled': '🏷️',
+  'Status Changed': '🔁', 'Moved': '📍', 'Updated': '✏️',
 };
+
+// What changed between two versions of a sample, as chain-of-custody events.
+const FIELD_LABELS: Array<[keyof LabSample, string]> = [
+  ['type', 'Type'], ['owner', 'Owner'], ['quantity', 'Quantity'], ['unit', 'Unit'],
+  ['temperature', 'Temperature'], ['notes', 'Notes'], ['date', 'Date'],
+];
+function diffEvents(a: LabSample, b: LabSample): Array<{ event: string; details: string }> {
+  const out: Array<{ event: string; details: string }> = [];
+  if (a.status !== b.status) out.push({ event: 'Status Changed', details: `${a.status} → ${b.status}` });
+  if (a.location !== b.location) out.push({ event: 'Moved', details: `${a.location || '(none)'} → ${b.location || '(none)'}` });
+  const other = FIELD_LABELS.filter(([k]) => a[k] !== b[k]).map(([k, l]) => `${l}: ${a[k] || '—'} → ${b[k] || '—'}`);
+  if (other.length) out.push({ event: 'Updated', details: other.join('; ') });
+  return out;
+}
 
 // Real barcode using bwip-js
 const BarcodePreview = ({ type, sampleId }: { type: string; sampleId: string }) => {
@@ -135,9 +135,18 @@ export default function SampleHubPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sample state - starts empty
-  const [samples, setSamples] = useState<Sample[]>([]);
+  const { token } = useAuth();
+  const lab = useLabSamples(token);
+  const samples = lab.samples;
+  const freezers = useQuery(api.freezer.list, token ? { token } : 'skip');
+  // Drop-down choices: the defaults, your real freezers, and anything already used (so custom entries stick).
+  const uniq = (xs: string[]) => [...new Set(xs.map(x => x.trim()).filter(Boolean))];
+  const typeOptions = uniq([...SAMPLE_TYPES, ...samples.map(s => s.type)]);
+  const locationOptions = uniq([...(freezers ?? []).map(fz => fz.name), ...STORAGE_LOCATIONS, ...samples.map(s => s.location)]);
+  const statusOptions = uniq([...DEFAULT_STATUSES, ...samples.map(s => s.status)]);
 
-  const [events, setEvents] = useState<SampleEvent[]>([]);
+  const evLab = useLabSampleEvents(token, samples);
+  const events = evLab.events;
 
   // Modal states
   const [showSampleModal, setShowSampleModal] = useState(false);
@@ -148,8 +157,8 @@ export default function SampleHubPage() {
   const [editEventMode, setEditEventMode] = useState(false);
 
   // Selection states
-  const [selectedSamples, setSelectedSamples] = useState<Set<number>>(new Set());
-  const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
+  const [selectedSamples, setSelectedSamples] = useState<Set<string>>(new Set());
+  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkEventDeleteConfirm, setBulkEventDeleteConfirm] = useState(false);
 
@@ -178,7 +187,7 @@ export default function SampleHubPage() {
 
   // Enhanced label management
   interface LabelItem {
-    id: number;
+    id: string;
     sampleId: string;
     displayName: string;
     displayNumber: string;
@@ -218,6 +227,7 @@ export default function SampleHubPage() {
     temperature: '',
     notes: '',
     parentSampleId: '',
+    status: 'processing',
   });
 
   // New event form
@@ -241,13 +251,16 @@ export default function SampleHubPage() {
   };
 
   // Status colors
-  const statusColors: Record<string, { bg: string; text: string }> = {
+  const knownStatusColors: Record<string, { bg: string; text: string }> = {
     processing: { bg: 'rgba(234,179,8,0.15)', text: '#fbbf24' },
     stored: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
     disposed: { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
     shipped: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
     quarantine: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
   };
+  // Custom statuses get a neutral colour.
+  const NEUTRAL_STATUS = { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' };
+  const statusColors = new Proxy(knownStatusColors, { get: (t, k: string) => t[k] ?? NEUTRAL_STATUS });
 
   // Filter samples
   const filteredSamples = samples.filter(s => {
@@ -273,7 +286,7 @@ export default function SampleHubPage() {
   // Selection handlers - Samples
   const selectAllSamples = () => setSelectedSamples(new Set(filteredSamples.map(s => s.id)));
   const selectNoneSamples = () => setSelectedSamples(new Set());
-  const toggleSampleSelection = (id: number) => {
+  const toggleSampleSelection = (id: string) => {
     setSelectedSamples(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -285,7 +298,7 @@ export default function SampleHubPage() {
   // Selection handlers - Events
   const selectAllEvents = () => setSelectedEvents(new Set(filteredEvents.map(e => e.id)));
   const selectNoneEvents = () => setSelectedEvents(new Set());
-  const toggleEventSelection = (id: number) => {
+  const toggleEventSelection = (id: string) => {
     setSelectedEvents(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -294,124 +307,120 @@ export default function SampleHubPage() {
     });
   };
 
-  // Create sample
-  const handleCreateSample = () => {
-    const type = newSample.type === '__custom__' ? newSample.customType : newSample.type;
-    const location = newSample.location === '__custom__' ? newSample.customLocation : newSample.location;
+  // Create sample (saved to the database)
+  const handleCreateSample = async () => {
+    const type = (newSample.type === '__custom__' ? newSample.customType : newSample.type).trim();
+    const location = (newSample.location === '__custom__' ? newSample.customLocation : newSample.location).trim();
 
     if (!type || !location) {
       showToast('Please fill in required fields', 'error');
       return;
     }
 
-    const sample: Sample = {
-      id: Date.now(),
-      sampleId: generateSampleId(),
-      type,
-      status: 'processing',
-      location,
-      date: new Date().toISOString().slice(0, 10),
-      owner: newSample.owner || 'Unknown',
-      quantity: newSample.quantity || '1',
-      unit: newSample.unit,
-      temperature: newSample.temperature || 'Room Temperature (20-25°C)',
-      notes: newSample.notes,
-      parentSampleId: newSample.parentSampleId || undefined,
-    };
-
-    setSamples(prev => [...prev, sample]);
+    const sampleId = generateSampleId();
+    try {
+      await lab.create({
+        sampleId, type, status: newSample.status.trim() || 'processing', location,
+        owner: newSample.owner || 'Unknown', quantity: newSample.quantity || '1', unit: newSample.unit,
+        temperature: newSample.temperature || 'Room Temperature (20-25°C)', notes: newSample.notes,
+        parentSampleId: newSample.parentSampleId || undefined, date: localDate(new Date()),
+      });
+    } catch (e) { showToast(errText(e), 'error'); return; }
 
     // Add creation event
-    const event: SampleEvent = {
-      id: Date.now(),
-      sampleId: sample.sampleId,
-      event: 'Created',
-      user: newSample.owner || 'System',
-      timestamp: new Date().toLocaleString(),
-      details: newSample.parentSampleId ? `Derived from ${newSample.parentSampleId}` : 'New sample registered',
-    };
-    setEvents(prev => [...prev, event]);
+    try { await evLab.add(sampleId, 'Created', newSample.parentSampleId ? `Derived from ${newSample.parentSampleId}` : 'New sample registered'); }
+    catch (e) { showToast(errText(e), 'error'); }
 
-    setNewSample({ type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '' });
+    setNewSample({ type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '', status: 'processing' });
     setShowSampleModal(false);
     showToast('Sample created successfully!', 'success');
   };
 
   // Update sample
-  const handleUpdateSample = () => {
+  const handleUpdateSample = async () => {
     if (!viewSample) return;
-    setSamples(prev => prev.map(s => s.id === viewSample.id ? viewSample : s));
+    try {
+      const { id, ...rest } = viewSample;
+      const next = { ...rest, type: rest.type.trim(), location: rest.location.trim(), status: rest.status.trim() || 'processing' };
+      const before = samples.find(x => x.id === id);
+      await lab.update(id, next);
+      if (before) {
+        const changes = diffEvents(before, { ...before, ...next });
+        await Promise.all(changes.map(c => evLab.add(before.sampleId, c.event, c.details)));
+      }
+    } catch (e) { showToast(errText(e), 'error'); return; }
     setViewSample(null);
     setEditMode(false);
     showToast('Sample updated successfully!', 'success');
   };
 
   // Delete sample
-  const handleDeleteSample = (sample: Sample) => {
-    setSamples(prev => prev.filter(s => s.id !== sample.id));
-    showToast('Sample deleted', 'success');
+  const handleDeleteSample = async (sample: Sample) => {
+    try { await lab.remove(sample.id); showToast('Sample deleted', 'success'); }
+    catch (e) { showToast(errText(e), 'error'); }
   };
 
   // Bulk delete samples
-  const handleBulkDelete = () => {
-    setSamples(prev => prev.filter(s => !selectedSamples.has(s.id)));
+  const handleBulkDelete = async () => {
+    const ids = [...selectedSamples];
+    try {
+      await Promise.all(ids.map(id => lab.remove(id as Sample['id'])));
+      showToast(`${ids.length} samples deleted`, 'success');
+    } catch (e) { showToast(errText(e), 'error'); }
     setSelectedSamples(new Set());
     setBulkDeleteConfirm(false);
-    showToast(`${selectedSamples.size} samples deleted`, 'success');
   };
 
   // Bulk status change
-  const handleBulkStatusChange = (newStatus: Sample['status']) => {
-    setSamples(prev => prev.map(s =>
-      selectedSamples.has(s.id) ? { ...s, status: newStatus } : s
-    ));
-    showToast(`${selectedSamples.size} samples updated to ${newStatus}`, 'success');
+  const handleBulkStatusChange = async (newStatus: string) => {
+    const ids = [...selectedSamples];
+    try {
+      await Promise.all(ids.map(async id => {
+        const before = samples.find(x => x.id === id);
+        await lab.update(id as Sample['id'], { status: newStatus });
+        if (before && before.status !== newStatus) await evLab.add(before.sampleId, 'Status Changed', `${before.status} → ${newStatus}`);
+      }));
+      showToast(`${ids.length} samples updated to ${newStatus}`, 'success');
+    } catch (e) { showToast(errText(e), 'error'); }
     setSelectedSamples(new Set());
   };
 
   // Add event
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!newEvent.sampleId || !newEvent.event) {
       showToast('Please fill in required fields', 'error');
       return;
     }
-
-    const event: SampleEvent = {
-      id: Date.now(),
-      sampleId: newEvent.sampleId,
-      event: newEvent.event,
-      user: 'Current User',
-      timestamp: new Date().toLocaleString(),
-      details: newEvent.details,
-    };
-
-    setEvents(prev => [...prev, event]);
+    try { await evLab.add(newEvent.sampleId, newEvent.event, newEvent.details); }
+    catch (e) { showToast(errText(e), 'error'); return; }
     setNewEvent({ sampleId: '', event: '', details: '' });
     setShowEventModal(false);
     showToast('Event logged successfully!', 'success');
   };
 
   // Update event
-  const handleUpdateEvent = () => {
+  const handleUpdateEvent = async () => {
     if (!viewEvent) return;
-    setEvents(prev => prev.map(e => e.id === viewEvent.id ? viewEvent : e));
+    try { await evLab.update(viewEvent.id, viewEvent.event, viewEvent.details); }
+    catch (e) { showToast(errText(e), 'error'); return; }
     setViewEvent(null);
     setEditEventMode(false);
     showToast('Event updated successfully!', 'success');
   };
 
   // Delete event
-  const handleDeleteEvent = (event: SampleEvent) => {
-    setEvents(prev => prev.filter(e => e.id !== event.id));
-    showToast('Event deleted', 'success');
+  const handleDeleteEvent = async (event: SampleEvent) => {
+    try { await evLab.remove(event.id); showToast('Event deleted', 'success'); }
+    catch (e) { showToast(errText(e), 'error'); }
   };
 
   // Bulk delete events
-  const handleBulkDeleteEvents = () => {
-    setEvents(prev => prev.filter(e => !selectedEvents.has(e.id)));
+  const handleBulkDeleteEvents = async () => {
+    const ids = [...selectedEvents] as SampleEvent['id'][];
+    try { await Promise.all(ids.map(id => evLab.remove(id))); showToast(`${ids.length} events deleted`, 'success'); }
+    catch (e) { showToast(errText(e), 'error'); }
     setSelectedEvents(new Set());
     setBulkEventDeleteConfirm(false);
-    showToast(`${selectedEvents.size} events deleted`, 'success');
   };
 
   // Export samples
@@ -476,11 +485,11 @@ export default function SampleHubPage() {
 
   const selectAllLabels = () => setLabelQueue(labelQueue.map(l => ({ ...l, selected: true })));
   const selectNoneLabels = () => setLabelQueue(labelQueue.map(l => ({ ...l, selected: false })));
-  const toggleLabelSelection = (id: number) => {
+  const toggleLabelSelection = (id: string) => {
     setLabelQueue(labelQueue.map(l => l.id === id ? { ...l, selected: !l.selected } : l));
   };
 
-  const updateLabelCopies = (id: number, copies: number) => {
+  const updateLabelCopies = (id: string, copies: number) => {
     setLabelQueue(labelQueue.map(l => l.id === id ? { ...l, copies: Math.max(1, copies) } : l));
   };
 
@@ -489,7 +498,7 @@ export default function SampleHubPage() {
     showToast(`Updated copies for ${labelQueue.filter(l => l.selected).length} labels`, 'success');
   };
 
-  const removeLabelFromQueue = (id: number) => {
+  const removeLabelFromQueue = (id: string) => {
     setLabelQueue(labelQueue.filter(l => l.id !== id));
     showToast('Label removed from queue', 'success');
   };
@@ -512,12 +521,12 @@ export default function SampleHubPage() {
       return;
     }
     const newLabel: LabelItem = {
-      id: Date.now(),
+      id: `custom-${Date.now()}`,
       sampleId: `CUSTOM-${Date.now()}`,
       displayName: newLabelData.displayName,
       displayNumber: newLabelData.displayNumber || newLabelData.displayName,
       type: 'Custom',
-      date: new Date().toISOString().slice(0, 10),
+      date: localDate(new Date()),
       location: '',
       owner: '',
       customText: newLabelData.customText,
@@ -752,14 +761,13 @@ export default function SampleHubPage() {
     reader.readAsText(file);
   };
 
-  const confirmImport = () => {
-    const newSamples: Sample[] = importedData.map((data, idx) => ({
-      id: Date.now() + idx,
+  const confirmImport = async () => {
+    const newSamples = importedData.map((data) => ({
       sampleId: data.sampleId || generateSampleId(),
       type: data.type || 'Unknown',
       status: data.status || 'processing',
       location: data.location || 'Lab Bench',
-      date: new Date().toISOString().slice(0, 10),
+      date: localDate(new Date()),
       owner: data.owner || 'Imported',
       quantity: data.quantity || '1',
       unit: data.unit || 'mL',
@@ -767,18 +775,12 @@ export default function SampleHubPage() {
       notes: data.notes || 'Batch imported',
     }));
 
-    setSamples(prev => [...prev, ...newSamples]);
+    try { await Promise.all(newSamples.map(s => lab.create(s))); }
+    catch (e) { showToast(errText(e), 'error'); return; }
 
     // Add import events
-    const newEvents = newSamples.map((s, idx) => ({
-      id: Date.now() + idx + 1000,
-      sampleId: s.sampleId,
-      event: 'Created',
-      user: 'Batch Import',
-      timestamp: new Date().toLocaleString(),
-      details: `Imported from ${importFileName}`,
-    }));
-    setEvents(prev => [...prev, ...newEvents]);
+    try { await Promise.all(newSamples.map(x => evLab.add(x.sampleId, 'Created', `Imported from ${importFileName}`))); }
+    catch (e) { showToast(errText(e), 'error'); }
 
     setShowImportPreview(false);
     setImportedData([]);
@@ -789,7 +791,6 @@ export default function SampleHubPage() {
   const tabs = [
     { key: 'samples', label: 'Samples', icon: '🧪', count: samples.length },
     { key: 'events', label: 'Chain of Custody', icon: '⏱', count: events.length },
-    { key: 'labels', label: 'Print Labels', icon: '🏷️' },
     { key: 'import', label: 'Batch Import', icon: '📤' },
     { key: 'analytics', label: 'Analytics', icon: '📊' },
   ];
@@ -874,7 +875,7 @@ export default function SampleHubPage() {
       {/* Quick actions */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
-          { icon: '🏷️', label: 'Print Labels', action: () => setActiveTab('labels') },
+          { icon: '🏷️', label: 'Labels', action: () => navigate('labels') },
           { icon: '📥', label: 'Batch Import', action: () => setActiveTab('import') },
           { icon: '📊', label: 'Analytics', action: () => setActiveTab('analytics') },
           { icon: '📋', label: 'Protocols', action: () => navigate('protocols') },
@@ -939,19 +940,15 @@ export default function SampleHubPage() {
               />
               <select className="form-select" style={{ width: 130 }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
                 <option value="all">All Types</option>
-                {SAMPLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                 <option value="all">All Status</option>
-                <option value="processing">Processing</option>
-                <option value="stored">Stored</option>
-                <option value="shipped">Shipped</option>
-                <option value="quarantine">Quarantine</option>
-                <option value="disposed">Disposed</option>
+                {statusOptions.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
               </select>
-              <select className="form-select" style={{ width: 150 }} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
+<select className="form-select" style={{ width: 150 }} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
                 <option value="all">All Locations</option>
-                {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                {locationOptions.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
               {(typeFilter !== 'all' || statusFilter !== 'all' || locationFilter !== 'all' || searchQuery) && (
                 <button
@@ -1507,7 +1504,7 @@ export default function SampleHubPage() {
             <div className="card">
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Samples by Type</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {SAMPLE_TYPES.filter(type => samples.some(s => s.type === type)).map(type => {
+                {typeOptions.filter(type => samples.some(s => s.type === type)).map(type => {
                   const count = samples.filter(s => s.type === type).length;
                   const percentage = (count / samples.length) * 100;
                   return (
@@ -1554,7 +1551,7 @@ export default function SampleHubPage() {
             <div className="card">
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Samples by Location</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {STORAGE_LOCATIONS.filter(loc => samples.some(s => s.location === loc)).map(loc => {
+                {locationOptions.filter(loc => samples.some(s => s.location === loc)).map(loc => {
                   const count = samples.filter(s => s.location === loc).length;
                   const percentage = (count / samples.length) * 100;
                   return (
@@ -1674,7 +1671,7 @@ export default function SampleHubPage() {
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Sample Type *</label>
                 <select className="form-select" value={newSample.type} onChange={e => setNewSample({ ...newSample, type: e.target.value })} style={{ width: '100%' }}>
                   <option value="">Select type...</option>
-                  {SAMPLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                   <option value="__custom__">+ Custom Type</option>
                 </select>
                 {newSample.type === '__custom__' && (
@@ -1684,10 +1681,15 @@ export default function SampleHubPage() {
               </div>
 
               <div>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Status</label>
+                <SelectOrCustom label="Status" options={statusOptions} value={newSample.status} onChange={v => setNewSample({ ...newSample, status: v })} />
+              </div>
+
+              <div>
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Storage Location *</label>
                 <select className="form-select" value={newSample.location} onChange={e => setNewSample({ ...newSample, location: e.target.value })} style={{ width: '100%' }}>
                   <option value="">Select location...</option>
-                  {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                  {locationOptions.map(l => <option key={l} value={l}>{l}</option>)}
                   <option value="__custom__">+ Custom Location</option>
                 </select>
                 {newSample.location === '__custom__' && (
@@ -1766,26 +1768,16 @@ export default function SampleHubPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
-                    <select className="form-select" value={viewSample.type} onChange={e => setViewSample({ ...viewSample, type: e.target.value })} style={{ width: '100%' }}>
-                      {SAMPLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <SelectOrCustom label="Type" options={typeOptions} value={viewSample.type} onChange={v => setViewSample({ ...viewSample, type: v })} />
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-                    <select className="form-select" value={viewSample.status} onChange={e => setViewSample({ ...viewSample, status: e.target.value as Sample['status'] })} style={{ width: '100%' }}>
-                      <option value="processing">Processing</option>
-                      <option value="stored">Stored</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="quarantine">Quarantine</option>
-                      <option value="disposed">Disposed</option>
-                    </select>
+                    <SelectOrCustom label="Status" options={statusOptions} value={viewSample.status} onChange={v => setViewSample({ ...viewSample, status: v })} />
                   </div>
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Location</label>
-                  <select className="form-select" value={viewSample.location} onChange={e => setViewSample({ ...viewSample, location: e.target.value })} style={{ width: '100%' }}>
-                    {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
+                  <SelectOrCustom label="Location" noneLabel="— No location —" options={locationOptions} value={viewSample.location} onChange={v => setViewSample({ ...viewSample, location: v })} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</label>
@@ -2095,7 +2087,7 @@ export default function SampleHubPage() {
                   <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Type</label>
                   <select className="form-select" value={editingLabel.type} onChange={e => setEditingLabel({ ...editingLabel, type: e.target.value })} style={{ width: '100%' }}>
                     <option value="">No Type</option>
-                    {SAMPLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                     <option value="Custom">Custom</option>
                   </select>
                 </div>
@@ -2118,7 +2110,7 @@ export default function SampleHubPage() {
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Location</label>
                 <select className="form-select" value={editingLabel.location} onChange={e => setEditingLabel({ ...editingLabel, location: e.target.value })} style={{ width: '100%' }}>
                   <option value="">No Location</option>
-                  {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                  {locationOptions.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
 

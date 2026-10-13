@@ -98,6 +98,7 @@ export const enableTotp = internalMutation({
       updated_at: Date.now(),
     });
     await ctx.db.insert("audit_logs", {
+      lab_id: (await ctx.db.get(user_id))?.home_lab_id,
       user_id,
       action: "TOTP_ENABLED",
       entity_type: "auth",
@@ -116,6 +117,7 @@ export const disableTotp = internalMutation({
       updated_at: Date.now(),
     });
     await ctx.db.insert("audit_logs", {
+      lab_id: (await ctx.db.get(user_id))?.home_lab_id,
       user_id,
       action: "TOTP_DISABLED",
       entity_type: "auth",

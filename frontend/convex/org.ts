@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v } from "convex/values";
 import { requireAuth, requireRole } from "./authHelper";
 
@@ -7,7 +7,7 @@ import { requireAuth, requireRole } from "./authHelper";
 export const listOrgs = query({
   args: { token: v.optional(v.string()) },
   handler: async (ctx, { token }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "superadmin");
     return await ctx.db.query("organizations").collect();
   },
 });
@@ -20,7 +20,7 @@ export const createOrg = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "admin");
+    await requireRole(ctx, args.token, "superadmin");
     const now = Date.now();
     return await ctx.db.insert("organizations", {
       name: args.name,
@@ -40,7 +40,7 @@ export const updateOrg = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "admin");
+    await requireRole(ctx, args.token, "superadmin");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
@@ -59,7 +59,7 @@ export const listSites = query({
     org_id: v.optional(v.id("organizations")),
   },
   handler: async (ctx, { token, org_id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "superadmin");
     if (org_id !== undefined) {
       return await ctx.db
         .query("sites")
@@ -80,7 +80,7 @@ export const createSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "admin");
+    await requireRole(ctx, args.token, "superadmin");
     return await ctx.db.insert("sites", {
       organization_id: args.organization_id,
       name: args.name,
@@ -102,7 +102,7 @@ export const updateSite = mutation({
     country: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "admin");
+    await requireRole(ctx, args.token, "superadmin");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;
@@ -122,7 +122,7 @@ export const listLabs = query({
     site_id: v.optional(v.id("sites")),
   },
   handler: async (ctx, { token, site_id }) => {
-    await requireAuth(ctx, token);
+    await requireRole(ctx, token, "superadmin");
     if (site_id !== undefined) {
       return await ctx.db
         .query("labs")
@@ -143,7 +143,7 @@ export const createLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "manager");
+    await requireRole(ctx, args.token, "superadmin");
     return await ctx.db.insert("labs", {
       site_id: args.site_id,
       name: args.name,
@@ -165,7 +165,7 @@ export const updateLab = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "manager");
+    await requireRole(ctx, args.token, "superadmin");
     const { id, token: _token, ...fields } = args;
     const patch: Record<string, unknown> = {};
     if (fields.name !== undefined) patch.name = fields.name;

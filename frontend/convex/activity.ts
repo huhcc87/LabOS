@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { query } from "./tenant";
 import { v } from "convex/values";
 import { requireAuth } from "./authHelper";
 

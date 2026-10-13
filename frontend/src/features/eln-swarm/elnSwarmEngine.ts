@@ -206,7 +206,7 @@ function generateLiteratureOutput(entry: EntryContext): ELNAgentOutput {
 
   return {
     agentId: 'literature', status: 'complete', title: def.name, icon: def.icon, color: def.color,
-    summary: `Found ${refs.length} relevant publications supporting this experimental approach.`,
+    summary: refs.length ? `Found ${refs.length} relevant publications.` : 'No literature source is connected, so no publications are listed.',
     sections: [
       { heading: 'Related Publications', content: `Literature search for "${entry.title}" identified ${refs.length} relevant papers:`, items: refs.map(r => `${r.authors} (${r.year}). "${r.title}" — ${r.journal}. Relevance: ${r.relevanceScore}%`) },
       { heading: 'Key Methodological References', content: `Standard methodology references for ${entry.template}:`, items: getMethodReferences(entry.template) },
@@ -765,13 +765,9 @@ function getCommonFailures(template: string): string[] {
   return failures[template] || ['Reagent degradation — check expiry dates', 'Equipment calibration drift', 'Environmental variability affecting results', 'Operator technique variation']
 }
 
-function generateMockLiterature(entry: EntryContext): LiteratureResult[] {
-  const templateLabel = entry.template.replace(/_/g, ' ')
-  return [
-    { title: `Optimized ${templateLabel} protocols for reproducible results`, authors: 'Smith et al.', journal: 'Nature Methods', year: 2024, relevanceScore: 92, summary: `Comprehensive optimization of ${templateLabel} workflow with validated parameters.`, keyFindings: ['Improved sensitivity', 'Reduced variability'] },
-    { title: `Best practices in ${templateLabel}: a systematic review`, authors: 'Johnson et al.', journal: 'Methods', year: 2023, relevanceScore: 88, summary: 'Systematic comparison of protocol variations across laboratories.', keyFindings: ['Standardized conditions improve reproducibility', 'Key critical parameters identified'] },
-    { title: `Quality control standards for ${templateLabel} in biomedical research`, authors: 'Williams et al.', journal: 'PLoS ONE', year: 2024, relevanceScore: 85, summary: 'Established minimum reporting standards and QC metrics.', keyFindings: ['Minimum replicate requirements', 'Required controls for publication'] },
-  ]
+// No literature source is connected, so no citations are produced (inventing them would be worse than showing none).
+function generateMockLiterature(_entry: EntryContext): LiteratureResult[] {
+  return []
 }
 
 function getMethodReferences(template: string): string[] {

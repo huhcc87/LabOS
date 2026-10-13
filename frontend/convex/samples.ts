@@ -1,6 +1,8 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation } from "./tenant";
 import { v } from "convex/values";
-import { requireAuth, requireRole } from "./authHelper";
+import { hubGuard } from "./authHelper";
+// Students only reach this module if their PI allowed this hub.
+const { requireAuth, requireRole } = hubGuard("Sample Hub");
 
 export const list = query({
   args: {
@@ -15,6 +17,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token); // was readable without signing in
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -118,6 +121,8 @@ export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("samples") },
   handler: async (ctx, args) => {
     await requireRole(ctx, args.token, "manager");
+    const events = await ctx.db.query("sample_events").withIndex("by_sample", (q) => q.eq("sample_id", args.id)).collect();
+    for (const e of events) await ctx.db.delete(e._id);
     await ctx.db.delete(args.id);
     return { success: true };
   },
@@ -156,12 +161,12 @@ export const createEvent = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    const me = await requireAuth(ctx, args.token);
     return await ctx.db.insert("sample_events", {
       sample_id: args.sample_id,
       event_type: args.event_type,
       description: args.description,
-      performed_by: args.performed_by,
+      performed_by: args.performed_by ?? me,
       performed_at: args.performed_at ?? Date.now(),
       notes: args.notes,
     });
@@ -193,5 +198,30 @@ export const deleteEvent = mutation({
     await requireAuth(ctx, token);
     await ctx.db.delete(id);
     return { success: true };
+  },
+});
+
+/** The whole sample registry for the Samples page (newest first). */
+export const listAll = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    return await ctx.db.query("samples").order("desc").take(2000);
+  },
+});
+
+/** Chain-of-custody log for the Samples page (newest first), with sample code and who did it. */
+export const listAllEvents = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    const rows = await ctx.db.query("sample_events").order("desc").take(2000);
+    const names = new Map<string, string>();
+    const codes = new Map<string, string>();
+    return await Promise.all(rows.map(async (e) => {
+      if (!codes.has(e.sample_id)) codes.set(e.sample_id, (await ctx.db.get(e.sample_id))?.sample_id ?? "(deleted)");
+      if (e.performed_by && !names.has(e.performed_by)) names.set(e.performed_by, (await ctx.db.get(e.performed_by))?.full_name ?? "Unknown");
+      return { ...e, sample_code: codes.get(e.sample_id)!, user_name: e.performed_by ? names.get(e.performed_by)! : "System" };
+    }));
   },
 });

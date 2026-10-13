@@ -24,6 +24,8 @@ export function formatDateTime(iso: string): string {
 const ROLE_ORDER: UserRole[] = ['trainee', 'staff', 'manager', 'pi', 'admin', 'superadmin'];
 
 export function hasRole(userRole: UserRole, minRole: UserRole): boolean {
+  // A PI has full access to everything except super-admin-only pages (mirrors convex/authHelper.ts).
+  if (userRole === 'pi' && minRole !== 'superadmin') return true;
   return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(minRole);
 }
 
