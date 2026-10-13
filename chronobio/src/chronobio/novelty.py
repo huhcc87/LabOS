@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from .agents import json_object
 from .literature import LiteratureClient, NetworkDisabled, dedupe_key
-from .llm import LLM
+from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
     Gap, GraphNode, Hypothesis, NoveltyAssessment, NoveltyStatus, Provenance, Publication, SearchLog,
 )
@@ -30,7 +30,7 @@ ALWAYS = ["Absence of search hits is not evidence of novelty.",
           "Searched Europe PMC titles and abstracts only; full texts and patents were not searched.",
           "Only the first page of results (up to 25) was examined per query."]
 
-JUDGE_SYSTEM = (
+JUDGE_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "You judge whether a paper abstract already tests a hypothesis. Reply with ONLY a JSON object: "
     "{\"tests_hypothesis\": \"yes\"|\"related\"|\"no\", \"sentence\": str}. 'yes' = the abstract reports a result "
     "directly about the hypothesised relationship. 'related' = it studies the same entities but not this relationship. "
@@ -80,7 +80,7 @@ def assess_novelty(
     extra: list[str] = []
     for paper in [p for p in co_studied if p.abstract][:JUDGE_LIMIT]:
         data = json_object(llm.generate(
-            JUDGE_SYSTEM, f"HYPOTHESIS: {hyp.statement}\n\nABSTRACT:\n{paper.abstract}"))
+            JUDGE_SYSTEM, f"HYPOTHESIS: {hyp.statement}\n\nABSTRACT:\n{paper.abstract}", json_format=True))
         if data is None:
             extra.append(f"Model judgement unusable for one abstract ({paper.title[:50]}).")
             continue

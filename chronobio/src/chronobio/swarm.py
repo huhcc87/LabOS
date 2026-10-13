@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .agents import build_pool, propose, review
+from .agents import RETRYABLE, build_pool, propose, review
 from .claims import Rejection
 from .config import Settings
 from .gaps import find_gaps
@@ -67,6 +67,8 @@ def run_swarm(
             candidate, rejected = propose(llm, gap, pool, nodes, pubs, critique=critique, previous=hyp)
             result.rejections += rejected
             if candidate is None:
+                if hyp is None and any(r.reason in RETRYABLE for r in rejected):
+                    continue                     # a refused or malformed first reply uses one round and tries again
                 break
             hyp = candidate
             _save(store, hyp)

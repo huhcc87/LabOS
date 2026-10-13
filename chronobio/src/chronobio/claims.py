@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass, field
 
 from .config import Settings
-from .llm import LLM
+from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
     ClaimOrigin, Direction, EvidenceClaim, Locator, Provenance, Publication, StudyDesign,
 )
@@ -24,7 +24,7 @@ EXTRACTION_VERSION = "claims-v1"
 MAX_PASSAGE_CHARS = 400          # "short verbatim snippet", not a pasted paragraph
 MAX_CLAIMS_PER_CHUNK = 8
 
-SYSTEM_PROMPT = (
+SYSTEM_PROMPT = UNTRUSTED_DATA_NOTICE + (
     "You extract atomic scientific claims from a paper excerpt. Reply with ONLY a JSON array. "
     "Each item: {\"claim\": str, \"passage\": str, \"direction\": \"supports\"|\"contradicts\"|\"inconclusive\", "
     "\"design\": \"randomized\"|\"observational\"|\"mechanistic\"|\"in_vitro\"|\"animal\"|\"computational\"|\"review\"|\"other\"|\"unknown\", "

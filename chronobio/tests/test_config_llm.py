@@ -50,3 +50,27 @@ def test_scripted_llm_is_deterministic():
     assert [llm.generate("s", "p1"), llm.generate("s", "p2")] == ["a", "b"]
     with pytest.raises(AssertionError):
         llm.generate("s", "p3")
+
+
+def test_json_mode_is_requested_only_when_asked_and_reaches_ollama():
+    captured: list = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request.read().decode())
+        return httpx.Response(200, json={"response": "{}"})
+
+    llm = OllamaLLM(Settings(enabled=True, dry_run=False), client=httpx.Client(transport=httpx.MockTransport(handler)))
+    llm.generate("s", "p")
+    llm.generate("s", "p", json_format=True)
+    assert '"format"' not in captured[0] and '"format":"json"' in captured[1].replace(" ", "")
+
+
+def test_structured_agent_calls_ask_for_json_and_extraction_does_not(tmp_path):
+    import json
+    from swarm_world import A, B
+    from test_swarm import critic, judge, literature, proposal, three_animal_corpus
+    from chronobio.swarm import run_swarm
+    corpus = three_animal_corpus(tmp_path)
+    llm = ScriptedLLM([proposal(corpus.claim_ids), critic("accept"), judge("no", "")])
+    run_swarm(llm, corpus.store, corpus.settings, literature([]), max_gaps=1)
+    assert llm.json_flags == [True, True, True]                      # proposer, critic and novelty judge

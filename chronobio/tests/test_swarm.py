@@ -142,7 +142,30 @@ class _CrashAfter:
     def __init__(self, inner, n):
         self.inner, self.n, self.name = inner, n, inner.name
 
-    def generate(self, system, prompt):
+    def generate(self, system, prompt, **kwargs):
         if len(self.inner.calls) >= self.n:
             raise _Crash("model died")
-        return self.inner.generate(system, prompt)
+        return self.inner.generate(system, prompt, **kwargs)
+
+
+def test_a_refused_or_malformed_first_reply_is_retried_not_abandoned(tmp_path):
+    corpus = three_animal_corpus(tmp_path)
+    llm = ScriptedLLM(["I cannot propose a hypothesis that could be used to develop a treatment for cancer.",
+                       "Here is some prose, not JSON.",
+                       proposal(corpus.claim_ids), critic("accept"), judge("no", "")])
+    result = run_swarm(llm, corpus.store, corpus.settings, literature([]), max_gaps=1)
+    assert [r.reason for r in result.rejections] == ["model_refused", "unparseable_model_output"]
+    assert len(result.hypotheses) == 1 and result.hypotheses[0].review_status.value == "evidence_supported"
+
+
+def test_retries_are_bounded_by_the_round_limit(tmp_path):
+    corpus = three_animal_corpus(tmp_path)
+    llm = ScriptedLLM(["I can't help with that."] * 3)
+    result = run_swarm(llm, corpus.store, corpus.settings, literature([]), max_gaps=1)
+    assert len(llm.calls) == corpus.settings.max_agent_iterations == 3 and result.hypotheses == []
+    assert {r.reason for r in result.rejections} == {"model_refused"}
+
+
+def test_the_proposer_prompt_frames_the_task_as_literature_analysis():
+    from chronobio.agents import PROPOSER_SYSTEM
+    assert "literature-analysis task" in PROPOSER_SYSTEM and "medical" not in PROPOSER_SYSTEM.lower()

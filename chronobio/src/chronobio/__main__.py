@@ -107,6 +107,57 @@ def design(args: argparse.Namespace) -> int:
     return 0
 
 
+def benchmark(args: argparse.Namespace) -> int:
+    from .benchmark import run_benchmark
+    from .store import Store
+    s = load_settings()
+    llm = None if args.no_baseline else OllamaLLM(s)
+    out = run_benchmark(Store(s.db_path), s, llm, args.out or s.data_dir / "benchmark", cutoff=args.cutoff)
+    print((args.out or s.data_dir / "benchmark") / "benchmark.md")
+    return 1 if out["limit_problems"] else 0
+
+
+def audit_cmd(args: argparse.Namespace) -> int:
+    from .security import audit
+    a = audit(Path(__file__).resolve().parents[2])
+    print(f"{len(a['licenses'])} dependencies; blocking licenses: {[f.name for f in a['blocking']] or 'none'}; "
+          f"review: {[(f.name, f.license) for f in a['review']] or 'none'}")
+    print(f"secret-like strings found: {len(a['secrets'])}; data directory git-ignored: {a['data_dir_ignored']}")
+    for f in a["secrets"]:
+        print(f"  {f.path}:{f.line} {f.kind}")
+    return 1 if a["blocking"] or a["secrets"] or not a["data_dir_ignored"] else 0
+
+
+def regression(args: argparse.Namespace) -> int:
+    """ChronoBio tests, the LabOS frontend tests, and a check that LabOS itself is unchanged."""
+    import subprocess
+    root = Path(__file__).resolve().parents[2]
+    repo = root.parent
+    steps: list[tuple[str, list[str], Path]] = [("chronobio tests", [sys.executable, "-m", "pytest", "-q"], root)]
+    if (repo / "frontend" / "package.json").exists() and not args.skip_frontend:
+        steps.append(("frontend tests", ["npx", "vitest", "run"], repo / "frontend"))
+    failed = 0
+    for name, cmd, cwd in steps:
+        code = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=900).returncode
+        print(f"{'PASS' if code == 0 else 'FAIL'}  {name}")
+        failed += code != 0
+    changed = legacy_changes(repo, args.base)
+    print(f"{'PASS' if not changed else 'FAIL'}  LabOS unchanged outside chronobio/ vs {args.base}" +
+          (f": {len(changed)} file(s), e.g. {changed[0]}" if changed else ""))
+    return 1 if failed or changed else 0
+
+
+def legacy_changes(repo: Path, base: str) -> list[str]:
+    """Files changed outside chronobio/ and graphify-out/ since the merge-base with `base`."""
+    import subprocess
+    try:
+        merge_base = subprocess.run(["git", "merge-base", base, "HEAD"], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+        names = subprocess.run(["git", "diff", "--name-only", merge_base, "--", "."], cwd=repo, capture_output=True, text=True, check=True).stdout.split()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ["(could not compare with git)"]
+    return [n for n in names if not n.startswith(("chronobio/", "graphify-out/"))]
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="chronobio")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -129,6 +180,14 @@ def main(argv: list[str]) -> int:
     v.add_argument("--direction", required=True, choices=["a_greater", "b_greater"])
     v.add_argument("--alpha", type=float, default=0.05)
     v.add_argument("--seed", type=int, default=7)
+    b = sub.add_parser("benchmark", help="benchmark stored output (and a single-prompt baseline) and write a blinded rating sheet")
+    b.add_argument("--out", type=Path, default=None)
+    b.add_argument("--cutoff", type=int, default=None, help="also run the historical (cutoff) audit at this year")
+    b.add_argument("--no-baseline", action="store_true", help="skip the baseline model call")
+    sub.add_parser("audit", help="license scan, secret scan and safe-default checks")
+    r = sub.add_parser("regression", help="run all tests and check LabOS itself is unchanged")
+    r.add_argument("--base", default="origin/main")
+    r.add_argument("--skip-frontend", action="store_true")
     e = sub.add_parser("design", help="draft an experiment plan for a hypothesis")
     e.add_argument("hypothesis")
     e.add_argument("--effect-size", type=float, default=None, help="assumed effect size (Hedges g), labelled an assumption")
@@ -140,7 +199,8 @@ def main(argv: list[str]) -> int:
             p.add_argument("--no-pdf", action="store_true", help="skip the PDF")
     args = parser.parse_args(argv[1:])
     return {"doctor": lambda: doctor(), "report": lambda: report(args), "viewer": lambda: viewer(args),
-            "dataset-add": lambda: dataset_add(args), "validate": lambda: validate(args), "design": lambda: design(args)}[args.command]()
+            "dataset-add": lambda: dataset_add(args), "validate": lambda: validate(args), "design": lambda: design(args),
+            "benchmark": lambda: benchmark(args), "audit": lambda: audit_cmd(args), "regression": lambda: regression(args)}[args.command]()
 
 
 if __name__ == "__main__":

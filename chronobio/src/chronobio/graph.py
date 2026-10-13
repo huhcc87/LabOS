@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 from .claims import Rejection
 from .config import Settings
-from .llm import LLM
+from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
     Direction, EvidenceClaim, GraphEdge, GraphNode, NodeType, Provenance, Publication,
     Relation, RetractionStatus,
@@ -32,7 +32,7 @@ TRIPLE_BATCH = 6                      # claims per model call (keeps prompts sma
 
 SIGN = {Relation.ACTIVATES: 1, Relation.INHIBITS: -1}
 
-SYSTEM_PROMPT = (
+SYSTEM_PROMPT = UNTRUSTED_DATA_NOTICE + (
     "You turn scientific claims into graph edges. Reply with ONLY a JSON array. Each item: "
     "{\"claim\": <number>, \"subject\": str, \"subject_type\": \"gene\"|\"pathway\"|\"disease\"|\"intervention\"|\"measurement\"|\"concept\", "
     "\"relation\": \"activates\"|\"inhibits\"|\"associated\"|\"no_effect\", "

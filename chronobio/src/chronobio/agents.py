@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from .claims import Rejection
 from .graph import Snapshot
-from .llm import LLM
+from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
     EvidenceClaim, Gap, GraphNode, Hypothesis, HypothesisStatus, Locator, Provenance,
     Publication, RetractionStatus, Review, StudyDesign, Verdict,
@@ -110,12 +110,13 @@ def describe_uncertainty(
 
 # ── proposer ─────────────────────────────────────────────────────────────────
 
-PROPOSER_SYSTEM = (
+PROPOSER_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "You propose ONE falsifiable scientific hypothesis that addresses a gap in the literature. Reply with ONLY "
     "a JSON object: {\"statement\": str, \"mechanism\": str, \"predictions\": [str], \"falsifiers\": [str], "
     "\"alternative_mechanisms\": [str], \"supporting_claim_ids\": [str]}. RULES: use ONLY the evidence listed; "
     "'supporting_claim_ids' must be ids copied from the list. Each prediction must be a measurable outcome. "
     "Each falsifier must be a DIFFERENT observation that would show the hypothesis is wrong. "
+    "This is a literature-analysis task for researchers: propose ONE testable research hypothesis. "
     "Do not state anything as established that the evidence does not show. Do not state effects in patients or "
     "humans as fact unless the evidence is from human studies; put such effects in 'predictions' as outcomes to test. "
     "Do NOT restate a finding already in the evidence: propose an untested extension of it. Every prediction must "
@@ -147,9 +148,12 @@ def propose(
         prompt += (f"\nYOUR PREVIOUS HYPOTHESIS: {previous.statement}\nCRITIC OBJECTIONS:\n- "
                    + "\n- ".join(critique) + "\nRevise the hypothesis to address these objections.\n")
     rejections: list[Rejection] = []
-    data = json_object(llm.generate(PROPOSER_SYSTEM, prompt))
+    raw = llm.generate(PROPOSER_SYSTEM, prompt, json_format=True)
+    data = json_object(raw)
     if data is None:
-        return None, [Rejection("unparseable_model_output", "")]
+        # Small models sometimes refuse a cancer-related request outright; record that as its own reason.
+        refused = bool(REFUSAL.search(raw[:200]))
+        return None, [Rejection("model_refused" if refused else "unparseable_model_output", raw[:120])]
 
     statement = normalize(str(data.get("statement") or ""))
     predictions, falsifiers = _strings(data.get("predictions")), _strings(data.get("falsifiers"))
@@ -190,7 +194,7 @@ def propose(
 
 # ── critic ───────────────────────────────────────────────────────────────────
 
-CRITIC_SYSTEM = (
+CRITIC_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "You are a skeptical scientific reviewer. Reply with ONLY a JSON object: {\"verdict\": \"accept\"|\"revise\"|\"reject\", "
     "\"reasons\": [str], \"missing_controls\": [str], \"confounders\": [str]}. Look for: claims not supported by the "
     "evidence shown, alternative explanations, missing controls, confounders, and predictions that cannot be measured. "
@@ -203,6 +207,8 @@ CRITIC_SYSTEM = (
 )
 
 
+REFUSAL = re.compile(r"\b(I (cannot|can't|can not|am unable|won't)|I'm (sorry|unable)|as an AI)\b", re.I)
+RETRYABLE = {"unparseable_model_output", "model_refused"}      # a retry may succeed; other rejections are final for this round
 HUMAN_CLAIM = re.compile(r"\b(patients?|humans?|clinical|clinically|people|participants?)\b", re.I)
 RESTATES_AT = 0.8                     # share of the statement's words already present in a supporting claim
 
@@ -275,9 +281,9 @@ def review(
     controls: list[str] = []
     confounders: list[str] = []
     # One retry: small local models sometimes return malformed JSON on the first try.
-    data = json_object(llm.generate(CRITIC_SYSTEM, prompt))
+    data = json_object(llm.generate(CRITIC_SYSTEM, prompt, json_format=True))
     if data is None:
-        data = json_object(llm.generate(CRITIC_SYSTEM, prompt + "\nYour last reply was not valid JSON. Reply with ONLY the JSON object."))
+        data = json_object(llm.generate(CRITIC_SYSTEM, prompt + "\nYour last reply was not valid JSON. Reply with ONLY the JSON object.", json_format=True))
     if data is None:
         # Never accept on rules alone: the rules cannot see an internally inconsistent hypothesis.
         notes.append("Model critique unusable after a retry, so this hypothesis has had no independent check.")

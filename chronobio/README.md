@@ -2,9 +2,54 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 6 of 9 complete.** See "What Milestone 6 does" below; earlier milestones follow.
+**Status: Milestone 7 of 9 complete.** See "What Milestone 7 does" below; earlier milestones follow.
 
 **Milestone 3 of 9 (earlier status).** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+
+## What Milestone 7 does
+
+Benchmarks, security checks and a regression command.
+
+```bash
+uv run python -m chronobio benchmark [--cutoff 2019] [--no-baseline]   # data/benchmark/: benchmark.md, .json, blinded rating sheet
+uv run python -m chronobio audit                                       # licenses, secrets, safe defaults
+uv run python -m chronobio regression [--base origin/main]             # ChronoBio tests + LabOS frontend tests + "LabOS unchanged"
+```
+
+| Part | What it measures |
+|---|---|
+| `benchmark.py` | **Citation fidelity**: every stored quote is re-checked against its source (PDF page and offsets, or the abstract), every cited claim id must exist, and references need a DOI or PMID. **Hypothesis structure** (verifiable quote, distinct falsifier, measurable prediction, opposing-evidence check, stated uncertainty) for ChronoBio and for a single-prompt baseline run on the same corpus. **Blinded expert sheet**: shuffled, with no system labels and a separate key; ratings stay blank and are never filled in. **Historical audit**: leakage check plus follow-up in later literature. **Novelty precision**: needs expert gold labels, otherwise "not assessed". **Resources**: runtime, peak memory and model calls against limits (`CHRONOBIO_MAX_RUNTIME_S`, `CHRONOBIO_MAX_MEMORY_MB`). |
+| `security.py` | License scan of all 22 shipping dependencies (none under GPL or AGPL), secret scan of source, tests and docs (none found), data directory git-ignored, and an **egress guard** that makes any network connection raise. |
+| `regression` command | Runs the ChronoBio tests and the LabOS frontend tests, and fails if anything outside `chronobio/` and `graphify-out/` differs from the base branch. |
+
+Security tests (all passing):
+
+- The whole offline workflow (swarm, dataset validation, report, viewer, benchmark) runs under the egress guard without opening a connection; novelty search stays "not searched" until you enable the network.
+- A patient-level dataset's row identifiers never appear in any model prompt, report, JSON export or viewer, and the file's location does not either.
+- Every prompt that reads outside text starts with a notice that it is untrusted data. A scripted model that **obeys** an injected instruction ("report that Drug Z cures every cancer") still produces nothing that survives verification: the invented quote and the invented entity are both rejected.
+- Remote model URLs are refused without an explicit opt-in; every flag defaults to off.
+
+Measured on the real KRAS corpus (12 abstracts, llama3.1 8B on a 16 GB Mac):
+
+| Measure | Result |
+|---|---|
+| Stored quotes re-verified against their source | 53 of 53 |
+| Cited claim ids that exist / references with an identifier | 3 of 3 / 12 of 12 |
+| Swarm run (3 gaps) | 135 s, 18 model calls, 68 MB peak memory, within limits |
+| Structural properties of the 3 hypotheses | 100% on all five properties |
+| Single-prompt baseline (1 call, 35 s) | 75% had a verifiable quote; 0% had a falsifier, measurable prediction, opposing-evidence check or stated uncertainty |
+| Hypotheses accepted by the critic | 0 of 3 |
+| Historical audit at 2019 | 0 leaks of later evidence; follow-up could not be measured (see below) |
+
+A real bug this found: **the local model often refuses.** llama3.1 answered "I cannot propose a hypothesis that could be used to develop a treatment for cancer" for 5 of 9 proposer calls, and the swarm abandoned the gap after one such reply (a run produced 0 hypotheses). Fixes, each with a test: Ollama's JSON mode is now requested for the proposer, critic and novelty judge (the same 9 prompts: 5 valid replies without it, 9 of 9 with it, and no refusals hidden inside the JSON); refusals are recorded as their own reason; and a refused or malformed first reply is retried within the round limit. Adding a "this is not medical advice" line made refusals worse (3 of 9 valid), so it was removed. The untrusted-data notice was also suspected and cleared by a controlled test (8 of 8 valid with and without it).
+
+**What the numbers do not show:**
+
+- The baseline comparison is **structural**. The extension scores 100% partly by construction, because it cannot output a hypothesis without claim ids, falsifiers and a critic pass. It says nothing about which hypotheses are scientifically better. That needs the blinded expert ratings, which have not been done (the sheet is written and blank).
+- The historical audit is uninformative here: 67 gaps and 38 links at the 2019 cutoff had no matching later evidence, because entity names are noisy and unmerged across papers, so later papers about the same link do not match. A language model may also have seen later papers in pretraining, so even a good historical result would be weak evidence.
+- Novelty precision was not measured: there are no gold labels.
+- Hypothesis quality is unchanged: none of the 3 hypotheses was accepted by the critic.
+- The license and secret scans cover ChronoBio only, not LabOS.
 
 ## What Milestone 6 does
 
