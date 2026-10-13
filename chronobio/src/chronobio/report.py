@@ -154,7 +154,7 @@ def _blocks(
                           f"Corpus: {len(pubs)} publication(s)" + (f", {years[0]}–{years[-1]}" if years else "") + f"; {len(claims)} extracted claim(s).",
                           f"Research gaps found: {len(result.gaps)}.",
                           f"Hypotheses: {len(records)} (" + (", ".join(f"{n} {s.replace('_', ' ')}" for s, n in sorted(statuses.items())) or "none") + ").",
-                          "Computational validation: NOT PERFORMED. Experimental validation: NOT PERFORMED.",
+                          ("Computational validation: " + (f"{sum(1 for r in records for v in r['validation'] if v['status'] == 'executed')} run(s) executed on user datasets (see section 6)" if any(v['status'] == 'executed' for r in records for v in r['validation']) else "NOT PERFORMED") + ". Experimental validation: NOT PERFORMED."),
                       ])]
     if notes:
         b += [("p", "Not produced in this run: " + "; ".join(notes))]
@@ -176,7 +176,7 @@ def _blocks(
         verdict = (r.get("critic") or {}).get("verdict", "not reviewed")
         b += [("h2", f"4.{i} {r['statement']}"),
               ("p", f"Status: {r['status'].replace('_', ' ')} · Critic: {verdict} after {len(r['verdict_history'])} round(s) · "
-                    f"Prior-work search: {r['novelty_status'].replace('_', ' ')} · Validation: NOT PERFORMED")]
+                    f"Prior-work search: {r['novelty_status'].replace('_', ' ')} · Validation: {r['computational_validation']}")]
         if r.get("gap"):
             b.append(("p", f"Gap ({r['gap']['kind']}): {r['gap']['description']}"))
         if r["mechanism"]:
@@ -221,11 +221,36 @@ def _blocks(
               [[rs[0]["gap"]["description"], " | ".join(r["statement"] for r in rs)] for _, rs in competing])
              if competing else ("p", "Each gap has one hypothesis; none compete."))
 
-    b += [("h1", "6. Data requirements and validation"),
-          ("p", "No dataset has been attached and no analysis has been run. Each prediction below names a measurement that would "
-                "test its hypothesis; choosing datasets, controls and sample sizes belongs to later milestones."),
-          ("table", ["Hypothesis", "Measurements that would test it"],
-           [[r["statement"], "; ".join(r["predictions"])] for r in records] or [["none", ""]])]
+    runs = [(r, v) for r in records for v in r["validation"]]
+    executed = [v for _, v in runs if v["status"] == "executed"]
+    b += [("h1", "6. Validation and experiment design")]
+    if not runs:
+        b += [("p", "No dataset has been attached and no analysis has been run: computational validation is NOT PERFORMED. "
+                    "Each prediction below names a measurement that would test its hypothesis."),
+              ("table", ["Hypothesis", "Measurements that would test it"],
+               [[r["statement"], "; ".join(r["predictions"])] for r in records] or [["none", ""]])]
+    else:
+        b += [("p", f"{len(executed)} analysis run(s) executed on the user's own dataset(s). Each endpoint was pre-registered before its "
+                    "result existed (see the planned and recorded times). A result is evidence from that dataset only and does not "
+                    "validate a hypothesis."),
+              ("table", ["Hypothesis", "Dataset", "Method", "Status", "Verdict", "Effect (Hedges g, held-out)", "Adjusted p", "Pre-registered", "Recorded"],
+               [[r["statement"][:60], v["dataset"], v["method"], v["status"], v["verdict"] or "-",
+                 (f"{v['metrics']['hedges_g_heldout']:.2f} ({v['intervals']['hedges_g_heldout'][0]:.2f} to {v['intervals']['hedges_g_heldout'][1]:.2f})"
+                  if v["metrics"] else "-"),
+                 f"{v['metrics']['p_adjusted']:.4f}" if v["metrics"] else "-", v["planned_at"][:19], v["recorded_at"][:19]]
+                for r, v in runs]),
+              ("bullets", [f"{v['dataset']}: {c}" for _, v in runs for c in v["caveats"]])]
+    for i, r in enumerate(records, start=1):
+        e = r.get("experiment_plan")
+        if not e:
+            continue
+        b += [("h2", f"Experiment plan for hypothesis {i} (draft for expert review)"), ("h3", "Aims"), ("bullets", e["aims"]),
+              ("h3", "Models and assays used in the cited studies"), ("bullets", e["models_and_assays"] or ["None stated in the cited evidence."]),
+              ("h3", "Controls"), ("bullets", e["controls"]), ("h3", "Endpoints and expected outcomes"), ("bullets", e["expected_outcomes"]),
+              ("h3", "Alternative outcomes"), ("bullets", e["alternative_outcomes"] or ["None listed."]),
+              ("h3", "Sample size and replication"), ("p", e["power_plan"]), ("p", e["replication"]),
+              ("h3", "Go / no-go criteria"), ("bullets", e["go_no_go"]),
+              ("h3", "Assumptions"), ("bullets", e["assumptions"] or ["None."]), ("h3", "Ethics, cost and feasibility flags"), ("bullets", e["flags"])]
 
     limits = [
         f"{abstract_only} of {len(claims)} claims come from abstracts, not full text, so no page-level source highlight exists for them.",
@@ -386,7 +411,8 @@ def build_report(
         "gaps": [{"kind": g.kind.value, "description": g.description, "papers": g.paper_count} for g in result.gaps],
         "references": [_reference(p) for p in pubs.values()],
         "figures": [{"key": f.key, "title": f.title, "caption": f.caption, "legend": f.legend, "claims": f.claim_ids} for f in figures],
-        "computational_validation": "NOT PERFORMED", "experimental_validation": "NOT PERFORMED",
+        "computational_validation": "EXECUTED" if any(r["computational_validation"] == "EXECUTED" for r in records) else "NOT PERFORMED",
+        "experimental_validation": "NOT PERFORMED",
     }, indent=2, ensure_ascii=False))
 
     pdf_path: Path | None = None

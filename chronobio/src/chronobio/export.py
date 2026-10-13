@@ -11,7 +11,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from .models import EvidenceClaim, Publication, SearchLog
+from .models import Dataset, EvidenceClaim, ExperimentPlan, Publication, SearchLog, ValidationRun
 from .store import Store
 from .swarm import SwarmResult
 
@@ -41,6 +41,28 @@ def build_records(store: Store, result: SwarmResult) -> list[dict]:
         c = claims.get(cid)
         return {"id": cid, "claim": c.claim, "quote": c.passage, "source": _cite(pubs.get(c.publication_id))} if c else {"id": cid}
 
+    runs_by_hyp: dict[str, list[ValidationRun]] = {}
+    for run in store.list(ValidationRun):
+        runs_by_hyp.setdefault(run.hypothesis_id, []).append(run)
+    datasets = {d.id: d for d in store.list(Dataset)}
+    plans = {p.hypothesis_id: p for p in store.list(ExperimentPlan)}
+
+    def run_view(run: ValidationRun) -> dict:
+        first = store.history(run.id)[0]
+        return {"id": run.id, "method": run.method, "status": run.status.value, "verdict": run.verdict,
+                "dataset": datasets[run.dataset_id].name if run.dataset_id in datasets else run.dataset_id,
+                "parameters": run.parameters, "metrics": run.metrics,
+                "intervals": {k: list(v) for k, v in run.confidence_intervals.items()}, "caveats": run.caveats,
+                "planned_at": first.created_at.isoformat(), "recorded_at": run.created_at.isoformat(),
+                "code_version": run.code_version, "seed": run.seed}
+
+    def plan_view(plan: ExperimentPlan | None) -> dict | None:
+        return None if plan is None else {
+            "aims": plan.aims, "controls": plan.controls, "endpoints": plan.endpoints, "replication": plan.replication,
+            "power_plan": plan.power_plan, "models_and_assays": plan.models_and_assays, "expected_outcomes": plan.expected_outcomes,
+            "alternative_outcomes": plan.alternative_outcomes, "go_no_go": plan.go_no_go, "assumptions": plan.assumptions,
+            "flags": plan.flags}
+
     records = []
     for h in ordered:
         rev, nov, rank = latest_review.get(h.id), result.novelty.get(h.id), result.profiles.get(h.id)
@@ -63,7 +85,10 @@ def build_records(store: Store, result: SwarmResult) -> list[dict]:
                                       "examined": logs[i].returned_count} for i in nov.search_log_ids if i in logs],
                         "limitations": nov.limitations} if nov else None,
             "ranking": {k: asdict(v) for k, v in asdict_dims(rank).items()} if rank else None,
-            "computational_validation": "NOT PERFORMED",
+            "validation": [run_view(r) for r in runs_by_hyp.get(h.id, [])],
+            "experiment_plan": plan_view(plans.get(h.id)),
+            "computational_validation": ("EXECUTED" if any(r.status.value == "executed" for r in runs_by_hyp.get(h.id, []))
+                                         else "NOT PERFORMED"),
         })
     return records
 
@@ -88,7 +113,7 @@ def _markdown(records: list[dict]) -> str:
     for i, r in enumerate(records, start=1):
         verdict = r["critic"]["verdict"] if r["critic"] else "not reviewed"
         out += [f"## {i}. {r['statement']}", "", f"**Status:** {r['status']} · **Critic:** {verdict} · "
-                f"**Novelty:** {r['novelty_status']} · **Validation:** NOT PERFORMED", ""]
+                f"**Novelty:** {r['novelty_status']} · **Validation:** {r['computational_validation']}", ""]
         if r["gap"]:
             out += [f"**Gap ({r['gap']['kind']}):** {r['gap']['description']}", ""]
         if r["mechanism"]:
@@ -106,6 +131,19 @@ def _markdown(records: list[dict]) -> str:
             n = r["novelty"]
             out += [f"**Prior-work search ({n['status']})**"] + [f"- query `{s['query']}` on {s['run_at'][:10]}: {s['hits']} hits, {s['examined']} examined" for s in n["searches"]]
             out += [f"- prior work: {q}" for q in n["prior_work_quotes"]] + [f"- limitation: {x}" for x in n["limitations"]] + [""]
+        for v in r["validation"]:
+            out += [f"**Validation run: {v['method']} on {v['dataset']} ({v['status']}" + (f", {v['verdict']}" if v["verdict"] else "") + ")**",
+                    f"- pre-registered {v['planned_at'][:19]}, recorded {v['recorded_at'][:19]}; seed {v['seed']}; settings {v['parameters']}"]
+            if v["metrics"]:
+                ci = v["intervals"].get("hedges_g_heldout")
+                out += [f"- held-out effect size (Hedges g) {v['metrics']['hedges_g_heldout']:.2f}"
+                        + (f", 95% interval {ci[0]:.2f} to {ci[1]:.2f}" if ci else "")
+                        + f"; adjusted p {v['metrics']['p_adjusted']:.4f}; n {v['metrics']['n_a_heldout']:.0f} vs {v['metrics']['n_b_heldout']:.0f}"]
+            out += [f"- caveat: {c}" for c in v["caveats"]] + [""]
+        if r["experiment_plan"]:
+            e = r["experiment_plan"]
+            out += ["**Experiment plan (draft for expert review)**"] + [f"- {a}" for a in e["aims"]] + [f"- Power: {e['power_plan']}"]
+            out += [f"- Assumption: {x}" for x in e["assumptions"]] + [f"- Flag: {x}" for x in e["flags"]] + [""]
         if r["ranking"]:
             out += ["**Ranking (reported separately, no combined score)**"] + [
                 f"- {k}: {v['level']}" + (f" ({'; '.join(v['reasons'])})" if v["reasons"] else "") for k, v in r["ranking"].items()] + [""]

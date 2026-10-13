@@ -22,6 +22,9 @@ from .novelty import assess_novelty
 from .ranking import RankCard, card, order
 from .store import Store
 
+# Both mean "the critic accepted it"; the second adds that a dataset analysis supported it.
+ACCEPTED = (HypothesisStatus.EVIDENCE_SUPPORTED, HypothesisStatus.COMPUTATIONALLY_TESTED)
+
 
 @dataclass
 class SwarmResult:
@@ -102,7 +105,7 @@ def collect_result(
     hyp_ids = {h.id for h in result.hypotheses}
     result.reviews = [r for r in store.list(Review) if r.hypothesis_id in hyp_ids]
     result.novelty = {n.hypothesis_id: n for n in store.list(NoveltyAssessment) if n.hypothesis_id in hyp_ids}
-    accepted = [h for h in result.hypotheses if h.review_status == HypothesisStatus.EVIDENCE_SUPPORTED]
+    accepted = [h for h in result.hypotheses if h.review_status in ACCEPTED]
     result.profiles = {h.id: card(h, result.novelty.get(h.id), claims, pubs) for h in result.hypotheses}
     result.cards = order([result.profiles[h.id] for h in accepted])
     return result

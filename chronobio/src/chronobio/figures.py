@@ -376,7 +376,7 @@ def hypothesis_matrix_svg(records: list[dict], *, title: str = "Hypothesis compa
             *[((rank.get(k) or {}).get("level", "not_assessed").replace("_", " "),
                LEVEL_TINT[(rank.get(k) or {}).get("level", "not_assessed")]) for k in ("evidence_strength", "falsifiability", "originality")],
             (_pretty(r["novelty_status"]), "#e5e7eb"),
-            ("not performed", "#e5e7eb"),
+            (validation_label(r)[0].replace("executed: ", "").replace("planned, not run", "planned").replace("failed to run", "failed").replace("NOT PERFORMED", "not performed"), {"done": "#c9ecd9", "stop": "#f8d3c0", "open": "#fdf1b8"}.get(validation_label(r)[1], "#e5e7eb")),
         ]
         for j, (text, tint) in enumerate(cells):
             x = label_w + j * cell_w
@@ -401,8 +401,8 @@ def workflow_svg(record: dict, *, title: str = "From gap to experiment") -> str:
          "done" if passed else "stop" if verdict == "reject" else "open"),
         ("Prior-work search", _pretty(novelty["status"]) if novelty else "not run",
          "done" if novelty else "pending"),
-        ("Validation", "NOT PERFORMED", "pending"),
-        ("Experiment plan", "not designed yet", "pending"),
+        ("Validation", *validation_label(record)),
+        ("Experiment plan", *(("plan drafted", "done") if record.get("experiment_plan") else ("not designed yet", "pending"))),
     ]
     fill = {"done": "#c9ecd9", "open": "#fdf1b8", "stop": "#f8d3c0", "pending": "#f3f4f6"}
     word = {"done": "done", "open": "unresolved", "stop": "stopped", "pending": "not reached" if not passed else "not done"}
@@ -441,3 +441,17 @@ def scope_ids(svg: str, suffix: str) -> str:
         return 'aria-labelledby="' + " ".join(f"{i}-{suffix}" if i in ids else i for i in m.group(1).split()) + '"'
 
     return re.sub(r'aria-labelledby="([^"]+)"', fix_labels, svg)
+
+
+def validation_label(record: dict) -> tuple[str, str]:
+    """(text, state) for a hypothesis's computational validation: state is done|open|stop|pending."""
+    runs = record.get("validation") or []
+    executed = [r for r in runs if r["status"] == "executed"]
+    if executed:
+        verdict = executed[-1]["verdict"]
+        return f"executed: {verdict}", {"consistent": "done", "contradicted": "stop"}.get(verdict, "open")
+    if any(r["status"] == "failed" for r in runs):
+        return "failed to run", "stop"
+    if runs:
+        return "planned, not run", "pending"
+    return "NOT PERFORMED", "pending"

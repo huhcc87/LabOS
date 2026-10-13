@@ -311,6 +311,12 @@ class Dataset(Record):
     units: dict[str, str] = {}
     sample_count: int = Field(ge=0)
     quality_flags: list[str] = []
+    path: str | None = None               # the file stays where it is; only a reference and a checksum are stored
+    sha256: str = ""
+    sample_id_column: str = ""
+    group_column: str = ""
+    batch_column: str | None = None
+    data_dictionary: dict[str, str] = {}
 
 
 class RunStatus(StrEnum):
@@ -329,14 +335,18 @@ class ValidationRun(Record):
     seed: int | None = None
     metrics: dict[str, float] = {}
     confidence_intervals: dict[str, tuple[float, float]] = {}
+    parameters: dict[str, str | float | int] = {}      # the pre-registered analysis settings
     caveats: list[str] = []
     status: RunStatus = RunStatus.PLANNED
+    verdict: str = ""                                   # computed from the metrics; empty until executed
 
     @model_validator(mode="after")
     def _no_metrics_unless_executed(self) -> Self:
         # Planned analyses must never carry numbers (no invented metrics).
         if self.status != RunStatus.EXECUTED and (self.metrics or self.confidence_intervals):
             raise ValueError("metrics are only allowed on executed runs")
+        if self.status != RunStatus.EXECUTED and self.verdict:
+            raise ValueError("a verdict is only allowed on executed runs")
         return self
 
 
@@ -350,6 +360,11 @@ class ExperimentPlan(Record):
     replication: str = ""
     power_plan: str = ""
     alternative_outcomes: list[str] = []
+    models_and_assays: list[str] = []      # taken from the cited studies, never invented
+    expected_outcomes: list[str] = []
+    go_no_go: list[str] = []
+    assumptions: list[str] = []
+    flags: list[str] = []                  # ethics, cost and feasibility flags
 
 
 class FigureType(StrEnum):

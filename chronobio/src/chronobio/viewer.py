@@ -25,7 +25,8 @@ from PIL import Image, ImageDraw
 from .config import Settings
 from .export import build_records
 from .figures import (
-    graph_svg, graph_svg_slider, hypothesis_matrix_svg, legend_height, matrix_svg, scope_ids, timeline_svg, workflow_svg,
+    graph_svg, graph_svg_slider, hypothesis_matrix_svg, legend_height, matrix_svg, scope_ids, timeline_svg, validation_label,
+    workflow_svg,
 )
 from .graph import load_graph, restrict, snapshot, suggest_inferred_edges, year_range
 from .layout import layout
@@ -184,6 +185,7 @@ def _hypothesis_payload(r: dict) -> dict:
         "id": r["id"], "version": r["version"], "statement": r["statement"], "mechanism": r["mechanism"],
         "predictions": r["predictions"], "falsifiers": r["falsifiers"], "alternatives": r["alternative_mechanisms"],
         "status": r["status"], "novelty": r["novelty_status"], "gap": (r.get("gap") or {}).get("description", ""),
+        "validation": validation_label(r)[0].replace("NOT PERFORMED", "not performed"), "planned": bool(r.get("experiment_plan")),
         "supporting": r["supporting_ids"], "opposing": r["opposing_ids"], "uncertainty": r["uncertainty"],
         "verdict": (r.get("critic") or {}).get("verdict", "not reviewed"), "rounds": len(r["verdict_history"]),
         "findings": ((r.get("critic") or {}).get("rule_findings", []) + (r.get("critic") or {}).get("notes", [])),
@@ -380,7 +382,7 @@ function evidenceLinks(ids, label) {
 function hypCard(h) {
   const card = el('div', null, 'claim hyp'), head = el('div');
   head.append(el('span', h.status.replace(/_/g, ' '), 'badge'), el('span', 'critic: ' + h.verdict, 'badge'),
-    el('span', 'prior work: ' + h.novelty.replace(/_/g, ' '), 'badge'), el('span', 'validation: not performed', 'badge'));
+    el('span', 'prior work: ' + h.novelty.replace(/_/g, ' '), 'badge'), el('span', 'validation: ' + h.validation, 'badge'));
   card.append(head, el('strong', h.statement));
   if (h.gap) card.append(el('div', 'Gap: ' + h.gap, 'meta'));
   if (h.mechanism) card.append(el('div', 'Mechanism: ' + h.mechanism, 'meta'));

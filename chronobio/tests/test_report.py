@@ -16,7 +16,7 @@ from chronobio.layout import layout
 from chronobio.llm import ScriptedLLM
 from chronobio.models import Publication
 from chronobio.render import find_chrome, html_to_pdf, svg_to_png
-from chronobio.swarm import run_swarm
+from chronobio.swarm import load_result, run_swarm
 
 NS = "{http://www.w3.org/2000/svg}"
 needs_chrome = pytest.mark.skipif(find_chrome() is None, reason="Chrome not installed")
@@ -115,7 +115,7 @@ def test_report_contents_cover_the_spec(tmp_path, monkeypatch):
     res = build_no_chrome(corpus, tmp_path, monkeypatch)
     html = res.html.read_text()
     for section in ("1. Summary", "3. Research gaps", "4. Hypotheses", "5. Competing hypotheses",
-                    "6. Data requirements and validation", "7. Limitations", "8. References", "Prior-work audit"):
+                    "6. Validation and experiment design", "7. Limitations", "8. References", "Prior-work audit"):
         assert section in html, section
     (hyp,) = result.hypotheses
     assert hyp.statement in html and "Supporting evidence" in html and "Opposing evidence" in html
@@ -237,3 +237,43 @@ def test_command_line_builds_a_report_and_a_viewer_from_the_store(tmp_path, monk
     assert "report.html" in out and "pdf   not produced" in out and (tmp_path / "r" / "report.docx").exists()
     assert main(["chronobio", "viewer", "--out", str(tmp_path / "v")]) == 0
     assert (tmp_path / "v" / "viewer.html").exists()
+
+
+# ── validation and experiment plan flow through everything ───────────────────
+
+def validated(tmp_path, monkeypatch, effect=2.0):
+    from test_validation import COMMON, PARAMS, write_csv
+    from chronobio.datasets import ingest_csv
+    from chronobio.experiment import design_experiment
+    from chronobio.validation import execute_runs, plan_run
+    corpus, result = accepted(tmp_path)
+    hyp = result.hypotheses[0]
+    ds = ingest_csv(corpus.store, write_csv(tmp_path / "synthetic.csv", effect=effect), **COMMON)
+    run = execute_runs(corpus.store, [plan_run(corpus.store, hyp, ds, "two_group_numeric", PARAMS).id])[0]
+    corpus.store.save(design_experiment(corpus.store.get(hyp.id), corpus.claims, corpus.pubs, [run]))
+    monkeypatch.setattr(report, "find_chrome", lambda: None)
+    return corpus, hyp, run
+
+
+def test_a_consistent_run_updates_status_figures_export_and_report(tmp_path, monkeypatch):
+    corpus, hyp, run = validated(tmp_path, monkeypatch)
+    assert run.verdict == "consistent"
+    res = report.build_report(corpus.store, corpus.settings, tmp_path / "r", title="V")
+    (rec,) = json.loads(res.json.read_text())["hypotheses"]
+    assert rec["status"] == "computationally_tested" and rec["computational_validation"] == "EXECUTED"
+    assert rec["validation"][0]["planned_at"] <= rec["validation"][0]["recorded_at"] and rec["experiment_plan"]["power_plan"]
+    html = res.html.read_text()
+    assert "1 run(s) executed on user datasets" in html and "Pre-registered" in html and "does not validate a hypothesis" in html
+    assert "Experiment plan for hypothesis 1" in html and "Computational validation: NOT PERFORMED" not in html
+    flow = texts(ET.fromstring(workflow_svg(rec)))
+    assert "executed: consistent" in flow and "plan drafted" in flow and "NOT PERFORMED" not in flow
+    assert "consistent" in texts(ET.fromstring(hypothesis_matrix_svg([rec])))
+    headings = [p.text for p in Document(str(res.docx)).paragraphs if p.style.name.startswith("Heading")]
+    assert any(h.startswith("Experiment plan for hypothesis 1") for h in headings)
+
+
+def test_an_inconclusive_run_leaves_the_status_and_the_report_says_so(tmp_path, monkeypatch):
+    corpus, hyp, run = validated(tmp_path, monkeypatch, effect=0.0)
+    assert run.verdict == "inconclusive"
+    (rec,) = build_records(corpus.store, load_result(corpus.store))
+    assert rec["status"] == "evidence_supported" and "executed: inconclusive" in texts(ET.fromstring(workflow_svg(rec)))

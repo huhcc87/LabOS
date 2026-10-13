@@ -2,9 +2,63 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 5 of 9 complete.** See "What Milestone 5 does" below; earlier milestones follow.
+**Status: Milestone 6 of 9 complete.** See "What Milestone 6 does" below; earlier milestones follow.
 
 **Milestone 3 of 9 (earlier status).** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+
+## What Milestone 6 does
+
+Optional computational validation on **your own dataset**, plus a draft experiment plan. Both are off unless you use them: the literature-only workflow is unchanged, and a hypothesis without a dataset simply shows validation as NOT PERFORMED.
+
+```bash
+uv run python -m chronobio dataset-add data.csv --name cohort1 --dictionary dict.json --units units.json \
+    --id-col sample --group-col group --batch-col batch [--access patient_level]
+uv run python -m chronobio validate HYPOTHESIS_ID DATASET_ID --feature expr --group-a treated --group-b control --direction a_greater
+uv run python -m chronobio design HYPOTHESIS_ID [--effect-size 0.8]
+```
+
+| Module | Purpose |
+|---|---|
+| `datasets.py` | Accepts a CSV only with a description for every column, unique non-empty sample ids, and a group column with two or more groups. Flags missing values (over 20%), numeric columns without a unit, groups under 5 samples, batches holding one group, and patient-level data. The file stays where it is; a path and SHA-256 are kept, and a file that changed after ingestion is refused. Rows are never sent to any language model. |
+| `validation.py` | Plugin registry with one built-in method, `two_group_numeric`. Pre-registers the analysis, then runs it with the safeguards below. |
+| `experiment.py` | Drafts an experiment plan from stored facts only. |
+
+How validation avoids fooling itself:
+
+- **Pre-registration.** The analysis (feature, groups, expected direction, alpha, seed) is saved as a `planned` run before any result exists. The result is version 2 of the same record, so the version history shows the endpoint was fixed first. A planned run cannot hold numbers or a verdict.
+- **Held-out confirmation.** A seeded, group-stratified split. The discovery half must agree in direction; the held-out half gives the reported effect, interval and p-value.
+- **Refusals.** The run is marked `failed` with the reason and carries no metrics if: the feature is missing or not numeric; the feature is really the sample id, group or batch column (leakage); a group has under 10 usable samples (5 per half); there is no variance; every batch holds only one group (complete confounding); or the file changed since ingestion. Partial batch confounding and left-out missing values are recorded as caveats.
+- **Multiple testing.** Benjamini-Hochberg across the runs executed together.
+- **Honest verdicts.** `consistent`, `contradicted` or `inconclusive`, computed from the numbers. Only `consistent` moves a hypothesis to "computationally tested", `contradicted` marks it contradicted, and `inconclusive` changes nothing. Every result carries the caveat that it is evidence from one dataset and does not validate the hypothesis.
+- Everything is reproducible from the seed. P-values come from a seeded permutation test and intervals from a seeded bootstrap, so no distribution is assumed.
+
+The experiment plan:
+
+- Aims, endpoints, expected and alternative outcomes come from the hypothesis. Models and assays are quoted from the studies it cites; a bare design label such as "animal" does not count as an assay.
+- Controls are the generic ones every such study needs, marked for expert review, plus a check against each falsifier.
+- Sample size uses the standard two-group formula (checked against textbook values: 63 per group at d = 0.5, 25 at d = 0.8). The effect size is measured (an executed run) or user-supplied and labelled an assumption. If both exist, the smaller is used, because effects found in one dataset are usually overestimated. With neither, the plan declines to size the study.
+- Ethics, animal-care and cost flags are rule-based. Cost and timeline are not estimated.
+- Reports and exports now show runs (with pre-registered and recorded times), the plan, and the real validation state in the workflow figure, comparison matrix and viewer badge.
+
+Calibration check (simulation, 400 datasets per row, 10 samples per group in the held-out half):
+
+| | Result | Expected |
+|---|---|---|
+| False positives with no effect (p < 0.05) | 4.8% | 5% |
+| Mean effect size with no effect | -0.01 | 0 |
+| Power for a true effect of 1.0 | 56.2% | about 56% (theory) |
+| Mean estimated effect for a true 1.0 | 1.03 | 1.0 |
+| Coverage of the 95% interval | 93% | 95% (a little low at this size) |
+
+Bugs found while building it (each fixed with a test): the designer originally sized a study on the measured effect even when the user supplied a smaller one (now the smaller wins); a bare study-design label was listed as an "assay"; and the matrix cell for an executed run was cut to "executed: consi…".
+
+**What is not verified:**
+
+- **No real dataset was used.** Every test and the calibration run use synthetic data with a built-in effect. Nothing here is biology and no hypothesis in the KRAS corpus was validated.
+- Only one method exists: a two-group comparison of one numeric feature, assuming independent samples. There is no covariate adjustment, no paired or repeated-measures design, and no adapter for RNA-seq counts, variants, proteomics or other formats (generic CSV only).
+- Holding half the data out costs power: you need at least 10 samples per group, and results from small datasets will often be inconclusive.
+- The permutation test assumes samples are exchangeable within the comparison; a hidden batch effect that the dataset does not record is invisible to every check.
+- The experiment plan is a rule-based draft. Its controls are generic and its models and assays are only as detailed as the cited abstracts.
 
 ## What Milestone 5 does
 
