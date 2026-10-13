@@ -98,3 +98,58 @@ def test_empty_store_still_produces_a_page(tmp_path):
     settings = Settings(data_dir=tmp_path / "d")
     result = build_viewer(Store(settings.db_path), settings, tmp_path / "out")
     assert result.years is None and "No dated evidence" in result.html_path.read_text()
+
+
+# ── hypotheses tab ───────────────────────────────────────────────────────────
+
+def viewer_with_hypothesis(tmp_path, accept=True):
+    from swarm_world import PROV  # noqa: F401
+    from test_swarm import critic, judge, literature, proposal, three_animal_corpus
+    from chronobio.llm import ScriptedLLM
+    from chronobio.swarm import run_swarm
+    corpus = three_animal_corpus(tmp_path)
+    replies = [proposal(corpus.claim_ids), critic("accept"), judge("yes")] if accept else [proposal(corpus.claim_ids[:1]), critic("revise")] * 3
+    result = run_swarm(ScriptedLLM(replies), corpus.store, corpus.settings, literature([]), max_gaps=1)
+    return corpus, result, build_viewer(corpus.store, corpus.settings, tmp_path / "out").html_path.read_text()
+
+
+def test_hypotheses_tab_links_every_hypothesis_to_real_source_passages(tmp_path):
+    corpus, result, html = viewer_with_hypothesis(tmp_path)
+    data = embedded_data(html)
+    (h,) = data["hypotheses"]
+    assert h["status"] == "evidence_supported" and h["verdict"] == "accept" and h["novelty"] == "known"
+    assert h["supporting"] and all(c in data["claims"] and data["claims"][c]["passage"] for c in h["supporting"])
+    assert h["falsifiers"] and h["uncertainty"] and h["searches"]
+    assert h["ranking"]["feasibility"]["level"] == "not_assessed" and "score" not in h
+    assert 'id="tab-hyp"' in html and 'id="hyp-status"' in html
+
+
+def test_unaccepted_hypotheses_are_listed_with_their_critic_findings(tmp_path):
+    _, _, html = viewer_with_hypothesis(tmp_path, accept=False)
+    (h,) = embedded_data(html)["hypotheses"]
+    assert h["status"] == "proposed" and h["verdict"] == "revise" and h["rounds"] == 3 and h["findings"]
+
+
+def test_hypothesis_figures_are_embedded_with_unique_ids_and_the_csp_still_matches(tmp_path):
+    _, result, html = viewer_with_hypothesis(tmp_path)
+    assert f'data-hyp-figs="{result.hypotheses[0].id}"' in html and "From gap to experiment" in html and "Hypothesis comparison" in html
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(ids) == len(set(ids))
+    csp = re.search(r'Content-Security-Policy" content="([^"]+)"', html).group(1)
+    script = re.search(r"<script>(.*?)</script>", html, re.S).group(1)
+    assert f"script-src 'sha256-{base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()}'" in csp
+    assert len(re.findall(r"<script", html)) == 1
+
+
+def test_hostile_hypothesis_text_cannot_break_out_of_the_viewer(tmp_path):
+    corpus, result, _ = viewer_with_hypothesis(tmp_path)
+    evil = result.hypotheses[0].revise(statement="KRAS </script><script>alert(1)</script> drives MAPK pathway")
+    corpus.store.save(evil)
+    html = build_viewer(corpus.store, corpus.settings, tmp_path / "out2").html_path.read_text()
+    assert html.count("<script") == 1 and html.count("</script>") == 1
+    assert any("alert(1)" in h["statement"] for h in embedded_data(html)["hypotheses"])        # still valid JSON, text only
+
+
+def test_viewer_without_hypotheses_has_an_empty_list(tmp_path, paper_pdf):
+    _, _, html = build(tmp_path, paper_pdf)
+    assert embedded_data(html)["hypotheses"] == []

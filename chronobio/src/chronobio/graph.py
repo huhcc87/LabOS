@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 from .claims import Rejection
 from .config import Settings
-from .llm import LLM
+from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
     Direction, EvidenceClaim, GraphEdge, GraphNode, NodeType, Provenance, Publication,
     Relation, RetractionStatus,
@@ -32,7 +32,7 @@ TRIPLE_BATCH = 6                      # claims per model call (keeps prompts sma
 
 SIGN = {Relation.ACTIVATES: 1, Relation.INHIBITS: -1}
 
-SYSTEM_PROMPT = (
+SYSTEM_PROMPT = UNTRUSTED_DATA_NOTICE + (
     "You turn scientific claims into graph edges. Reply with ONLY a JSON array. Each item: "
     "{\"claim\": <number>, \"subject\": str, \"subject_type\": \"gene\"|\"pathway\"|\"disease\"|\"intervention\"|\"measurement\"|\"concept\", "
     "\"relation\": \"activates\"|\"inhibits\"|\"associated\"|\"no_effect\", "
@@ -235,6 +235,15 @@ def snapshot(
         tuple(sorted(display, key=lambda e: (e.inferred, e.first_year or 0, e.key))),
         frozenset(visible), excluded_undated,
     )
+
+
+def restrict(snap: Snapshot, node_ids: list[str]) -> Snapshot:
+    """The part of a snapshot that lies among `node_ids` (for a per-hypothesis mechanism diagram)."""
+    keep = set(node_ids)
+    edges = tuple(e for e in snap.edges if e.source in keep and e.target in keep)
+    used = {n for e in edges for n in (e.source, e.target)} | keep
+    claim_ids = frozenset(c for e in edges for c, _ in e.evidence)
+    return Snapshot(snap.cutoff, tuple(n for n in snap.nodes if n.id in used), edges, claim_ids, snap.excluded_undated)
 
 
 def suggest_inferred_edges(edges: list[GraphEdge]) -> list[GraphEdge]:

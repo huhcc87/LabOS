@@ -224,6 +224,26 @@ class NoveltyStatus(StrEnum):
     UNKNOWN = "unknown"                    # absence of hits is NOT novelty
 
 
+class GapKind(StrEnum):
+    CONTRADICTORY = "contradictory"      # conflicting evidence on the same link
+    MECHANISTIC = "mechanistic"          # A→B and B→C reported, A→C never examined
+    TRANSLATIONAL = "translational"      # evidence only from lab/animal/computational studies
+    UNREPLICATED = "unreplicated"        # a link reported by a single paper
+
+
+class Gap(Record):
+    """A place where the literature is thin, conflicting or untested (found by rules, not the model)."""
+
+    prefix: ClassVar[str] = "gap"
+
+    kind: GapKind
+    description: NonEmpty
+    node_ids: list[str] = Field(min_length=1)
+    claim_ids: list[str] = []              # the evidence that defines the gap
+    paper_count: int = Field(ge=0)         # how many papers touch it (lower = less covered)
+    priority: float = Field(ge=0)
+
+
 class Hypothesis(Record):
     prefix: ClassVar[str] = "hyp"
 
@@ -231,10 +251,46 @@ class Hypothesis(Record):
     mechanism: str = ""
     predictions: list[NonEmpty] = Field(min_length=1)
     falsifiers: list[NonEmpty] = Field(min_length=1)
+    alternative_mechanisms: list[str] = []
     supporting_claim_ids: list[str] = []
     contradicting_claim_ids: list[str] = []
+    uncertainty: list[str] = []            # stated limits of the evidence, computed from the claims
+    gap_id: str | None = None
     novelty_status: NoveltyStatus = NoveltyStatus.NOT_SEARCHED
     review_status: HypothesisStatus = HypothesisStatus.PROPOSED
+
+
+class Verdict(StrEnum):
+    ACCEPT = "accept"
+    REVISE = "revise"
+    REJECT = "reject"
+
+
+class Review(Record):
+    """One critic pass over one hypothesis version."""
+
+    prefix: ClassVar[str] = "rev"
+
+    hypothesis_id: NonEmpty
+    hypothesis_version: int = Field(ge=1)
+    verdict: Verdict
+    rule_findings: list[str] = []          # deterministic checks that fired
+    critic_notes: list[str] = []           # model critique (never lowers a rule finding)
+    missing_controls: list[str] = []
+    confounders: list[str] = []
+
+
+class NoveltyAssessment(Record):
+    """Result of an external search for prior work on one hypothesis."""
+
+    prefix: ClassVar[str] = "nov"
+
+    hypothesis_id: NonEmpty
+    status: NoveltyStatus
+    search_log_ids: list[str] = []
+    verified_quotes: list[str] = []        # sentences from prior papers, verified verbatim
+    prior_titles: list[str] = []
+    limitations: list[str] = []            # always includes "absence of hits is not novelty"
 
 
 class AccessStatus(StrEnum):
@@ -255,6 +311,12 @@ class Dataset(Record):
     units: dict[str, str] = {}
     sample_count: int = Field(ge=0)
     quality_flags: list[str] = []
+    path: str | None = None               # the file stays where it is; only a reference and a checksum are stored
+    sha256: str = ""
+    sample_id_column: str = ""
+    group_column: str = ""
+    batch_column: str | None = None
+    data_dictionary: dict[str, str] = {}
 
 
 class RunStatus(StrEnum):
@@ -273,14 +335,18 @@ class ValidationRun(Record):
     seed: int | None = None
     metrics: dict[str, float] = {}
     confidence_intervals: dict[str, tuple[float, float]] = {}
+    parameters: dict[str, str | float | int] = {}      # the pre-registered analysis settings
     caveats: list[str] = []
     status: RunStatus = RunStatus.PLANNED
+    verdict: str = ""                                   # computed from the metrics; empty until executed
 
     @model_validator(mode="after")
     def _no_metrics_unless_executed(self) -> Self:
         # Planned analyses must never carry numbers (no invented metrics).
         if self.status != RunStatus.EXECUTED and (self.metrics or self.confidence_intervals):
             raise ValueError("metrics are only allowed on executed runs")
+        if self.status != RunStatus.EXECUTED and self.verdict:
+            raise ValueError("a verdict is only allowed on executed runs")
         return self
 
 
@@ -294,6 +360,11 @@ class ExperimentPlan(Record):
     replication: str = ""
     power_plan: str = ""
     alternative_outcomes: list[str] = []
+    models_and_assays: list[str] = []      # taken from the cited studies, never invented
+    expected_outcomes: list[str] = []
+    go_no_go: list[str] = []
+    assumptions: list[str] = []
+    flags: list[str] = []                  # ethics, cost and feasibility flags
 
 
 class FigureType(StrEnum):
@@ -317,6 +388,6 @@ class Figure(Record):
 
 RECORD_TYPES: dict[str, type[Record]] = {
     cls.__name__: cls
-    for cls in (Publication, SearchLog, EvidenceClaim, GraphNode, GraphEdge, Hypothesis,
-                Dataset, ValidationRun, ExperimentPlan, Figure)
+    for cls in (Publication, SearchLog, EvidenceClaim, GraphNode, GraphEdge, Gap, Hypothesis, Review,
+                NoveltyAssessment, Dataset, ValidationRun, ExperimentPlan, Figure)
 }

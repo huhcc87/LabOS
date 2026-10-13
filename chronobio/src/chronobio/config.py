@@ -40,6 +40,8 @@ class Settings:
     max_batch_papers: int = 5
     max_agent_iterations: int = 3
     request_timeout_s: int = 180
+    max_memory_mb: int = 4096             # benchmark pass/fail limit for this process (peak resident memory)
+    max_runtime_s: int = 1800             # benchmark pass/fail limit for one swarm run
 
     @property
     def db_path(self) -> Path:
@@ -69,6 +71,8 @@ def load_settings() -> Settings:
         max_batch_papers=_int("CHRONOBIO_MAX_BATCH_PAPERS", defaults.max_batch_papers),
         max_agent_iterations=_int("CHRONOBIO_MAX_AGENT_ITERATIONS", defaults.max_agent_iterations),
         request_timeout_s=_int("CHRONOBIO_TIMEOUT_S", defaults.request_timeout_s),
+        max_memory_mb=_int("CHRONOBIO_MAX_MEMORY_MB", defaults.max_memory_mb),
+        max_runtime_s=_int("CHRONOBIO_MAX_RUNTIME_S", defaults.max_runtime_s),
     )
     settings.validate()
     return settings
