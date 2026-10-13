@@ -2,7 +2,49 @@
 
 An opt-in extension for LabOS that turns literature into evidence-traceable, falsifiable hypotheses. It lives entirely in this folder: it has its own virtual environment, its own SQLite database under `data/`, and its own tests. It imports nothing from `backend/` or `frontend/convex/`.
 
-**Status: Milestone 3 of 9 complete.** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+**Status: Milestone 4 of 9 complete.** See "What Milestone 4 does" below; earlier milestones follow.
+
+**Milestone 3 of 9 (earlier status).** Milestone 1 added the skeleton, flags, data contracts, store and local-model access. Milestone 2 added PDF ingestion with page geometry, literature search with logged queries, retraction checks, and verified claim extraction. Milestone 3 adds the temporal evidence graph, a year slider, source-linked figures and an interactive viewer. There are no hypothesis agents yet, and the viewer is a standalone file, not a tab inside LabOS.
+
+## What Milestone 4 does
+
+The hypothesis swarm runs one agent at a time on one shared local model: gaps → proposer → critic (bounded revisions) → novelty review → ranking. Each gap is checkpointed when finished, so a crashed run resumes with the next gap.
+
+| Module | Purpose |
+|---|---|
+| `gaps.py` | Finds gaps with explicit rules over the evidence graph, not with the model: **contradictory** (conflicting evidence on one link), **mechanistic** (A→X and X→B reported, A→B never examined), **translational** (only lab, animal or computational evidence, no human study), **unreplicated** (one paper). A design the model labelled "unknown" never creates a translational gap. Less-covered gaps rank higher within a kind. |
+| `agents.py` | The proposer writes one hypothesis per gap; the critic reviews it. Code verifies both (see below). |
+| `novelty.py` | Searches Europe PMC for prior work, logging every query. |
+| `ranking.py` | Reports evidence strength, falsifiability and originality separately, with reasons. |
+| `swarm.py` | Orchestrates the above, with a bounded revision loop (`CHRONOBIO_MAX_AGENT_ITERATIONS`, default 3). |
+| `export.py` | Writes `hypotheses.json` and `hypotheses.md` from stored data only. |
+
+What the code enforces:
+
+- A proposal is kept only if it cites real claim ids from its evidence pool, names an entity from its gap, has a measurable prediction, and has a falsifier that differs from the prediction. Invented claim ids are dropped; a proposal left with none is rejected.
+- Opposing evidence and the uncertainty statement are computed from the claims. The model does not write them, so it cannot leave out conflicting papers.
+- The critic's rule checks are deterministic: no support, all sources retracted, more papers against than for (rejected as "contradicted"); a single source, unaddressed conflict, or an unmeasurable prediction (sent back for revision). The model critic can make a verdict stricter but never more lenient, and an unreadable or invalid model reply is treated as "revise", never "accept".
+- Novelty has four outcomes and "no hits" is never "novel": a verified direct prior test is `known`; entities studied together without a verified test is `partially_tested`; each entity studied but never together is `possible_novel_combination`; too little coverage is `unknown`. A prior test counts only when the model quotes a sentence from the abstract and that sentence is found there verbatim. Papers already in your own corpus are excluded from prior work.
+- Only accepted hypotheses are searched for novelty. Rejected ones stay in the export with their reasons.
+- Ranking has no combined confidence number. Feasibility and impact are `not_assessed` and validation is `not_performed` until later milestones. `order()` sorts by configurable weights as a reading aid only.
+
+Measured on the real KRAS graph from Milestone 3 (12 abstracts, local llama3.1 8B, live Europe PMC), 4 gaps per run, about 200 s per run:
+
+- The graph produced only one kind of gap: 4 "translational" gaps, each backed by a single paper. There were no contested links and no two-step paths, so the contradictory and mechanistic rules were exercised by tests only, not by real data.
+- **Run 1 accepted one hypothesis, and review showed it should not have been.** It restated the paper's own finding, so its novelty result was an artifact (the only paper containing both phrases is the source paper, which is correctly excluded). Its first prediction also contradicted its own statement. The model critique had come back unusable that round, and the rules alone let it through.
+- Three fixes followed, all covered by new regression tests: a rule that sends restated findings back; acceptance now requires a usable model critique (one retry, otherwise "revise"); and a rule that sends back statements asserting human effects without human evidence. A single-paper limit that no revision can fix is now recorded but no longer forces endless revision rounds.
+- I also changed the critic's instructions once, because it was faulting proposals for predicting outcomes the evidence does not already show. Predictions are untested by design.
+- **Final result: 0 of 4 hypotheses accepted.** After the changes, the critic's objections were substantive: the 8B model invents mechanisms (for example a "novel antigen presentation pathway" or dose-dependence) that the single abstract does not support, and three rounds of revision did not fix that. No accepted hypothesis therefore reached the novelty search in the final run.
+
+What this does and does not show: the accept path (novelty search, ranking, export) is verified by tests with a scripted model and mocked search, and the real novelty search and export ran on the run-1 hypothesis. It has not been demonstrated end to end on a hypothesis that a real model produced and the final critic accepted. A larger local model, a corpus with several papers per link, or full text instead of abstracts are the likely routes to that; none were tried.
+
+Known weaknesses:
+
+- The restatement check is a word-overlap heuristic, and the "prediction contradicts the statement" check relies on the model critic; no rule can see it.
+- Entity names from the Milestone 3 graph are noisy, and novelty searches use them as exact phrases, so a search can match only the source paper.
+- Every gap in this corpus rests on one paper, so the evidence-strength dimension is "low" for all of them.
+
+Not implemented yet: population gaps (needs structured cohort data), cross-field gaps (needs field metadata), feasibility and impact scoring (later milestones), and a hypotheses tab in the viewer (Milestone 5).
 
 ## What Milestone 3 does
 
