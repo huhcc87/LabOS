@@ -1,16 +1,16 @@
 # Graph Report - lab-protocol-revisions-91680c  (2026-10-12)
 
 ## Corpus Check
-- 538 files · ~581,995 words
+- 541 files · ~588,685 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5328 nodes · 13229 edges · 398 communities (292 shown, 106 thin omitted)
-- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 2586 edges (avg confidence: 0.55)
+- 5416 nodes · 13566 edges · 403 communities (296 shown, 107 thin omitted)
+- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 2614 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c0ad8e0f`
+- Built from commit: `74f64e69`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -371,6 +371,11 @@
 - IntegrationsPage.tsx
 - mermaid
 - @types/jspdf
+- payments.ts
+- AIChatPanel.tsx
+- ProgressReportsPage.tsx
+- @edge-runtime/vm
+- react-dropzone
 
 ## God Nodes (most connected - your core abstractions)
 1. `UserRole` - 153 edges
@@ -391,23 +396,23 @@
   frontend/src/features/lab-meetings/components/VideoCallRoom.tsx → extension/content/_shared.js
 - `_to_out()` --calls--> `parse()`  [INFERRED]
   backend/app/api/references.py → chronobio/tests/test_layout_figures.py
-- `Corpus` --uses--> `Settings`  [INFERRED]
-  chronobio/tests/swarm_world.py → backend/app/core/config.py
-- `Paper` --uses--> `Settings`  [INFERRED]
-  chronobio/tests/swarm_world.py → backend/app/core/config.py
+- `World` --uses--> `Settings`  [INFERRED]
+  chronobio/tests/world.py → backend/app/core/config.py
+- `LabMeetingsPage()` --indirect_call--> `text()`  [INFERRED]
+  frontend/src/features/lab-meetings/pages/LabMeetingsPage.tsx → extension/content/_shared.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (398 total, 106 thin omitted)
+## Communities (403 total, 107 thin omitted)
 
 ### Community 0 - "UserRole"
-Cohesion: 0.13
-Nodes (177): create_integration(), delete_integration(), _enrich(), get_integration(), list_integrations(), Session, User, Test an integration connection (+169 more)
+Cohesion: 0.16
+Nodes (156): create_booking(), create_instrument(), delete_booking(), delete_instrument(), _enrich_booking(), get_instrument(), list_bookings(), list_instruments() (+148 more)
 
 ### Community 1 - "InventoryItem"
-Cohesion: 0.13
-Nodes (41): add_restricted(), approve_items(), check_budget(), create_borrow(), create_budget(), create_rule(), del_restricted(), delete_budget() (+33 more)
+Cohesion: 0.12
+Nodes (60): add_restricted(), AltPrice, ApprovalRuleIn, approve_items(), ApproveBody, BorrowIn, BudgetIn, check_budget() (+52 more)
 
 ### Community 2 - "meetingUtils.ts"
 Cohesion: 0.06
@@ -418,8 +423,8 @@ Cohesion: 0.05
 Nodes (69): AgentPanel(), Props, scoreColor(), BSL_LEVELS, bslColor(), inputStyle, Props, RESEARCH_AREAS (+61 more)
 
 ### Community 4 - "Table.tsx"
-Cohesion: 0.07
-Nodes (67): ConfirmDialog(), ConfirmDialogProps, Modal(), ModalProps, Column, Pagination(), PaginationProps, Table() (+59 more)
+Cohesion: 0.05
+Nodes (60): BarcodeScanner(), BarcodeScannerProps, CAMERA_PERMISSION_HELP, PRODUCT_DATABASE, ConfirmDialog(), ConfirmDialogProps, Modal(), ModalProps (+52 more)
 
 ### Community 5 - "suppliers.py"
 Cohesion: 0.12
@@ -431,7 +436,7 @@ Nodes (60): chat, history, inventoryPredictions, list, log, get, { requireAuth }
 
 ### Community 7 - "api.ts"
 Cohesion: 0.05
-Nodes (67): activityApi, adapt(), aiApi, auditApi, authApi, biosketchApi, client, complianceApi (+59 more)
+Nodes (65): activityApi, adapt(), aiApi, auditApi, authApi, biosketchApi, client, complianceApi (+57 more)
 
 ### Community 8 - "migrations.py"
 Cohesion: 0.07
@@ -450,8 +455,8 @@ Cohesion: 0.10
 Nodes (28): broadcast_to_room(), create_video_room(), CreateRoomRequest, delete_video_room(), get_chat_history(), get_room_for_meeting(), get_transcription(), get_video_room() (+20 more)
 
 ### Community 12 - "types.ts"
-Cohesion: 0.06
-Nodes (34): find_existing(), fulltext_path(), ingest_pdf(), load_document(), Document, Path, Publication, Settings (+26 more)
+Cohesion: 0.04
+Nodes (85): asdict_dims(), build_records(), _cite(), export_swarm(), _markdown(), Path, Publication, Readable (Markdown) and machine-readable (JSON) export of swarm results.  Everyt (+77 more)
 
 ### Community 13 - "🟢 Chrome Web Store — Full Upload Walkthrough"
 Cohesion: 0.05
@@ -462,24 +467,24 @@ Cohesion: 0.06
 Nodes (28): fld(), GenHook, inp(), Props, ProtocolGenerateModal(), sel(), Props, WFEdge (+20 more)
 
 ### Community 15 - "AuthContext.tsx"
-Cohesion: 0.07
-Nodes (32): dompurify, dompurify, AIChatPanel(), Msg, renderMarkdownInline(), STARTER_QUESTIONS, AssistantIcon(), BellIcon() (+24 more)
+Cohesion: 0.12
+Nodes (20): AssistantIcon(), BellIcon(), MonitorIcon(), MoonIcon(), SearchIcon(), SunIcon(), AppNotification, EXTRA_PAGE_HUB (+12 more)
 
 ### Community 16 - "iot.py"
 Cohesion: 0.11
 Nodes (41): AbstractEventLoop, acknowledge_alert(), AlertOut, create_sensor(), delete_sensor(), _enrich(), get_history(), get_sensor() (+33 more)
 
 ### Community 17 - "useAuth"
-Cohesion: 0.18
-Nodes (13): Task, TaskStatus, Comment, dueDateBar(), LabUser, parsePriority(), Priority, PRIORITY_META (+5 more)
+Cohesion: 0.17
+Nodes (12): Task, TaskStatus, Comment, dueDateBar(), LabUser, parsePriority(), Priority, PRIORITY_META (+4 more)
 
 ### Community 18 - "api/security.py"
-Cohesion: 0.06
-Nodes (69): change_password(), _check_lockout(), create_user(), delete_user(), list_users(), login(), me(), Request (+61 more)
+Cohesion: 0.08
+Nodes (55): change_password(), _check_lockout(), create_user(), delete_user(), list_users(), login(), me(), Request (+47 more)
 
 ### Community 19 - "video_call.py"
-Cohesion: 0.18
-Nodes (23): ExpiryAlertRequest, notify_expiry_alerts(), notify_welcome(), BaseModel, Session, User, send_test_email(), smtp_status() (+15 more)
+Cohesion: 0.16
+Nodes (26): ExpiryAlertRequest, notify_expiry_alerts(), notify_welcome(), BaseModel, Session, User, send_test_email(), smtp_status() (+18 more)
 
 ### Community 20 - "ResearchAITab.tsx"
 Cohesion: 0.07
@@ -490,8 +495,8 @@ Cohesion: 0.06
 Nodes (33): Category, Certifications (toggle these on), 📋 Chrome Web Store Listing — Paste-Ready Kit, Data usage disclosure, Description (paste this — 16,000 char field), ✅ Final checklist before clicking "Submit for review", Geographic distribution, Global promo video (optional — skip) (+25 more)
 
 ### Community 22 - "scheduling.py"
-Cohesion: 0.19
-Nodes (29): booking_utilization(), create_calendar_event(), create_reminder(), delete_calendar_event(), delete_calendar_series(), delete_reminder(), detect_conflicts(), _enrich_cal() (+21 more)
+Cohesion: 0.16
+Nodes (34): Session, User, summary(), booking_utilization(), create_calendar_event(), create_reminder(), delete_calendar_event(), delete_calendar_series() (+26 more)
 
 ### Community 23 - "ProtocolBadges.tsx"
 Cohesion: 0.14
@@ -510,8 +515,8 @@ Cohesion: 0.23
 Nodes (17): AddSensorDialog(), limitsOf(), num(), ago(), Judged, presetById(), PRESETS, sensorState (+9 more)
 
 ### Community 27 - "main.py"
-Cohesion: 0.24
-Nodes (19): all_consents(), _consent_dict(), ConsentUpdate, _ensure_all_consents(), get_current_policy(), list_policy_versions(), my_consents(), PolicyVersionCreate (+11 more)
+Cohesion: 0.23
+Nodes (21): all_consents(), _consent_dict(), ConsentUpdate, _ensure_all_consents(), get_current_policy(), list_policy_versions(), my_consents(), PolicyVersionCreate (+13 more)
 
 ### Community 28 - "procurement.ts"
 Cohesion: 0.07
@@ -527,35 +532,35 @@ Nodes (27): 1. Build the web bundle, 2. Sync Capacitor, 3. Configure the backend
 
 ### Community 31 - "dependencies"
 Cohesion: 0.10
-Nodes (21): axios, @capacitor/keyboard, dependencies, axios, @capacitor/keyboard, lucide-react, react-dropzone, stripe (+13 more)
+Nodes (21): axios, @capacitor/keyboard, dependencies, axios, @capacitor/keyboard, lucide-react, mermaid, stripe (+13 more)
 
 ### Community 32 - "public/manifest.json"
 Cohesion: 0.07
 Nodes (26): background_color, categories, description, display, display_override, handle_links, icons, id (+18 more)
 
 ### Community 33 - "elnSwarmEngine.ts"
-Cohesion: 0.13
-Nodes (37): AGENT_GENERATORS, askELNSwarm(), computeELNConsensus(), delay(), emptyConsensus(), generateBiosafetyOutput(), generateExperiment(), generateGrantSection() (+29 more)
+Cohesion: 0.18
+Nodes (26): AGENT_GENERATORS, generateBiosafetyOutput(), generateExperiment(), generateLiteratureOutput(), generateMockLiterature(), generateOptimizationOutput(), generateProtocolComplianceOutput(), generateReproducibilityOutput() (+18 more)
 
 ### Community 34 - "comingSoon"
 Cohesion: 0.07
-Nodes (30): comingSoon(), Application, ERACommonsPage(), INITIAL_APPLICATIONS, StatusEvent, Grant, GrantsPage(), INITIAL_GRANTS (+22 more)
+Nodes (30): comingSoon(), Collaborator, CollaboratorNetworkPage(), INITIAL_COLLABORATORS, INITIAL_DOCUMENTS, SharedDocument, Application, ERACommonsPage() (+22 more)
 
 ### Community 35 - "email_notifications.py"
-Cohesion: 0.15
-Nodes (38): build(), Corpus, Paper, Path, Builders for small corpora used by the swarm tests., test_uncertainty_flags_retraction_and_missing_human_evidence(), gaps_for(), kinds() (+30 more)
+Cohesion: 0.13
+Nodes (29): Settings, BaseSettings, build(), Corpus, Paper, Path, Builders for small corpora used by the swarm tests., test_uncertainty_flags_retraction_and_missing_human_evidence() (+21 more)
 
 ### Community 36 - "ELNPage.tsx"
 Cohesion: 0.09
 Nodes (22): ADDBTN, CANCELBTN, ChartType, ExperimentResultsPanel(), FINP, LBL, Props, ResultPoint (+14 more)
 
 ### Community 37 - "InventoryPage.tsx"
-Cohesion: 0.08
-Nodes (24): BarcodeScanner(), BarcodeScannerProps, CAMERA_PERMISSION_HELP, PRODUCT_DATABASE, InventoryItem, CHEMICAL_COMPATIBILITY, GHS_HAZARDS, HAZARD_CLASSES (+16 more)
+Cohesion: 0.13
+Nodes (15): InventoryItem, CHEMICAL_COMPATIBILITY, GHS_HAZARDS, HAZARD_CLASSES, INVENTORY_CATEGORIES, INVENTORY_UNITS, InventoryPage(), IoTDevice (+7 more)
 
 ### Community 38 - "gdpr.py"
-Cohesion: 0.13
-Nodes (47): accept_invite(), approve(), can_i_manage(), _can_manage_lab(), invite(), InviteIn, JoinRequestIn, list_members() (+39 more)
+Cohesion: 0.19
+Nodes (33): accept_invite(), approve(), can_i_manage(), _can_manage_lab(), invite(), InviteIn, JoinRequestIn, list_members() (+25 more)
 
 ### Community 39 - "Protocol"
 Cohesion: 0.14
@@ -566,12 +571,12 @@ Cohesion: 0.12
 Nodes (16): AiGeneratedBadge(), OpenAccessBadge(), Props, Tab, TABS, linkBtn(), Props, ProtocolSourceLinkGroup() (+8 more)
 
 ### Community 41 - "consent.py"
-Cohesion: 0.15
-Nodes (30): analyze_protocol(), anomaly_detection(), chat(), ChatRequest, ChatResponse, _gather_lab_context(), inventory_predictions(), lab_search() (+22 more)
+Cohesion: 0.12
+Nodes (40): analyze_protocol(), anomaly_detection(), chat(), ChatRequest, ChatResponse, _gather_lab_context(), inventory_predictions(), lab_search() (+32 more)
 
 ### Community 42 - "LabHubPage.tsx"
-Cohesion: 0.06
-Nodes (48): DataModel, Doc, Id, TableNames, afterEdit(), ApprovalMode, approvalValidator, Approver (+40 more)
+Cohesion: 0.12
+Nodes (24): fmt(), parseSteps(), Props, ProtocolExecutionModal(), Step, approvalBadge(), downloadTextFile(), protocolFilename() (+16 more)
 
 ### Community 43 - "IoTDashboardPage.tsx"
 Cohesion: 0.40
@@ -587,7 +592,7 @@ Nodes (9): BiosketchUpdate, get_biosketch(), _get_or_create(), BaseModel, Sessio
 
 ### Community 46 - "api/auth.py"
 Cohesion: 0.05
-Nodes (42): Attachment, AuditAction, AuditLog, Booking, BookingStatus, CalendarEvent, ComplianceLog, DashboardSummary (+34 more)
+Nodes (45): COLORS, LABELS, RoleBadge(), UseApiOptions, Attachment, AuditAction, AuditLog, BookingStatus (+37 more)
 
 ### Community 47 - "components/index.ts"
 Cohesion: 0.11
@@ -603,7 +608,7 @@ Nodes (20): compilerOptions, allowImportingTsExtensions, allowSyntheticDefaultIm
 
 ### Community 50 - "write_audit"
 Cohesion: 0.09
-Nodes (45): chunk_pages(), claim_id(), extract_claims(), _parse_array(), Document, Publication, Settings, Extract verified claims from a parsed PDF (`doc`) or the publication's abstract. (+37 more)
+Nodes (44): chunk_pages(), claim_id(), extract_claims(), _parse_array(), Document, Publication, Settings, Extract verified claims from a parsed PDF (`doc`) or the publication's abstract. (+36 more)
 
 ### Community 51 - "AppDelegate"
 Cohesion: 0.13
@@ -630,8 +635,8 @@ Cohesion: 0.11
 Nodes (24): SelectOrCustom(), SampleEvent, useLabSampleEvents(), LabSample, localDate(), META, parseMeta(), SampleInput (+16 more)
 
 ### Community 57 - "protocols.py"
-Cohesion: 0.34
-Nodes (17): AuditAction, create_booking(), create_instrument(), delete_booking(), delete_instrument(), _enrich_booking(), get_instrument(), list_bookings() (+9 more)
+Cohesion: 0.07
+Nodes (30): list, myActivity, recent, stats, requireAuth(), approve, canManageLab(), invite (+22 more)
 
 ### Community 58 - "AdminHubPage.tsx"
 Cohesion: 0.11
@@ -646,16 +651,16 @@ Cohesion: 0.11
 Nodes (18): 4a. Install Fly CLI, 4b. Launch the app (don't deploy yet), 4c. Set secrets (one command — paste your actual values), 4d. Deploy, 4e. Verify it works, 🆘 If something breaks, 🚀 LabOS — Sequential Production Setup, ⛔ PREREQUISITE — rotate exposed secrets first (+10 more)
 
 ### Community 61 - "freezer.py"
-Cohesion: 0.39
-Nodes (17): create_freezer(), delete_freezer(), _freezer_out(), FreezerCreate, get_box_slots(), get_expiring(), _get_or_create_box(), list_freezers() (+9 more)
+Cohesion: 0.36
+Nodes (18): create_freezer(), delete_freezer(), _freezer_out(), FreezerCreate, get_box_slots(), get_expiring(), _get_or_create_box(), list_freezers() (+10 more)
 
 ### Community 62 - "User"
-Cohesion: 0.10
-Nodes (33): _crossref_status(), dedupe(), dedupe_key(), LiteratureClient, NetworkDisabled, normalize_doi(), _pubtype_status(), Client (+25 more)
+Cohesion: 0.19
+Nodes (26): json_object(), dedupe_key(), DOI first, then PMID, then title+year — the order identifiers are most reliable., Gap, A place where the literature is thin, conflicting or untested (found by rules, n, assess_novelty(), _mentions(), NoveltyResult (+18 more)
 
 ### Community 63 - "samples.py"
-Cohesion: 0.26
-Nodes (20): Session, User, summary(), create_sample(), create_sample_event(), delete_sample(), delete_sample_event(), _enrich_event() (+12 more)
+Cohesion: 0.33
+Nodes (17): create_sample(), create_sample_event(), delete_sample(), delete_sample_event(), _enrich_event(), _enrich_sample(), get_sample(), list_sample_events() (+9 more)
 
 ### Community 64 - "test_iot.py"
 Cohesion: 0.14
@@ -678,7 +683,7 @@ Cohesion: 0.19
 Nodes (15): applyCustomConfig(), extract(), run(), Equipment, formatDate(), formatDuration(), formatTime(), getInitials() (+7 more)
 
 ### Community 72 - "LabelPrinterPage.tsx"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (15): Barcode(), BarcodeProps, scanUrl(), DEFAULT_FIELDS, DEFAULT_TYPOGRAPHY, ENTITY_PRESETS, FONT_FAMILIES, generateLabId() (+7 more)
 
 ### Community 73 - "exportUtils.ts"
@@ -686,8 +691,8 @@ Cohesion: 0.21
 Nodes (15): ExportMenu(), ExportMenuProps, downloadFile(), EXPORT_OPTIONS, ExportButtonConfig, exportData(), ExportFormat, ExportOptions (+7 more)
 
 ### Community 74 - "NotebookCanvas.tsx"
-Cohesion: 0.09
-Nodes (50): _count(), _defs(), _edge_geometry(), edge_style(), graph_body(), graph_svg(), graph_svg_slider(), legend() (+42 more)
+Cohesion: 0.07
+Nodes (64): _count(), _defs(), _edge_geometry(), edge_style(), _flow(), graph_body(), graph_svg(), graph_svg_slider() (+56 more)
 
 ### Community 75 - "protocol.types.ts"
 Cohesion: 0.12
@@ -702,8 +707,8 @@ Cohesion: 0.12
 Nodes (16): EVENT_ICONS, Experiment, ExperimentFile, ExperimentsHubPage(), ExperimentStep, INITIAL_EXPERIMENTS, INITIAL_FILES, INITIAL_RESULTS (+8 more)
 
 ### Community 78 - "instruments.py"
-Cohesion: 0.04
-Nodes (53): crons, internal, httpAction, internalAction, internalMutation, mutation, query, http (+45 more)
+Cohesion: 0.03
+Nodes (71): callAI(), callAnthropic(), callDeepSeek(), chat, inventoryPredictions, crons, adminResetPassword, createSession (+63 more)
 
 ### Community 79 - "LabOS — Data Privacy & Flow Documentation"
 Cohesion: 0.12
@@ -722,32 +727,28 @@ Cohesion: 0.22
 Nodes (8): Accessibility & Inclusion, Anti-references, Brand Personality, Design Principles, Product, Product Purpose, Register, Users
 
 ### Community 83 - "GrantBudgetPage.tsx"
-Cohesion: 0.08
-Nodes (54): build_graph(), edge_id(), _enum(), extract_edges(), GraphBuild, node_id(), _parse(), datetime (+46 more)
+Cohesion: 0.14
+Nodes (28): node_id(), Two-hop hypotheses: A activates B and B activates C suggests A is linked to C., suggest_inferred_edges(), _claims(), ids(), keys(), run(), test_before_any_evidence_the_graph_is_empty() (+20 more)
 
 ### Community 84 - "ResourcesHubPage.tsx"
 Cohesion: 0.12
 Nodes (13): emptyValue(), HIGHLIGHTER_COLORS, HL_WIDTHS, NotebookCanvas(), NotebookPage, PageData, PaperStyle, PEN_COLORS (+5 more)
 
-### Community 85 - "costs.py"
-Cohesion: 0.13
-Nodes (9): ScopedQuery, APPROVAL_COLORS, PO_STATUS_COLORS, PO_STATUSES, PRIORITY_COLORS, PurchaseOrder, Supplier, SuppliersPage() (+1 more)
-
 ### Community 86 - "export.py"
-Cohesion: 0.30
-Nodes (14): _csv_response(), export_capa_xlsx(), export_eln_pdf(), export_grants_xlsx(), export_inventory_csv(), export_inventory_xlsx(), export_procurement_xlsx(), export_samples_csv() (+6 more)
+Cohesion: 0.12
+Nodes (30): _csv_response(), export_capa_xlsx(), export_eln_pdf(), export_grants_xlsx(), export_inventory_csv(), export_inventory_xlsx(), export_procurement_xlsx(), export_samples_csv() (+22 more)
 
 ### Community 87 - "integrations.py"
 Cohesion: 0.44
 Nodes (16): log_action(), Log an action to the audit log., cancel_meeting(), complete_meeting(), create_meeting(), delete_meeting(), get_meeting(), list_meetings() (+8 more)
 
 ### Community 88 - "payments.py"
-Cohesion: 0.09
-Nodes (21): AdminPasswordReset(), Props, TwoFactorSetup(), AdminHubPage(), AuditLog, DEPARTMENTS, FILE_CATEGORIES, Integration (+13 more)
+Cohesion: 0.08
+Nodes (25): AdminPasswordReset(), Props, Icon(), IconName, PATHS, Props, TwoFactorSetup(), AdminHubPage() (+17 more)
 
 ### Community 89 - "signatures.py"
-Cohesion: 0.31
-Nodes (12): Can(), CanProps, usePermissions(), atLeast(), can(), canAll(), canAny(), Permission (+4 more)
+Cohesion: 0.24
+Nodes (15): Can(), CanProps, NavItem, AuthContextValue, usePermissions(), atLeast(), can(), canAll() (+7 more)
 
 ### Community 90 - "LabOS — End User License Agreement (EULA)"
 Cohesion: 0.13
@@ -755,11 +756,11 @@ Nodes (14): 10. Prohibited Uses, 11. Term and Termination, 12. Governing Law, 13
 
 ### Community 91 - "devDependencies"
 Cohesion: 0.12
-Nodes (17): convex-test, @edge-runtime/vm, devDependencies, convex-test, @edge-runtime/vm, @testing-library/jest-dom, @types/react-big-calendar, @types/react-dom (+9 more)
+Nodes (17): convex-test, devDependencies, convex-test, @testing-library/jest-dom, @types/jspdf, @types/react-big-calendar, @types/react-dom, typescript (+9 more)
 
 ### Community 92 - "permissions.ts"
-Cohesion: 0.17
-Nodes (10): lbl, letter(), Location, LocationPicker(), parseScan(), Form, lbl, MAPPED (+2 more)
+Cohesion: 0.13
+Nodes (14): api, components, lbl, letter(), Location, LocationPicker(), parseScan(), Form (+6 more)
 
 ### Community 93 - "CustomReportBuilderPage.tsx"
 Cohesion: 0.18
@@ -778,8 +779,8 @@ Cohesion: 0.19
 Nodes (12): authHeaders(), CLASSIFICATION_LABELS, CLEARANCE_LABELS, ClearancePanel(), DisableMFA(), MFASetup(), SecurityDashboardPage(), SecurityEventsPanel() (+4 more)
 
 ### Community 97 - "PaginatedResponse"
-Cohesion: 0.15
-Nodes (12): Building the viewer, ChronoBio AI Discovery Engine, Feature flags, Legacy baseline (acceptance criterion A), Licensing decisions (Milestone 0), Quick start, Resource budget (16 GB Apple Silicon), Rollback (+4 more)
+Cohesion: 0.14
+Nodes (13): Building the viewer, ChronoBio AI Discovery Engine, Feature flags, Legacy baseline (acceptance criterion A), Licensing decisions (Milestone 0), Quick start, Resource budget (16 GB Apple Silicon), Rollback (+5 more)
 
 ### Community 98 - "🧪 Install the LabOS Reagent Capture extension"
 Cohesion: 0.14
@@ -787,35 +788,35 @@ Nodes (13): Configure the connection, 📦 Distribute to your lab (Chrome Web St
 
 ### Community 99 - "maintenance.ts"
 Cohesion: 0.09
-Nodes (67): _contains_words(), describe_uncertainty(), _evidence_text(), EvidenceItem, json_object(), opposing_claims(), propose(), Hypothesis proposer and skeptical critic.  Division of labour: the model writes (+59 more)
+Nodes (62): _contains_words(), describe_uncertainty(), _evidence_text(), EvidenceItem, opposing_claims(), propose(), Hypothesis proposer and skeptical critic.  Division of labour: the model writes, Heuristic: how much of the statement is already said by the claim (0..1). (+54 more)
 
 ### Community 100 - "ElectronicSignatureDialog.tsx"
 Cohesion: 0.18
 Nodes (13): authHeaders(), cancelBtn, dialog, ElectronicSignatureDialog(), inputStyle, labelStyle, overlay, Props (+5 more)
 
 ### Community 101 - "ErrorBoundary.tsx"
-Cohesion: 0.19
-Nodes (8): ErrorBoundary, Props, State, dedupKey(), ErrorReport, initErrorTracking(), _reported, reportError()
+Cohesion: 0.14
+Nodes (12): ErrorBoundary, Props, State, dedupKey(), ErrorReport, initErrorTracking(), _reported, reportError() (+4 more)
 
 ### Community 102 - "main.tsx"
-Cohesion: 0.21
-Nodes (8): AnalyticsEvent, initAnalytics(), trackEvent(), trackPageView(), initWebVitals(), reportMetric(), convex, queryClient
+Cohesion: 0.36
+Nodes (4): AnalyticsEvent, initAnalytics(), trackEvent(), trackPageView()
 
 ### Community 103 - "ProcurementHubPage.tsx"
 Cohesion: 0.14
 Nodes (3): INP, Tab, TABS
 
 ### Community 104 - "ReportsPage.tsx"
-Cohesion: 0.26
-Nodes (16): _ai_call(), ai_draft(), ai_research_synthesis(), AIDraftRequest, AIDraftResponse, HypothesisItem, LiteratureText, PaperSummary (+8 more)
+Cohesion: 0.28
+Nodes (17): _ai_call(), ai_draft(), ai_research_synthesis(), AIDraftRequest, AIDraftResponse, HypothesisItem, LiteratureText, PaperSummary (+9 more)
 
 ### Community 105 - "LabOS v3 — Full Application Reference"
 Cohesion: 0.15
 Nodes (12): 11. Browser Extension, 12. IoT / Raspberry Pi Integration, 14. Environment Variables, 15. Accounts, 17. Testing, 18. Known Limitations, 1. Project Overview, 2. Architecture (+4 more)
 
 ### Community 106 - "activity.py"
-Cohesion: 0.49
-Nodes (10): create_workspace(), delete_workspace(), _enrich(), get_workspace(), list_workspaces(), Session, User, update_workspace() (+2 more)
+Cohesion: 0.28
+Nodes (18): create_protocol(), create_version(), delete_protocol(), _enrich(), get_protocol(), get_protocol_for_print(), list_protocols(), list_versions() (+10 more)
 
 ### Community 107 - "test_grants.py"
 Cohesion: 0.15
@@ -826,8 +827,8 @@ Cohesion: 0.50
 Nodes (5): list_audit_logs(), Session, User, Verify the SHA-256 hash chain of the audit log. Returns first tampered entry if, verify_chain()
 
 ### Community 109 - "useNavigate"
-Cohesion: 0.08
-Nodes (31): parseNotebookCanvas(), serializeNotebookCanvas(), OnboardingWizard(), STEPS, NavigationContext, useNavigate(), exportCSV(), exportPDF() (+23 more)
+Cohesion: 0.24
+Nodes (13): parseNotebookCanvas(), serializeNotebookCanvas(), exportCSV(), exportPDF(), Entry, EXPERIMENT_TYPES, formatDate(), joinContent() (+5 more)
 
 ### Community 111 - "BiosketchGeneratorPage.tsx"
 Cohesion: 0.15
@@ -839,27 +840,27 @@ Nodes (12): 1. ULT Freezer (−80°C), 2. −20°C Freezer, 3. CO₂ Incubator (
 
 ### Community 113 - "LabNotebookEntry"
 Cohesion: 0.05
-Nodes (37): assertHub(), hubGuard(), create, get, list, { requireAuth }, resolve, update (+29 more)
+Nodes (38): assertHub(), hubGuard(), approve, create, get, list, reject, remove (+30 more)
 
 ### Community 114 - "maintenance.py"
-Cohesion: 0.10
-Nodes (17): internalQuery, audit, backfill, startFirstLab, complete, create, get, list (+9 more)
+Cohesion: 0.19
+Nodes (10): internalQuery, audit, backfill, startFirstLab, fieldOf(), isLabTable(), LAB_TABLES, LabTable (+2 more)
 
 ### Community 115 - "sops.py"
-Cohesion: 0.48
-Nodes (11): complete_maintenance(), create_maintenance_log(), delete_maintenance_log(), _enrich(), get_maintenance_log(), list_maintenance_logs(), Session, User (+3 more)
+Cohesion: 0.17
+Nodes (12): DataModel, Doc, Id, TableNames, afterEdit(), ApprovalMode, approvalValidator, Approver (+4 more)
 
 ### Community 116 - "Task"
-Cohesion: 0.47
-Nodes (11): bulk_done(), create_task(), delete_task(), _enrich(), get_task(), list_tasks(), Session, User (+3 more)
+Cohesion: 0.12
+Nodes (12): acknowledgeAlert, checkOffline, createSensor, deleteSensor, getHistory, ingest, limits, listAlerts (+4 more)
 
 ### Community 117 - "templates.py"
-Cohesion: 0.15
-Nodes (33): create_feedback(), delete_feedback(), _enrich(), get_feedback(), list_feedback(), Session, User, update_feedback() (+25 more)
+Cohesion: 0.16
+Nodes (32): create_feedback(), delete_feedback(), _enrich(), get_feedback(), list_feedback(), Session, User, update_feedback() (+24 more)
 
 ### Community 120 - "RichELNEditor.tsx"
-Cohesion: 0.09
-Nodes (27): Icon(), IconName, PATHS, Props, BoxDialog(), ConfirmDelete(), field, FreezerDialog() (+19 more)
+Cohesion: 0.11
+Nodes (23): BoxDialog(), ConfirmDelete(), field, FreezerDialog(), label, NameDialog(), ordinal(), PRESETS (+15 more)
 
 ### Community 121 - "exportDocx.ts"
 Cohesion: 0.24
@@ -918,16 +919,16 @@ Cohesion: 0.22
 Nodes (7): Document, Folder, INITIAL_DOCUMENTS, INITIAL_FOLDERS, STATUS_COLORS, TabType, TYPE_ICONS
 
 ### Community 135 - "references.py"
-Cohesion: 0.38
-Nodes (21): AltPrice, ApprovalRuleIn, ApproveBody, BorrowIn, BudgetIn, EnrichmentOptIn, BaseModel, ReceiveBody (+13 more)
+Cohesion: 0.35
+Nodes (14): create_integration(), delete_integration(), _enrich(), get_integration(), list_integrations(), Session, User, Test an integration connection (+6 more)
 
 ### Community 136 - "training.py"
-Cohesion: 0.49
-Nodes (10): create_training(), delete_training(), _enrich(), get_training(), list_training(), Session, User, update_training() (+2 more)
+Cohesion: 0.37
+Nodes (14): create_lab(), create_org(), create_site(), delete_lab(), delete_org(), delete_site(), list_labs(), list_orgs() (+6 more)
 
 ### Community 137 - "workspaces.py"
-Cohesion: 0.10
-Nodes (16): adminResetPassword, createSession, createUserAndSession, forceLogoutAll, getSessionByToken, getUserByEmail, getUserById, login (+8 more)
+Cohesion: 0.32
+Nodes (14): admin_list_signatures(), _content_hash(), get_document_signatures(), invalidate_signature(), my_signatures(), Request, Session, User (+6 more)
 
 ### Community 139 - "_shared.js"
 Cohesion: 0.31
@@ -958,8 +959,8 @@ Cohesion: 0.14
 Nodes (13): EmptyState(), EmptyStateProps, BudgetCategory, GrantBudgetPage(), INITIAL_BUDGETS, INITIAL_GRANTS, INITIAL_TRANSACTIONS, Transaction (+5 more)
 
 ### Community 146 - "biosketch.py"
-Cohesion: 0.18
-Nodes (14): callAI(), callAnthropic(), callDeepSeek(), chat, inventoryPredictions, AGENCY_DEFS, analyzeFunding, cleanQuery() (+6 more)
+Cohesion: 0.20
+Nodes (12): ProtocolApproval, area, group, label, Props, ProtocolDetails, ProtocolFormFields(), LabProtocol (+4 more)
 
 ### Community 147 - "settings.py"
 Cohesion: 0.43
@@ -970,24 +971,24 @@ Cohesion: 0.24
 Nodes (9): get_url(), include_object(), Alembic migration environment — production-grade configuration., Prefer DATABASE_URL env var; fall back to alembic.ini., Exclude SQLite internal tables from autogenerate., Generate SQL script without a live DB (for CI review or dry-run)., Apply migrations against a live DB connection., run_migrations_offline() (+1 more)
 
 ### Community 149 - "signatures.py"
-Cohesion: 0.16
-Nodes (13): maybe_start_mqtt(), Called once at startup. No-ops if MQTT_BROKER_HOST is not configured., stop_scheduler(), _get_limit(), Request, RateLimitMiddleware, Security headers and rate-limiting middleware. Adds OWASP-recommended HTTP heade, SecurityHeadersMiddleware (+5 more)
+Cohesion: 0.21
+Nodes (15): maybe_start_mqtt(), Called once at startup. No-ops if MQTT_BROKER_HOST is not configured., create_disposal_log(), delete_disposal_log(), expiry_alerts(), list_disposal_logs(), Session, User (+7 more)
 
 ### Community 153 - "text"
 Cohesion: 0.25
 Nodes (7): BatchImport(), BatchImportProps, ColumnMapping, IMPORT_CONFIGS, ImportConfig, ImportStatus, ParsedData
 
 ### Community 154 - "instruments.ts"
-Cohesion: 0.18
-Nodes (10): cancelBooking, create, createBooking, get, list, listBookings, remove, { requireAuth } (+2 more)
+Cohesion: 0.10
+Nodes (17): cancelBooking, create, createBooking, get, list, listBookings, remove, { requireAuth } (+9 more)
 
 ### Community 155 - "meetings.ts"
 Cohesion: 0.18
 Nodes (10): cancel, complete, create, get, list, past, remove, { requireAuth } (+2 more)
 
 ### Community 156 - "org.ts"
-Cohesion: 0.05
-Nodes (53): list, myActivity, recent, stats, hasRole(), LEADER_ROLES, requireAuth(), requireRole() (+45 more)
+Cohesion: 0.09
+Nodes (30): hasRole(), LEADER_ROLES, requireRole(), ROLE_ORDER, sanitizeUser(), UserRole, DEFAULT_HUBS, Hub (+22 more)
 
 ### Community 157 - "samples.ts"
 Cohesion: 0.15
@@ -1007,15 +1008,15 @@ Nodes (14): create_setup_intent(), _customer_id_for(), delete_method(), list_met
 
 ### Community 161 - "PrivacyCenterPage.tsx"
 Cohesion: 0.07
-Nodes (24): AuthContext, AuthProvider(), clearToken(), saveToken(), useConvexPaged(), UseConvexPagedOptions, errText(), HUB_ICON (+16 more)
+Nodes (46): AuthBrand(), AuthContext, AuthProvider(), clearToken(), saveToken(), useAuth(), usePagedApi(), useConvexPaged() (+38 more)
 
 ### Community 162 - "reagents.py"
 Cohesion: 0.38
 Nodes (6): ExecutionSession, formatTime(), parseDuration(), Props, ProtocolExecutionMode(), StepExecution
 
 ### Community 163 - "costs.ts"
-Cohesion: 0.15
-Nodes (11): api, components, AuthBrand(), AcceptInvitePage(), errText(), Props, LoginForm, LoginPage() (+3 more)
+Cohesion: 0.27
+Nodes (11): find_chrome(), html_to_pdf(), Path, PNG and PDF output through a locally installed Chrome (headless), when there is, Rasterize SVG text to a PNG (`scale`x resolution, white background)., Print a local HTML file to PDF (no page header or footer)., _run(), svg_to_png() (+3 more)
 
 ### Community 164 - "iot.ts"
 Cohesion: 0.31
@@ -1070,8 +1071,8 @@ Cohesion: 0.05
 Nodes (38): addBox, addRack, addShelf, boxSlots, clearSlot, create, deleteBox(), deleteRack() (+30 more)
 
 ### Community 177 - "inventory.ts"
-Cohesion: 0.31
-Nodes (13): create_reference(), delete_reference(), list_folders(), list_references(), Session, User, _to_out(), update_reference() (+5 more)
+Cohesion: 0.45
+Nodes (10): create_reference(), delete_reference(), list_folders(), list_references(), Session, User, _to_out(), update_reference() (+2 more)
 
 ### Community 178 - "labMembers.ts"
 Cohesion: 0.20
@@ -1090,8 +1091,8 @@ Cohesion: 0.48
 Nodes (6): formatDate(), isExpired(), isExpiringSoon(), Props, ProtocolTrainingTracker(), ProtocolTraining
 
 ### Community 183 - "feedback.py"
-Cohesion: 0.12
-Nodes (22): _flag(), _int(), load_settings(), Path, Feature flags and resource limits.  Everything is OFF by default. Settings come, Settings, LLMDisabled, OllamaLLM (+14 more)
+Cohesion: 0.05
+Nodes (58): _flag(), _int(), load_settings(), Path, Feature flags and resource limits.  Everything is OFF by default. Settings come, Settings, fulltext_path(), ingest_pdf() (+50 more)
 
 ### Community 184 - "a11y.ts"
 Cohesion: 0.32
@@ -1138,8 +1139,8 @@ Cohesion: 0.57
 Nodes (6): esc(), getSettings(), init(), loadCart(), render(), testConnection()
 
 ### Community 196 - "sops.ts"
-Cohesion: 0.28
-Nodes (12): get_activity_stats(), get_activity_timeline(), _get_entity_name(), get_my_activity(), get_recent_activity(), Session, User, Get recent activity (last N entries) (+4 more)
+Cohesion: 0.16
+Nodes (25): get_activity_stats(), get_activity_timeline(), _get_entity_name(), get_my_activity(), get_recent_activity(), Session, User, Get recent activity (last N entries) (+17 more)
 
 ### Community 197 - "DashboardPage.tsx"
 Cohesion: 0.48
@@ -1174,12 +1175,12 @@ Cohesion: 0.44
 Nodes (12): create_submission(), delete_submission(), get_analytics(), list_submissions(), BaseModel, Session, User, SubmissionCreate (+4 more)
 
 ### Community 209 - "require_role"
-Cohesion: 0.19
-Nodes (14): create_notification_rule(), delete_notification_rule(), get_notification_rule(), list_notification_rules(), Session, User, update_notification_rule(), get_db() (+6 more)
+Cohesion: 0.58
+Nodes (8): create_notification_rule(), delete_notification_rule(), get_notification_rule(), list_notification_rules(), Session, User, update_notification_rule(), NotificationRule
 
 ### Community 210 - "ProgressReportsPage.tsx"
-Cohesion: 0.20
-Nodes (9): approve, create, get, list, reject, remove, { requireAuth }, summary (+1 more)
+Cohesion: 0.25
+Nodes (11): askELNSwarm(), computeELNConsensus(), delay(), emptyConsensus(), generateGrantSection(), generateManuscriptSection(), getSmartSuggestions(), runELNSwarmReview() (+3 more)
 
 ### Community 211 - "ReferenceManagerPage.tsx"
 Cohesion: 0.47
@@ -1199,7 +1200,7 @@ Nodes (5): 9. Authentication & Security, JWT Authentication, Role-Based Access C
 
 ### Community 215 - "Settings"
 Cohesion: 0.11
-Nodes (28): Settings, BaseSettings, asdict_dims(), _cite(), export_swarm(), _markdown(), Path, Publication (+20 more)
+Nodes (47): Document, accepted(), build_no_chrome(), Regression: unaccepted hypotheses showed 'not assessed' for dimensions that can, Regression: the last legend entry was clipped at the right edge., test_empty_corpus_still_produces_an_honest_report(), test_every_figure_lists_claims_that_exist(), test_every_hypothesis_is_rated_even_if_not_accepted() (+39 more)
 
 ### Community 216 - "4️⃣ Deploy the backend — pay-as-you-go path (Fly.io)"
 Cohesion: 0.40
@@ -1374,47 +1375,67 @@ Cohesion: 0.49
 Nodes (10): create_log(), delete_log(), _enrich(), get_log(), list_logs(), Session, User, update_log() (+2 more)
 
 ### Community 317 - "react-dropzone"
-Cohesion: 0.22
-Nodes (8): create, get, list, remove, { requireAuth }, sign, update, witness
+Cohesion: 0.18
+Nodes (7): CATEGORIES, Expense, EXPENSE_CATEGORIES, InventoryItem, Template, TEMPLATE_TYPES, UNITS
 
 ### Community 326 - "stripe"
-Cohesion: 0.25
-Nodes (7): createRoom, deleteRoom, getChatHistory, getRoom, getRoomForMeeting, { requireAuth }, sendChatMessage
+Cohesion: 0.24
+Nodes (8): AdminPrivacyPanel(), api, ConsentRecord, ErasureRequest, fmtDate(), PolicyInfo, PrivacyCenterPage(), STATUS_COLORS
 
 ### Community 390 - "reagents.py"
-Cohesion: 0.22
-Nodes (19): create_inventory_item(), delete_inventory_item(), get_inventory_item(), list_inventory(), Session, User, update_inventory_item(), create_disposal_log() (+11 more)
+Cohesion: 0.21
+Nodes (23): AuditAction, create_inventory_item(), delete_inventory_item(), get_inventory_item(), list_inventory(), Session, User, update_inventory_item() (+15 more)
 
 ### Community 391 - "layout.py"
 Cohesion: 0.33
 Nodes (8): _cluster(), components(), _force_layout(), Layout, Deterministic graph layout, computed once so the time slider never moves nodes., Positions inside their own (0,0)-(w,h) box, plus the box size., Push apart any two nodes closer than MIN_NODE_GAP, keeping them inside the box., _separate()
 
 ### Community 392 - "SuppliersPage.tsx"
-Cohesion: 0.29
-Nodes (6): AGENCIES, FundingOpportunitiesPage(), FundingOpportunity, GRANT_TYPES, INITIAL_OPPORTUNITIES, INSTITUTES
+Cohesion: 0.21
+Nodes (10): OnboardingWizard(), STEPS, NavigationContext, useNavigate(), AGENCIES, FundingOpportunitiesPage(), FundingOpportunity, GRANT_TYPES (+2 more)
 
 ### Community 393 - "payments.ts"
-Cohesion: 0.33
-Nodes (5): Collaborator, CollaboratorNetworkPage(), INITIAL_COLLABORATORS, INITIAL_DOCUMENTS, SharedDocument
+Cohesion: 0.31
+Nodes (6): _get_limit(), Request, RateLimitMiddleware, Security headers and rate-limiting middleware. Adds OWASP-recommended HTTP heade, SecurityHeadersMiddleware, BaseHTTPMiddleware
 
 ### Community 395 - "IntegrationsPage.tsx"
+Cohesion: 0.22
+Nodes (8): create, expiringSoon, get, list, lowStock, remove, { requireAuth }, update
+
+### Community 396 - "mermaid"
 Cohesion: 0.33
-Nodes (4): CATEGORY_CONFIG, Integration, STATUS_CONFIG, TYPE_ICONS
+Nodes (7): computeHealthScore(), DashboardPage(), greeting(), PIE_COLORS, PULSE_STATS, QUICK_ACTIONS, todayLabel()
+
+### Community 397 - "@types/jspdf"
+Cohesion: 0.22
+Nodes (8): APPROVAL_COLORS, PO_STATUS_COLORS, PO_STATUSES, PRIORITY_COLORS, PurchaseOrder, Supplier, SuppliersPage(), URGENCY_COLORS
+
+### Community 398 - "payments.ts"
+Cohesion: 0.25
+Nodes (7): createMethod, deleteMethod, listMethods, listOrders, { requireAuth }, setDefault, status
+
+### Community 399 - "AIChatPanel.tsx"
+Cohesion: 0.33
+Nodes (6): dompurify, dompurify, AIChatPanel(), Msg, renderMarkdownInline(), STARTER_QUESTIONS
+
+### Community 400 - "ProgressReportsPage.tsx"
+Cohesion: 0.33
+Nodes (5): INITIAL_REPORTS, ProgressReport, ProgressReportsPage(), ReportSection, RPPR_SECTIONS
 
 ## Knowledge Gaps
 - **1790 isolated node(s):** `build-mobile.sh script`, `chronobio`, `manifest_version`, `name`, `short_name` (+1785 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **106 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **107 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `bcryptjs`, `mermaid`, `DataTable.tsx`, `AuthContext.tsx`, `CookieConsent.tsx`, `bwip-js`, `@capacitor/cli`, `@capacitor/android`, `@capacitor/network`, `@capacitor/filesystem`, `@capacitor/haptics`, `@capacitor/ios`, `@capacitor/local-notifications`, `@capacitor/network`, `@capacitor/preferences`, `@capacitor/status-bar`, `convex`, `date-fns`, `dexie`, `docx`, `file-saver`, `fuse.js`, `@hookform/resolvers`, `html2canvas`, `lucide-react`, `mermaid`, `moment`, `mqtt`, `otplib`, `qrcode`, `react`, `react-dom`, `react-hook-form`, `react-hot-toast`, `react-markdown`, `reactflow`, `recharts`, `remark-gfm`, `@sentry/react`, `socket.io-client`, `payments.ts`, `@stripe/stripe-js`, `@capacitor/core`, `@tanstack/react-table`, `@tiptap/extension-highlight`, `@tiptap/extension-image`, `@tiptap/extension-table-cell`, `@tiptap/extension-table-header`, `@tiptap/extension-link`, `@tiptap/extension-task-item`, `@tiptap/extension-typography`, `@tiptap/extension-underline`, `@tiptap/extension-task-list`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/react`, `@types/bwip-js`, `@types/dompurify`, `@types/file-saver`, `@types/qrcode`, `package.json`, `jspdf`, `@vercel/analytics`, `@types/uuid`, `@tiptap/extension-table-header`, `web-vitals`, `zod`, `@tiptap/extension-underline`, `@zxing/browser`, `pi_sensor.py`?**
+- **Why does `dependencies` connect `dependencies` to `bcryptjs`, `DataTable.tsx`, `AIChatPanel.tsx`, `react-dropzone`, `CookieConsent.tsx`, `bwip-js`, `@capacitor/cli`, `@capacitor/android`, `@capacitor/network`, `@capacitor/filesystem`, `@capacitor/haptics`, `@capacitor/ios`, `@capacitor/local-notifications`, `@capacitor/network`, `@capacitor/preferences`, `@capacitor/status-bar`, `convex`, `date-fns`, `dexie`, `docx`, `file-saver`, `fuse.js`, `@hookform/resolvers`, `html2canvas`, `lucide-react`, `mermaid`, `moment`, `mqtt`, `otplib`, `qrcode`, `react`, `react-dom`, `react-hook-form`, `react-hot-toast`, `react-markdown`, `reactflow`, `recharts`, `remark-gfm`, `@sentry/react`, `socket.io-client`, `payments.ts`, `@stripe/stripe-js`, `@capacitor/core`, `@tanstack/react-table`, `@tiptap/extension-highlight`, `@tiptap/extension-image`, `@tiptap/extension-table-cell`, `@tiptap/extension-table-header`, `@tiptap/extension-link`, `@tiptap/extension-task-item`, `@tiptap/extension-typography`, `@tiptap/extension-underline`, `@tiptap/extension-task-list`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/react`, `@types/bwip-js`, `@types/dompurify`, `@types/file-saver`, `@types/qrcode`, `package.json`, `jspdf`, `@vercel/analytics`, `@types/uuid`, `@tiptap/extension-table-header`, `web-vitals`, `zod`, `@tiptap/extension-underline`, `@zxing/browser`, `pi_sensor.py`?**
   _High betweenness centrality (0.334) - this node is a cross-community bridge._
 - **Why does `uuid` connect `pi_sensor.py` to `maintenance.ts`, `customAuth.ts`?**
-  _High betweenness centrality (0.198) - this node is a cross-community bridge._
-- **Why does `uuid` connect `pi_sensor.py` to `dependencies`?**
-  _High betweenness centrality (0.191) - this node is a cross-community bridge._
+  _High betweenness centrality (0.175) - this node is a cross-community bridge._
+- **Why does `dompurify` connect `AIChatPanel.tsx` to `useNavigate`, `dependencies`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
 - **Are the 115 inferred relationships involving `UserRole` (e.g. with `ConsentUpdate` and `PolicyVersionCreate`) actually correct?**
   _`UserRole` has 115 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 105 inferred relationships involving `AuditAction` (e.g. with `ChatRequest` and `ChatResponse`) actually correct?**

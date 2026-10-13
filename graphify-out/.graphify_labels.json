@@ -396,5 +396,10 @@
   "394": "bcryptjs",
   "395": "IntegrationsPage.tsx",
   "396": "mermaid",
-  "397": "@types/jspdf"
+  "397": "@types/jspdf",
+  "398": "payments.ts",
+  "399": "AIChatPanel.tsx",
+  "400": "ProgressReportsPage.tsx",
+  "401": "@edge-runtime/vm",
+  "402": "react-dropzone"
 }

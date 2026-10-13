@@ -2720,8 +2720,8 @@
     "semantic_hash": ""
   },
   "chronobio/pyproject.toml": {
-    "mtime": 1791841469.0677824,
-    "ast_hash": "0dbb817fcc23c6c2101f419e04acee52",
+    "mtime": 1791852672.3194556,
+    "ast_hash": "694504166b1a4d5632729bf44fb65d3e",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/__init__.py": {
@@ -2730,8 +2730,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/__main__.py": {
-    "mtime": 1791836763.1917415,
-    "ast_hash": "c7ad27c4592633ef82dfe41fbc8f8efb",
+    "mtime": 1791853377.7564206,
+    "ast_hash": "ade7239c7b0d61b0f593e2efc6eece9d",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/config.py": {
@@ -2820,18 +2820,18 @@
     "semantic_hash": ""
   },
   "chronobio/README.md": {
-    "mtime": 1791851736.329989,
-    "ast_hash": "bc8552962f7db5106e8dc3b571c308fb",
+    "mtime": 1791853409.6495144,
+    "ast_hash": "22e61539b3d87380c240e0bbf9d4af2c",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/figures.py": {
-    "mtime": 1791841614.5566156,
-    "ast_hash": "7870956c819b435ba96dd98205f929c6",
+    "mtime": 1791853356.6484973,
+    "ast_hash": "47db0c7ad30576b06a40c204ab2e2fd6",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/graph.py": {
-    "mtime": 1791841470.8124187,
-    "ast_hash": "57ae6c07bebfb984b4ee9f7cd6e3d9ea",
+    "mtime": 1791852726.707317,
+    "ast_hash": "9d0b8fcd6b8ac260d818a4de68693c24",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/layout.py": {
@@ -2840,8 +2840,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/viewer.py": {
-    "mtime": 1791849080.1820412,
-    "ast_hash": "d3813ed8c68103521703abc4705ab2a0",
+    "mtime": 1791853321.9620163,
+    "ast_hash": "0f459d3eb7765fdc842e80b2e81a6626",
     "semantic_hash": ""
   },
   "chronobio/tests/test_graph.py": {
@@ -2855,8 +2855,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_viewer.py": {
-    "mtime": 1791841761.4361296,
-    "ast_hash": "ff85d73d24d066d186fdb764584fc50c",
+    "mtime": 1791853242.3700218,
+    "ast_hash": "4a3d9c72cff579ced7569f4b5b10c559",
     "semantic_hash": ""
   },
   "chronobio/tests/world.py": {
@@ -2875,8 +2875,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/export.py": {
-    "mtime": 1791850125.9439044,
-    "ast_hash": "033b2425265893f143306a07746d4ec9",
+    "mtime": 1791852952.8778493,
+    "ast_hash": "2b1a5faca7f1139b29b78085594475a3",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/gaps.py": {
@@ -2895,8 +2895,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/swarm.py": {
-    "mtime": 1791850600.4810119,
-    "ast_hash": "229e3f63c170af9471bbd68fd8e3eac8",
+    "mtime": 1791852952.8751805,
+    "ast_hash": "36ea2a3b08ec721fec64d89211fff63e",
     "semantic_hash": ""
   },
   "chronobio/tests/swarm_world.py": {
@@ -2922,6 +2922,21 @@
   "chronobio/tests/test_swarm.py": {
     "mtime": 1791850297.090416,
     "ast_hash": "7e71b60703419f5e85d221a1fe566cef",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/render.py": {
+    "mtime": 1791852744.1959112,
+    "ast_hash": "47de0cae273c1607bd16c0ae53a57e64",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/report.py": {
+    "mtime": 1791853165.2965975,
+    "ast_hash": "da4eb353087e533fc411ed407292e3cd",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_report.py": {
+    "mtime": 1791853389.5907876,
+    "ast_hash": "1a095a2b6acd3880a3c496415745464b",
     "semantic_hash": ""
   }
 }
