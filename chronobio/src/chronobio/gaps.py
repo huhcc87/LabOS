@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 
+from .entities import is_generic
 from .graph import Snapshot
 from .models import EvidenceClaim, Gap, GapKind, GraphNode, Provenance, StudyDesign
 
@@ -45,7 +46,8 @@ def find_gaps(snap: Snapshot, claims: dict[str, EvidenceClaim], nodes: dict[str,
             claim_ids=sorted(set(claim_ids)), paper_count=n, priority=_priority(kind, n),
             provenance=Provenance(source="rule:gap_finder", detail=kind.value, tool_version=GAP_VERSION)))
 
-    for e in established.values():
+    meaningful = lambda e: not (is_generic(name(e.source)) or is_generic(name(e.target)))     # skip links through "cancer", "inhibition" ...
+    for e in filter(meaningful, established.values()):
         ids = [c for c, _ in e.evidence]
         label = f"{name(e.source)} → {name(e.target)}"
         papers = _papers(ids, claims)
@@ -62,7 +64,7 @@ def find_gaps(snap: Snapshot, claims: dict[str, EvidenceClaim], nodes: dict[str,
                 f"studies; no human (observational or randomized) evidence in this corpus.", ids)
 
     for e in snap.edges:
-        if not e.inferred:
+        if not e.inferred or not meaningful(e):
             continue
         # Two-step path A → X → B behind the hypothesised A → B link.
         for (a, x), first in established.items():

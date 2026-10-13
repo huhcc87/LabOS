@@ -17,7 +17,7 @@ SENTENCE = "KRAS knockdown reduced MAPK pathway activity by 60% in xenografts"
 
 def proposal(ids, statement=f"{A} drives {B} activity in mouse tumours"):
     return json.dumps({
-        "statement": statement, "mechanism": "RAF-MEK-ERK cascade",
+        "statement": statement, "mechanism": "KRAS activates MAPK pathway",
         "predictions": ["MAPK pathway activity falls by 50% after KRAS knockdown"],
         "falsifiers": ["MAPK pathway activity is unchanged after KRAS knockdown"],
         "alternative_mechanisms": ["Parallel PI3K signalling"], "supporting_claim_ids": ids})

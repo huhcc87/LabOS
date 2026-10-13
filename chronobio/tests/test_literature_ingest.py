@@ -106,3 +106,38 @@ def test_ingesting_the_same_paper_twice_does_not_duplicate(tmp_path, paper_pdf):
     assert (new1, new2) == (True, False) and second.id == first.id
     assert len(store.list(Publication)) == 1
     assert find_existing(store, first) == first
+
+
+def test_a_rate_limited_registry_is_retried_once_then_left_as_not_checked(monkeypatch):
+    """Regression: a Crossref 429 used to crash a long corpus-building job."""
+    from chronobio import literature
+    monkeypatch.setattr(literature.time, "sleep", lambda s: None)
+    calls = []
+
+    def handler(request):
+        calls.append(str(request.url))
+        return httpx.Response(429, headers={"Retry-After": "1"})
+
+    pub = Publication(title="t", doi="10.1/x", provenance=PROV)
+    assert client(handler).check_retraction(pub) == RetractionStatus.NOT_CHECKED
+    assert len(calls) == 2                                          # one retry, then give up
+
+
+def test_a_transient_failure_recovers_on_the_retry_and_network_errors_never_crash(monkeypatch):
+    from chronobio import literature
+    monkeypatch.setattr(literature.time, "sleep", lambda s: None)
+    state = {"n": 0}
+
+    def flaky(request):
+        state["n"] += 1
+        if state["n"] == 1:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"message": {"updated-by": [{"type": "retraction"}]}})
+
+    pub = Publication(title="t", doi="10.1/x", provenance=PROV)
+    assert client(flaky).check_retraction(pub) == RetractionStatus.RETRACTED
+
+    def boom(request):
+        raise httpx.ConnectError("no route")
+
+    assert client(boom).check_retraction(pub) == RetractionStatus.NOT_CHECKED

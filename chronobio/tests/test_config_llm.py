@@ -74,3 +74,23 @@ def test_structured_agent_calls_ask_for_json_and_extraction_does_not(tmp_path):
     llm = ScriptedLLM([proposal(corpus.claim_ids), critic("accept"), judge("no", "")])
     run_swarm(llm, corpus.store, corpus.settings, literature([]), max_gaps=1)
     assert llm.json_flags == [True, True, True]                      # proposer, critic and novelty judge
+
+
+def test_one_slow_model_call_is_retried_but_a_second_failure_is_raised():
+    state = {"n": 0}
+
+    def flaky(request: httpx.Request) -> httpx.Response:
+        state["n"] += 1
+        if state["n"] == 1:
+            raise httpx.ReadTimeout("slow")
+        return httpx.Response(200, json={"response": "ok"})
+
+    llm = OllamaLLM(Settings(enabled=True, dry_run=False), client=httpx.Client(transport=httpx.MockTransport(flaky)))
+    assert llm.generate("s", "p") == "ok" and state["n"] == 2
+
+    def dead(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("slow")
+
+    llm2 = OllamaLLM(Settings(enabled=True, dry_run=False), client=httpx.Client(transport=httpx.MockTransport(dead)))
+    with pytest.raises(httpx.ReadTimeout):
+        llm2.generate("s", "p")
