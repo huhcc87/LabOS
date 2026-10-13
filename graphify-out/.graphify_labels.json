@@ -295,6 +295,7 @@
   "293": "@capacitor/keyboard",
   "294": "@capacitor/local-notifications",
   "295": "@capacitor/network",
+  "296": "jsdom",
   "298": "convex",
   "299": "date-fns",
   "300": "dexie",
