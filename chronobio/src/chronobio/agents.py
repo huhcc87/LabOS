@@ -205,7 +205,8 @@ CRITIC_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "when it overstates what that evidence shows, or when controls or confounders are missing. "
     "Reject only if the hypothesis is not supported by, or is contradicted by, the evidence. "
     "Also check that the predictions and falsifiers are consistent with the statement: a prediction that "
-    "contradicts the statement is a reason to revise."
+    "contradicts the statement is a reason to revise. "
+    "The mechanism 'mechanism not stated in the evidence' is an honest answer, not a flaw: do not ask for revision because of it."
 )
 
 
