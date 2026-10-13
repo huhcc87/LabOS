@@ -2730,18 +2730,18 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/__main__.py": {
-    "mtime": 1791854870.8283427,
-    "ast_hash": "01f5714a005a78d1200246c627e177df",
+    "mtime": 1791856351.026905,
+    "ast_hash": "d85f67eb450b5a32478551646d3a02f6",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/config.py": {
-    "mtime": 1791836701.5571349,
-    "ast_hash": "c49117979b087eb8182f8b360af731a3",
+    "mtime": 1791856293.7646384,
+    "ast_hash": "56f11387046c1a73d7ec85a23c9fa5a3",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/llm.py": {
-    "mtime": 1791836762.1887531,
-    "ast_hash": "b6ae10f224f8b43d833f9ae5394bb096",
+    "mtime": 1791856942.2913582,
+    "ast_hash": "7056817476e1e190e1a9ebaf759bcc47",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/models.py": {
@@ -2755,8 +2755,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_config_llm.py": {
-    "mtime": 1791836789.5936823,
-    "ast_hash": "eea717eea015111095a236c568c144c7",
+    "mtime": 1791856955.3085063,
+    "ast_hash": "58bdac55e08e26de8e4915ff18064135",
     "semantic_hash": ""
   },
   "chronobio/tests/test_models.py": {
@@ -2780,8 +2780,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/claims.py": {
-    "mtime": 1791837993.8670456,
-    "ast_hash": "e2e18e6f3d6afc274574a12ea3da18bf",
+    "mtime": 1791856231.2210286,
+    "ast_hash": "4d57a6e429017dadd936077d9f45c31b",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/ingest.py": {
@@ -2820,8 +2820,8 @@
     "semantic_hash": ""
   },
   "chronobio/README.md": {
-    "mtime": 1791854983.0519633,
-    "ast_hash": "0226bdbd28356ff650add41b84823ade",
+    "mtime": 1791857391.9187355,
+    "ast_hash": "1890d92df7d259d979d448770a9c8a06",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/figures.py": {
@@ -2830,8 +2830,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/graph.py": {
-    "mtime": 1791852726.707317,
-    "ast_hash": "9d0b8fcd6b8ac260d818a4de68693c24",
+    "mtime": 1791856231.2214997,
+    "ast_hash": "cf6ccef9f2f61cc862f9679a5a128941",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/layout.py": {
@@ -2870,8 +2870,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/agents.py": {
-    "mtime": 1791851512.813245,
-    "ast_hash": "7403c94aa598c92c1cf847d543d61f4f",
+    "mtime": 1791856942.304306,
+    "ast_hash": "7f3cb0535378bbf3f7741ef05ce5e27d",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/export.py": {
@@ -2885,8 +2885,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/novelty.py": {
-    "mtime": 1791850048.6321192,
-    "ast_hash": "e667a5fb4a21db89b4b2a80f04a40552",
+    "mtime": 1791856955.2948978,
+    "ast_hash": "8e9698d7d0986cb4890d1b832cd13d66",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/ranking.py": {
@@ -2895,8 +2895,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/swarm.py": {
-    "mtime": 1791854639.7035153,
-    "ast_hash": "6b84cd07a9fb7c5bbb5ed75161894e94",
+    "mtime": 1791856858.38998,
+    "ast_hash": "9e884a9a409884364a1b49306f9c80bd",
     "semantic_hash": ""
   },
   "chronobio/tests/swarm_world.py": {
@@ -2920,8 +2920,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_swarm.py": {
-    "mtime": 1791850297.090416,
-    "ast_hash": "7e71b60703419f5e85d221a1fe566cef",
+    "mtime": 1791856955.3042123,
+    "ast_hash": "6490a63d539f4d66e4a5943e1220b52a",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/render.py": {
@@ -2962,6 +2962,26 @@
   "chronobio/tests/test_validation.py": {
     "mtime": 1791854870.8316584,
     "ast_hash": "bc0e1345562e8c166eba51996b749f5b",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/benchmark.py": {
+    "mtime": 1791856942.2977796,
+    "ast_hash": "4b564777223880621324971c2c585cc2",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/security.py": {
+    "mtime": 1791856285.7292848,
+    "ast_hash": "ec5cfae589f058879170754c33b75fa6",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_benchmark.py": {
+    "mtime": 1791856432.422755,
+    "ast_hash": "9c77ca96a6be26bd7f38cfb077b44323",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_security.py": {
+    "mtime": 1791856393.833651,
+    "ast_hash": "7ebaa7c81271ce0ad1aa1a2f07a55908",
     "semantic_hash": ""
   }
 }
