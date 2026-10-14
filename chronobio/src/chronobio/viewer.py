@@ -211,6 +211,7 @@ _TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="__CSP__">
+<meta name="generator" content="chronobio-viewer">
 <title>__TITLE__</title>
 <style>
 :root { --bg:#f8fafc; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#d1d5db; --accent:#0072B2; --warn:#b91c1c; }

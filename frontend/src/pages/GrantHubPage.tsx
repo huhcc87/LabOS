@@ -2,6 +2,8 @@ import React, { useState, useRef, lazy, Suspense } from 'react';
 
 // Lazy-load heavy sub-pages so the main shell loads fast
 const ResearchAITab = lazy(() => import('./ResearchAITab'));
+const ChronoBioTab = lazy(() => import('./ChronoBioTab'));
+const CHRONOBIO_ENABLED = import.meta.env.VITE_CHRONOBIO_ENABLED === '1';        // opt-in, off by default
 const GrantToolsModule = lazy(() => import('./GrantTools').then(m => ({
   default: ({ tool, onBack, onLoadToComposer }: any) => {
     if (tool === 'budget') return <m.BudgetCalculator onBack={onBack} />;
@@ -85,7 +87,7 @@ function Loader() {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-type Tab = 'research_ai' | 'compose' | 'grants' | 'tools';
+type Tab = 'research_ai' | 'chronobio' | 'compose' | 'grants' | 'tools';
 
 export default function GrantHubPage() {
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -222,6 +224,7 @@ export default function GrantHubPage() {
   // ── Tabs config ──────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; icon: string; highlight?: boolean }[] = [
     { key: 'research_ai', label: 'Research AI', icon: '🧬', highlight: true },
+    ...(CHRONOBIO_ENABLED ? [{ key: 'chronobio' as Tab, label: 'Evidence Explorer', icon: '🕸️' }] : []),
     { key: 'compose', label: 'Write Grant', icon: '✍️' },
     { key: 'grants', label: 'My Grants', icon: '📄' },
     { key: 'tools', label: 'Tools', icon: '🧰' },
@@ -303,6 +306,10 @@ export default function GrantHubPage() {
             }}
           />
         </Suspense>
+      )}
+
+      {activeTab === 'chronobio' && CHRONOBIO_ENABLED && (
+        <Suspense fallback={<Loader />}><ChronoBioTab /></Suspense>
       )}
 
       {/* ── Write Grant ────────────────────────────────────────────────── */}
