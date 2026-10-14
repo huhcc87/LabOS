@@ -248,85 +248,10 @@ export default function InventoryPage() {
   const [smartReorderExpanded, setSmartReorderExpanded] = useState(true);
 
   // IoT Monitoring
-  const [iotDevices, setIotDevices] = useState<IoTDevice[]>([
-    {
-      id: 'freezer-80-1',
-      name: '-80°C Freezer 1 (Thermo)',
-      type: 'freezer',
-      targetTemp: -80,
-      currentTemp: -79.2,
-      humidity: 15,
-      status: 'normal',
-      lastReading: new Date().toISOString(),
-      alerts: [],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: -80 + (Math.random() * 2 - 1) })),
-    },
-    {
-      id: 'freezer-80-2',
-      name: '-80°C Freezer 2 (Eppendorf)',
-      type: 'freezer',
-      targetTemp: -80,
-      currentTemp: -78.5,
-      humidity: 18,
-      status: 'warning',
-      lastReading: new Date().toISOString(),
-      alerts: [{ type: 'warning', message: 'Temperature 1.5°C above target', time: new Date().toISOString() }],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: -79 + (Math.random() * 3 - 1) })),
-    },
-    {
-      id: 'freezer-20-1',
-      name: '-20°C Freezer 1',
-      type: 'freezer',
-      targetTemp: -20,
-      currentTemp: -19.8,
-      status: 'normal',
-      lastReading: new Date().toISOString(),
-      alerts: [],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: -20 + (Math.random() * 2 - 1) })),
-    },
-    {
-      id: 'fridge-1',
-      name: '4°C Refrigerator 1',
-      type: 'fridge',
-      targetTemp: 4,
-      currentTemp: 4.2,
-      humidity: 45,
-      status: 'normal',
-      lastReading: new Date().toISOString(),
-      alerts: [],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: 4 + (Math.random() * 1 - 0.5) })),
-    },
-    {
-      id: 'incubator-1',
-      name: 'CO2 Incubator 1',
-      type: 'incubator',
-      targetTemp: 37,
-      currentTemp: 37.1,
-      humidity: 95,
-      status: 'normal',
-      lastReading: new Date().toISOString(),
-      alerts: [],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: 37 + (Math.random() * 0.5 - 0.25) })),
-    },
-    {
-      id: 'ln2-tank-1',
-      name: 'LN2 Tank (Samples)',
-      type: 'ln2',
-      targetTemp: -196,
-      currentTemp: -195,
-      status: 'normal',
-      lastReading: new Date().toISOString(),
-      alerts: [],
-      history: Array.from({ length: 24 }, (_, i) => ({ time: `${i}:00`, temp: -196 + (Math.random() * 2) })),
-    },
-  ]);
+  const [iotDevices, setIotDevices] = useState<IoTDevice[]>([]);
 
   // Waste Tracking
-  const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([
-    { id: 1, category: 'Chemical Waste', description: 'Spent solvents from HPLC', quantity: 5, unit: 'L', hazardClass: 'Flammable', generatedBy: 'Lab A', generatedDate: '2024-04-01', status: 'pending', containerLocation: 'Waste Room A' },
-    { id: 2, category: 'Biohazard', description: 'Cell culture waste', quantity: 2, unit: 'L', hazardClass: 'Biohazard', generatedBy: 'Cell Culture', generatedDate: '2024-04-05', status: 'scheduled', disposalDate: '2024-04-15', containerLocation: 'Biohazard Cabinet' },
-    { id: 3, category: 'Sharps', description: 'Used needles and syringes', quantity: 1, unit: 'container', hazardClass: 'Biohazard', generatedBy: 'Animal Facility', generatedDate: '2024-04-03', status: 'pending', containerLocation: 'Sharps Station 1' },
-  ]);
+  const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([]);
   const [wasteModalOpen, setWasteModalOpen] = useState(false);
 
   // Label Printing
@@ -346,13 +271,7 @@ export default function InventoryPage() {
     fileUrl: string;
     linkedItems: number[];
   }
-  const [sdsDocuments, setSdsDocuments] = useState<SDSDocument[]>([
-    { id: 1, chemicalName: 'Ethanol (95%)', casNumber: '64-17-5', manufacturer: 'Sigma-Aldrich', hazardClass: 'Flammable', uploadDate: '2024-01-15', expiryDate: '2027-01-15', fileUrl: '#', linkedItems: [1, 5, 12] },
-    { id: 2, chemicalName: 'Hydrochloric Acid', casNumber: '7647-01-0', manufacturer: 'Fisher Scientific', hazardClass: 'Corrosive', uploadDate: '2024-02-20', expiryDate: '2027-02-20', fileUrl: '#', linkedItems: [3, 8] },
-    { id: 3, chemicalName: 'Sodium Hydroxide', casNumber: '1310-73-2', manufacturer: 'VWR', hazardClass: 'Corrosive', uploadDate: '2024-03-10', expiryDate: '2027-03-10', fileUrl: '#', linkedItems: [7] },
-    { id: 4, chemicalName: 'Acetone', casNumber: '67-64-1', manufacturer: 'Sigma-Aldrich', hazardClass: 'Flammable', uploadDate: '2024-01-05', expiryDate: '2027-01-05', fileUrl: '#', linkedItems: [2, 4, 9] },
-    { id: 5, chemicalName: 'Formaldehyde (37%)', casNumber: '50-00-0', manufacturer: 'Thermo Fisher', hazardClass: 'Toxic', uploadDate: '2024-04-01', expiryDate: '2027-04-01', fileUrl: '#', linkedItems: [6] },
-  ]);
+  const [sdsDocuments, setSdsDocuments] = useState<SDSDocument[]>([]);
   const [sdsSearch, setSdsSearch] = useState('');
   const [sdsModalOpen, setSdsModalOpen] = useState(false);
 
@@ -368,11 +287,7 @@ export default function InventoryPage() {
     fileUrl: string;
     inventoryItemId: number;
   }
-  const [coaDocuments, setCoaDocuments] = useState<COADocument[]>([
-    { id: 1, lotNumber: 'LOT-2024-001', productName: 'PCR Master Mix', manufacturer: 'Thermo Fisher', analysisDate: '2024-01-10', expiryDate: '2025-01-10', status: 'valid', fileUrl: '#', inventoryItemId: 1 },
-    { id: 2, lotNumber: 'LOT-2024-002', productName: 'Cell Culture Media', manufacturer: 'Gibco', analysisDate: '2024-02-15', expiryDate: '2024-08-15', status: 'expiring', fileUrl: '#', inventoryItemId: 2 },
-    { id: 3, lotNumber: 'LOT-2023-089', productName: 'Trypsin-EDTA', manufacturer: 'Sigma', analysisDate: '2023-06-20', expiryDate: '2024-03-20', status: 'expired', fileUrl: '#', inventoryItemId: 3 },
-  ]);
+  const [coaDocuments, setCoaDocuments] = useState<COADocument[]>([]);
   const [coaModalOpen, setCoaModalOpen] = useState(false);
 
   // Protocol Material Calculator
@@ -408,11 +323,7 @@ export default function InventoryPage() {
     estimatedCost: number;
     active: boolean;
   }
-  const [recurringOrders, setRecurringOrders] = useState<RecurringOrder[]>([
-    { id: 1, name: 'Monthly Lab Consumables', frequency: 'monthly', items: [{ itemId: 1, itemName: 'Pipette Tips (1000µL)', quantity: 10, unit: 'boxes' }, { itemId: 2, itemName: 'Gloves (M)', quantity: 5, unit: 'boxes' }], nextOrder: '2024-05-01', supplier: 'VWR', estimatedCost: 450, active: true },
-    { id: 2, name: 'Weekly Cell Culture', frequency: 'weekly', items: [{ itemId: 3, itemName: 'Cell Culture Media', quantity: 6, unit: 'bottles' }, { itemId: 4, itemName: 'FBS', quantity: 1, unit: 'bottle' }], nextOrder: '2024-04-15', supplier: 'Gibco', estimatedCost: 280, active: true },
-    { id: 3, name: 'Quarterly Equipment Maintenance', frequency: 'quarterly', items: [{ itemId: 5, itemName: 'HEPA Filters', quantity: 2, unit: 'pcs' }, { itemId: 6, itemName: 'Calibration Kit', quantity: 1, unit: 'set' }], nextOrder: '2024-07-01', supplier: 'Thermo Fisher', estimatedCost: 1200, active: false },
-  ]);
+  const [recurringOrders, setRecurringOrders] = useState<RecurringOrder[]>([]);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
 
   // Material Sharing Between Labs
@@ -2762,7 +2673,7 @@ export default function InventoryPage() {
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>IoT Equipment Monitoring</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
-                      Real-time temperature & environmental monitoring • {iotDevices.length} devices connected
+                      Temperature & environmental monitoring • {iotDevices.length} devices connected
                     </p>
                   </div>
                 </div>
@@ -2783,6 +2694,11 @@ export default function InventoryPage() {
               </div>
             </div>
 
+            {iotDevices.length === 0 && (
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+                No sensors connected. Readings and alerts appear here only from real devices (see IoT Dashboard).
+              </div>
+            )}
             {/* Device Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
               {iotDevices.map(device => {

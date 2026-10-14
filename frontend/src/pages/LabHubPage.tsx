@@ -238,27 +238,13 @@ export default function LabHubPage() {
     catch (e) { showToast(errText(e), 'error'); return false; }
   };
 
-  const [sops, setSOPs] = useState<SOP[]>([
-    { id: 1, title: 'Biosafety Level 2 Procedures', category: 'Safety', version: '4.0' },
-    { id: 2, title: 'Chemical Waste Disposal', category: 'Safety', version: '2.1' },
-    { id: 3, title: 'Equipment Calibration', category: 'Quality', version: '1.3' },
-    { id: 4, title: 'Sample Storage Guidelines', category: 'Operations', version: '2.0' },
-  ]);
+  const [sops, setSOPs] = useState<SOP[]>([]);
 
-  const [instruments, setInstruments] = useState<Instrument[]>([
-    { id: 1, name: 'Centrifuge XR-500', location: 'Room 101', status: 'available', type: 'Centrifuge' },
-    { id: 2, name: 'PCR Thermocycler', location: 'Room 102', status: 'in_use', type: 'PCR Thermocycler' },
-    { id: 3, name: 'Flow Cytometer', location: 'Room 103', status: 'available', type: 'Flow Cytometer' },
-    { id: 4, name: 'Spectrophotometer', location: 'Room 101', status: 'maintenance', type: 'Spectrophotometer' },
-  ]);
+  const [instruments, setInstruments] = useState<Instrument[]>([]);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([
-    { id: 1, instrument: 'Spectrophotometer', type: 'Calibration', date: '2024-03-19', status: 'scheduled' },
-    { id: 2, instrument: 'Centrifuge XR-500', type: 'Annual Service', date: '2024-03-15', status: 'completed' },
-    { id: 3, instrument: 'PCR Thermocycler', type: 'Filter Replacement', date: '2024-03-10', status: 'overdue' },
-  ]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([]);
 
   // AI Generate Protocol Description
   const generateAIProtocol = (protocolName: string) => {
