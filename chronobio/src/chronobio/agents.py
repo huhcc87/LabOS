@@ -119,6 +119,8 @@ PROPOSER_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "This is a literature-analysis task for researchers: propose ONE testable research hypothesis. "
     "Do not state anything as established that the evidence does not show. Do not state effects in patients or "
     "humans as fact unless the evidence is from human studies; put such effects in 'predictions' as outcomes to test. "
+    "The 'mechanism' may use ONLY entities and relations that appear in the evidence; if the evidence gives no mechanism write exactly "
+    "'mechanism not stated in the evidence'. Do NOT invent pathway steps. "
     "Do NOT restate a finding already in the evidence: propose an untested extension of it. Every prediction must "
     "agree with the statement (if the statement says X reduces Y, a prediction must not say X increases Y)."
 )
@@ -203,7 +205,8 @@ CRITIC_SYSTEM = UNTRUSTED_DATA_NOTICE + (
     "when it overstates what that evidence shows, or when controls or confounders are missing. "
     "Reject only if the hypothesis is not supported by, or is contradicted by, the evidence. "
     "Also check that the predictions and falsifiers are consistent with the statement: a prediction that "
-    "contradicts the statement is a reason to revise."
+    "contradicts the statement is a reason to revise. "
+    "The mechanism 'mechanism not stated in the evidence' is an honest answer, not a flaw: do not ask for revision because of it."
 )
 
 
@@ -215,6 +218,29 @@ RESTATES_AT = 0.8                     # share of the statement's words already p
 
 def _words(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-z0-9][a-z0-9\-]*", text.lower()) if len(w) > 2}
+
+
+NO_MECHANISM = "mechanism not stated in the evidence"
+UNGROUNDED_AT = 0.4          # share of a mechanism's distinctive words that may be missing from the evidence
+FILLER = {"the", "and", "that", "this", "with", "from", "which", "through", "into", "leads", "lead", "results", "result", "causes",
+          "cause", "via", "thus", "then", "also", "such", "their", "its", "are", "was", "were", "has", "have", "can", "may", "might",
+          "would", "could", "due", "between", "within", "while", "when", "where", "increased", "decreased", "increase", "decrease",
+          "reduced", "reduce", "reduces", "enhanced", "leading", "resulting", "by", "of", "in", "to", "on", "for", "as", "is", "it",
+          "mechanism", "pathway", "signaling", "signalling", "activity", "activation", "inhibition", "expression", "level", "levels"}
+
+
+def ungrounded_terms(mechanism: str, evidence_texts: list[str]) -> list[str]:
+    """Distinctive words in a proposed mechanism that appear nowhere in the evidence it cites.
+
+    Empty when the mechanism is short, says it is not stated, or is mostly grounded. Proposers
+    (especially small models) invent plausible pathway steps; this catches the invention.
+    """
+    if not mechanism.strip() or NO_MECHANISM in mechanism.lower():
+        return []
+    evidence = _words(" ".join(evidence_texts))
+    mine = {w for w in _words(mechanism) if w not in FILLER and len(w) > 3}
+    missing = sorted(w for w in mine if w not in evidence and not any(w.startswith(e[:5]) and len(e) > 5 for e in evidence))
+    return missing if mine and len(missing) >= 2 and len(missing) / len(mine) > UNGROUNDED_AT else []
 
 
 def _contains_words(claim_text: str, statement: str) -> float:
@@ -260,6 +286,10 @@ def rule_findings(
     if HUMAN_CLAIM.search(hyp.statement) and not {c.design for c in support} & HUMAN:
         found.append((Verdict.REVISE, "The statement asserts human or clinical effects, but no human evidence supports it; "
                                       "state it as a prediction to test, not as fact."))
+    invented = ungrounded_terms(hyp.mechanism, [c.claim + " " + c.passage for c in support + opposing] + [hyp.statement])
+    if invented:
+        found.append((Verdict.REVISE, "The mechanism uses terms the cited evidence never mentions: " + ", ".join(invented[:6])
+                                      + ". Use only entities and relations from the evidence, or write: " + NO_MECHANISM + "."))
     unmeasurable = [p for p in hyp.predictions if not MEASURABLE.search(p)]
     if unmeasurable:
         found.append((Verdict.REVISE, f"Prediction not clearly measurable: {unmeasurable[0][:80]}"))

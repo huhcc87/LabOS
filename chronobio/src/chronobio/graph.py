@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from .claims import Rejection
+from .entities import build_aliases
 from .config import Settings
 from .llm import LLM, UNTRUSTED_DATA_NOTICE
 from .models import (
@@ -269,7 +270,18 @@ def suggest_inferred_edges(edges: list[GraphEdge]) -> list[GraphEdge]:
 
 
 def load_graph(store: Store) -> tuple[list[GraphNode], list[GraphEdge]]:
-    return store.list(GraphNode), store.list(GraphEdge)
+    """Stored nodes and edges with same-entity names merged (see entities.py); self-links created by a merge are dropped."""
+    nodes, edges = store.list(GraphNode), store.list(GraphEdge)
+    aliases = build_aliases(nodes)
+    if not aliases:
+        return nodes, edges
+    merged: list[GraphEdge] = []
+    for e in edges:
+        source, target = aliases.get(e.source, e.source), aliases.get(e.target, e.target)
+        if source == target:
+            continue
+        merged.append(e if (source, target) == (e.source, e.target) else e.model_copy(update={"source": source, "target": target}))
+    return [n for n in nodes if n.id not in aliases], merged
 
 
 def year_range(pubs: dict[str, Publication]) -> tuple[int, int] | None:

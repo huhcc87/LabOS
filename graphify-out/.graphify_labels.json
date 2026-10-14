@@ -293,7 +293,6 @@
   "291": "@capacitor/haptics",
   "292": "@capacitor/ios",
   "293": "@capacitor/keyboard",
-  "294": "@capacitor/local-notifications",
   "295": "@capacitor/network",
   "296": "jsdom",
   "298": "convex",
@@ -378,10 +377,7 @@
   "389": "chronobio",
   "391": "layout.py",
   "392": "SuppliersPage.tsx",
-  "395": "IntegrationsPage.tsx",
-  "397": "@types/jspdf",
   "398": "payments.ts",
-  "399": "AIChatPanel.tsx",
   "400": "ProgressReportsPage.tsx",
   "401": "@edge-runtime/vm",
   "402": "react-dropzone"

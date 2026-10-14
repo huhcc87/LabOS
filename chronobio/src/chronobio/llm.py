@@ -42,10 +42,14 @@ class OllamaLLM:
         body = {"model": s.model, "system": system, "prompt": prompt, "stream": False, "options": {"temperature": 0.2}}
         if json_format:
             body["format"] = "json"          # grammar-constrained: the reply must be valid JSON (no prose refusals)
-        resp = self._client.post(
-            f"{s.ollama_url}/api/generate",
-            json=body,
-        )
+        # One retry: a long job should survive a single slow or dropped call (for example while the Mac sleeps).
+        for attempt in (0, 1):
+            try:
+                resp = self._client.post(f"{s.ollama_url}/api/generate", json=body)
+                break
+            except (httpx.ReadTimeout, httpx.ConnectError, httpx.RemoteProtocolError):
+                if attempt == 1:
+                    raise
         resp.raise_for_status()
         return resp.json()["response"]
 

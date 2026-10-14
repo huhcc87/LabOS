@@ -8,6 +8,7 @@ coverage statement can always be reproduced and audited.
 from __future__ import annotations
 
 import re
+import time
 
 import httpx
 
@@ -17,6 +18,7 @@ from .pdf_ingest import normalize
 
 EUROPE_PMC = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 CROSSREF = "https://api.crossref.org/works"
+RETRY_WAIT_MAX_S = 10.0
 
 
 class NetworkDisabled(RuntimeError):
@@ -106,19 +108,35 @@ class LiteratureClient:
         """Crossref (Retraction Watch data) when a DOI exists; Europe PMC publication types otherwise."""
         self._require_network()
         if doi := normalize_doi(pub.doi):
-            resp = self._client.get(f"{CROSSREF}/{doi}")
-            if resp.status_code == 200:
+            resp = self._get_politely(f"{CROSSREF}/{doi}")
+            if resp is not None and resp.status_code == 200:
                 return _crossref_status(resp.json().get("message", {}))
-            if resp.status_code != 404:
-                resp.raise_for_status()
         if pub.pmid:
-            resp = self._client.get(EUROPE_PMC, params={
+            resp = self._get_politely(EUROPE_PMC, params={
                 "query": f"EXT_ID:{pub.pmid} AND SRC:MED", "format": "json", "resultType": "core"})
-            resp.raise_for_status()
-            hits = resp.json().get("resultList", {}).get("result", [])
-            if hits:
-                return _pubtype_status(hits[0].get("pubTypeList", {}).get("pubType", []))
-        return RetractionStatus.NOT_CHECKED
+            if resp is not None and resp.status_code == 200:
+                hits = resp.json().get("resultList", {}).get("result", [])
+                if hits:
+                    return _pubtype_status(hits[0].get("pubTypeList", {}).get("pubType", []))
+        return RetractionStatus.NOT_CHECKED          # unreachable or rate-limited: unknown, never "clean"
+
+    def _get_politely(self, url: str, **kwargs) -> httpx.Response | None:
+        """GET with one retry when rate-limited or the server hiccups; None if it still fails.
+
+        A registry that is slow, down, or says 429 must not crash a long job: the paper's
+        retraction status simply stays 'not checked'.
+        """
+        for attempt in (0, 1):
+            try:
+                resp = self._client.get(url, **kwargs)
+            except httpx.HTTPError:
+                resp = None
+            if resp is not None and resp.status_code != 429 and resp.status_code < 500:
+                return resp                           # 200, or a definite 404 etc.
+            if attempt == 0:
+                wait = float(resp.headers.get("Retry-After", 2)) if resp is not None and resp.headers.get("Retry-After", "").isdigit() else 2.0
+                time.sleep(min(wait, RETRY_WAIT_MAX_S))
+        return None
 
 
 def _crossref_status(message: dict) -> RetractionStatus:

@@ -72,7 +72,7 @@ def run_swarm(
                 break
             hyp = candidate
             _save(store, hyp)
-            verdict = review(llm, hyp, claims, pubs, available_papers=len({i.claim.publication_id for i in pool}))
+            verdict = review(llm, hyp, claims, pubs, available_papers=gap.paper_count)     # papers on the gap's own link, not the wider pool: an unreplicated link cannot be cited twice
             _save(store, verdict)
             if verdict.verdict != Verdict.REVISE:
                 break

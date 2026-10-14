@@ -20,7 +20,7 @@ def setup(tmp_path, papers):
 
 def proposal(ids, **overrides):
     base = {"statement": f"{A} activity drives {B} signalling in tumours",
-            "mechanism": "KRAS activates RAF which phosphorylates MEK",
+            "mechanism": "KRAS activates MAPK pathway",
             "predictions": ["MAPK pathway activity falls by at least 50% after KRAS knockdown"],
             "falsifiers": ["MAPK pathway activity is unchanged after KRAS knockdown"],
             "alternative_mechanisms": ["Parallel PI3K signalling"], "supporting_claim_ids": ids}

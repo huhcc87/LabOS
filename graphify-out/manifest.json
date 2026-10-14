@@ -2740,8 +2740,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/llm.py": {
-    "mtime": 1791856942.2913582,
-    "ast_hash": "7056817476e1e190e1a9ebaf759bcc47",
+    "mtime": 1791901319.1854048,
+    "ast_hash": "6076cc295a2165bec21c96a270d1403f",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/models.py": {
@@ -2755,8 +2755,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_config_llm.py": {
-    "mtime": 1791856955.3085063,
-    "ast_hash": "58bdac55e08e26de8e4915ff18064135",
+    "mtime": 1791901321.128532,
+    "ast_hash": "89fc8d00a0c52f00479de884be685799",
     "semantic_hash": ""
   },
   "chronobio/tests/test_models.py": {
@@ -2790,8 +2790,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/literature.py": {
-    "mtime": 1791837869.3270025,
-    "ast_hash": "a890b8ec4ce9dcf8bf1c52891b2981fc",
+    "mtime": 1791895184.535643,
+    "ast_hash": "1c0cf6f86985bc36aee148cc575ac62a",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/pdf_ingest.py": {
@@ -2810,8 +2810,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_literature_ingest.py": {
-    "mtime": 1791837914.5743775,
-    "ast_hash": "e8cfd5e6c2bb824c3373c7dfa2244ba3",
+    "mtime": 1791895184.5390306,
+    "ast_hash": "8d8ce7debdc27e511fa5da5c02bbe8fa",
     "semantic_hash": ""
   },
   "chronobio/tests/test_pdf_ingest.py": {
@@ -2820,8 +2820,8 @@
     "semantic_hash": ""
   },
   "chronobio/README.md": {
-    "mtime": 1791857514.1094007,
-    "ast_hash": "b310f9e7970928278347e93487a27c45",
+    "mtime": 1791939941.7272084,
+    "ast_hash": "edfb9a3719b90e6dc4c9ed794acf1338",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/figures.py": {
@@ -2830,8 +2830,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/graph.py": {
-    "mtime": 1791856231.2214997,
-    "ast_hash": "cf6ccef9f2f61cc862f9679a5a128941",
+    "mtime": 1791895226.0468311,
+    "ast_hash": "4cd7cdb7e6c536035217897307569858",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/layout.py": {
@@ -2870,8 +2870,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/agents.py": {
-    "mtime": 1791856942.304306,
-    "ast_hash": "7f3cb0535378bbf3f7741ef05ce5e27d",
+    "mtime": 1791926146.680928,
+    "ast_hash": "d2bb3b02dc73d22c9af87a107771b821",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/export.py": {
@@ -2880,8 +2880,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/gaps.py": {
-    "mtime": 1791849967.5185695,
-    "ast_hash": "607e5e34e41c5dda997fd71c766b8490",
+    "mtime": 1791895243.7810118,
+    "ast_hash": "91f5331d30e72bf7a2fdecaec38b586f",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/novelty.py": {
@@ -2895,8 +2895,8 @@
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/swarm.py": {
-    "mtime": 1791856858.38998,
-    "ast_hash": "9e884a9a409884364a1b49306f9c80bd",
+    "mtime": 1791925704.4625785,
+    "ast_hash": "27993d98b6f040c61a96cb6524d0eafe",
     "semantic_hash": ""
   },
   "chronobio/tests/swarm_world.py": {
@@ -2905,8 +2905,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_agents.py": {
-    "mtime": 1791850922.8814228,
-    "ast_hash": "a93ace36d50596c22d61be207872404b",
+    "mtime": 1791895298.859196,
+    "ast_hash": "69d5b6b8807173b6e43a16a70147b54e",
     "semantic_hash": ""
   },
   "chronobio/tests/test_gaps.py": {
@@ -2920,8 +2920,8 @@
     "semantic_hash": ""
   },
   "chronobio/tests/test_swarm.py": {
-    "mtime": 1791856955.3042123,
-    "ast_hash": "6490a63d539f4d66e4a5943e1220b52a",
+    "mtime": 1791895298.8556614,
+    "ast_hash": "ac505f3670bd42ac092f7d459f8a7010",
     "semantic_hash": ""
   },
   "chronobio/src/chronobio/render.py": {
@@ -2987,6 +2987,16 @@
   "chronobio/tests/test_acceptance.py": {
     "mtime": 1791857493.7912302,
     "ast_hash": "63906760c14579e1004a34f2d1777ad4",
+    "semantic_hash": ""
+  },
+  "chronobio/src/chronobio/entities.py": {
+    "mtime": 1791895102.1878963,
+    "ast_hash": "870377515fd12f6805167c905010597c",
+    "semantic_hash": ""
+  },
+  "chronobio/tests/test_quality.py": {
+    "mtime": 1791895339.8630328,
+    "ast_hash": "076d64834a10d2fa5249be17a3f7b994",
     "semantic_hash": ""
   }
 }

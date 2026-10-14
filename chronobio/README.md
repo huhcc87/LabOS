@@ -25,6 +25,36 @@ An opt-in extension for LabOS that turns literature into evidence-traceable, fal
 
 **These pass on fixtures, not on real literature.** On the real KRAS corpus the system still produces hypotheses that the critic does not accept (see Milestones 4 and 7), so this suite does not show it is "fully functional" for research use. Integration into the LabOS app itself (spec milestone 9) was deliberately not done: the spec requires your explicit approval before touching the existing application.
 
+## Hypothesis-quality pass (after Milestone 8)
+
+Goal: get real-data hypotheses past the critic. Result: **not achieved. 0 of 6 accepted** (was 0 of 3), with llama3.1 8B.
+
+What changed (each with tests):
+
+- **Entity merging** (`entities.py`): names that differ only in spelling or filler words (KRAS / K-Ras, "X signaling") merge when the graph loads. Generic terms ("cancer", "inhibition") no longer produce gaps.
+- **Grounded mechanisms**: the critic flags a mechanism that uses terms the cited evidence never mentions; the proposer may write "mechanism not stated in the evidence" instead of inventing one.
+- **Single-paper limit** is judged against the papers on the gap's own link. An unreplicated link cannot be cited twice, so the limit is recorded in the review and the evidence-strength rating (lowest level) but no longer forces a revision.
+- **Retries**: one retry on Crossref 429/5xx (honouring Retry-After) and on one slow or dropped Ollama call.
+
+Measured on the grown KRAS corpus (62 papers, 287 claims, 559 nodes, 420 edges; 6 gaps; 3 rounds each):
+
+| Measure | Before (12 papers, 3 gaps) | After |
+|---|---|---|
+| Hypotheses accepted by the critic | 0 of 3 | **0 of 6** |
+| Swarm run | 135 s, 18 calls, 68 MB | 317 s, 36 calls, 73 MB |
+| Stored quotes re-verified / cited ids that exist | 53 of 53 / 3 of 3 | 287 of 287 / 13 of 13 |
+| Structural properties (falsifier, measurable prediction, opposing evidence, uncertainty, quote) | 100% | 100% |
+| Single-prompt baseline, same properties | 75% quote, 0% others | 0-50% quote (varies by run), 0% others |
+| Historical audit at 2019 | 0/67 gaps, 0/38 links followed up | 0/107 gaps, 0/60 links; only 25 claims predate the cutoff |
+
+Why nothing was accepted:
+
+- Before the single-paper change, 5 of 6 were revised for "supported by a single paper"; the top-ranked gaps are the unreplicated ones. After it, no rule finding blocks any hypothesis.
+- The model critic then revised all 18 reviews. Some objections are right (predictions that contradict the cited evidence, for example on FGFR1 and trametinib). Others are the model contradicting itself: it writes that the mechanism is an honest answer and the hypothesis is plausible, then still returns "revise". Adding a line to the critic prompt did not change the outcome.
+- Conclusion: with this 8B model, further prompt changes are not a reliable route. A larger local critic, a corpus with several papers per link, or full text are untried. No model was downloaded.
+
+Limits of this measurement: one run per configuration; the model is not deterministic (the baseline's quote rate moved between 0 and 0.75 across three runs); the 2019 historical test is too small to say anything about follow-up.
+
 ## What Milestone 7 does
 
 Benchmarks, security checks and a regression command.
@@ -65,7 +95,7 @@ A real bug this found: **the local model often refuses.** llama3.1 answered "I c
 **What the numbers do not show:**
 
 - The baseline comparison is **structural**. The extension scores 100% partly by construction, because it cannot output a hypothesis without claim ids, falsifiers and a critic pass. It says nothing about which hypotheses are scientifically better. That needs the blinded expert ratings, which have not been done (the sheet is written and blank).
-- The historical audit is uninformative here: 67 gaps and 38 links at the 2019 cutoff had no matching later evidence, because entity names are noisy and unmerged across papers, so later papers about the same link do not match. A language model may also have seen later papers in pretraining, so even a good historical result would be weak evidence.
+- The historical audit is uninformative here: 67 gaps and 38 links at the 2019 cutoff had no matching later evidence, (measured at Milestone 7, before entity merging; after merging it is still 0 of 107 gaps, with only 25 claims before the cutoff — see the quality pass above). A language model may also have seen later papers in pretraining, so even a good historical result would be weak evidence.
 - Novelty precision was not measured: there are no gold labels.
 - Hypothesis quality is unchanged: none of the 3 hypotheses was accepted by the critic.
 - The license and secret scans cover ChronoBio only, not LabOS.
