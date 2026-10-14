@@ -278,6 +278,8 @@ class Review(Record):
     critic_notes: list[str] = []           # model critique (never lowers a rule finding)
     missing_controls: list[str] = []
     confounders: list[str] = []
+    model_verdict: Verdict | None = None   # what the model critic said, kept even when advisory mode ignores it
+    advisory: bool = False                  # True: the model critic could not block; only the rules decided
 
 
 class NoveltyAssessment(Record):

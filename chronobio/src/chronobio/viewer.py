@@ -187,7 +187,7 @@ def _hypothesis_payload(r: dict) -> dict:
         "status": r["status"], "novelty": r["novelty_status"], "gap": (r.get("gap") or {}).get("description", ""),
         "validation": validation_label(r)[0].replace("NOT PERFORMED", "not performed"), "planned": bool(r.get("experiment_plan")),
         "supporting": r["supporting_ids"], "opposing": r["opposing_ids"], "uncertainty": r["uncertainty"],
-        "verdict": (r.get("critic") or {}).get("verdict", "not reviewed"), "rounds": len(r["verdict_history"]),
+        "verdict": (r.get("critic") or {}).get("label", "not reviewed"), "rounds": len(r["verdict_history"]),
         "findings": ((r.get("critic") or {}).get("rule_findings", []) + (r.get("critic") or {}).get("notes", [])),
         "ranking": {k: {"level": v["level"], "reasons": v["reasons"]} for k, v in rank.items()},
         "searches": [f'{s["query"]} — {s["run_at"][:10]}, {s["hits"]} hits' for s in nov.get("searches", [])],
@@ -211,6 +211,7 @@ _TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="__CSP__">
+<meta name="generator" content="chronobio-viewer">
 <title>__TITLE__</title>
 <style>
 :root { --bg:#f8fafc; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#d1d5db; --accent:#0072B2; --warn:#b91c1c; }

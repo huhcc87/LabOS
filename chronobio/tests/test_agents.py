@@ -211,3 +211,22 @@ def test_restating_a_reported_finding_is_sent_back(tmp_path):
     ext_corpus, ext = make_hyp(tmp_path / "ext", three_animal_papers(), [0, 1, 2],
                                statement="KRAS activates MAPK pathway in patient-derived organoids exposed to hypoxia")
     assert not any("restates" in t for _, t in rule_findings(ext, ext_corpus.claims, ext_corpus.pubs))
+
+
+def test_advisory_mode_records_the_model_objection_but_does_not_let_it_block(tmp_path):
+    corpus, hyp = make_hyp(tmp_path, three_animal_papers(), [0, 1, 2])
+    gate = review(ScriptedLLM([critic_reply("revise")]), hyp, corpus.claims, corpus.pubs)
+    advisory = review(ScriptedLLM([critic_reply("revise")]), hyp, corpus.claims, corpus.pubs, advisory=True)
+    assert gate.verdict == Verdict.REVISE and not gate.advisory
+    assert advisory.verdict == Verdict.ACCEPT and advisory.advisory and advisory.model_verdict == Verdict.REVISE
+    assert advisory.critic_notes                                    # the objection is still on record
+
+
+def test_advisory_mode_never_relaxes_the_rules_or_hides_an_unusable_critique(tmp_path):
+    corpus, hyp = make_hyp(tmp_path, three_animal_papers(), [0])
+    ruled = review(ScriptedLLM([critic_reply("accept")]), hyp, corpus.claims, corpus.pubs, advisory=True)
+    assert ruled.verdict == Verdict.REVISE                          # single paper, others available: rules still gate
+    corpus2, hyp2 = make_hyp(tmp_path / "second", three_animal_papers(), [0, 1, 2])
+    broken = review(ScriptedLLM(["not json", "still not json"]), hyp2, corpus2.claims, corpus2.pubs, advisory=True)
+    assert broken.verdict == Verdict.ACCEPT and broken.model_verdict is None
+    assert any("no independent check" in n for n in broken.critic_notes)

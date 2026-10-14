@@ -251,7 +251,7 @@ def _contains_words(claim_text: str, statement: str) -> float:
 
 def rule_findings(
     hyp: Hypothesis, claims: dict[str, EvidenceClaim], pubs: dict[str, Publication],
-    *, available_papers: int | None = None,
+    *, available_papers: int | None = None, advisory: bool = False,
 ) -> list[tuple[Verdict, str]]:
     """Deterministic checks. Each finding carries the verdict it forces.
 
@@ -298,7 +298,7 @@ def rule_findings(
 
 def review(
     llm: LLM, hyp: Hypothesis, claims: dict[str, EvidenceClaim], pubs: dict[str, Publication],
-    *, available_papers: int | None = None,
+    *, available_papers: int | None = None, advisory: bool = False,
 ) -> Review:
     findings = rule_findings(hyp, claims, pubs, available_papers=available_papers)
     verdict = max((v for v, _ in findings), key=ORDER.get, default=Verdict.ACCEPT)
@@ -310,6 +310,7 @@ def review(
     notes: list[str] = []
     controls: list[str] = []
     confounders: list[str] = []
+    model_verdict: Verdict | None = None
     # One retry: small local models sometimes return malformed JSON on the first try.
     data = json_object(llm.generate(CRITIC_SYSTEM, prompt, json_format=True))
     if data is None:
@@ -317,7 +318,7 @@ def review(
     if data is None:
         # Never accept on rules alone: the rules cannot see an internally inconsistent hypothesis.
         notes.append("Model critique unusable after a retry, so this hypothesis has had no independent check.")
-        if ORDER[Verdict.REVISE] > ORDER[verdict]:
+        if not advisory and ORDER[Verdict.REVISE] > ORDER[verdict]:
             verdict = Verdict.REVISE
     else:
         notes = _strings(data.get("reasons"))
@@ -327,9 +328,10 @@ def review(
         except ValueError:
             model_verdict = Verdict.REVISE
             notes.append("Model gave no valid verdict; treated as 'revise'.")
-        if ORDER[model_verdict] > ORDER[verdict]:        # the model may only be stricter
+        if not advisory and ORDER[model_verdict] > ORDER[verdict]:        # gate mode: the model may only be stricter
             verdict = model_verdict
     return Review(
         hypothesis_id=hyp.id, hypothesis_version=hyp.version, verdict=verdict,
+        model_verdict=model_verdict, advisory=advisory,
         rule_findings=[t for _, t in findings], critic_notes=notes, missing_controls=controls, confounders=confounders,
         provenance=Provenance(source="agent:skeptical_critic", detail=llm.name, tool_version=AGENT_VERSION))
