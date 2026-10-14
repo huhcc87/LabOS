@@ -173,7 +173,7 @@ def _blocks(
         b.append(("p", "No hypotheses have been generated for this corpus."))
     for i, r in enumerate(records, start=1):
         rank = r.get("ranking") or {}
-        verdict = (r.get("critic") or {}).get("verdict", "not reviewed")
+        verdict = (r.get("critic") or {}).get("label", "not reviewed")
         b += [("h2", f"4.{i} {r['statement']}"),
               ("p", f"Status: {r['status'].replace('_', ' ')} · Critic: {verdict} after {len(r['verdict_history'])} round(s) · "
                     f"Prior-work search: {r['novelty_status'].replace('_', ' ')} · Validation: {r['computational_validation']}")]

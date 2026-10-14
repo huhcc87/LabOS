@@ -32,6 +32,7 @@ class Settings:
     dry_run: bool = True                  # plan only: no model calls, no network
     allow_cloud_llm: bool = False         # only literature text, never patient data
     allow_network_literature: bool = False
+    critic_advisory: bool = False         # model critic's objections are recorded but cannot block; rules still gate
     data_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parents[2] / "data")
     ollama_url: str = "http://127.0.0.1:11434"
     model: str = "llama3.1:latest"
@@ -64,6 +65,7 @@ def load_settings() -> Settings:
         dry_run=_flag("CHRONOBIO_DRY_RUN", defaults.dry_run),
         allow_cloud_llm=_flag("CHRONOBIO_ALLOW_CLOUD_LLM", defaults.allow_cloud_llm),
         allow_network_literature=_flag("CHRONOBIO_ALLOW_NETWORK", defaults.allow_network_literature),
+        critic_advisory=_flag("CHRONOBIO_CRITIC_ADVISORY", defaults.critic_advisory),
         data_dir=Path(os.environ.get("CHRONOBIO_DATA_DIR", defaults.data_dir)),
         ollama_url=os.environ.get("CHRONOBIO_OLLAMA_URL", defaults.ollama_url),
         model=os.environ.get("CHRONOBIO_MODEL", defaults.model),

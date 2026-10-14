@@ -16,6 +16,13 @@ from .store import Store
 from .swarm import SwarmResult
 
 
+def critic_label(rev) -> str:
+    """Verdict as shown to readers. In advisory mode the model critic's own verdict is always shown beside it."""
+    if not rev.advisory:
+        return rev.verdict.value
+    return f"{rev.verdict.value} by rules only (advisory; model critic said: {rev.model_verdict.value if rev.model_verdict else 'unusable'})"
+
+
 def _cite(pub: Publication | None) -> str:
     if pub is None:
         return "unknown source"
@@ -78,7 +85,8 @@ def build_records(store: Store, result: SwarmResult) -> list[dict]:
             "supporting_evidence": [claim_view(c) for c in h.supporting_claim_ids],
             "opposing_evidence": [claim_view(c) for c in h.contradicting_claim_ids],
             "uncertainty": h.uncertainty,
-            "critic": {"verdict": rev.verdict.value, "rule_findings": rev.rule_findings, "notes": rev.critic_notes,
+            "critic": {"verdict": rev.verdict.value, "label": critic_label(rev), "advisory": rev.advisory,
+                       "model_verdict": rev.model_verdict.value if rev.model_verdict else None, "rule_findings": rev.rule_findings, "notes": rev.critic_notes,
                        "missing_controls": rev.missing_controls, "confounders": rev.confounders} if rev else None,
             "novelty": {"status": nov.status.value, "prior_work_quotes": nov.verified_quotes, "prior_titles": nov.prior_titles,
                         "searches": [{"query": logs[i].query, "run_at": logs[i].run_at.isoformat(), "hits": logs[i].result_count,
@@ -111,7 +119,7 @@ def _markdown(records: list[dict]) -> str:
     out = ["# ChronoBio hypotheses", "",
            "Generated from the stored evidence graph. Nothing here has been validated computationally or experimentally.", ""]
     for i, r in enumerate(records, start=1):
-        verdict = r["critic"]["verdict"] if r["critic"] else "not reviewed"
+        verdict = r["critic"]["label"] if r["critic"] else "not reviewed"
         out += [f"## {i}. {r['statement']}", "", f"**Status:** {r['status']} · **Critic:** {verdict} · "
                 f"**Novelty:** {r['novelty_status']} · **Validation:** {r['computational_validation']}", ""]
         if r["gap"]:

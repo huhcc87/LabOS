@@ -169,3 +169,16 @@ def test_retries_are_bounded_by_the_round_limit(tmp_path):
 def test_the_proposer_prompt_frames_the_task_as_literature_analysis():
     from chronobio.agents import PROPOSER_SYSTEM
     assert "literature-analysis task" in PROPOSER_SYSTEM and "medical" not in PROPOSER_SYSTEM.lower()
+
+
+def test_advisory_critic_lets_rules_decide_and_labels_the_dissent(tmp_path):
+    corpus = three_animal_corpus(tmp_path)
+    settings = Settings(data_dir=corpus.settings.data_dir, critic_advisory=True)
+    llm = ScriptedLLM([proposal(corpus.claim_ids), critic("revise"), judge("no", "")])
+    result = run_swarm(llm, corpus.store, settings, literature([]), max_gaps=1)
+    (hyp,) = result.hypotheses
+    assert hyp.review_status == HypothesisStatus.EVIDENCE_SUPPORTED and hyp.version >= 1
+    (rev,) = result.reviews
+    assert rev.advisory and rev.model_verdict == Verdict.REVISE
+    from chronobio.export import critic_label
+    assert "by rules only" in critic_label(rev) and "model critic said: revise" in critic_label(rev)

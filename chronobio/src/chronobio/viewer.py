@@ -187,7 +187,7 @@ def _hypothesis_payload(r: dict) -> dict:
         "status": r["status"], "novelty": r["novelty_status"], "gap": (r.get("gap") or {}).get("description", ""),
         "validation": validation_label(r)[0].replace("NOT PERFORMED", "not performed"), "planned": bool(r.get("experiment_plan")),
         "supporting": r["supporting_ids"], "opposing": r["opposing_ids"], "uncertainty": r["uncertainty"],
-        "verdict": (r.get("critic") or {}).get("verdict", "not reviewed"), "rounds": len(r["verdict_history"]),
+        "verdict": (r.get("critic") or {}).get("label", "not reviewed"), "rounds": len(r["verdict_history"]),
         "findings": ((r.get("critic") or {}).get("rule_findings", []) + (r.get("critic") or {}).get("notes", [])),
         "ranking": {k: {"level": v["level"], "reasons": v["reasons"]} for k, v in rank.items()},
         "searches": [f'{s["query"]} — {s["run_at"][:10]}, {s["hits"]} hits' for s in nov.get("searches", [])],
