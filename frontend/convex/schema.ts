@@ -431,6 +431,8 @@ export default defineSchema({
     action_items: v.optional(v.string()),     // JSON array
     progress_reports: v.optional(v.string()), // JSON array
     organizer_name: v.optional(v.string()),
+    reminders: v.optional(v.string()),      // JSON number[]: minutes before the start
+    reminders_sent: v.optional(v.string()), // JSON number[]: offsets already sent
     created_at: v.number(),
     updated_at: v.number(),
   }).index("by_lab", ["lab_id"])

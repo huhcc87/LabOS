@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { ActionItem, ActionItemStatus } from '../types/meeting.types'
 import { ActionStatusBadge, PriorityBadge } from './MeetingBadges'
 import { getPriorityColor } from '../utils/meetingUtils'
+import ActionItemForm from './ActionItemForm'
 
 interface Props {
   items: ActionItem[]
@@ -10,13 +11,19 @@ interface Props {
   currentUserName: string
   onUpdateStatus: (id: string, status: ActionItemStatus) => void
   onDelete: (id: string) => void
+  /** Meetings a new item can be filed under. */
+  meetings: Array<{ id: string; title: string }>
+  people: string[]
+  onAdd: (item: Omit<ActionItem, 'id' | 'createdAt' | 'status'>) => void
+  onEdit: (id: string, patch: Partial<ActionItem>) => void
 }
 
-const STATUS_OPTIONS: ActionItemStatus[] = ['open', 'in_progress', 'completed', 'cancelled']
-
-export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove, currentUserName, onUpdateStatus, onDelete }: Props) {
+export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove, currentUserName, onUpdateStatus, onDelete, meetings, people, onAdd, onEdit }: Props) {
   const [filter, setFilter] = useState<'all' | ActionItemStatus>('all')
   const [filterAssignee, setFilterAssignee] = useState<'all' | 'mine'>('all')
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const canAdd = isPiOrAdmin || isManagerOrAbove
 
   const filtered = items.filter(i => {
     if (filter !== 'all' && i.status !== filter) return false
@@ -69,6 +76,16 @@ export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove,
         </div>
       </div>
 
+      {canAdd && !adding && (
+        <button onClick={() => { setAdding(true); setEditingId(null) }} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
+          + New action item
+        </button>
+      )}
+      {adding && (
+        <ActionItemForm meetings={meetings} people={people} currentUserName={currentUserName}
+          onSubmit={d => { onAdd(d); setAdding(false) }} onCancel={() => setAdding(false)} />
+      )}
+
       {/* Items */}
       {filtered.length === 0
         ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', background: '#f8fafc', borderRadius: 8 }}>No action items match your filter</div>
@@ -77,6 +94,14 @@ export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove,
           const canEdit = isPiOrAdmin || isManagerOrAbove || item.assignedToName === currentUserName
           const dueDate = new Date(item.dueDate)
           const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / 86400000)
+
+          if (editingId === item.id) {
+            return (
+              <ActionItemForm key={item.id} meetings={meetings} people={people} currentUserName={currentUserName} editItem={item}
+                onSubmit={d => { onEdit(item.id, { title: d.title, description: d.description, assignedTo: d.assignedTo, assignedToName: d.assignedToName, dueDate: d.dueDate, priority: d.priority, notes: d.notes }); setEditingId(null) }}
+                onCancel={() => setEditingId(null)} />
+            )
+          }
 
           return (
             <div key={item.id} style={{
@@ -124,6 +149,10 @@ export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove,
                         ▶ Start
                       </button>
                     )}
+                    <button onClick={() => { setEditingId(item.id); setAdding(false) }}
+                      style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#475569', padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>
+                      ✎ Edit
+                    </button>
                     {isPiOrAdmin && (
                       <button onClick={() => onDelete(item.id)}
                         style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>

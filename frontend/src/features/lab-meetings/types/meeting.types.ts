@@ -93,6 +93,8 @@ export interface Meeting {
   minutesPublishedAt?: string
   progressReports: ProgressReport[]
   tags: string[]
+  /** Minutes before the start at which attendees are reminded. */
+  reminders: number[]
   createdAt: string
   updatedAt: string
 }

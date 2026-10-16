@@ -21,6 +21,15 @@ function parseList<T>(raw: unknown): T[] {
 
 const iso = (ms: number) => new Date(ms).toISOString()
 
+/** Reminder choices, in minutes before the start. */
+export const REMINDER_OPTIONS: Array<{ minutes: number; label: string }> = [
+  { minutes: 10080, label: '1 week before' },
+  { minutes: 1440, label: '1 day before' },
+  { minutes: 60, label: '1 hour before' },
+  { minutes: 15, label: '15 minutes before' },
+]
+export const DEFAULT_REMINDERS = [1440, 60]
+
 /** Convex meeting row -> the shape the page uses. */
 export function fromDoc(m: any): Meeting {
   const start = Number(m.scheduled_at)
@@ -48,6 +57,7 @@ export function fromDoc(m: any): Meeting {
     minutesPublishedAt: m.minutes_published_at ? iso(m.minutes_published_at) : undefined,
     progressReports: parseList<ProgressReport>(m.progress_reports),
     tags: m.tags ? String(m.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+    reminders: m.reminders === undefined ? DEFAULT_REMINDERS : parseList<number>(m.reminders),
     createdAt: iso(m.created_at),
     updatedAt: iso(m.updated_at),
   }
@@ -73,6 +83,7 @@ export function toFields(p: Partial<Meeting>): Record<string, unknown> {
   if (p.minutes !== undefined) f.minutes = p.minutes
   if (p.minutesPublished !== undefined) f.minutes_published = p.minutesPublished
   if (p.tags !== undefined) f.tags = p.tags.join(',')
+  if (p.reminders !== undefined) f.reminders = JSON.stringify(p.reminders)
   if (f.scheduled_at !== undefined && f.end_time !== undefined) {
     f.duration_minutes = Math.max(1, Math.round(((f.end_time as number) - (f.scheduled_at as number)) / 60000))
   }
@@ -254,10 +265,10 @@ export function useMeetings(currentUserName: string, currentUserRole: string) {
   }
 
   // ── ACTION ITEMS (stored on their meeting) ───────────────────────────────
-  function addActionItem(item: Omit<ActionItem, 'id' | 'createdAt'>) {
+  function addActionItem(item: Omit<ActionItem, 'id' | 'createdAt' | 'status'>) {
     const meeting = meetingOf(item.meetingId)
     if (!meeting) return
-    const nai: ActionItem = { ...item, id: `ai-${Date.now()}`, createdAt: new Date().toISOString() }
+    const nai: ActionItem = { ...item, status: 'open', id: `ai-${Date.now()}`, createdAt: new Date().toISOString() }
     run(async () => { await updateMeeting(meeting.id, { actionItems: [...meeting.actionItems, nai] }); toast.success('Action item added') })
   }
 
@@ -273,6 +284,84 @@ export function useMeetings(currentUserName: string, currentUserRole: string) {
     if (!meeting) return
     run(() => updateMeeting(meeting.id, { actionItems: meeting.actionItems.filter(a => a.id !== id) }))
   }
+
+  // ── EDITING ───────────────────────────────────────────────────────────────
+  function updateAgendaItem(meetingId: string, itemId: string, patch: Partial<AgendaItem>) {
+    const meeting = meetingOf(meetingId)
+    if (!meeting) return
+    run(async () => {
+      await updateMeeting(meetingId, { agenda: meeting.agenda.map(a => a.id === itemId ? { ...a, ...patch } : a) })
+      toast.success('Agenda item updated')
+    })
+  }
+
+  function deleteAgendaItem(meetingId: string, itemId: string) {
+    const meeting = meetingOf(meetingId)
+    if (!meeting) return
+    run(async () => {
+      await updateMeeting(meetingId, { agenda: meeting.agenda.filter(a => a.id !== itemId).map((a, i) => ({ ...a, order: i + 1 })) })
+      toast('Agenda item removed', { icon: '🗑' })
+    })
+  }
+
+  function updateActionItem(id: string, patch: Partial<ActionItem>) {
+    const meeting = meetings.find(m => m.actionItems.some(a => a.id === id))
+    if (!meeting) return
+    // Changing the due date re-arms its reminder.
+    const rearm = patch.dueDate !== undefined ? { reminded: false } : {}
+    run(async () => {
+      await updateMeeting(meeting.id, { actionItems: meeting.actionItems.map(a => a.id === id ? { ...a, ...patch, ...rearm } : a) })
+      toast.success('Action item updated')
+    })
+  }
+
+  function addAttendee(meetingId: string, name: string) {
+    const meeting = meetingOf(meetingId)
+    const clean = name.trim()
+    if (!meeting || !clean) return
+    if (meeting.attendees.some(a => a.name.toLowerCase() === clean.toLowerCase())) { toast.error(`${clean} is already on the list`); return }
+    run(() => updateMeeting(meetingId, { attendees: [...meeting.attendees, { userId: slug(clean), name: clean, role: 'member', status: 'absent' }] }))
+  }
+
+  function removeAttendee(meetingId: string, userId: string) {
+    const meeting = meetingOf(meetingId)
+    if (!meeting) return
+    run(() => updateMeeting(meetingId, { attendees: meeting.attendees.filter(a => a.userId !== userId) }))
+  }
+
+  async function remindNow(meetingId: string) {
+    try {
+      const res = await meetingsApi.remindNow(meetingId)
+      toast.success(`Reminder sent to ${res.data.sent} ${res.data.sent === 1 ? 'person' : 'people'}`)
+    } catch (err) {
+      toast.error(`Could not send reminder: ${errText(err)}`)
+    }
+  }
+
+  // Remind this user while the page is open: a toast, plus a system notification if they allowed it.
+  useEffect(() => {
+    const KEY = 'labos_meeting_reminded'
+    const seen = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? '[]') } catch { return [] } }
+    const check = () => {
+      const done = seen()
+      const now = Date.now()
+      for (const m of upcoming) {
+        const mine = m.attendees.length === 0 || m.organizer === currentUserName || m.attendees.some(a => a.name === currentUserName)
+        if (!mine) continue
+        const start = Date.parse(m.scheduledAt)
+        const due = m.reminders.filter(o => now >= start - o * 60000 && !done.includes(`${m.id}:${start}:${o}`))
+        if (!due.length) continue
+        const mins = Math.max(0, Math.round((start - now) / 60000))
+        const when = mins < 60 ? `in ${mins} min` : mins < 2880 ? `in ${Math.round(mins / 60)} h` : `in ${Math.round(mins / 1440)} days`
+        toast(`📅 ${m.title} starts ${when}${m.location ? ` · ${m.location}` : ''}`, { duration: 10000 })
+        if ('Notification' in window && Notification.permission === 'granted') new Notification(`Lab meeting ${when}`, { body: m.title })
+        try { localStorage.setItem(KEY, JSON.stringify([...done, ...due.map(o => `${m.id}:${start}:${o}`)].slice(-200))) } catch { /* private mode */ }
+      }
+    }
+    check()
+    const t = setInterval(check, 60000)
+    return () => clearInterval(t)
+  }, [upcoming, currentUserName])
 
   // ── PROGRESS REPORTS ─────────────────────────────────────────────────────
   function submitProgressReport(meetingId: string, report: Omit<ProgressReport, 'id' | 'meetingId' | 'submittedAt' | 'status'>) {
@@ -303,6 +392,7 @@ export function useMeetings(currentUserName: string, currentUserRole: string) {
     markAttendance,
     saveMinutes, publishMinutes,
     addActionItem, updateActionItemStatus, deleteActionItem,
+    updateAgendaItem, deleteAgendaItem, updateActionItem, addAttendee, removeAttendee, remindNow,
     submitProgressReport, acknowledgeProgressReport,
     refetch: fetchMeetings,
   }

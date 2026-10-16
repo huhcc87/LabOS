@@ -447,6 +447,9 @@ export default function LabMeetingsPage() {
             items={store.myActionItems} isPiOrAdmin={isPiOrAdmin} isManagerOrAbove={isManagerOrAbove}
             currentUserName={currentUserName}
             onUpdateStatus={store.updateActionItemStatus} onDelete={store.deleteActionItem}
+            meetings={[...store.upcoming, ...store.past].map(m => ({ id: m.id, title: m.title }))}
+            people={[...new Set(store.meetings.flatMap(m => m.attendees.map(a => a.name)))]}
+            onAdd={store.addActionItem} onEdit={store.updateActionItem}
           />
         )}
 
@@ -907,6 +910,13 @@ export default function LabMeetingsPage() {
           meetingActionItems={meetingActionItems}
           onSubmitProgressReport={(r) => store.submitProgressReport(sm.id, r)}
           onAcknowledgeReport={(reportId, comment) => store.acknowledgeProgressReport(sm.id, reportId, comment)}
+          onEditAgenda={(id, patch) => store.updateAgendaItem(sm.id, id, patch)}
+          onDeleteAgenda={(id) => store.deleteAgendaItem(sm.id, id)}
+          onAddAttendee={(name) => store.addAttendee(sm.id, name)}
+          onRemoveAttendee={(userId) => store.removeAttendee(sm.id, userId)}
+          onAddActionItem={store.addActionItem}
+          onEditActionItem={store.updateActionItem}
+          onRemindNow={() => store.remindNow(sm.id)}
           onEdit={() => handleEditMeeting(sm)}
           onDelete={() => handleDeleteMeeting(sm)}
           onCancel={() => store.cancelMeeting(sm.id)}

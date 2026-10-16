@@ -18,6 +18,13 @@ describe('meeting <-> Convex mapping', () => {
     expect(m.attendees[0].status).toBe('present');
   });
 
+  it('defaults reminders to a day and an hour, and keeps an explicit empty choice', () => {
+    const base = { id: 'm', title: 't', scheduled_at: 1000, status: 'scheduled', created_at: 1, updated_at: 1 }
+    expect(fromDoc(base).reminders).toEqual([1440, 60])
+    expect(fromDoc({ ...base, reminders: '[]' }).reminders).toEqual([])
+    expect(toFields({ reminders: [15] }).reminders).toBe('[15]')
+  })
+
   it('survives missing or corrupt JSON lists', () => {
     const m = fromDoc({ id: 'm2', title: 't', scheduled_at: 1000, status: 'scheduled', agenda: '{oops', created_at: 1, updated_at: 1 });
     expect(m.agenda).toEqual([]);
