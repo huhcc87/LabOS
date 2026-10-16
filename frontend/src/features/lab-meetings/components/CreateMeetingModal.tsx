@@ -4,14 +4,16 @@ import { getMeetingTypeIcon, getMeetingTypeLabel } from '../utils/meetingUtils'
 
 interface Props {
   currentUserName: string
-  onSave: (data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>) => void
+  onSave: (data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>, attendeeNames: string[]) => void
   onClose: () => void
   editMeeting?: Meeting | null
+  /** Pre-fills a new meeting from a template. */
+  template?: { name: string; type: MeetingType; duration: number; description: string } | null
 }
 
 const TYPES: MeetingType[] = ['weekly', 'journal_club', 'lab_retreat', 'one_on_one', 'progress_report', 'special']
 
-export default function CreateMeetingModal({ currentUserName, onSave, onClose, editMeeting }: Props) {
+export default function CreateMeetingModal({ currentUserName, onSave, onClose, editMeeting, template }: Props) {
   const isEditMode = !!editMeeting
   const now = new Date()
   const localDate = (d: Date | string) => {
@@ -20,16 +22,16 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
   }
   const defaultStart = new Date(now.getTime() + 24 * 3600000)
-  const defaultEnd = new Date(defaultStart.getTime() + 2 * 3600000)
+  const defaultEnd = new Date(defaultStart.getTime() + (template && !editMeeting ? template.duration : 120) * 60000)
 
   const [form, setForm] = useState({
-    title: editMeeting?.title || '',
-    type: (editMeeting?.type || 'weekly') as MeetingType,
+    title: editMeeting?.title || template?.name || '',
+    type: (editMeeting?.type || template?.type || 'weekly') as MeetingType,
     location: editMeeting?.location || '',
     zoomLink: editMeeting?.zoomLink || '',
     scheduledAt: editMeeting ? localDate(editMeeting.scheduledAt) : localDate(defaultStart),
     endTime: editMeeting ? localDate(editMeeting.endTime) : localDate(defaultEnd),
-    description: editMeeting?.description || '',
+    description: editMeeting?.description || template?.description || '',
     isRecurring: editMeeting?.isRecurring || false,
     recurringPattern: (editMeeting?.recurringPattern || 'weekly') as 'weekly' | 'biweekly' | 'monthly',
     selectedAttendees: editMeeting?.attendees?.map(a => a.name) || (currentUserName ? [currentUserName] : []),
@@ -67,7 +69,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
       isRecurring: form.isRecurring,
       recurringPattern: form.isRecurring ? form.recurringPattern : undefined,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-    })
+    }, form.selectedAttendees)
   }
 
   const inp: React.CSSProperties = {

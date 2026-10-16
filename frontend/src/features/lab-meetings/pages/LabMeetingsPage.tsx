@@ -193,14 +193,21 @@ export default function LabMeetingsPage() {
     store.setSelectedMeeting(null)
   }
 
-  function handleSaveMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>) {
-    if (editingMeeting) {
-      store.updateMeeting(editingMeeting.id, data)
-    } else {
-      store.addMeeting(data)
+  async function handleSaveMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>, attendeeNames: string[]) {
+    try {
+      if (editingMeeting) {
+        const { organizer: _o, organizerRole: _r, ...fields } = data
+        await store.updateMeeting(editingMeeting.id, { ...fields, attendees: store.attendeesFromNames(editingMeeting.attendees, attendeeNames) })
+        toast.success('Meeting updated')
+      } else {
+        await store.addMeeting(data, { attendeeNames, agenda: selectedTemplate?.defaultAgenda })
+      }
+    } catch {
+      return // the hook already showed the error; keep the form open so nothing typed is lost
     }
     setShowCreate(false)
     setEditingMeeting(null)
+    setSelectedTemplate(null)
   }
 
   function handleDeleteMeeting(meeting: Meeting) {
@@ -912,8 +919,9 @@ export default function LabMeetingsPage() {
         <CreateMeetingModal
           currentUserName={currentUserName}
           editMeeting={editingMeeting}
+          template={editingMeeting ? null : selectedTemplate}
           onSave={handleSaveMeeting}
-          onClose={() => { setShowCreate(false); setEditingMeeting(null) }}
+          onClose={() => { setShowCreate(false); setEditingMeeting(null); setSelectedTemplate(null) }}
         />
       )}
 

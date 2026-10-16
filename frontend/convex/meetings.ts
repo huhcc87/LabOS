@@ -4,6 +4,20 @@ import { hubGuard } from "./authHelper";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth } = hubGuard("Resources");
 
+/** Extra optional fields the Lab Meetings page stores on a meeting (lists are JSON text). */
+const extraArgs = {
+  end_time: v.optional(v.number()),
+  description: v.optional(v.string()),
+  video_link: v.optional(v.string()),
+  is_recurring: v.optional(v.boolean()),
+  recurring_pattern: v.optional(v.string()),
+  tags: v.optional(v.string()),
+  minutes_published: v.optional(v.boolean()),
+  minutes_published_at: v.optional(v.number()),
+  action_items: v.optional(v.string()),
+  progress_reports: v.optional(v.string()),
+};
+
 export const list = query({
   args: {
     token: v.optional(v.string()),
@@ -18,7 +32,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
-    const numItems = args.paginationOpts?.numItems ?? 20;
+    const numItems = args.paginationOpts?.numItems ?? 500;
 
     let results = await ctx.db
       .query("meetings")
@@ -66,22 +80,19 @@ export const create = mutation({
     agenda: v.optional(v.string()),
     attendees: v.optional(v.string()),
     recording_url: v.optional(v.string()),
+    ...extraArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
+    const organizer = await ctx.db.get(userId);
 
     const now = Date.now();
+    const { token: _token, ...fields } = args;
     return await ctx.db.insert("meetings", {
-      title: args.title,
-      meeting_type: args.meeting_type,
+      ...fields,
       status: "scheduled",
-      scheduled_at: args.scheduled_at,
-      duration_minutes: args.duration_minutes,
-      location: args.location,
-      agenda: args.agenda,
       organizer_id: userId,
-      attendees: args.attendees,
-      recording_url: args.recording_url,
+      organizer_name: (organizer as any)?.full_name,
       created_at: now,
       updated_at: now,
     });
@@ -102,6 +113,7 @@ export const update = mutation({
     minutes: v.optional(v.string()),
     attendees: v.optional(v.string()),
     recording_url: v.optional(v.string()),
+    ...extraArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
