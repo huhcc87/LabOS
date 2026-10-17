@@ -317,6 +317,12 @@ export default defineSchema({
     approved_by: v.optional(v.id("users")),
     approved_at: v.optional(v.number()),
     review_date: v.optional(v.number()),
+    // Uploaded document (anyone uploads; status stays "pending" until a PI approves or rejects it)
+    storage_id: v.optional(v.id("_storage")),
+    file_name: v.optional(v.string()),
+    file_type: v.optional(v.string()),
+    file_size: v.optional(v.number()),
+    decision_note: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
   }).index("by_lab", ["lab_id"])

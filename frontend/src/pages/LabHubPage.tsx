@@ -7,6 +7,9 @@ import { ProtocolFormFields, type ProtocolDetails } from '../components/Protocol
 import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
+import SopsPanel from '../features/sops/SopsPanel';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
 import type { Id } from '../../convex/_generated/dataModel';
 
@@ -136,6 +139,7 @@ const LAB_LOCATIONS = [
 export default function LabHubPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
   const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
@@ -801,7 +805,7 @@ export default function LabHubPage() {
 
   const tabs = [
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
-    { key: 'sops', label: 'SOPs', icon: '📚', count: sops.length },
+    { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments', icon: '🔬', count: instruments.length },
     { key: 'bookings', label: 'Bookings', icon: '📅', count: bookings.length },
     { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: maintenanceLogs.filter(m => m.status !== 'completed').length },
@@ -878,7 +882,7 @@ export default function LabHubPage() {
       <nav aria-label="Lab at a glance" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }}>
         {([
           { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
-          { tab: 'sops', value: sops.length, label: 'SOPs' },
+          { tab: 'sops', value: sopCount, label: 'SOPs' },
           { tab: 'instruments', value: instruments.filter(i => i.status === 'available').length, label: 'instruments available' },
           { tab: 'bookings', value: bookings.filter(b => b.status === 'pending').length, label: 'pending bookings' },
           { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
@@ -1162,134 +1166,7 @@ export default function LabHubPage() {
       )}
 
       {/* SOPs Tab */}
-      {activeTab === 'sops' && (
-        <div>
-          {/* Search & Actions Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search SOPs..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 150 }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-                <option value="all">All Categories</option>
-                <option value="Safety">Safety</option>
-                <option value="Quality">Quality</option>
-                <option value="Operations">Operations</option>
-                <option value="Equipment">Equipment</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('sops')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowSOPModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>✨</span> New SOP
-              </button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllSOPs}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneSOPs}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedSOPs.size} of {sops.length} selected
-              </span>
-            </div>
-            {selectedSOPs.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'sop', count: selectedSOPs.size })}
-              >
-                Delete Selected ({selectedSOPs.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {sops
-              .filter(s => {
-                const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
-                return matchesSearch && matchesCategory;
-              })
-              .map(sop => (
-              <div
-                key={sop.id}
-                className="card"
-                style={{
-                  position: 'relative',
-                  border: selectedSOPs.has(sop.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedSOPs.has(sop.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                {/* Selection Checkbox */}
-                <div style={{ position: 'absolute', top: 12, left: 12 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSOPs.has(sop.id)}
-                    onChange={() => toggleSOPSelection(sop.id)}
-                    style={{ cursor: 'pointer', width: 18, height: 18 }}
-                  />
-                </div>
-                <div style={{
-                  position: 'absolute', top: 12, right: 12,
-                  padding: '4px 10px', borderRadius: 12, fontSize: 10, fontWeight: 600,
-                  background: sop.category === 'Safety' ? 'var(--bad-bg)' : sop.category === 'Quality' ? 'var(--info-bg)' : 'var(--ok-bg)',
-                  color: sop.category === 'Safety' ? 'var(--bad-text)' : sop.category === 'Quality' ? 'var(--info-text)' : 'var(--ok-text)',
-                }}>
-                  {sop.category}
-                </div>
-                <div style={{ fontSize: 32, marginBottom: 12, marginLeft: 28 }}>📚</div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, paddingRight: 70, paddingLeft: 28 }}>{sop.title}</h3>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, paddingLeft: 28 }}>Version {sop.version}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(false); }}>👁️ View</button>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(true); }}>✏️ Edit</button>
-                  <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none', padding: '4px 8px' }}
-                    onClick={() => setDeleteConfirm({ type: 'sop', id: sop.id, name: sop.title })}
-                    title="Delete SOP"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {activeTab === 'sops' && <SopsPanel />}
 
       {/* Instruments Tab */}
       {activeTab === 'instruments' && (
