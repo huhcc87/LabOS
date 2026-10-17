@@ -790,6 +790,7 @@ export default defineSchema({
     lab_id: v.optional(v.id("labs")),
     name: v.string(),
     integration_type: v.string(),
+    description: v.optional(v.string()),
     config: v.optional(v.string()),
     status: v.string(),
     last_sync: v.optional(v.number()),

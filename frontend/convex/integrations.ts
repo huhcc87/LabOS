@@ -3,22 +3,23 @@ import { v } from "convex/values";
 import { requireRole } from "./authHelper";
 
 export const list = query({
-  args: { token: v.optional(v.string()), search: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
+  args: { token: v.optional(v.string()), search: v.optional(v.string()), integration_type: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
   handler: async (ctx, args) => {
     await requireRole(ctx, args.token, "admin");
     let results = await ctx.db.query("integrations").order("desc").collect();
+    if (args.integration_type) results = results.filter((r) => r.integration_type === args.integration_type);
     if (args.search) { const t = args.search.toLowerCase(); results = results.filter((r) => r.name.toLowerCase().includes(t)); }
     return results;
   },
 });
 
 export const create = mutation({
-  args: { token: v.optional(v.string()), name: v.string(), integration_type: v.string(), config: v.optional(v.string()), status: v.optional(v.string()) },
+  args: { token: v.optional(v.string()), name: v.string(), integration_type: v.string(), description: v.optional(v.string()), config: v.optional(v.string()), status: v.optional(v.string()) },
   handler: async (ctx, { token, ...data }) => { await requireRole(ctx, token, "admin"); return ctx.db.insert("integrations", { ...data, status: data.status ?? "inactive", created_at: Date.now() }); },
 });
 
 export const update = mutation({
-  args: { token: v.optional(v.string()), id: v.id("integrations"), name: v.optional(v.string()), integration_type: v.optional(v.string()), config: v.optional(v.string()), status: v.optional(v.string()) },
+  args: { token: v.optional(v.string()), id: v.id("integrations"), name: v.optional(v.string()), integration_type: v.optional(v.string()), description: v.optional(v.string()), config: v.optional(v.string()), status: v.optional(v.string()), last_sync: v.optional(v.number()) },
   handler: async (ctx, { token, id, ...fields }) => {
     await requireRole(ctx, token, "admin");
     const patch: Record<string, unknown> = {};
