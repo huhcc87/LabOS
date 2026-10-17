@@ -11,6 +11,16 @@ const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'bloc
 const when = (ms: number) => new Date(ms).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const today = () => new Date().toISOString().slice(0, 10);
 
+const OTHER = '__other__';
+/** Common lab instruments, so adding one is a pick from a list. */
+const PRESETS = ['PCR Thermocycler', 'qPCR / Real-time PCR System', 'Centrifuge', 'Ultracentrifuge', 'Microscope (Fluorescence)', 'Confocal Microscope', 'Plate Reader', 'Flow Cytometer', 'Gel Imager', 'NanoDrop Spectrophotometer', 'Biosafety Cabinet', 'CO2 Incubator', 'Shaking Incubator', 'Autoclave', '-80 °C Freezer', 'Water Bath', 'Sequencer', 'Mass Spectrometer', 'HPLC'];
+
+/** Active = can be booked. Not used = switched off by a manager. */
+const statusOf = (i: { bookable: boolean; status: string }) =>
+  i.bookable ? { text: 'Active', color: '#15803d', bg: 'rgba(34,197,94,0.14)' }
+    : i.status === 'not_used' ? { text: 'Not used', color: '#475569', bg: 'rgba(100,116,139,0.16)' }
+    : { text: i.status.replace(/_/g, ' '), color: '#b45309', bg: 'rgba(245,158,11,0.14)' };
+
 interface Confirmation { instrument: string; location?: string; start_time: number; end_time: number; reminders: boolean }
 
 /** Instruments and bookings on one screen: pick an instrument, choose a time, confirm. */
@@ -30,7 +40,8 @@ export default function InstrumentBooking() {
   const [remind, setRemind] = useState(true);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Confirmation | null>(null);
-  const [adding, setAdding] = useState<{ name: string; location: string } | null>(null);
+  const [adding, setAdding] = useState<{ preset: string; name: string; location: string } | null>(null);
+  const setActive = useMutation(api.instrumentBooking.setActive);
 
   const instruments = data?.instruments ?? [];
   const bookings = data?.bookings ?? [];
@@ -52,8 +63,10 @@ export default function InstrumentBooking() {
   const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); toast.success(ok); } catch (e) { toast.error(errText(e)); } };
 
   const saveInstrument = async () => {
-    if (!token || !adding?.name.trim()) return toast.error('Enter the instrument name.');
-    await act(async () => { await addInstrument({ token, name: adding.name.trim(), location: adding.location.trim() || undefined, status: 'available' }); setAdding(null); }, 'Instrument added');
+    if (!token || !adding) return;
+    const name = adding.preset === OTHER ? adding.name.trim() : adding.preset;
+    if (!name) return toast.error('Enter the instrument name.');
+    await act(async () => { await addInstrument({ token, name, location: adding.location.trim() || undefined, status: 'active' }); setAdding(null); }, 'Instrument added');
   };
 
   if (!data) return <div style={{ color: 'var(--text-muted)' }}>Loading…</div>;
@@ -64,33 +77,46 @@ export default function InstrumentBooking() {
       <section aria-label="Instruments">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>1. Choose an instrument</h3>
-          {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { name: '', location: '' })}>+ Add instrument</button>}
+          {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { preset: PRESETS[0], name: '', location: '' })}>+ Add instrument</button>}
         </div>
         {adding && (
           <div className="card" style={{ padding: 12, marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input aria-label="Instrument name" placeholder="Name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} style={{ ...input, flex: 1, minWidth: 140 }} />
+            <select aria-label="Instrument type" value={adding.preset} onChange={(e) => setAdding({ ...adding, preset: e.target.value })} style={{ ...input, flex: 1, minWidth: 160 }}>
+              {PRESETS.map((p) => <option key={p}>{p}</option>)}
+              <option value={OTHER}>Other…</option>
+            </select>
+            {adding.preset === OTHER && <input aria-label="Instrument name" placeholder="Name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} style={{ ...input, flex: 1, minWidth: 140 }} />}
             <input aria-label="Instrument location" placeholder="Location" value={adding.location} onChange={(e) => setAdding({ ...adding, location: e.target.value })} style={{ ...input, flex: 1, minWidth: 120 }} />
             <button className="btn btn-primary btn-sm" onClick={saveInstrument}>Save</button>
           </div>
         )}
         {instruments.length === 0 ? (
-          <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet.{data.can_add_instrument ? ' Add the first one.' : ' A manager can add them.'}</div>
+          <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet.{data.can_add_instrument ? ' Use "+ Add instrument" and pick one from the list.' : ' A manager can add them.'}</div>
         ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {instruments.map((i) => {
-              const next = bookings.find((b) => b.instrument_id === i._id);
-              const on = picked === i._id;
-              return (
-                <button key={i._id} type="button" aria-pressed={on} disabled={!i.bookable} onClick={() => { setPicked(i._id); setDone(null); }}
-                  style={{ textAlign: 'left', padding: 12, borderRadius: 10, cursor: i.bookable ? 'pointer' : 'not-allowed', opacity: i.bookable ? 1 : 0.55, background: on ? 'rgba(0,113,188,0.1)' : 'var(--surface)', border: `2px solid ${on ? 'var(--accent)' : 'var(--border)'}`, color: 'var(--text)' }}>
-                  <div style={{ fontWeight: 700 }}>🔬 {i.name}{i.model ? <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {i.model}</span> : null}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    {[i.location, i.bookable ? 'Available to book' : i.status.replace(/_/g, ' '), next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}
+          <>
+            <select aria-label="Instrument" value={picked ?? ''} onChange={(e) => { setPicked((e.target.value || null) as Id<'instruments'> | null); setDone(null); }} style={{ ...input, marginBottom: 10 }}>
+              <option value="">Select an instrument…</option>
+              {instruments.map((i) => <option key={i._id} value={i._id} disabled={!i.bookable}>{i.name}{i.location ? ` (${i.location})` : ''} — {statusOf(i).text}</option>)}
+            </select>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              {instruments.map((i, n) => {
+                const st = statusOf(i);
+                const next = bookings.find((b) => b.instrument_id === i._id);
+                return (
+                  <div key={i._id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none', background: picked === i._id ? 'rgba(0,113,188,0.08)' : undefined }}>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{i.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[i.location, next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}</div>
+                    </div>
+                    <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
+                    {data.can_add_instrument && (
+                      <button className="btn btn-secondary btn-sm" onClick={() => act(() => setActive({ token: token!, id: i._id, active: !i.bookable }), i.bookable ? 'Marked not used' : 'Marked active')}>{i.bookable ? 'Mark not used' : 'Mark active'}</button>
+                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </section>
 

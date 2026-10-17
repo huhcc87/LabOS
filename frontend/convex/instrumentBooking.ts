@@ -12,7 +12,7 @@ const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const MAX_LEN = 12 * HOUR;
 /** Instruments in these states can't be booked. */
-const NOT_BOOKABLE = ["maintenance", "out_of_service", "retired", "offline"];
+const NOT_BOOKABLE = ["not_used", "maintenance", "out_of_service", "retired", "offline"];
 
 export const REMINDER_EVERY_MS = 2 * DAY;
 const days = (ms: number) => { const d = Math.ceil(ms / DAY); return d <= 1 ? "within the next day" : `in about ${d} days`; };
@@ -125,5 +125,16 @@ export const sendReminders = internalMutation({
       });
       await ctx.db.patch(b._id, { last_reminded_at: now });
     }
+  },
+});
+
+/** Manager: mark an instrument Active (bookable) or Not used (can't be booked). */
+export const setActive = mutation({
+  args: { token: v.optional(v.string()), id: v.id("instruments"), active: v.boolean() },
+  handler: async (ctx, { token, id, active }) => {
+    const userId = await requireAuth(ctx, token);
+    if (!hasRole((await ctx.db.get(userId))!.role, "manager")) throw new ConvexError("Only a manager can change an instrument's status.");
+    if (!(await ctx.db.get(id))) throw new ConvexError("Instrument not found.");
+    await ctx.db.patch(id, { status: active ? "active" : "not_used", updated_at: Date.now() });
   },
 });
