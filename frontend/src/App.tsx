@@ -39,6 +39,7 @@ const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
 const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
+const LabelPrinterPage        = lazy(() => import('./pages/LabelPrinterPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
 const ReceivingPage          = lazy(() => import('./pages/ReceivingPage')); const BarcodeScannerPage     = lazy(() => import('./pages/BarcodeScannerPage')); const BarcodeLabelsPage      = lazy(() => import('./pages/BarcodeLabelsPage'));
@@ -218,6 +219,7 @@ function AppInner() {
       case 'iot-dashboard': return <IoTDashboardPage />;
       case 'label-printer': return <LabelsPage />;
       case 'labels': return <LabelsPage />;
+      case 'label-designer': return <LabelPrinterPage />;
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
       case 'receiving': return <ReceivingPage />; case 'barcode-scanner': return <BarcodeScannerPage onNavigate={setPage} />; case 'barcode-labels': return <BarcodeLabelsPage />;
