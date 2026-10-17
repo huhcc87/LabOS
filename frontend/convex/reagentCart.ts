@@ -2,6 +2,8 @@ import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { hubGuard, hasRole } from "./authHelper";
 import type { Doc, Id } from "./_generated/dataModel";
+import { lineTotal, overBudget, committedFor } from "./cartBudgets";
+import { matchPo } from "./invoiceMatch";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -14,8 +16,6 @@ const { requireAuth, requireRole } = hubGuard("Resources");
 const URGENCY = ["normal", "urgent"];
 const AUTO_APPROVE_KEY = "cart_auto_approve_limit";
 const DAY = 86_400_000;
-
-const lineTotal = (r: { unit_price?: number; quantity: number }) => (r.unit_price ?? 0) * r.quantity;
 
 async function autoApproveLimit(ctx: { db: any }): Promise<number> {
   const row = await ctx.db.query("settings").withIndex("by_key", (q: any) => q.eq("key", AUTO_APPROVE_KEY)).first();
@@ -45,10 +45,14 @@ export const listAll = query({
       ? await ctx.db.query("reagent_cart").collect()
       : await ctx.db.query("reagent_cart").withIndex("by_user", (q) => q.eq("user_id", userId)).collect();
     const names = new Map<string, string>();
+    const budgets = await ctx.db.query("procurement_budgets").collect();
+    const everyone = await ctx.db.query("reagent_cart").collect(); // budgets count the whole lab's requests
     const out = [];
     for (const r of rows) {
       if (!names.has(r.user_id)) names.set(r.user_id, (await ctx.db.get(r.user_id))?.full_name ?? "Unknown");
-      out.push({ ...r, requested_by: names.get(r.user_id)! });
+      // Budgets this request would push over their limit if approved.
+      const over = r.status === "pending" ? overBudget(budgets, everyone, r, r._id).map((o) => o.name) : [];
+      out.push({ ...r, requested_by: names.get(r.user_id)!, over_budget: over });
     }
     return out.sort((a, b) => b.created_at - a.created_at);
   },
@@ -108,13 +112,16 @@ export const create = mutation({
     checkDetails(args);
     const { token: _t, ...fields } = args;
     const limit = await autoApproveLimit(ctx);
-    const auto = limit > 0 && fields.unit_price !== undefined && lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }) <= limit;
+    // A request that would exceed a grant/project/budget limit always waits for a manager.
+    const over = overBudget(await ctx.db.query("procurement_budgets").collect(), await ctx.db.query("reagent_cart").collect(), fields);
+    const auto = !over.length && limit > 0 && fields.unit_price !== undefined && lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }) <= limit;
     return await ctx.db.insert("reagent_cart", {
       ...fields,
       name: fields.name.trim(),
       user_id: userId,
       status: auto ? "approved" : "pending",
       ...(auto ? { approved_at: Date.now(), decision_note: `Auto-approved (under ${limit})` } : {}),
+      ...(over.length ? { decision_note: `Needs a manager: over budget (${over.map((o) => o.name).join(", ")})` } : {}),
       created_at: Date.now(),
     });
   },
@@ -185,23 +192,33 @@ export const decide = mutation({
     ids: v.array(v.id("reagent_cart")),
     decision: v.union(v.literal("approve"), v.literal("reject")),
     note: v.optional(v.string()),
+    /** Approve even when it goes over a budget limit. */
+    override: v.optional(v.boolean()),
   },
-  handler: async (ctx, { token, ids, decision, note }) => {
+  handler: async (ctx, { token, ids, decision, note, override }) => {
     const manager = await requireRole(ctx, token, "manager");
     const now = Date.now();
     let changed = 0;
+    const blocked: { id: Id<"reagent_cart">; name: string; budgets: string[] }[] = [];
+    const budgets = decision === "approve" ? await ctx.db.query("procurement_budgets").collect() : [];
+    let rows = decision === "approve" ? await ctx.db.query("reagent_cart").collect() : [];
     for (const id of ids) {
       const item = await ctx.db.get(id);
       if (!item || item.status !== "pending") continue;
+      if (decision === "approve" && !override) {
+        const over = overBudget(budgets, rows, item, id);
+        if (over.length) { blocked.push({ id, name: item.name, budgets: over.map((o) => o.name) }); continue; }
+      }
       await ctx.db.patch(id, {
         status: decision === "approve" ? "approved" : "rejected",
         approved_by: manager._id,
         approved_at: now,
         decision_note: note?.trim() || undefined,
       });
+      if (decision === "approve") rows = rows.map((r) => (r._id === id ? { ...r, status: "approved" } : r)); // counts for the next one
       changed++;
     }
-    return { changed };
+    return { changed, blocked };
   },
 });
 
@@ -298,11 +315,81 @@ export const spend = query({
     };
     const people = new Map<string, string>();
     for (const r of rows) if (!people.has(r.user_id)) people.set(r.user_id, (await ctx.db.get(r.user_id))?.full_name ?? "Unknown");
+    const everyone = await ctx.db.query("reagent_cart").collect();
+    const budgets = (await ctx.db.query("procurement_budgets").collect()).map((b) => {
+      const committed = committedFor(b, everyone);
+      return { name: b.name, limit: b.amount, committed, remaining: b.amount - committed };
+    });
     return {
+      budgets,
       by_project: by((r) => r.project ?? ""),
       by_grant: by((r) => r.grant ?? ""),
       by_person: by((r) => people.get(r.user_id) ?? ""),
       last_30_days: rows.filter((r) => (r.ordered_at ?? r.created_at) > Date.now() - 30 * DAY).reduce((s, r) => s + lineTotal(r), 0),
     };
+  },
+});
+
+// ── Invoices and three-way match ──────────────────────────────────────────────
+
+const poRows = async (ctx: { db: any }, po: string): Promise<Doc<"reagent_cart">[]> =>
+  (await ctx.db.query("reagent_cart").collect()).filter((r: Doc<"reagent_cart">) => r.po_number === po);
+
+/** Enter a supplier invoice against a PO. */
+export const addInvoice = mutation({
+  args: {
+    token: v.optional(v.string()),
+    po_number: v.string(),
+    invoice_number: v.string(),
+    invoice_date: v.optional(v.number()),
+    amount: v.number(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, { token, po_number, invoice_number, invoice_date, amount, notes }) => {
+    const manager = await requireRole(ctx, token, "manager");
+    const number = invoice_number.trim();
+    if (!number || number.length > 64) throw new ConvexError("Enter the invoice number.");
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000_000) throw new ConvexError("Invoice amount must be more than 0.");
+    if (invoice_date !== undefined && !Number.isFinite(invoice_date)) throw new ConvexError("Invoice date is not valid.");
+    if (!(await poRows(ctx, po_number)).length) throw new ConvexError("No order has that PO number.");
+    const same = await ctx.db.query("cart_invoices").withIndex("by_po", (q) => q.eq("po_number", po_number)).collect();
+    if (same.some((i) => i.invoice_number.toLowerCase() === number.toLowerCase())) throw new ConvexError("That invoice number is already entered for this PO.");
+    return await ctx.db.insert("cart_invoices", {
+      po_number, invoice_number: number, invoice_date, amount, notes: notes?.trim() || undefined,
+      entered_by: manager._id, created_at: Date.now(),
+    });
+  },
+});
+
+export const removeInvoice = mutation({
+  args: { token: v.optional(v.string()), id: v.id("cart_invoices") },
+  handler: async (ctx, { token, id }) => {
+    await requireRole(ctx, token, "manager");
+    await ctx.db.delete(id);
+  },
+});
+
+/** Every PO with what was ordered, received and invoiced, and whether they agree. Managers only. */
+export const invoiceMatch = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireRole(ctx, token, "manager");
+    const rows = (await ctx.db.query("reagent_cart").collect()).filter((r) => r.po_number && ["ordered", "received"].includes(r.status));
+    const invoices = await ctx.db.query("cart_invoices").collect();
+    const byPo = new Map<string, Doc<"reagent_cart">[]>();
+    for (const r of rows) byPo.set(r.po_number!, [...(byPo.get(r.po_number!) ?? []), r]);
+    return [...byPo.entries()]
+      .map(([po_number, lines]) => {
+        const mine = invoices.filter((i) => i.po_number === po_number).sort((a, b) => a.created_at - b.created_at);
+        return {
+          po_number,
+          supplier: (lines[0].supplier ?? "").trim() || "Unassigned",
+          ordered_at: lines[0].ordered_at ?? 0,
+          lines: lines.map((l) => ({ id: l._id as Id<"reagent_cart">, name: l.name, quantity: l.quantity, received: l.received_quantity ?? 0, price: l.unit_price })),
+          invoices: mine.map((i) => ({ id: i._id as Id<"cart_invoices">, number: i.invoice_number, date: i.invoice_date, amount: i.amount, notes: i.notes })),
+          ...matchPo(lines, mine.map((i) => i.amount)),
+        };
+      })
+      .sort((a, b) => b.ordered_at - a.ordered_at);
   },
 });

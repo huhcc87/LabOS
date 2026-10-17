@@ -393,6 +393,7 @@ const cartRow = (r: any) => ({
   po_number: r.po_number ?? '',
   decision_note: r.decision_note ?? '',
   received_quantity: r.received_quantity ?? 0,
+  over_budget: (r.over_budget ?? []) as string[],
 });
 
 /** The fields the screen may send, renamed to what Convex stores. Anything else is dropped. */
@@ -436,9 +437,19 @@ export const reagentCartApi = {
     await client.mutation(api.reagentCart.remove, { token: getToken(), id: toStr(id) as any });
     return { data: { success: true } };
   },
-  decide: async (ids: IdLike[], decision: 'approve' | 'reject', note?: string) => {
-    const result = await client.mutation(api.reagentCart.decide, { token: getToken(), ids: ids.map((i) => toStr(i) as any), decision, note });
+  /** `override` approves even when a request goes over a budget limit. `blocked` lists the ones held back. */
+  decide: async (ids: IdLike[], decision: 'approve' | 'reject', note?: string, override?: boolean) => {
+    const result = await client.mutation(api.reagentCart.decide, { token: getToken(), ids: ids.map((i) => toStr(i) as any), decision, note, override });
     return { data: result };
+  },
+  invoiceMatch: async () => ({ data: await client.query(api.reagentCart.invoiceMatch, { token: getToken() }) }),
+  addInvoice: async (data: { po_number: string; invoice_number: string; invoice_date?: number; amount: number; notes?: string }) => {
+    await client.mutation(api.reagentCart.addInvoice, { token: getToken(), ...data });
+    return { data: { ok: true } };
+  },
+  removeInvoice: async (id: string) => {
+    await client.mutation(api.reagentCart.removeInvoice, { token: getToken(), id: id as any });
+    return { data: { ok: true } };
   },
   /** Orders the approved requests among `item_ids`; one PO number per supplier. */
   checkout: async (data: any) => {

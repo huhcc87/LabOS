@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import toast from 'react-hot-toast';
 import { api } from '../../convex/_generated/api';
@@ -52,6 +52,16 @@ export default function ReceivingPage() {
     setName(t.kind === 'new' ? '' : '');
     setQty(String(t.kind === 'order' ? Math.max(1, t.order.outstanding) : 1));
   };
+
+  // Coming from "Receive" on a cart request: open that order straight away.
+  useEffect(() => {
+    const id = sessionStorage.getItem('labos_receive_order');
+    if (!id || !orders) return;
+    sessionStorage.removeItem('labos_receive_order');
+    const order = orders.find((o) => o._id === id);
+    if (order) pick({ kind: 'order', order });
+    else toast('That order is not waiting to be received any more.', { icon: 'ℹ️' });
+  }, [orders]);
 
   const find = async (raw: string) => {
     const value = raw.trim();

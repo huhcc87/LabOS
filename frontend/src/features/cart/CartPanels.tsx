@@ -68,7 +68,8 @@ export function RequestForm({ autoLimit, onSubmit, onCancel }: { autoLimit: numb
 }
 
 interface SpendRow { name: string; committed: number; received: number; count: number }
-interface Spend { by_project: SpendRow[]; by_grant: SpendRow[]; by_person: SpendRow[]; last_30_days: number }
+interface BudgetRow { name: string; limit: number; committed: number; remaining: number }
+interface Spend { by_project: SpendRow[]; by_grant: SpendRow[]; by_person: SpendRow[]; last_30_days: number; budgets: BudgetRow[] }
 
 /** Where the money goes: by project, grant and person. Managers only. */
 export function SpendPanel({ onClose }: { onClose: () => void }) {
@@ -98,7 +99,103 @@ export function SpendPanel({ onClose }: { onClose: () => void }) {
           {table('By project', data.by_project)}{table('By grant', data.by_grant)}{table('By person', data.by_person)}
         </div>
       )}
+      {data && (
+        <div style={{ marginTop: 14 }}>
+          <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>Budget limits</h3>
+          {data.budgets.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No limits yet. Add a budget in Procurement → Budgets and name it exactly like a grant, project or budget code. Requests that would go over it wait for a manager.</div>
+          ) : data.budgets.map((b) => (
+            <div key={b.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderTop: '1px solid var(--border)', fontSize: 13 }}>
+              <span>{b.name}</span>
+              <span><strong style={{ color: b.remaining < 0 ? '#dc2626' : undefined }}>{money(b.committed)}</strong> of {money(b.limit)} <span style={{ color: b.remaining < 0 ? '#dc2626' : 'var(--text-muted)' }}>· {b.remaining < 0 ? `${money(-b.remaining)} over` : `${money(b.remaining)} left`}</span></span>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Counts approved, ordered and received requests with a price. Requests without a price count as $0.</div>
+    </div>
+  );
+}
+
+interface MatchRow {
+  po_number: string; supplier: string; status: string; ordered: number; received: number; invoiced: number; issues: string[];
+  invoices: { id: string; number: string; date?: number; amount: number; notes?: string }[];
+}
+
+const MATCH_LABEL: Record<string, { text: string; color: string }> = {
+  awaiting_goods: { text: 'Waiting for delivery', color: '#64748b' },
+  awaiting_invoice: { text: 'Waiting for invoice', color: '#f59e0b' },
+  matched: { text: 'Matched', color: '#16a34a' },
+  partial: { text: 'Partly invoiced', color: '#0891b2' },
+  mismatch: { text: 'Does not match', color: '#dc2626' },
+  unverified: { text: "Can't verify (no prices)", color: '#f59e0b' },
+};
+
+/** Enter supplier invoices and see PO / receipt / invoice agree. Managers only. */
+export function InvoicePanel({ onClose }: { onClose: () => void }) {
+  const [rows, setRows] = useState<MatchRow[] | null>(null);
+  const [err, setErr] = useState('');
+  const [f, setF] = useState({ po: '', number: '', date: '', amount: '', notes: '' });
+  const money = (n: number) => `$${n.toFixed(2)}`;
+  const load = () => reagentCartApi.invoiceMatch().then((r) => setRows(r.data as MatchRow[])).catch((e) => setErr(e?.data ?? 'Could not load invoices.'));
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    const amount = Number(f.amount);
+    if (!f.po) return setErr('Choose the PO this invoice is for.');
+    if (!f.number.trim()) return setErr('Enter the invoice number.');
+    if (!(amount > 0)) return setErr('Invoice amount must be more than 0.');
+    try {
+      await reagentCartApi.addInvoice({ po_number: f.po, invoice_number: f.number.trim(), amount, invoice_date: f.date ? new Date(`${f.date}T12:00:00`).getTime() : undefined, notes: f.notes.trim() || undefined });
+      setF({ po: f.po, number: '', date: '', amount: '', notes: '' });
+      setErr('');
+      load();
+    } catch (e: any) { setErr(e?.data ?? e?.message ?? 'Could not save the invoice.'); }
+  };
+  const remove = async (id: string) => { if (confirm('Remove this invoice entry?')) { await reagentCartApi.removeInvoice(id); load(); } };
+
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 16 }} role="region" aria-label="Invoices">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <h2 style={{ fontSize: 16, margin: 0 }}>Invoices and match</h2>
+        <button className="btn btn-sm btn-secondary" onClick={onClose}>Close</button>
+      </div>
+      {err && <div role="alert" style={{ color: '#dc2626', fontSize: 13, marginBottom: 8 }}>{err}</div>}
+      {!rows ? <div style={{ color: 'var(--text-muted)' }}>Loading…</div> : rows.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No purchase orders yet. Approve requests and place an order first.</div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginBottom: 12 }}>
+            <select aria-label="PO" value={f.po} onChange={(e) => setF({ ...f, po: e.target.value })} style={box}>
+              <option value="">PO…</option>{rows.map((r) => <option key={r.po_number} value={r.po_number}>{r.po_number} · {r.supplier}</option>)}
+            </select>
+            <input aria-label="Invoice number" placeholder="Invoice number" value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} style={box} />
+            <input aria-label="Invoice date" type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} style={box} />
+            <input aria-label="Invoice amount" type="number" min={0} step="0.01" placeholder="Amount ($)" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} style={box} />
+            <input aria-label="Notes" placeholder="Notes (optional)" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} style={box} />
+            <button className="btn btn-primary btn-sm" onClick={add}>+ Add invoice</button>
+          </div>
+          {rows.map((r) => {
+            const m = MATCH_LABEL[r.status] ?? { text: r.status, color: '#64748b' };
+            return (
+              <div key={r.po_number} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 13 }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <code>{r.po_number}</code><span>{r.supplier}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>PO {money(r.ordered)} · received {money(r.received)} · invoiced {money(r.invoiced)}</span>
+                  <strong style={{ color: m.color }}>{m.text}</strong>
+                </div>
+                {r.issues.map((i) => <div key={i} style={{ color: '#dc2626', fontSize: 12, marginTop: 2 }}>⚠ {i}</div>)}
+                {r.invoices.map((i) => (
+                  <div key={i.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                    🧾 {i.number}{i.date ? ` · ${new Date(i.date).toLocaleDateString()}` : ''} · {money(i.amount)}{i.notes ? ` · ${i.notes}` : ''}
+                    <button className="btn btn-sm btn-secondary" aria-label={`Remove invoice ${i.number}`} onClick={() => remove(i.id)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { reagentCartApi, paymentsApi, procurementApi } from '../lib/api';
 import { RequestForm, SpendPanel, type RequestInput } from '../features/cart/CartPanels';
 import { cartCsv, downloadText, openPrint, poHtml } from '../features/cart/cartExport';
+import { InvoicePanel } from '../features/cart/CartPanels';
+import { useNavigate } from '../context/NavigationContext';
 
 interface CartItem {
   id: number;
@@ -27,7 +29,10 @@ interface CartItem {
   needed_by?: number | null;
   po_number?: string;
   decision_note?: string;
+  over_budget?: string[];
 }
+
+interface ApproveResult { changed: number; blocked: { id: string; name: string; budgets: string[] }[] }
 
 interface OrderResult { po_number: string; supplier: string; total: number; ids: string[] }
 
@@ -64,6 +69,8 @@ export default function ReagentCartPage() {
   const [cfg, setCfg] = useState({ auto_approve_limit: 0, can_manage: false });
   const [showForm, setShowForm] = useState(false);
   const [showSpend, setShowSpend] = useState(false);
+  const [showInvoices, setShowInvoices] = useState(false);
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderResult[]>([]);
   const [notice, setNotice] = useState('');
 
@@ -139,10 +146,19 @@ export default function ReagentCartPage() {
 
   const fail = (e: any) => setNotice(String(e?.data ?? e?.message ?? 'Something went wrong.'));
 
-  const handleApprove = async (id: number) => {
-    try { await reagentCartApi.decide([id], 'approve'); setNotice(''); } catch (e) { fail(e); }
+  /** Approve; anything that would go over a budget limit is held back until the manager confirms. */
+  const approveIds = async (ids: number[]) => {
+    try {
+      let r = (await reagentCartApi.decide(ids, 'approve')).data as ApproveResult;
+      if (r.blocked.length && confirm(`These go over a budget limit:\n${r.blocked.map(b => `• ${b.name} (over ${b.budgets.join(', ')})`).join('\n')}\n\nApprove them anyway?`)) {
+        const o = (await reagentCartApi.decide(r.blocked.map(b => b.id), 'approve', undefined, true)).data as ApproveResult;
+        r = { changed: r.changed + o.changed, blocked: [] };
+      }
+      setNotice(`${r.changed} approved${r.blocked.length ? `, ${r.blocked.length} held back (over budget)` : ''}.`);
+    } catch (e) { fail(e); }
     load();
   };
+  const handleApprove = (id: number) => approveIds([id]);
 
   const handleReject = async (id: number) => {
     const note = prompt('Why is this rejected? (optional, the requester sees it)') ?? undefined;
@@ -154,8 +170,8 @@ export default function ReagentCartPage() {
   const approveSelected = async () => {
     const ids = filtered.filter(i => selectedIds.has(i.id) && i.status === 'pending').map(i => i.id);
     if (!ids.length) return setNotice('Select pending requests to approve.');
-    try { const r = await reagentCartApi.decide(ids, 'approve'); setNotice(`${(r.data as any).changed} approved.`); clearSelection(); } catch (e) { fail(e); }
-    load();
+    await approveIds(ids);
+    clearSelection();
   };
 
   const submitRequest = async (r: RequestInput) => {
@@ -287,6 +303,7 @@ export default function ReagentCartPage() {
           <button onClick={reorderLow} className="btn btn-secondary btn-sm" title="Request every inventory item that is at or under its minimum">⟲ Reorder low stock</button>
           <button onClick={exportCsv} className="btn btn-secondary btn-sm">⬇ Export CSV</button>
           {cfg.can_manage && <button onClick={() => setShowSpend(s => !s)} className="btn btn-secondary btn-sm">📊 Spend</button>}
+          {cfg.can_manage && <button onClick={() => setShowInvoices(s => !s)} className="btn btn-secondary btn-sm" title="Enter supplier invoices and check them against the PO and what was received">🧾 Invoices</button>}
           {cfg.can_manage && <button onClick={changeLimit} className="btn btn-secondary btn-sm" title="Requests up to this total skip approval">⚙ Auto-approve: {cfg.auto_approve_limit > 0 ? `$${cfg.auto_approve_limit}` : 'off'}</button>}
           <button onClick={load}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
@@ -313,6 +330,7 @@ export default function ReagentCartPage() {
       )}
       {showForm && <RequestForm autoLimit={cfg.auto_approve_limit} onSubmit={submitRequest} onCancel={() => setShowForm(false)} />}
       {showSpend && cfg.can_manage && <SpendPanel onClose={() => setShowSpend(false)} />}
+      {showInvoices && cfg.can_manage && <InvoicePanel onClose={() => setShowInvoices(false)} />}
 
       {/* Extension install banner */}
       {items.length === 0 && !loading && (
@@ -450,6 +468,7 @@ export default function ReagentCartPage() {
                             {[item.requested_by && `by ${item.requested_by}`, item.project, item.grant, item.budget_code, item.po_number].filter(Boolean).join(' · ')}
                             {item.urgency === 'urgent' && <strong style={{ color: '#dc2626', marginLeft: 6 }}>URGENT</strong>}
                             {item.needed_by ? <span> · needed by {new Date(item.needed_by).toLocaleDateString()}</span> : null}
+                            {item.over_budget && item.over_budget.length > 0 && <strong style={{ color: '#dc2626', marginLeft: 6 }}>OVER BUDGET: {item.over_budget.join(', ')}</strong>}
                           </div>
                           {item.decision_note && <div style={{ fontSize: 11, fontStyle: 'italic', color: 'var(--text-muted)' }}>“{item.decision_note}”</div>}
                         </div>
@@ -488,6 +507,12 @@ export default function ReagentCartPage() {
                               ✕
                             </button>
                           </>
+                        )}
+                        {item.status === 'ordered' && (
+                          <button onClick={() => { sessionStorage.setItem('labos_receive_order', String(item.id)); navigate('receiving'); }} title="Receive this order" aria-label="Receive this order"
+                            style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', fontSize: 11 }}>
+                            📥
+                          </button>
                         )}
                         {(item.status === 'ordered' || item.status === 'received') && (
                           <button onClick={() => orderAgain(item)} title="Order again" aria-label="Order again"

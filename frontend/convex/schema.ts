@@ -801,6 +801,18 @@ export default defineSchema({
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
+  // Supplier invoices entered against a PO, for the PO / receipt / invoice match.
+  cart_invoices: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    po_number: v.string(),
+    invoice_number: v.string(),
+    invoice_date: v.optional(v.number()),
+    amount: v.number(),
+    notes: v.optional(v.string()),
+    entered_by: v.id("users"),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_po", ["po_number"]),
+
   // ── CAPA ─────────────────────────────────────────────────────────────
   capa: defineTable({
     lab_id: v.optional(v.id("labs")),
