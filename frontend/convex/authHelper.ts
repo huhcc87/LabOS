@@ -106,6 +106,8 @@ export const PRIVILEGED_ROLES = ["manager", "pi", "admin", "superadmin"];
 
 /** Does this lab require two-factor for managers, PIs and admins? Stored as a per-lab setting. */
 export async function twoFactorPolicyOn(ctx: QueryCtx | MutationCtx, labId: Id<"labs"> | undefined): Promise<boolean> {
+  // A person with no lab has no lab policy. (The lab-scoped database refuses them, so don't ask it.)
+  if (!labId) return false;
   const rows = await ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", REQUIRE_2FA_KEY)).collect();
   return rows.some((r) => r.lab_id === labId && r.value === "true");
 }
