@@ -14,7 +14,7 @@ export const getMe = query({
     if (!session || session.expires_at < Date.now()) return null;
     const user = await ctx.db.get(session.user_id);
     if (!user || !user.is_active) return null;
-    const { hashed_password: _, ...safeUser } = user;
+    const { hashed_password: _h, totp_secret: _t, recovery_codes: _r, ...safeUser } = user;
     return safeUser;
   },
 });

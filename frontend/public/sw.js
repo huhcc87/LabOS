@@ -1,5 +1,5 @@
-const CACHE_NAME = 'labos-v6';
-const OFFLINE_CACHE = 'labos-offline-v6';
+const CACHE_NAME = 'labos-v7';
+const OFFLINE_CACHE = 'labos-offline-v7';
 // ponytail: no longer precaching '/' / '/index.html' here — the navigate
 // handler below fetches + caches the shell itself on every successful load,
 // so a frozen install-time copy never wins over what's actually live.
@@ -42,6 +42,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Only our own origin is handled here. Fonts, analytics and APIs on other origins go straight to the
+  // network, so the page's Content-Security-Policy applies to them directly and a failure never turns
+  // into a service-worker error. (Cache writes below are GET-only.)
+  if (url.origin !== self.location.origin || request.method !== 'GET' && !url.pathname.startsWith(API_PREFIX)) return;
 
   // Network-first for API calls — cache GET responses for offline fallback
   if (url.pathname.startsWith(API_PREFIX)) {
@@ -94,8 +99,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
+        return fetch(request).catch(() => Response.error()).then((response) => {
+          if (response.ok && response.type !== 'error') {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
@@ -117,20 +122,20 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request, { cache: 'no-store' })
         .then((response) => {
-          if (response.ok) {
+          if (response.ok && response.type !== 'error') {
             const clone = response.clone();
             caches.open(OFFLINE_CACHE).then((cache) => cache.put('/index.html', clone));
           }
           return response;
         })
-        .catch(() => caches.match('/index.html', { cacheName: OFFLINE_CACHE }))
+        .catch(() => caches.match('/index.html', { cacheName: OFFLINE_CACHE }).then((r) => r || Response.error()))
     );
     return;
   }
 
   // Default: network with cache fallback
   event.respondWith(
-    fetch(request).catch(() => caches.match(request))
+    fetch(request).catch(() => caches.match(request).then((r) => r || Response.error()))
   );
 });
 
