@@ -98,18 +98,6 @@ const NAV_CATEGORIES: NavCategory[] = [
     ]
   },
   {
-    category: 'Safety & Quality',
-    icon: '🛡️',
-    color: '#dc2626',
-    description: 'GLP, compliance & training',
-    items: [
-      { key: 'incidents', label: 'Incidents', icon: '⚠️', minRole: 'trainee' },
-      { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee', advanced: true },
-      { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff', advanced: true },
-      { key: 'training-cert', label: 'Training & Certs', icon: '🎓', minRole: 'trainee' },
-    ]
-  },
-  {
     category: 'Resources',
     icon: '📦',
     color: '#d97706',
@@ -121,6 +109,18 @@ const NAV_CATEGORIES: NavCategory[] = [
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
       { key: 'procurement-hub', label: 'Procurement', icon: '🏛', minRole: 'staff', advanced: true },
       { key: 'payment-methods', label: 'Payment Methods', icon: '💳', minRole: 'staff', advanced: true },
+    ]
+  },
+  {
+    category: 'Safety & Quality',
+    icon: '🛡️',
+    color: '#dc2626',
+    description: 'GLP, compliance & training',
+    items: [
+      { key: 'incidents', label: 'Incidents', icon: '⚠️', minRole: 'trainee' },
+      { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee', advanced: true },
+      { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff', advanced: true },
+      { key: 'training-cert', label: 'Training & Certs', icon: '🎓', minRole: 'trainee' },
     ]
   },
   {
