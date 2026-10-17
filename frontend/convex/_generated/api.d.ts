@@ -29,6 +29,7 @@ import type * as grants from "../grants.js";
 import type * as http from "../http.js";
 import type * as hubs from "../hubs.js";
 import type * as incidents from "../incidents.js";
+import type * as instrumentBooking from "../instrumentBooking.js";
 import type * as instruments from "../instruments.js";
 import type * as integrations from "../integrations.js";
 import type * as inventory from "../inventory.js";
@@ -103,6 +104,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   hubs: typeof hubs;
   incidents: typeof incidents;
+  instrumentBooking: typeof instrumentBooking;
   instruments: typeof instruments;
   integrations: typeof integrations;
   inventory: typeof inventory;

@@ -8,6 +8,7 @@ import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
 import SopsPanel from '../features/sops/SopsPanel';
+import InstrumentBooking from '../features/instruments/InstrumentBooking';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
@@ -140,6 +141,7 @@ export default function LabHubPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
+  const ib = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
   const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
@@ -806,8 +808,7 @@ export default function LabHubPage() {
   const tabs = [
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
-    { key: 'instruments', label: 'Instruments', icon: '🔬', count: instruments.length },
-    { key: 'bookings', label: 'Bookings', icon: '📅', count: bookings.length },
+    { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
     { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: maintenanceLogs.filter(m => m.status !== 'completed').length },
     { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
   ];
@@ -883,8 +884,8 @@ export default function LabHubPage() {
         {([
           { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
           { tab: 'sops', value: sopCount, label: 'SOPs' },
-          { tab: 'instruments', value: instruments.filter(i => i.status === 'available').length, label: 'instruments available' },
-          { tab: 'bookings', value: bookings.filter(b => b.status === 'pending').length, label: 'pending bookings' },
+          { tab: 'instruments', value: ib?.instruments.filter(i => i.bookable).length ?? 0, label: 'instruments available' },
+          { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
           { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
         ] as const).map(s => (
           <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
@@ -1168,360 +1169,8 @@ export default function LabHubPage() {
       {/* SOPs Tab */}
       {activeTab === 'sops' && <SopsPanel />}
 
-      {/* Instruments Tab */}
-      {activeTab === 'instruments' && (
-        <div>
-          {/* Stats & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="🔍 Search instruments..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="in_use">In Use</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              {[
-                { label: 'Available', value: instruments.filter(i => i.status === 'available').length, color: 'var(--ok-text)' },
-                { label: 'In Use', value: instruments.filter(i => i.status === 'in_use').length, color: 'var(--info-text)' },
-                { label: 'Maintenance', value: instruments.filter(i => i.status === 'maintenance').length, color: 'var(--warn-text)' },
-              ].map(stat => (
-                <div key={stat.label} style={{
-                  background: 'var(--surface2)', borderRadius: 8, padding: '8px 16px',
-                  display: 'flex', alignItems: 'center', gap: 8
-                }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>{stat.value}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stat.label}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('instruments')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowInstrumentModal(true)}>+ Add Instrument</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllInstruments}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneInstruments}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedInstruments.size} of {instruments.length} selected
-              </span>
-            </div>
-            {selectedInstruments.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'instrument', count: selectedInstruments.size })}
-              >
-                Delete Selected ({selectedInstruments.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {instruments
-              .filter(i => {
-                const matchesSearch = i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (i.type || '').toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
-                return matchesSearch && matchesStatus;
-              })
-              .map(inst => (
-              <div
-                key={inst.id}
-                className="card"
-                style={{
-                  border: selectedInstruments.has(inst.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedInstruments.has(inst.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'start', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInstruments.has(inst.id)}
-                      onChange={() => toggleInstrumentSelection(inst.id)}
-                      style={{ cursor: 'pointer', marginTop: 4 }}
-                    />
-                    <div>
-                      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{inst.name}</h3>
-                      {inst.type && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{inst.type}</div>}
-                    </div>
-                  </div>
-                  {/* Feature 4: quick status toggle */}
-                  <button
-                    onClick={() => cycleInstrumentStatus(inst.id)}
-                    title="Click to change status"
-                    style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(inst.status).bg, color: statusColor(inst.status).text, border: 'none', cursor: 'pointer' }}
-                  >
-                    {inst.status === 'available' ? '✓ Available' : inst.status === 'in_use' ? '⏳ In Use' : '🔧 Maintenance'}
-                  </button>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, marginLeft: 26 }}>📍 {inst.location}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    style={{ flex: 1 }}
-                    disabled={inst.status !== 'available'}
-                    onClick={() => {
-                      if (inst.status === 'available') {
-                        setNewBooking({ ...newBooking, instrument: inst.name });
-                        setShowBookingModal(true);
-                      }
-                    }}
-                  >
-                    {inst.status === 'available' ? '📅 Book Now' : inst.status === 'in_use' ? 'In Use' : '🔧 Maintenance'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'instrument', id: inst.id, name: inst.name })}
-                    title="Delete Instrument"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bookings Tab */}
-      {activeTab === 'bookings' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search bookings..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <input
-                type="date"
-                className="form-input"
-                style={{ width: 150 }}
-                value={dateFilter}
-                onChange={e => setDateFilter(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {/* Feature 5: calendar/list toggle */}
-              <button
-                className="btn btn-secondary"
-                onClick={() => setBookingView(bookingView === 'list' ? 'calendar' : 'list')}
-                style={{ fontWeight: 600 }}
-              >
-                {bookingView === 'list' ? '📅 Calendar View' : '☰ List View'}
-              </button>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('bookings')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowBookingModal(true)}>+ New Booking</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllBookings}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneBookings}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedBookings.size} of {filterBookings().length} selected
-              </span>
-            </div>
-            {selectedBookings.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('booking', 'confirmed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Confirm Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'booking', count: selectedBookings.size })}
-                >
-                  Cancel Selected ({selectedBookings.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Feature 5: 7-day calendar view */}
-          {bookingView === 'calendar' && (() => {
-            const days = Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(calendarWeekStart);
-              d.setDate(d.getDate() + i);
-              return d;
-            });
-            const fmt = (d: Date) => d.toISOString().slice(0, 10);
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() - 7); setCalendarWeekStart(d); }}>← Prev Week</button>
-                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                    {days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() + 7); setCalendarWeekStart(d); }}>Next Week →</button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
-                  {days.map(day => {
-                    const dayStr = fmt(day);
-                    const dayBookings = bookings.filter(b => b.date === dayStr);
-                    const isToday = dayStr === fmt(new Date());
-                    return (
-                      <div key={dayStr} style={{ background: isToday ? 'var(--accent-light)' : 'var(--surface)', border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 10, minHeight: 100 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 6 }}>
-                          {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
-                        </div>
-                        {dayBookings.length === 0 ? (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>Free</div>
-                        ) : dayBookings.map(b => (
-                          <div key={b.id} style={{ background: b.status === 'confirmed' ? 'var(--ok-bg)' : 'var(--warn-bg)', border: `1px solid ${b.status === 'confirmed' ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}`, borderRadius: 6, padding: '4px 6px', marginBottom: 4 }}>
-                            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{b.instrument}</div>
-                            <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.time}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterBookings().map(b => (
-              <div
-                key={b.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: selectedBookings.has(b.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedBookings.has(b.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedBookings.has(b.id)}
-                    onChange={() => toggleBookingSelection(b.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{ width: 48, height: 48, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                    🔬
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{b.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.user} • {new Date(b.date).toLocaleDateString()} • {b.time}</div>
-                    {b.purpose && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>Purpose: {b.purpose}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(b.status).bg, color: statusColor(b.status).text }}>
-                    {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                  </span>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => {
-                      setBookings(prev => prev.map(booking =>
-                        booking.id === b.id
-                          ? { ...booking, status: booking.status === 'pending' ? 'confirmed' : 'pending' }
-                          : booking
-                      ));
-                    }}
-                  >
-                    {b.status === 'pending' ? '✓ Confirm' : '↩ Pending'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'booking', id: b.id, name: `${b.instrument} - ${b.date}` })}
-                    title="Cancel Booking"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterBookings().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No bookings found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Instruments + Bookings: one screen */}
+      {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
 
       {/* Maintenance Tab */}
       {activeTab === 'maintenance' && (

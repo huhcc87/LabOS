@@ -140,6 +140,9 @@ export default defineSchema({
     purpose: v.optional(v.string()),
     status: v.string(),
     notes: v.optional(v.string()),
+    // Auto reminder to the person who booked: every 2 days until the booking starts
+    remind_every_2_days: v.optional(v.boolean()),
+    last_reminded_at: v.optional(v.number()),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"])
     .index("by_instrument", ["instrument_id"])
