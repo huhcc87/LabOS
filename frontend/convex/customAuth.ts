@@ -5,7 +5,10 @@
 import { action, mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
-import { checkRateLimit } from "./rateLimit";
+import { passwordProblem } from "./security";
+import { openSecret } from "./cryptoSecrets";
+
+const MIN = 60_000;
 
 // ── Token helpers ─────────────────────────────────────────────────────────
 function generateToken(): string {
@@ -33,10 +36,11 @@ export const register = action({
   // `role` is accepted for backward compatibility but ignored: self-sign-up must never pick its own role.
   handler: async (ctx, { email, password, full_name }): Promise<{ token: string; user_id: string }> => {
     const normalizedEmail = email.trim().toLowerCase();
-    checkRateLimit(`register:${normalizedEmail}`);
+    await ctx.runMutation(internal.security.rateLimit, { key: `register:${normalizedEmail}`, max: 5, window_ms: 60 * MIN });
+    await ctx.runMutation(internal.security.rateLimit, { key: "register:all", max: 60, window_ms: 60 * MIN });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new ConvexError("Invalid email format");
-    if (password.length < 8) throw new ConvexError("Password must be at least 8 characters");
-    if (!/\d/.test(password)) throw new ConvexError("Password must contain at least one digit");
+    const problem = passwordProblem(password, normalizedEmail, full_name);
+    if (problem) throw new ConvexError(problem);
     if (full_name.trim().length < 2) throw new ConvexError("Name must be at least 2 characters");
     const bcrypt = await import("bcryptjs");
     const hashed_password = await bcrypt.hash(password, 12);
@@ -59,7 +63,7 @@ export const register = action({
 export const login = action({
   args: { email: v.string(), password: v.string(), totp_code: v.optional(v.string()) },
   handler: async (ctx, { email, password, totp_code }): Promise<{ token: string; user: Record<string, any>; totp_required?: boolean }> => {
-    checkRateLimit(`login:${email.trim().toLowerCase()}`);
+    await ctx.runMutation(internal.security.rateLimit, { key: `login:${email.trim().toLowerCase()}`, max: 10, window_ms: 15 * MIN });
     const bcrypt = await import("bcryptjs");
 
     const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email });
@@ -103,9 +107,28 @@ export const login = action({
       if (!totp_code) {
         return { token: "", user: {}, totp_required: true };
       }
-      const { verifySync } = await import("otplib");
-      const totpValid = verifySync({ secret: user.totp_secret, token: totp_code }).valid;
-      if (!totpValid) throw new ConvexError("Invalid two-factor code");
+      const code = totp_code.trim();
+      let ok = false;
+      if (/^\d{6}$/.test(code)) {
+        const { verifySync } = await import("otplib");
+        ok = verifySync({ secret: await openSecret(user.totp_secret), token: code }).valid;
+      } else {
+        // Not a 6-digit code: try it as a one-time recovery code.
+        ok = await ctx.runMutation(internal.security.consumeRecoveryCode, { user_id: user._id, code });
+      }
+      if (!ok) {
+        // A wrong code counts like a wrong password, so the 6-digit code can't be guessed.
+        const attempts = (user.failed_login_attempts ?? 0) + 1;
+        const locked = attempts >= MAX_ATTEMPTS;
+        await ctx.runMutation(internal.customAuth.trackFailedLogin, { user_id: user._id, attempts, locked_until: locked ? Date.now() + LOCKOUT_MS : undefined });
+        await ctx.runMutation(internal.customAuth.logSecurityEvent, {
+          user_id: user._id,
+          action: locked ? "ACCOUNT_LOCKED_BRUTE_FORCE" : "LOGIN_FAILED_2FA",
+          severity: locked ? "HIGH" : "WARN",
+          details: `Wrong two-factor code for ${maskEmail(email)} (attempt ${attempts})`,
+        });
+        throw new ConvexError("Invalid two-factor code");
+      }
     }
 
     // Reset failed attempts on successful login
@@ -179,7 +202,7 @@ export const me = query({
     if (!session || session.expires_at < Date.now()) return null;
     const user = await ctx.db.get(session.user_id);
     if (!user || !user.is_active) return null;
-    const { hashed_password: _, ...safeUser } = user;
+    const { hashed_password: _h, totp_secret: _t, recovery_codes: _r, ...safeUser } = user;
     return safeUser;
   },
 });
@@ -310,8 +333,8 @@ export const logSecurityEvent = internalMutation({
 export const adminResetPassword = action({
   args: { token: v.string(), target_email: v.string(), new_password: v.string() },
   handler: async (ctx, { token, target_email, new_password }): Promise<{ success: true }> => {
-    if (new_password.length < 8) throw new ConvexError("Password must be at least 8 characters");
-    if (!/\d/.test(new_password)) throw new ConvexError("Password must contain at least one digit");
+    const problem = passwordProblem(new_password);
+    if (problem) throw new ConvexError(problem);
 
     const session = await ctx.runQuery(internal.customAuth.getSessionByToken, { token });
     if (!session || session.expires_at < Date.now()) throw new ConvexError("Unauthorized");

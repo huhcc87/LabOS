@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TwoFactorGate } from './components/TwoFactorGate';
 import { NavigationContext } from './context/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -47,7 +48,7 @@ const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
-const PrivacyCenterPage      = lazy(() => import('./pages/PrivacyCenterPage'));
+const SecurityCenterPage      = lazy(() => import('./pages/SecurityCenterPage'));
 const SecurityDashboardPage  = lazy(() => import('./pages/SecurityDashboardPage'));
 const CapaPage               = lazy(() => import('./pages/CapaPage'));
 const EmailSettingsPage      = lazy(() => import('./pages/EmailSettingsPage'));
@@ -136,6 +137,7 @@ function AppInner() {
       ? <RegisterPage onBackToLogin={() => setAuthView('login')} />
       : <LoginPage onCreateAccount={() => setAuthView('register')} />;
   }
+
 
   const renderPage = () => {
     switch (page) {
@@ -227,7 +229,7 @@ function AppInner() {
       case 'freezer-biobank': return <FreezerBiobankPage />;
       case 'vendor-intelligence': return <VendorIntelligencePage />;
       case 'training-cert': return <TrainingCertPage />;
-      case 'privacy-center': return <PrivacyCenterPage />;
+      case 'privacy-center': return <SecurityCenterPage />;
       case 'security-dashboard': return <SecurityDashboardPage />;
       case 'reagent-hub': return <ReagentHubPage />;
       case 'capa': return <CapaPage />;
@@ -242,13 +244,15 @@ function AppInner() {
 
   return (
     <NavigationContext.Provider value={setPage}>
-      <Layout activePage={page} onNavigate={setPage}>
-        <ErrorBoundary key={page}>
-          <Suspense fallback={<PageLoader />}>
-            {renderPage()}
-          </Suspense>
-        </ErrorBoundary>
-      </Layout>
+      <TwoFactorGate>
+        <Layout activePage={page} onNavigate={setPage}>
+          <ErrorBoundary key={page}>
+            <Suspense fallback={<PageLoader />}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
+        </Layout>
+      </TwoFactorGate>
       <ErrorBoundary fallback={() => null}><CookieConsent /></ErrorBoundary>
     </NavigationContext.Provider>
   );

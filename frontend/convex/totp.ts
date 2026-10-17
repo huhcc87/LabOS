@@ -1,6 +1,7 @@
 import { action, mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { sealSecret, openSecret } from "./cryptoSecrets";
 
 export const setupTotp = action({
   args: { token: v.string() },
@@ -8,13 +9,17 @@ export const setupTotp = action({
     const session = await ctx.runQuery(api.totp.getSession, { token });
     if (!session) throw new ConvexError("Unauthorized");
 
+    // Re-running setup would quietly switch two-factor off. Turning it off needs the password (disable below).
+    const existing = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
+    if (existing?.totp_enabled) throw new ConvexError("Two-factor is already on. Turn it off first if you want to set it up again.");
+
     const { generateSecret, generateURI } = await import("otplib");
     const secret = generateSecret();
     const otpauth_url = generateURI({ issuer: "LabOS", label: session.email, secret });
 
     await ctx.runMutation(internal.totp.storePendingSecret, {
       user_id: session.user_id,
-      secret,
+      secret: await sealSecret(secret),
     });
 
     return { secret, otpauth_url };
@@ -31,7 +36,7 @@ export const verifyAndEnable = action({
     if (!user || !user.totp_secret) throw new ConvexError("TOTP not set up");
 
     const { verifySync } = await import("otplib");
-    const isValid = verifySync({ secret: user.totp_secret, token: code }).valid;
+    const isValid = verifySync({ secret: await openSecret(user.totp_secret), token: code }).valid;
     if (!isValid) throw new ConvexError("Invalid verification code");
 
     await ctx.runMutation(internal.totp.enableTotp, { user_id: session.user_id });
@@ -48,6 +53,10 @@ export const disable = action({
     const user = await ctx.runQuery(internal.totp.getUser, { user_id: session.user_id });
     if (!user) throw new ConvexError("Unauthorized");
 
+    await ctx.runMutation(internal.security.rateLimit, { key: `2fa-off:${session.user_id}`, max: 5, window_ms: 15 * 60_000 });
+    if (await ctx.runQuery(internal.security.disableBlocked, { user_id: session.user_id })) {
+      throw new ConvexError("Your lab requires two-factor for your role, so it can't be turned off.");
+    }
     const bcrypt = await import("bcryptjs");
     const valid = await bcrypt.compare(password, user.hashed_password);
     if (!valid) throw new ConvexError("Invalid password");
@@ -113,6 +122,7 @@ export const disableTotp = internalMutation({
   handler: async (ctx, { user_id }) => {
     await ctx.db.patch(user_id, {
       totp_secret: undefined,
+      recovery_codes: undefined,
       totp_enabled: false,
       updated_at: Date.now(),
     });

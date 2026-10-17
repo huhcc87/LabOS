@@ -9,9 +9,28 @@ export default defineSchema({
     token: v.string(),
     expires_at: v.number(),
     created_at: v.number(),
-  }).index("by_token", ["token"]),
+  }).index("by_token", ["token"]).index("by_user", ["user_id"]),
 
   // ── Users ────────────────────────────────────────────────────────────
+  // Sliding-window counters that slow down password guessing and abuse. Shared by every function instance.
+  rate_limits: defineTable({
+    key: v.string(),
+    window_start: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
+
+  // Right-to-erasure requests: a person asks, an admin reviews.
+  erasure_requests: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    user_id: v.id("users"),
+    reason: v.optional(v.string()),
+    status: v.string(),
+    reviewed_by: v.optional(v.id("users")),
+    rejection_reason: v.optional(v.string()),
+    created_at: v.number(),
+    reviewed_at: v.optional(v.number()),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
+
   users: defineTable({
     email: v.string(),
     hashed_password: v.string(),
@@ -26,6 +45,8 @@ export default defineSchema({
     avatar_url: v.optional(v.string()),
     totp_secret: v.optional(v.string()),
     totp_enabled: v.boolean(),
+    // SHA-256 hashes of unused one-time recovery codes for when the authenticator is lost.
+    recovery_codes: v.optional(v.array(v.string())),
     failed_login_attempts: v.number(),
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
