@@ -40,6 +40,7 @@ const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
+const ReceivingPage          = lazy(() => import('./pages/ReceivingPage')); const BarcodeScannerPage     = lazy(() => import('./pages/BarcodeScannerPage')); const BarcodeLabelsPage      = lazy(() => import('./pages/BarcodeLabelsPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
 const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
@@ -217,6 +218,7 @@ function AppInner() {
       case 'labels': return <LabelsPage />;
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
+      case 'receiving': return <ReceivingPage />; case 'barcode-scanner': return <BarcodeScannerPage onNavigate={setPage} />; case 'barcode-labels': return <BarcodeLabelsPage />;
       case 'payment-methods': return <PaymentMethodsPage />;
       case 'procurement-hub': return <ProcurementHubPage />;
       case 'lab-members': return <LabMembersPage />;

@@ -49,6 +49,7 @@ import type * as protocolRules from "../protocolRules.js";
 import type * as protocols from "../protocols.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as reagentCart from "../reagentCart.js";
+import type * as receiving from "../receiving.js";
 import type * as reports from "../reports.js";
 import type * as samples from "../samples.js";
 import type * as scheduling from "../scheduling.js";
@@ -117,6 +118,7 @@ declare const fullApi: ApiFromModules<{
   protocols: typeof protocols;
   rateLimit: typeof rateLimit;
   reagentCart: typeof reagentCart;
+  receiving: typeof receiving;
   reports: typeof reports;
   samples: typeof samples;
   scheduling: typeof scheduling;

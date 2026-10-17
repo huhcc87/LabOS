@@ -104,6 +104,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Inventory, sensors, video calls & procurement',
     items: [
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
+      { key: 'receiving', label: 'Receiving', icon: '📥', minRole: 'trainee' }, { key: 'barcode-scanner', label: 'Barcode Scanner', icon: '📷', minRole: 'trainee' }, { key: 'barcode-labels', label: 'Barcode Labels', icon: '🏷️', minRole: 'trainee' },
       { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
       { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
@@ -363,7 +364,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     'equipment': 'lab-hub', 'lab-meetings': 'inventory',
     'freezer-biobank': 'samples', 'labels': 'samples', 'label-printer': 'samples',
     'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
-    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
+    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'receiving': 'inventory', 'barcode-scanner': 'inventory', 'barcode-labels': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
     'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',
   };
 
