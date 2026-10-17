@@ -1,7 +1,5 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { useQuery } from 'convex/react';
-import { api } from '../convex/_generated/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TwoFactorGate } from './components/TwoFactorGate';
 import { NavigationContext } from './context/NavigationContext';
@@ -98,9 +96,7 @@ function PageLoader() {
 }
 
 function AppInner() {
-  const { user, loading, token, logout } = useAuth();
-  // Skipped until signed in. security.status answers null (never throws) for a dead session.
-  const security = useQuery(api.security.status, user && token ? { token } : 'skip');
+  const { user, loading } = useAuth();
   const [page, setPage] = useState('dashboard');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   // Invite links look like /?invite=<token>
@@ -142,9 +138,6 @@ function AppInner() {
       : <LoginPage onCreateAccount={() => setAuthView('register')} />;
   }
 
-  // The lab requires two-factor for this role and it isn't set up yet: nothing else works until it is
-  // (the server refuses everything else too, so this screen is the only way forward).
-  if (security?.must_setup_2fa) return <TwoFactorGate onLogout={logout} />;
 
   const renderPage = () => {
     switch (page) {
@@ -251,13 +244,15 @@ function AppInner() {
 
   return (
     <NavigationContext.Provider value={setPage}>
-      <Layout activePage={page} onNavigate={setPage}>
-        <ErrorBoundary key={page}>
-          <Suspense fallback={<PageLoader />}>
-            {renderPage()}
-          </Suspense>
-        </ErrorBoundary>
-      </Layout>
+      <TwoFactorGate>
+        <Layout activePage={page} onNavigate={setPage}>
+          <ErrorBoundary key={page}>
+            <Suspense fallback={<PageLoader />}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
+        </Layout>
+      </TwoFactorGate>
       <ErrorBoundary fallback={() => null}><CookieConsent /></ErrorBoundary>
     </NavigationContext.Provider>
   );

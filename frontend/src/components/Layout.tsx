@@ -759,7 +759,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                 <span className="footer-badge">HIPAA-Ready</span>
                 <span className="footer-badge">GDPR Tools</span>
                 <span className="footer-badge">Audit Trail</span>
-                <span className="footer-badge">On-Premise</span>
+                <span className="footer-badge">Two-Factor Sign-in</span>
               </div>
             </div>
           </div>
