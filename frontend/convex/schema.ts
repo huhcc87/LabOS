@@ -149,6 +149,25 @@ export default defineSchema({
     .index("by_category", ["category"])
     .searchIndex("search_name", { searchField: "name" }),
 
+  // One row per received lot of an inventory item (traceability: which lot, expiry, where it went).
+  inventory_lots: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    inventory_id: v.id("inventory"),
+    lot_number: v.string(),
+    expiry_date: v.optional(v.number()),
+    quantity_received: v.number(),
+    quantity_remaining: v.number(),
+    unit: v.optional(v.string()),
+    location: v.optional(v.string()),
+    supplier: v.optional(v.string()),
+    cart_item_id: v.optional(v.id("reagent_cart")),
+    notes: v.optional(v.string()),
+    received_by: v.id("users"),
+    received_at: v.number(),
+  }).index("by_lab", ["lab_id"])
+    .index("by_inventory", ["inventory_id"])
+    .index("by_expiry", ["expiry_date"]),
+
   // ── Samples ──────────────────────────────────────────────────────────
   samples: defineTable({
     lab_id: v.optional(v.id("labs")),
@@ -742,6 +761,22 @@ export default defineSchema({
     url: v.optional(v.string()),
     notes: v.optional(v.string()),
     status: v.string(),
+    received_quantity: v.optional(v.number()),
+    received_at: v.optional(v.number()),
+    // Request details (Quartzy-style): what it is for, who pays, how urgent
+    size: v.optional(v.string()),
+    cas: v.optional(v.string()),
+    project: v.optional(v.string()),
+    grant: v.optional(v.string()),
+    budget_code: v.optional(v.string()),
+    urgency: v.optional(v.string()),
+    needed_by: v.optional(v.number()),
+    // Approval and ordering
+    approved_by: v.optional(v.id("users")),
+    approved_at: v.optional(v.number()),
+    decision_note: v.optional(v.string()),
+    po_number: v.optional(v.string()),
+    ordered_at: v.optional(v.number()),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
 
