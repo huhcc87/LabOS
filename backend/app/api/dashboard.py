@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -35,7 +35,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/summary", response_model=DashboardSummary)
 def summary(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     cutoff = today + timedelta(days=7)
     instruments = db.query(Instrument).all()
     upcoming_maintenance = sum(

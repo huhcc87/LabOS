@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -17,7 +17,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(subject: str | Any, role: str = "staff", expires_delta: timedelta | None = None) -> str:
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
     to_encode = {"exp": expire, "sub": str(subject), "role": role, "jti": secrets.token_hex(16)}

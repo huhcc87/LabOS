@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -95,7 +95,7 @@ def sign_entry(entry_id: int, db: Session = Depends(get_db), current_user: User 
         raise HTTPException(404, "Entry not found")
     if e.author_id != current_user.id:
         raise HTTPException(403, "Only the author can sign this entry")
-    e.signed_at = datetime.now(timezone.utc).isoformat()
+    e.signed_at = datetime.now(UTC).isoformat()
     write_audit(db, AuditAction.update, "lab_notebook", entry_id, current_user, {"action": "signed"})
     db.commit()
     db.refresh(e)
@@ -112,7 +112,7 @@ def witness_entry(entry_id: int, db: Session = Depends(get_db), current_user: Us
     if e.author_id == current_user.id:
         raise HTTPException(400, "Author cannot witness their own entry")
     e.witnessed_by_id = current_user.id
-    e.witnessed_at = datetime.now(timezone.utc).isoformat()
+    e.witnessed_at = datetime.now(UTC).isoformat()
     write_audit(db, AuditAction.update, "lab_notebook", entry_id, current_user, {"action": "witnessed"})
     db.commit()
     db.refresh(e)

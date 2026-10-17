@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -31,8 +31,8 @@ def _validate_password(pw: str) -> None:
 
 
 def _check_lockout(user: User) -> None:
-    if user.locked_until and datetime.now(timezone.utc) < user.locked_until.replace(tzinfo=timezone.utc):
-        unlock_in = int((user.locked_until.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).total_seconds() // 60) + 1
+    if user.locked_until and datetime.now(UTC) < user.locked_until.replace(tzinfo=UTC):
+        unlock_in = int((user.locked_until.replace(tzinfo=UTC) - datetime.now(UTC)).total_seconds() // 60) + 1
         raise HTTPException(
             status_code=423,
             detail=f"Account locked due to too many failed attempts. Try again in {unlock_in} minute(s).",
@@ -54,7 +54,7 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if not verify_password(body.password, user.hashed_password):
         user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
         if user.failed_login_attempts >= settings.max_login_attempts:
-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=settings.lockout_duration_minutes)
+            user.locked_until = datetime.now(UTC) + timedelta(minutes=settings.lockout_duration_minutes)
             user.failed_login_attempts = 0
             log_security_event(db, SecurityEventType.login_locked,
                                severity=SecurityEventSeverity.critical,
@@ -78,7 +78,7 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     # Reset lockout on successful login
     user.failed_login_attempts = 0
     user.locked_until = None
-    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_at = datetime.now(UTC)
 
     token = create_access_token(subject=user.id, role=user.role.value)
     create_session(db, user, token, request)
@@ -123,7 +123,7 @@ def change_password(
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     _validate_password(new_pw)
     current_user.hashed_password = get_password_hash(new_pw)
-    current_user.password_changed_at = datetime.now(timezone.utc)
+    current_user.password_changed_at = datetime.now(UTC)
     current_user.must_change_password = False
     write_audit(db, AuditAction.update, "user", current_user.id, current_user, {"password": "changed"})
     db.commit()
@@ -173,7 +173,7 @@ def update_user(
     if body.password is not None:
         _validate_password(body.password)
         user.hashed_password = get_password_hash(body.password)
-        user.password_changed_at = datetime.now(timezone.utc)
+        user.password_changed_at = datetime.now(UTC)
         changes["password"] = "changed"
     if body.role is not None:
         changes["role"] = body.role

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -266,7 +266,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.staff)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     # Security / lockout
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -293,7 +293,7 @@ class Protocol(Base):
     description: Mapped[str] = mapped_column(Text)
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     reminder_days_before: Mapped[int] = mapped_column(Integer, default=3)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     steps: Mapped[list["WorkflowStep"]] = relationship(
         back_populates="protocol", cascade="all, delete-orphan"
@@ -310,7 +310,7 @@ class ProtocolVersion(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     change_summary: Mapped[str] = mapped_column(String(500), default="")
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     protocol: Mapped["Protocol"] = relationship("Protocol", foreign_keys=[protocol_id])
     created_by: Mapped["User | None"] = relationship("User", foreign_keys=[created_by_id])
@@ -387,7 +387,7 @@ class ComplianceLog(Base):
     category: Mapped[str] = mapped_column(String(100), index=True)
     details: Mapped[str] = mapped_column(Text)
     logged_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     logger: Mapped["User | None"] = relationship("User", foreign_keys=[logged_by])
 
@@ -401,7 +401,7 @@ class Feedback(Base):
     module: Mapped[str] = mapped_column(String(100), default="general")
     submitted_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="new")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     submitter: Mapped["User | None"] = relationship("User", foreign_keys=[submitted_by])
 
@@ -453,8 +453,8 @@ class Supplier(Base):
     rating: Mapped[int] = mapped_column(Integer, default=0)  # 1-5 star rating
     total_orders: Mapped[int] = mapped_column(Integer, default=0)
     average_delivery_days: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class InventoryItem(Base):
@@ -497,7 +497,7 @@ class IncidentReport(Base):
     corrective_action: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(50), default="open")
     reported_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     reporter: Mapped["User | None"] = relationship("User", foreign_keys=[reported_by])
 
@@ -618,7 +618,7 @@ class Attachment(Base):
     filename: Mapped[str] = mapped_column(String(255))
     filepath: Mapped[str] = mapped_column(String(500))
     uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     uploader: Mapped["User | None"] = relationship("User", foreign_keys=[uploaded_by])
 
@@ -633,7 +633,7 @@ class AuditLog(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     user_email: Mapped[str] = mapped_column(String(255), default="")
     changes_json: Mapped[str] = mapped_column(Text, default="{}")
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
     prev_hash: Mapped[str] = mapped_column(String(64), default="0" * 64)
     chain_hash: Mapped[str] = mapped_column(String(64), default="")
 
@@ -662,7 +662,7 @@ class ElectronicSignature(Base):
     ip_address: Mapped[str] = mapped_column(String(60), default="")
     user_agent: Mapped[str] = mapped_column(String(500), default="")
     content_hash: Mapped[str] = mapped_column(String(128), default="")  # SHA-256 of signed content
-    signed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    signed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
     is_valid: Mapped[bool] = mapped_column(Boolean, default=True)  # can be invalidated if content changed after signing
     invalidated_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -683,8 +683,8 @@ class SOP(Base):
     author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     department: Mapped[str] = mapped_column(String(120), default="")
     content: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     author: Mapped["User | None"] = relationship("User", foreign_keys=[author_id])
 
@@ -718,7 +718,7 @@ class DocumentTemplate(Base):
     content: Mapped[str] = mapped_column(Text, default="")
     variables: Mapped[str] = mapped_column(Text, default="[]")  # JSON array of variable names
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
 
     created_by: Mapped["User | None"] = relationship("User", foreign_keys=[created_by_id])
@@ -738,7 +738,7 @@ class CostEntry(Base):
     status: Mapped[CostStatus] = mapped_column(SqlEnum(CostStatus), default=CostStatus.pending)
     submitted_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     submitted_by: Mapped["User | None"] = relationship("User", foreign_keys=[submitted_by_id])
 
@@ -752,7 +752,7 @@ class Integration(Base):
     status: Mapped[str] = mapped_column(String(50), default="disconnected")
     config_json: Mapped[str] = mapped_column(Text, default="{}")
     last_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class LabSettings(Base):
@@ -763,7 +763,7 @@ class LabSettings(Base):
     value: Mapped[str] = mapped_column(Text, default="")
     category: Mapped[str] = mapped_column(String(50), default="general")
     updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class LabMeeting(Base):
@@ -787,8 +787,8 @@ class LabMeeting(Base):
     minutes_published: Mapped[bool] = mapped_column(Boolean, default=False)
     minutes_published_at: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tags: Mapped[str] = mapped_column(String(500), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     organizer: Mapped["User | None"] = relationship("User", foreign_keys=[organizer_id])
 
@@ -815,8 +815,8 @@ class PurchaseOrder(Base):
     notes: Mapped[str] = mapped_column(Text, default="")
     urgency: Mapped[str] = mapped_column(String(50), default="normal")  # normal, urgent, critical
     project_code: Mapped[str] = mapped_column(String(100), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     supplier: Mapped["Supplier"] = relationship("Supplier", foreign_keys=[supplier_id])
     requested_by: Mapped["User | None"] = relationship("User", foreign_keys=[requested_by_id])
@@ -835,7 +835,7 @@ class SupplierReview(Base):
     support_rating: Mapped[int] = mapped_column(Integer, default=0)
     comment: Mapped[str] = mapped_column(Text, default="")
     order_reference: Mapped[str] = mapped_column(String(100), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     supplier: Mapped["Supplier"] = relationship("Supplier", foreign_keys=[supplier_id])
 
@@ -860,8 +860,8 @@ class LabNotebookEntry(Base):
     data_classification: Mapped[DataClassification] = mapped_column(
         SqlEnum(DataClassification), default=DataClassification.internal
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     author: Mapped["User"] = relationship("User", foreign_keys=[author_id])
     witnessed_by: Mapped["User | None"] = relationship("User", foreign_keys=[witnessed_by_id])
@@ -895,7 +895,7 @@ class IoTSensor(Base):
     # Alert notification config
     notify_email: Mapped[str] = mapped_column(String(500), default="")   # comma-separated emails
     alert_cooldown_minutes: Mapped[int] = mapped_column(Integer, default=30)  # min gap between alerts
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     readings: Mapped[list["IoTReading"]] = relationship("IoTReading", back_populates="sensor", order_by="IoTReading.recorded_at.desc()")
     alerts: Mapped[list["IoTAlert"]] = relationship("IoTAlert", back_populates="sensor", order_by="IoTAlert.triggered_at.desc()")
@@ -907,7 +907,7 @@ class IoTReading(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     sensor_id: Mapped[int] = mapped_column(ForeignKey("iot_sensors.id"), index=True)
     value: Mapped[float] = mapped_column()
-    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     sensor: Mapped["IoTSensor"] = relationship("IoTSensor", back_populates="readings")
 
@@ -925,7 +925,7 @@ class IoTAlert(Base):
     severity: Mapped[IoTAlertSeverity] = mapped_column(SqlEnum(IoTAlertSeverity), default=IoTAlertSeverity.warning)
     value: Mapped[float] = mapped_column()
     message: Mapped[str] = mapped_column(Text, default="")
-    triggered_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    triggered_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notified_emails: Mapped[str] = mapped_column(String(500), default="")  # who was emailed
@@ -980,7 +980,7 @@ class DataErasureRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    requested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     status: Mapped[ErasureStatus] = mapped_column(SqlEnum(ErasureStatus), default=ErasureStatus.pending)
     reason: Mapped[str] = mapped_column(Text, default="")
     reviewed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -998,7 +998,7 @@ class DataExportRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    requested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     status: Mapped[str] = mapped_column(String(50), default="pending")  # pending / ready / downloaded
     export_url: Mapped[str] = mapped_column(String(500), default="")
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -1016,7 +1016,7 @@ class PrivacyPolicyVersion(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     content: Mapped[str] = mapped_column(Text, default="")
     published_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    published_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    published_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     is_current: Mapped[bool] = mapped_column(Boolean, default=False)
 
     published_by: Mapped["User | None"] = relationship("User", foreign_keys=[published_by_id])
@@ -1034,8 +1034,8 @@ class UserSession(Base):
     ip_address: Mapped[str] = mapped_column(String(60), default="")
     user_agent: Mapped[str] = mapped_column(String(500), default="")
     device_hint: Mapped[str] = mapped_column(String(120), default="")  # "Chrome / macOS", "Safari / iOS"
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
-    last_active_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    last_active_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -1058,7 +1058,7 @@ class SecurityEvent(Base):
     ip_address: Mapped[str] = mapped_column(String(60), default="")
     user_agent: Mapped[str] = mapped_column(String(500), default="")
     details: Mapped[str] = mapped_column(Text, default="{}")  # JSON
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     user: Mapped["User | None"] = relationship("User", foreign_keys=[user_id])
 
@@ -1077,7 +1077,7 @@ class ReagentDisposalLog(Base):
     disposed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     witness_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
-    disposed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    disposed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     item: Mapped["InventoryItem | None"] = relationship("InventoryItem", foreign_keys=[inventory_item_id])
     disposer: Mapped["User | None"] = relationship("User", foreign_keys=[disposed_by])
@@ -1117,8 +1117,8 @@ class CapaRecord(Base):
     due_date: Mapped[str] = mapped_column(String(20), default="")
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     verification_notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     assignee: Mapped["User | None"] = relationship("User", foreign_keys=[assigned_to])
     creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
@@ -1144,8 +1144,8 @@ class Reference(Base):
     notes: Mapped[str] = mapped_column(Text, default="")
     citations: Mapped[int] = mapped_column(Integer, default=0)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
 
@@ -1163,7 +1163,7 @@ class Organization(Base):
     contact_email: Mapped[str] = mapped_column(String(255), default="")
     website: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     sites: Mapped[list["Site"]] = relationship("Site", back_populates="organization", cascade="all, delete-orphan")
 
@@ -1183,7 +1183,7 @@ class Site(Base):
     contact_name: Mapped[str] = mapped_column(String(255), default="")
     contact_email: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     organization: Mapped["Organization"] = relationship("Organization", back_populates="sites")
     labs: Mapped[list["LabUnit"]] = relationship("LabUnit", back_populates="site", cascade="all, delete-orphan")
@@ -1201,7 +1201,7 @@ class LabUnit(Base):
     capacity_persons: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str] = mapped_column(Text, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     site: Mapped["Site"] = relationship("Site", back_populates="labs")
     pi: Mapped["User | None"] = relationship("User", foreign_keys=[pi_user_id])
@@ -1227,7 +1227,7 @@ class Freezer(Base):
     total_racks: Mapped[int] = mapped_column(Integer, default=4)
     boxes_per_rack: Mapped[int] = mapped_column(Integer, default=12)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     boxes: Mapped[list["FreezerBox"]] = relationship("FreezerBox", back_populates="freezer", cascade="all, delete-orphan")
 
@@ -1276,7 +1276,7 @@ class BiosketchProfile(Base):
     contributions_json: Mapped[str] = mapped_column(Text, default="[]")
     products_json: Mapped[str] = mapped_column(Text, default="[]")
     research_support_json: Mapped[str] = mapped_column(Text, default="[]")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 # ─── Grant Version History ────────────────────────────────────────────────────
@@ -1289,7 +1289,7 @@ class GrantVersion(Base):
     grant_title: Mapped[str] = mapped_column(String(500), default="")
     version_label: Mapped[str] = mapped_column(String(100), default="")
     created_by: Mapped[str] = mapped_column(String(200), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     changes_json: Mapped[str] = mapped_column(Text, default="[]")
     notes: Mapped[str] = mapped_column(Text, default="")
     content_json: Mapped[str] = mapped_column(Text, default="{}")
@@ -1324,7 +1324,7 @@ class GrantSubmission(Base):
     total_amount: Mapped[float] = mapped_column(default=0.0)
     revision_number: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 # ─── Reagent Cart (Browser Extension capture + Stripe checkout) ─────────────
@@ -1354,7 +1354,7 @@ class ReagentCartItem(Base):
     purity: Mapped[str] = mapped_column(String(50), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[ReagentCartItemStatus] = mapped_column(SqlEnum(ReagentCartItemStatus), default=ReagentCartItemStatus.pending)
-    captured_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    captured_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     ordered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     stripe_charge_id: Mapped[str] = mapped_column(String(100), default="")
 
@@ -1401,7 +1401,7 @@ class LabBudget(Base):
     spent_amount: Mapped[float] = mapped_column(default=0.0)
     fiscal_year: Mapped[str] = mapped_column(String(10), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class ApprovalRule(Base):
@@ -1426,7 +1426,7 @@ class RestrictedChemical(Base):
     severity: Mapped[str] = mapped_column(String(20), default="warn")  # warn, block
     notes: Mapped[str] = mapped_column(Text, default="")
     added_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    added_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class BorrowRequest(Base):
@@ -1442,7 +1442,7 @@ class BorrowRequest(Base):
     requested_quantity: Mapped[str] = mapped_column(String(100), default="")
     purpose: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default="pending")  # pending, approved, rejected, returned
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
@@ -1474,4 +1474,4 @@ class LabMembership(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     revoke_reason: Mapped[str] = mapped_column(Text, default="")
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))

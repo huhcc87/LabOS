@@ -14,7 +14,7 @@ import json
 import logging
 import secrets
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -317,7 +317,7 @@ async def post_reading(
     if not sensor:
         raise HTTPException(401, "Invalid sensor key or API key")
 
-    ts = body.recorded_at or datetime.now(timezone.utc)
+    ts = body.recorded_at or datetime.now(UTC)
     reading = IoTReading(sensor_id=sensor.id, value=body.value, recorded_at=ts)
     db.add(reading)
     db.commit()
@@ -352,7 +352,7 @@ async def iot_websocket(ws: WebSocket):
             # Send a keepalive ping every 30 s; also drain any incoming messages
             try:
                 await asyncio.wait_for(ws.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ws.send_text(json.dumps({"type": "ping"}))
     except WebSocketDisconnect:
         pass
@@ -369,7 +369,7 @@ def get_history(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     readings = (
         db.query(IoTReading)
         .filter(IoTReading.sensor_id == sensor_id, IoTReading.recorded_at >= since)
@@ -420,7 +420,7 @@ def acknowledge_alert(
     if not alert:
         raise HTTPException(404, "Alert not found")
     alert.acknowledged = True
-    alert.acknowledged_at = datetime.now(timezone.utc)
+    alert.acknowledged_at = datetime.now(UTC)
     db.commit()
     return {"ok": True}
 
