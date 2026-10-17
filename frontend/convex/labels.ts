@@ -116,6 +116,13 @@ export const store = mutation({
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (label) await ctx.db.patch(label._id, { slot_id: slotId });
     else await ctx.db.insert("sample_labels", { code, details, slot_id: slotId, created_by: userId, created_at: Date.now() });
+    // Keep the Samples list in step: one sample row per sample ID, pointing at where it is stored.
+    const sid = sample.sample_id?.trim() || code;
+    const srow = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", sid)).first();
+    const where = (await describe(ctx, (await ctx.db.get(slotId))!));
+    const now = Date.now();
+    if (srow) await ctx.db.patch(srow._id, { location: where, status: "stored", barcode: code, updated_at: now });
+    else await ctx.db.insert("samples", { sample_id: sid, name: sample.label?.trim() || sid, type: sample.sample_type?.trim() || undefined, status: "stored", location: where, barcode: code, collected_by: userId, created_at: now, updated_at: now });
     const newSlot = await ctx.db.get(slotId);
     if (newSlot) {
       const path = await describe(ctx, newSlot);
@@ -129,8 +136,8 @@ export const store = mutation({
 
 /** Take the sample out of storage (the label stays, so it can be stored again). */
 export const unstore = mutation({
-  args: { token: v.optional(v.string()), code: v.string() },
-  handler: async (ctx, { token, code: raw }) => {
+  args: { token: v.optional(v.string()), code: v.string(), reason: v.optional(v.union(v.literal("retrieved"), v.literal("used_up"), v.literal("discarded"))) },
+  handler: async (ctx, { token, code: raw, reason = "retrieved" }) => {
     const userId = await requireAuth(ctx, token);
     const code = checkCode(raw);
     const oldSlot = await ctx.db.query("freezer_slots").withIndex("by_label", (q) => q.eq("label_code", code)).first();
@@ -140,6 +147,11 @@ export const unstore = mutation({
       await logMove(ctx, userId, oldSlot.sample_id, "Retrieved", `Removed from ${oldPath}`);
       await logLabel(ctx, userId, code, "Retrieved", `Removed from ${oldPath}`);
     }
+    // Samples list: say what happened to it (retrieved stays "available", used up and discarded close it).
+    const sid = oldSlot?.sample_id?.trim() || code;
+    const srow = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", sid)).first();
+    if (srow) await ctx.db.patch(srow._id, { status: reason === "retrieved" ? "available" : reason === "used_up" ? "consumed" : "discarded", location: undefined, updated_at: Date.now() });
+    if (oldSlot && reason !== "retrieved") await logLabel(ctx, userId, code, reason === "used_up" ? "Used up" : "Discarded", "Marked " + (reason === "used_up" ? "used up" : "discarded"));
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (label?.slot_id) await ctx.db.patch(label._id, { slot_id: undefined });
   },
