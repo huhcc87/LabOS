@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { Meeting, AttendanceStatus } from '../types/meeting.types'
 import { AttendanceBadge } from './MeetingBadges'
 
@@ -7,14 +7,18 @@ interface Props {
   isPiOrAdmin: boolean
   isManagerOrAbove: boolean
   onMark: (userId: string, status: AttendanceStatus) => void
+  onAdd?: (name: string) => void
+  onRemove?: (userId: string) => void
 }
 
 const STATUSES: AttendanceStatus[] = ['present', 'remote', 'excused', 'absent']
 const STATUS_ICONS: Record<AttendanceStatus, string> = { present: '✓', remote: '💻', excused: '~', absent: '✕' }
 const STATUS_COLORS: Record<AttendanceStatus, string> = { present: '#16a34a', remote: '#0284c7', excused: '#d97706', absent: '#dc2626' }
 
-export default function AttendanceSheet({ meeting, isPiOrAdmin, isManagerOrAbove, onMark }: Props) {
+export default function AttendanceSheet({ meeting, isPiOrAdmin, isManagerOrAbove, onMark, onAdd, onRemove }: Props) {
   const canEdit = isPiOrAdmin || isManagerOrAbove
+  const [newName, setNewName] = useState('')
+  const add = () => { if (newName.trim()) { onAdd?.(newName); setNewName('') } }
   const present = meeting.attendees.filter(a => a.status === 'present').length
   const remote = meeting.attendees.filter(a => a.status === 'remote').length
   const absent = meeting.attendees.filter(a => a.status === 'absent').length
@@ -66,9 +70,22 @@ export default function AttendanceSheet({ meeting, isPiOrAdmin, isManagerOrAbove
             ) : (
               <AttendanceBadge status={attendee.status} />
             )}
+            {canEdit && onRemove && (
+              <button onClick={() => onRemove(attendee.userId)} aria-label={`Remove ${attendee.name}`}
+                style={{ background: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            )}
           </div>
         ))}
       </div>
+      {meeting.attendees.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 16 }}>No attendees listed yet.</div>}
+      {canEdit && onAdd && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+            placeholder="Add an attendee by name" aria-label="New attendee name"
+            style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '7px 10px', fontSize: 13 }} />
+          <button onClick={add} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '0 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Add</button>
+        </div>
+      )}
       {!canEdit && <div style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', marginTop: 12 }}>Only PI or managers can edit attendance</div>}
     </div>
   )

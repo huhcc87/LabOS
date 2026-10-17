@@ -30,6 +30,13 @@ interface Props {
   meetingActionItems: ActionItem[]
   onSubmitProgressReport: (report: Omit<ProgressReport, 'id' | 'meetingId' | 'submittedAt' | 'status'>) => void
   onAcknowledgeReport: (reportId: string, comment: string) => void
+  onEditAgenda?: (itemId: string, patch: Partial<AgendaItem>) => void
+  onDeleteAgenda?: (itemId: string) => void
+  onAddAttendee?: (name: string) => void
+  onRemoveAttendee?: (userId: string) => void
+  onAddActionItem: (item: Omit<ActionItem, 'id' | 'createdAt' | 'status'>) => void
+  onEditActionItem: (id: string, patch: Partial<ActionItem>) => void
+  onRemindNow?: () => void
   onEdit?: () => void
   onDelete?: () => void
   onCancel?: () => void
@@ -42,6 +49,7 @@ export default function MeetingDetailDrawer({
   onMarkAttendance, onSaveMinutes, onPublishMinutes,
   onUpdateActionStatus, onDeleteAction, meetingActionItems,
   onSubmitProgressReport, onAcknowledgeReport,
+  onEditAgenda, onDeleteAgenda, onAddAttendee, onRemoveAttendee, onAddActionItem, onEditActionItem, onRemindNow,
   onEdit, onDelete, onCancel, onStartVideoCall,
 }: Props) {
   const [tab, setTab] = useState<DrawerTab>('agenda')
@@ -140,14 +148,19 @@ export default function MeetingDetailDrawer({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
                   <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, color: '#64748b', padding: '8px 12px', cursor: 'pointer', fontSize: 16 }}>✕</button>
                   {/* Admin controls */}
-                  {isPiOrAdmin && m.status === 'scheduled' && (
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  {isPiOrAdmin && m.status !== 'cancelled' && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {onRemindNow && m.status === 'scheduled' && (
+                        <button onClick={onRemindNow} title="Send a reminder to attendees now" style={{ background: '#e0e7ff', border: 'none', borderRadius: 6, color: '#4338ca', padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          🔔 Remind now
+                        </button>
+                      )}
                       {onEdit && (
                         <button onClick={onEdit} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           Edit
                         </button>
                       )}
-                      {onCancel && (
+                      {onCancel && m.status === 'scheduled' && (
                         <button onClick={onCancel} style={{ background: '#fef9c3', border: 'none', borderRadius: 6, color: '#92400e', padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           Cancel
                         </button>
@@ -212,12 +225,13 @@ export default function MeetingDetailDrawer({
                       />
                     </div>
                   )}
-                  <AgendaBuilder meeting={m} isPiOrAdmin={isPiOrAdmin} onApprove={onApproveAgenda} onReject={onRejectAgenda} onReorder={onReorderAgenda} />
+                  <AgendaBuilder meeting={m} isPiOrAdmin={isPiOrAdmin} onApprove={onApproveAgenda} onReject={onRejectAgenda} onReorder={onReorderAgenda}
+                    currentUserName={currentUserName} onEdit={onEditAgenda} onDelete={onDeleteAgenda} />
                 </div>
               )}
 
               {tab === 'attendance' && (
-                <AttendanceSheet meeting={m} isPiOrAdmin={isPiOrAdmin} isManagerOrAbove={isManagerOrAbove} onMark={onMarkAttendance} />
+                <AttendanceSheet meeting={m} isPiOrAdmin={isPiOrAdmin} isManagerOrAbove={isManagerOrAbove} onMark={onMarkAttendance} onAdd={onAddAttendee} onRemove={onRemoveAttendee} />
               )}
 
               {tab === 'actions' && (
@@ -225,6 +239,8 @@ export default function MeetingDetailDrawer({
                   items={meetingActionItems} isPiOrAdmin={isPiOrAdmin} isManagerOrAbove={isManagerOrAbove}
                   currentUserName={currentUserName}
                   onUpdateStatus={onUpdateActionStatus} onDelete={onDeleteAction}
+                  meetings={[{ id: m.id, title: m.title }]} people={m.attendees.map(a => a.name)}
+                  onAdd={onAddActionItem} onEdit={onEditActionItem}
                 />
               )}
 

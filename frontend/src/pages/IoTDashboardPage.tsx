@@ -9,6 +9,7 @@ import { hasRole } from '../lib/utils';
 import { errText } from '../lib/errors';
 import { ago, presetById, sensorState, STATE_LABEL, STATE_STYLE, type SensorState } from '../features/iot/presets';
 import { AddSensorDialog } from '../features/iot/AddSensorDialog';
+import { SetupGuide } from '../features/iot/SetupGuide';
 import { SensorDetail, type SensorRow } from '../features/iot/SensorDetail';
 
 const QUICK = ['ult80', 'f20', 'ln2temp', 'ln2level'];
@@ -40,6 +41,8 @@ export default function IoTDashboardPage() {
         </div>
         {canManage && <button className="btn btn-primary" onClick={() => setAdding('ult80')}>+ Add sensor</button>}
       </div>
+
+      <SetupGuide />
 
       {sensors === undefined ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p> : rows.length === 0 ? (
         <div className="card" style={{ padding: 24 }}>

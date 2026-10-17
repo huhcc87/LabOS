@@ -193,14 +193,21 @@ export default function LabMeetingsPage() {
     store.setSelectedMeeting(null)
   }
 
-  function handleSaveMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>) {
-    if (editingMeeting) {
-      store.updateMeeting(editingMeeting.id, data)
-    } else {
-      store.addMeeting(data)
+  async function handleSaveMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>, attendeeNames: string[]) {
+    try {
+      if (editingMeeting) {
+        const { organizer: _o, organizerRole: _r, ...fields } = data
+        await store.updateMeeting(editingMeeting.id, { ...fields, attendees: store.attendeesFromNames(editingMeeting.attendees, attendeeNames) })
+        toast.success('Meeting updated')
+      } else {
+        await store.addMeeting(data, { attendeeNames, agenda: selectedTemplate?.defaultAgenda })
+      }
+    } catch {
+      return // the hook already showed the error; keep the form open so nothing typed is lost
     }
     setShowCreate(false)
     setEditingMeeting(null)
+    setSelectedTemplate(null)
   }
 
   function handleDeleteMeeting(meeting: Meeting) {
@@ -440,6 +447,9 @@ export default function LabMeetingsPage() {
             items={store.myActionItems} isPiOrAdmin={isPiOrAdmin} isManagerOrAbove={isManagerOrAbove}
             currentUserName={currentUserName}
             onUpdateStatus={store.updateActionItemStatus} onDelete={store.deleteActionItem}
+            meetings={[...store.upcoming, ...store.past].map(m => ({ id: m.id, title: m.title }))}
+            people={[...new Set(store.meetings.flatMap(m => m.attendees.map(a => a.name)))]}
+            onAdd={store.addActionItem} onEdit={store.updateActionItem}
           />
         )}
 
@@ -900,6 +910,13 @@ export default function LabMeetingsPage() {
           meetingActionItems={meetingActionItems}
           onSubmitProgressReport={(r) => store.submitProgressReport(sm.id, r)}
           onAcknowledgeReport={(reportId, comment) => store.acknowledgeProgressReport(sm.id, reportId, comment)}
+          onEditAgenda={(id, patch) => store.updateAgendaItem(sm.id, id, patch)}
+          onDeleteAgenda={(id) => store.deleteAgendaItem(sm.id, id)}
+          onAddAttendee={(name) => store.addAttendee(sm.id, name)}
+          onRemoveAttendee={(userId) => store.removeAttendee(sm.id, userId)}
+          onAddActionItem={store.addActionItem}
+          onEditActionItem={store.updateActionItem}
+          onRemindNow={() => store.remindNow(sm.id)}
           onEdit={() => handleEditMeeting(sm)}
           onDelete={() => handleDeleteMeeting(sm)}
           onCancel={() => store.cancelMeeting(sm.id)}
@@ -912,8 +929,9 @@ export default function LabMeetingsPage() {
         <CreateMeetingModal
           currentUserName={currentUserName}
           editMeeting={editingMeeting}
+          template={editingMeeting ? null : selectedTemplate}
           onSave={handleSaveMeeting}
-          onClose={() => { setShowCreate(false); setEditingMeeting(null) }}
+          onClose={() => { setShowCreate(false); setEditingMeeting(null); setSelectedTemplate(null) }}
         />
       )}
 

@@ -14,13 +14,13 @@ function CodeBlock({ text }: { text: string }) {
 }
 
 /** Hardware, wiring and code for one sensor, with its key filled in when it is known. */
-export function ConnectGuide({ presetId, sensorKey }: { presetId?: string; sensorKey?: string }) {
+export function ConnectGuide({ presetId, sensorKey, generic }: { presetId?: string; sensorKey?: string; generic?: boolean }) {
   const preset: Preset = presetById(presetId) ?? presetById('custom')!;
   const [platform, setPlatform] = useState<Platform>('esp32');
   const tabs: Array<[Platform, string]> = [['esp32', 'ESP32'], ['pi', 'Raspberry Pi'], ['curl', 'Test from a computer']];
   return (
     <div style={{ display: 'grid', gap: 18, fontSize: 14 }}>
-      {!sensorKey && <p className="auth-note warn" style={{ margin: 0 }}>Your key was only shown when this sensor was created. Paste it where the code says PASTE_YOUR_SENSOR_KEY_HERE, or use “New key” to get another.</p>}
+      {!sensorKey && !generic && <p className="auth-note warn" style={{ margin: 0 }}>Your key was only shown when this sensor was created. Paste it where the code says PASTE_YOUR_SENSOR_KEY_HERE, or use “New key” to get another.</p>}
 
       <section>
         <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>1. What you need — {preset.label}</h3>

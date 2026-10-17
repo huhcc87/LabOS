@@ -8,9 +8,19 @@ interface Props {
   onApprove: (itemId: string) => void
   onReject: (itemId: string, reason?: string) => void
   onReorder: (fromIdx: number, toIdx: number) => void
+  currentUserName?: string
+  onEdit?: (itemId: string, patch: Partial<AgendaItem>) => void
+  onDelete?: (itemId: string) => void
 }
 
-export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onReject, onReorder }: Props) {
+const CATEGORIES: Array<[AgendaItem['category'], string]> = [
+  ['research_update', 'Research'], ['journal_club', 'Journal Club'], ['lab_business', 'Lab Business'],
+  ['training', 'Training'], ['guest_speaker', 'Guest Speaker'], ['other', 'Other'],
+]
+
+export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onReject, onReorder, currentUserName, onEdit, onDelete }: Props) {
+  const [editId, setEditId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<Pick<AgendaItem, 'title' | 'description' | 'presenter' | 'durationMinutes' | 'category' | 'slideLink'>>({ title: '', description: '', presenter: '', durationMinutes: 15, category: 'other', slideLink: '' })
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [dragging, setDragging] = useState<number | null>(null)
@@ -32,13 +42,54 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
     training: 'Training', guest_speaker: 'Guest Speaker', other: 'Other',
   }
 
-  function AgendaRow({ item, idx }: { item: AgendaItem; idx: number }) {
+  const canChange = (item: AgendaItem) => isPiOrAdmin || (item.status === 'pending_approval' && item.submittedBy === currentUserName)
+  function startEdit(item: AgendaItem) {
+    setEditId(item.id)
+    setDraft({ title: item.title, description: item.description, presenter: item.presenter, durationMinutes: item.durationMinutes, category: item.category, slideLink: item.slideLink ?? '' })
+  }
+  function saveEdit() {
+    if (!editId || !draft.title.trim()) return
+    onEdit?.(editId, { ...draft, title: draft.title.trim(), durationMinutes: Math.max(1, Number(draft.durationMinutes) || 1), slideLink: draft.slideLink.trim() || undefined })
+    setEditId(null)
+  }
+
+  const field: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '6px 8px', fontSize: 12, width: '100%', boxSizing: 'border-box', color: '#1e293b' }
+
+  // Called as a function, not rendered as a component, so inputs keep focus while typing.
+  function renderRow(item: AgendaItem, idx: number) {
+    if (editId === item.id) {
+      return (
+        <div key={item.id} style={{ background: '#fff', border: '1px solid #c7d2fe', borderRadius: 8, padding: 12, marginBottom: 8, display: 'grid', gap: 8 }}>
+          <input aria-label="Title" style={field} value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Title" autoFocus />
+          <textarea aria-label="Description" style={{ ...field, resize: 'vertical' }} rows={2} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} placeholder="Description" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+            <input aria-label="Presenter" style={field} value={draft.presenter} onChange={e => setDraft({ ...draft, presenter: e.target.value })} placeholder="Presenter" />
+            <input aria-label="Minutes" type="number" min={1} style={field} value={draft.durationMinutes} onChange={e => setDraft({ ...draft, durationMinutes: Number(e.target.value) })} />
+            <select aria-label="Category" style={field} value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value as AgendaItem['category'] })}>
+              {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <input aria-label="Slides link" style={field} value={draft.slideLink} onChange={e => setDraft({ ...draft, slideLink: e.target.value })} placeholder="Slides link (optional)" />
+          </div>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <button onClick={() => setEditId(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#64748b', padding: '5px 12px', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+            <button onClick={saveEdit} disabled={!draft.title.trim()} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Save</button>
+          </div>
+        </div>
+      )
+    }
     return (
       <div
+        key={item.id}
         draggable={isPiOrAdmin && item.status === 'approved'}
         onDragStart={() => setDragging(idx)}
         onDragOver={e => { e.preventDefault() }}
-        onDrop={() => { if (dragging !== null && dragging !== idx) { onReorder(dragging, idx); setDragging(null) } }}
+        onDrop={() => {
+          // dragging/idx index the approved list; the stored agenda also holds pending and rejected items.
+          if (dragging !== null && dragging !== idx && approved[dragging] && approved[idx]) {
+            onReorder(meeting.agenda.findIndex(a => a.id === approved[dragging].id), meeting.agenda.findIndex(a => a.id === approved[idx].id))
+          }
+          setDragging(null)
+        }}
         style={{
           background: dragging === idx ? '#f1f5f9' : '#fff',
           border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px', marginBottom: 8,
@@ -70,6 +121,12 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
             </div>
             {item.piNotes && <div style={{ marginTop: 6, padding: '6px 10px', background: '#fef3c7', borderRadius: 6, color: '#92400e', fontSize: 12 }}>💬 PI: {item.piNotes}</div>}
           </div>
+          {canChange(item) && (onEdit || onDelete) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+              {onEdit && <button onClick={() => startEdit(item)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#475569', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>✎ Edit</button>}
+              {onDelete && <button onClick={() => { if (window.confirm(`Remove "${item.title}" from the agenda?`)) onDelete(item.id) }} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>🗑</button>}
+            </div>
+          )}
           {isPiOrAdmin && item.status === 'pending_approval' && (
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={() => onApprove(item.id)} style={{ background: '#dcfce7', border: 'none', borderRadius: 6, color: '#16a34a', padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>✓ Approve</button>
@@ -112,7 +169,7 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
           <div style={{ color: '#92400e', fontSize: 12, fontWeight: 700, marginBottom: 8, padding: '6px 10px', background: '#fef3c7', borderRadius: 6 }}>
             ⏳ {pending.length} item{pending.length > 1 ? 's' : ''} awaiting your approval
           </div>
-          {pending.map((item, i) => <AgendaRow key={item.id} item={item} idx={i} />)}
+          {pending.map((item, i) => renderRow(item, i))}
         </div>
       )}
 
@@ -120,14 +177,14 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
       <div style={{ color: '#475569', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>APPROVED AGENDA</div>
       {approved.length === 0
         ? <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '24px', background: '#f8fafc', borderRadius: 8 }}>No approved agenda items yet</div>
-        : approved.map((item, i) => <AgendaRow key={item.id} item={item} idx={i} />)
+        : approved.map((item, i) => renderRow(item, i))
       }
 
       {/* Rejected */}
       {rejected.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>REJECTED / NOT INCLUDED</div>
-          {rejected.map((item, i) => <AgendaRow key={item.id} item={item} idx={i} />)}
+          {rejected.map((item, i) => renderRow(item, i))}
         </div>
       )}
     </div>

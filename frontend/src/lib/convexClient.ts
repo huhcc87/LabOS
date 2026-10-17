@@ -354,9 +354,15 @@ export const meetingsApi = {
     await client.mutation(api.meetings.complete, { token, id: id as any });
     return { data: { success: true } };
   },
+  remindNow: async (id: IdLike) => {
+    const result = await client.mutation(api.meetings.remindNow, { token: getToken(), id: toStr(id) as any });
+    return { data: result as { sent: number } };
+  },
   publishMinutes: async (id: IdLike) => {
     const token = getToken();
-    await client.mutation(api.meetings.update, { token, id: toStr(id) as any, status: "completed" });
+    await client.mutation(api.meetings.update, {
+      token, id: toStr(id) as any, status: "completed", minutes_published: true, minutes_published_at: Date.now(),
+    });
     return { data: { success: true } };
   },
 };

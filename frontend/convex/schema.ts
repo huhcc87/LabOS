@@ -420,6 +420,19 @@ export default defineSchema({
     organizer_id: v.id("users"),
     attendees: v.optional(v.string()),
     recording_url: v.optional(v.string()),
+    end_time: v.optional(v.number()),
+    description: v.optional(v.string()),
+    video_link: v.optional(v.string()),
+    is_recurring: v.optional(v.boolean()),
+    recurring_pattern: v.optional(v.string()),
+    tags: v.optional(v.string()),
+    minutes_published: v.optional(v.boolean()),
+    minutes_published_at: v.optional(v.number()),
+    action_items: v.optional(v.string()),     // JSON array
+    progress_reports: v.optional(v.string()), // JSON array
+    organizer_name: v.optional(v.string()),
+    reminders: v.optional(v.string()),      // JSON number[]: minutes before the start
+    reminders_sent: v.optional(v.string()), // JSON number[]: offsets already sent
     created_at: v.number(),
     updated_at: v.number(),
   }).index("by_lab", ["lab_id"])

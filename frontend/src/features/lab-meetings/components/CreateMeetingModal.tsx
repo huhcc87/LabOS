@@ -1,17 +1,20 @@
 import React, { useState } from 'react'
 import type { Meeting, MeetingType } from '../types/meeting.types'
 import { getMeetingTypeIcon, getMeetingTypeLabel } from '../utils/meetingUtils'
+import { DEFAULT_REMINDERS, REMINDER_OPTIONS } from '../hooks/useMeetings'
 
 interface Props {
   currentUserName: string
-  onSave: (data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>) => void
+  onSave: (data: Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'agenda' | 'attendees' | 'actionItems' | 'progressReports' | 'minutes' | 'minutesPublished'>, attendeeNames: string[]) => void
   onClose: () => void
   editMeeting?: Meeting | null
+  /** Pre-fills a new meeting from a template. */
+  template?: { name: string; type: MeetingType; duration: number; description: string } | null
 }
 
 const TYPES: MeetingType[] = ['weekly', 'journal_club', 'lab_retreat', 'one_on_one', 'progress_report', 'special']
 
-export default function CreateMeetingModal({ currentUserName, onSave, onClose, editMeeting }: Props) {
+export default function CreateMeetingModal({ currentUserName, onSave, onClose, editMeeting, template }: Props) {
   const isEditMode = !!editMeeting
   const now = new Date()
   const localDate = (d: Date | string) => {
@@ -20,20 +23,21 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
   }
   const defaultStart = new Date(now.getTime() + 24 * 3600000)
-  const defaultEnd = new Date(defaultStart.getTime() + 2 * 3600000)
+  const defaultEnd = new Date(defaultStart.getTime() + (template && !editMeeting ? template.duration : 120) * 60000)
 
   const [form, setForm] = useState({
-    title: editMeeting?.title || '',
-    type: (editMeeting?.type || 'weekly') as MeetingType,
+    title: editMeeting?.title || template?.name || '',
+    type: (editMeeting?.type || template?.type || 'weekly') as MeetingType,
     location: editMeeting?.location || '',
     zoomLink: editMeeting?.zoomLink || '',
     scheduledAt: editMeeting ? localDate(editMeeting.scheduledAt) : localDate(defaultStart),
     endTime: editMeeting ? localDate(editMeeting.endTime) : localDate(defaultEnd),
-    description: editMeeting?.description || '',
+    description: editMeeting?.description || template?.description || '',
     isRecurring: editMeeting?.isRecurring || false,
     recurringPattern: (editMeeting?.recurringPattern || 'weekly') as 'weekly' | 'biweekly' | 'monthly',
     selectedAttendees: editMeeting?.attendees?.map(a => a.name) || (currentUserName ? [currentUserName] : []),
     tags: editMeeting?.tags?.join(', ') || '',
+    reminders: editMeeting?.reminders ?? DEFAULT_REMINDERS,
   })
   const [error, setError] = useState('')
   const [newAttendee, setNewAttendee] = useState('')
@@ -67,7 +71,8 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
       isRecurring: form.isRecurring,
       recurringPattern: form.isRecurring ? form.recurringPattern : undefined,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-    })
+      reminders: form.reminders,
+    }, form.selectedAttendees)
   }
 
   const inp: React.CSSProperties = {
@@ -178,6 +183,20 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
               <button type="button" onClick={() => { const n = newAttendee.trim(); if (n && !form.selectedAttendees.includes(n)) toggleAttendee(n); setNewAttendee('') }}
                 style={{ border: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: 8, padding: '0 14px', cursor: 'pointer' }}>Add</button>
             </div>
+          </div>
+
+          <div>
+            <label style={lbl}>🔔 Remind attendees</label>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              {REMINDER_OPTIONS.map(o => (
+                <label key={o.minutes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#1e293b', cursor: 'pointer' }}>
+                  <input type="checkbox" style={{ accentColor: '#6366f1' }} checked={form.reminders.includes(o.minutes)}
+                    onChange={e => set('reminders', e.target.checked ? [...form.reminders, o.minutes] : form.reminders.filter(x => x !== o.minutes))} />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Sent to the organizer and listed attendees (everyone if none are listed) in the notification bell.</div>
           </div>
 
           <div>
