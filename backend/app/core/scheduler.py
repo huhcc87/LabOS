@@ -1,6 +1,6 @@
 import logging
 import smtplib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -41,7 +41,7 @@ def dispatch_reminders():
 
     db = SessionLocal()
     try:
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
         pending = (
             db.query(ReminderQueue)
             .filter(
@@ -77,7 +77,7 @@ def dispatch_reminders():
                 sent = True
 
             reminder.status = ReminderStatus.sent if sent else ReminderStatus.failed
-            reminder.last_attempt_at = datetime.now(timezone.utc).isoformat()
+            reminder.last_attempt_at = datetime.now(UTC).isoformat()
 
         if pending:
             db.commit()
@@ -102,7 +102,7 @@ def check_iot_alerts():
     db = SessionLocal()
     try:
         sensors = db.query(IoTSensor).filter(IoTSensor.is_active == True).all()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for sensor in sensors:
             if not sensor.readings:

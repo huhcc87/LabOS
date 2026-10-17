@@ -10,7 +10,7 @@ Features:
 
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from alembic import command
 from alembic.config import Config
@@ -118,7 +118,7 @@ def upgrade(target: str = "head", db_url: str | None = None) -> dict:
     """Apply migrations up to target revision. Returns result dict."""
     cfg = _alembic_cfg(db_url)
     before = get_current_revision(db_url)
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(UTC).isoformat()
     try:
         command.upgrade(cfg, target)
         after = get_current_revision(db_url)
@@ -146,7 +146,7 @@ def downgrade(target: str = "-1", db_url: str | None = None) -> dict:
     """Roll back to target revision. Returns result dict."""
     cfg = _alembic_cfg(db_url)
     before = get_current_revision(db_url)
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(UTC).isoformat()
     try:
         command.downgrade(cfg, target)
         after = get_current_revision(db_url)
@@ -235,7 +235,7 @@ def get_status(db_url: str | None = None) -> dict:
         "pending_count": len(pending),
         "pending_revisions": pending,
         "history": get_history(db_url),
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
     }
 
 

@@ -6,7 +6,7 @@ GDPR Compliance API
 - Art. 33: Breach notification log (admin only)
 - Data retention enforcement (admin only)
 """
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -58,9 +58,9 @@ def request_data_export(
     """Submit a data-export request. Returns all personal data immediately."""
     req = DataExportRequest(
         user_id=current_user.id,
-        requested_at=datetime.now(timezone.utc),
+        requested_at=datetime.now(UTC),
         status="ready",
-        completed_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(UTC),
     )
     db.add(req)
     db.flush()
@@ -73,7 +73,7 @@ def request_data_export(
     return JSONResponse(
         content={
             "request_id": req.id,
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
             "data": export,
         }
     )
@@ -248,7 +248,7 @@ def review_erasure_request(
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     req.status = body.status
     req.reviewed_by_id = current_user.id
     req.reviewed_at = now
@@ -291,7 +291,7 @@ def retention_report(
     current_user: User = Depends(require_role(UserRole.admin)),
     db: Session = Depends(get_db),
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cutoffs = {
         "audit_logs_10yr":   now - timedelta(days=3650),
         "session_logs_90d":  now - timedelta(days=90),

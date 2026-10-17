@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter, Depends
 
 logger = logging.getLogger(__name__)
+from datetime import UTC
+
 from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -251,7 +253,7 @@ def inventory_predictions(
     _: User = Depends(get_current_user),
 ):
     """Return inventory items with predicted depletion dates based on usage."""
-    from datetime import timedelta, timezone
+    from datetime import timedelta
 
     from app.models.models import AuditAction, AuditLog
 
@@ -260,7 +262,7 @@ def inventory_predictions(
 
     for item in items:
         # Count how many times this item was updated (used) in the last 30 days
-        thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        thirty_days_ago = (datetime.now(UTC) - timedelta(days=30)).isoformat()
         usage_events = db.query(AuditLog).filter(
             AuditLog.entity_type == "inventory",
             AuditLog.entity_id == item.id,
@@ -306,7 +308,7 @@ def inventory_predictions(
     return {"predictions": predictions, "total": len(predictions)}
 
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 # ── Protocol Analysis ─────────────────────────────────────────────────────────
 
@@ -393,7 +395,7 @@ def anomaly_detection(
     from datetime import timedelta
 
     anomalies = []
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # 1. Inventory: items with quantity = 0
     empty = db.query(InventoryItem).filter(InventoryItem.quantity == 0).all()

@@ -3,7 +3,7 @@ Consent Management API — GDPR Art. 6/7
 Users can view, grant, and revoke their consent for specific data-processing purposes.
 Admins can view all consent records and publish new policy versions.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -124,7 +124,7 @@ def update_consent(
         db.add(record)
 
     policy = db.query(PrivacyPolicyVersion).filter(PrivacyPolicyVersion.is_current == True).first()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if body.granted:
         record.status = ConsentStatus.granted

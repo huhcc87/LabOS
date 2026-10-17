@@ -8,7 +8,7 @@ Built-in error tracking — zero cost, no external service.
 """
 import logging
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from threading import Lock
 from uuid import uuid4
 
@@ -69,7 +69,7 @@ def record_error(
         component=component,
         user_id=user_id,
         ip=ip,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         extra=extra,
     )
     with _lock:

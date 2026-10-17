@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/scheduling", tags=["scheduling"])
 
 
 def _parse_dt(s: str) -> datetime:
-    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    return datetime.fromisoformat(s)
 
 
 def _enrich_cal(e: CalendarEvent, db: Session) -> CalendarEventOut:
@@ -256,8 +256,8 @@ def export_ics(db: Session = Depends(get_db), _: User = Depends(get_current_user
     for e in events:
         ie = ICalEvent()
         ie.add("summary", e.title)
-        ie.add("dtstart", datetime.fromisoformat(e.start_time.replace("Z", "+00:00")))
-        ie.add("dtend", datetime.fromisoformat(e.end_time.replace("Z", "+00:00")))
+        ie.add("dtstart", datetime.fromisoformat(e.start_time))
+        ie.add("dtend", datetime.fromisoformat(e.end_time))
         ie.add("location", e.location or "")
         ie.add("description", e.description or "")
         cal.add_component(ie)
@@ -266,8 +266,8 @@ def export_ics(db: Session = Depends(get_db), _: User = Depends(get_current_user
         ie = ICalEvent()
         ie.add("summary", f"Booking: {b.purpose}")
         try:
-            ie.add("dtstart", datetime.fromisoformat(b.start_time.replace("Z", "+00:00")))
-            ie.add("dtend", datetime.fromisoformat(b.end_time.replace("Z", "+00:00")))
+            ie.add("dtstart", datetime.fromisoformat(b.start_time))
+            ie.add("dtend", datetime.fromisoformat(b.end_time))
         except Exception as exc:
             logger.warning("Skipping booking %s in ICS export, bad dates: %s", b.id, exc)
             continue
@@ -289,7 +289,7 @@ def reminders_stats(
     _: User = Depends(get_current_user),
 ):
     from app.models.models import ReminderStatus
-    now_str = datetime.now(timezone.utc).isoformat()
+    now_str = datetime.now(UTC).isoformat()
     pending = db.query(ReminderQueue).filter(ReminderQueue.status == ReminderStatus.pending).count()
     overdue = (
         db.query(ReminderQueue)
@@ -421,7 +421,7 @@ def booking_utilization(
     _: User = Depends(get_current_user),
 ):
     """Return per-instrument utilization heatmap data for the last N days."""
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
     bookings = (
         db.query(Booking)
         .filter(Booking.start_time >= cutoff)
@@ -447,8 +447,8 @@ def booking_utilization(
                 "by_day": defaultdict(int),
             }
         try:
-            start = datetime.fromisoformat(b.start_time.replace("Z", "+00:00"))
-            end = datetime.fromisoformat(b.end_time.replace("Z", "+00:00"))
+            start = datetime.fromisoformat(b.start_time)
+            end = datetime.fromisoformat(b.end_time)
             hours = max((end - start).total_seconds() / 3600, 0)
         except Exception:
             hours = 1.0

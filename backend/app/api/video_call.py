@@ -4,7 +4,7 @@ Self-hosted, no external dependencies required
 """
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -29,7 +29,7 @@ class VideoRoom:
         self.websockets: dict[str, WebSocket] = {}  # socket_id -> websocket
         self.chat_messages: list[dict] = []
         self.transcriptions: list[dict] = []
-        self.created_at = datetime.now(timezone.utc)
+        self.created_at = datetime.now(UTC)
         self.is_recording = False
         self.whiteboard_state: list[dict] = []
         self.shared_documents: list[dict] = []
@@ -194,7 +194,7 @@ async def video_websocket(
         "is_muted": False,
         "is_video_off": False,
         "is_screen_sharing": False,
-        "joined_at": datetime.now(timezone.utc).isoformat(),
+        "joined_at": datetime.now(UTC).isoformat(),
     }
 
     try:
@@ -310,7 +310,7 @@ async def handle_signaling_message(room: VideoRoom, sender_id: str, data: dict):
             "sender_id": sender_id,
             "sender_name": room.participants.get(sender_id, {}).get("display_name", "Unknown"),
             "message": data.get("message", ""),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         room.chat_messages.append(chat_msg)
         await broadcast_to_room(room, {
@@ -325,7 +325,7 @@ async def handle_signaling_message(room: VideoRoom, sender_id: str, data: dict):
             "speaker_id": sender_id,
             "speaker_name": room.participants.get(sender_id, {}).get("display_name", "Unknown"),
             "text": data.get("text", ""),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "is_final": data.get("is_final", False),
         }
         if data.get("is_final"):

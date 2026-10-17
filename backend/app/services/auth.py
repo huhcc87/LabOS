@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -70,7 +70,7 @@ def write_audit(
     last = db.query(AuditLog).order_by(AuditLog.id.desc()).first()
     prev_hash = last.chain_hash if (last and last.chain_hash) else "0" * 64
 
-    ts = datetime.now(timezone.utc)
+    ts = datetime.now(UTC)
     log = AuditLog(
         action=action,
         entity_type=entity_type,
