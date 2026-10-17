@@ -1,7 +1,7 @@
 import { action, mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
-import { sealSecret, openSecret } from "./cryptoSecrets";
+import { sealSecret, openSecret, sha256Hex } from "./cryptoSecrets";
 
 export const setupTotp = action({
   args: { token: v.string() },
@@ -70,9 +70,10 @@ export const disable = action({
 export const getSession = query({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
+    const hashed = await sha256Hex(token);
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
     if (!session || session.expires_at < Date.now()) return null;
     const user = await ctx.db.get(session.user_id);

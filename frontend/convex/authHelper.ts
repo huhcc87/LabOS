@@ -7,6 +7,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import { DEFAULT_HUBS, type Hub } from "./hubs";
+import { sha256Hex } from "./cryptoSecrets";
 
 /**
  * Validates a session token and returns the user_id.
@@ -17,9 +18,10 @@ export async function requireAuth(
   token: string | undefined | null
 ): Promise<Id<"users">> {
   if (!token) throw new ConvexError("Unauthorized");
+  const hashed = await sha256Hex(token); // sessions store only the hash of the token
   const session = await ctx.db
     .query("sessions")
-    .withIndex("by_token", (q) => q.eq("token", token))
+    .withIndex("by_token", (q) => q.eq("token", hashed))
     .first();
   if (!session || session.expires_at < Date.now()) {
     throw new ConvexError("Unauthorized");

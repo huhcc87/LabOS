@@ -6,7 +6,7 @@ import { action, mutation, query, internalMutation, internalQuery } from "./_gen
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { passwordProblem } from "./security";
-import { openSecret } from "./cryptoSecrets";
+import { openSecret, sha256Hex } from "./cryptoSecrets";
 
 const MIN = 60_000;
 
@@ -172,9 +172,10 @@ export const login = action({
 export const logout = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
+    const hashed = await sha256Hex(token);
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
     if (session) {
       await ctx.db.insert("audit_logs", {
@@ -195,9 +196,10 @@ export const me = query({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
     if (!token) return null;
+    const hashed = await sha256Hex(token);
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
     if (!session || session.expires_at < Date.now()) return null;
     const user = await ctx.db.get(session.user_id);
@@ -211,9 +213,10 @@ export const me = query({
 export const getSessionByToken = internalQuery({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
+    const hashed = await sha256Hex(token);
     return await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
   },
 });
@@ -259,7 +262,7 @@ export const createSession = internalMutation({
   handler: async (ctx, args) => {
     await ctx.db.insert("sessions", {
       user_id: args.user_id,
-      token: args.token,
+      token: await sha256Hex(args.token), // only the hash is stored; the browser keeps the real token
       expires_at: args.expires_at,
       created_at: Date.now(),
     });
@@ -300,7 +303,7 @@ export const createUserAndSession = internalMutation({
 
     await ctx.db.insert("sessions", {
       user_id: userId,
-      token: args.token,
+      token: await sha256Hex(args.token),
       expires_at: args.expires_at,
       created_at: Date.now(),
     });
@@ -382,9 +385,10 @@ export const setPasswordAndUnlock = internalMutation({
 export const forceLogoutAll = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
+    const hashed = await sha256Hex(token);
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
     if (!session) throw new Error("Unauthorized");
     const user = await ctx.db.get(session.user_id);

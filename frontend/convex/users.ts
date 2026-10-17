@@ -2,14 +2,16 @@ import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, requireRole, hasRole, sanitizeUser } from "./authHelper";
 import { issueInvite, NO_PASSWORD } from "./invites";
+import { sha256Hex } from "./cryptoSecrets";
 
 export const getMe = query({
   args: { token: v.optional(v.string()) },
   handler: async (ctx, { token }) => {
     if (!token) return null;
+    const hashed = await sha256Hex(token);
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
+      .withIndex("by_token", (q) => q.eq("token", hashed))
       .first();
     if (!session || session.expires_at < Date.now()) return null;
     const user = await ctx.db.get(session.user_id);

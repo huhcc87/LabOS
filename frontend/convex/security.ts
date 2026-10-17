@@ -69,7 +69,8 @@ export const cleanup = internalMutation({
 
 async function who(ctx: QueryCtx | MutationCtx, token: string | undefined | null) {
   if (!token) throw new ConvexError("Unauthorized");
-  const session = await ctx.db.query("sessions").withIndex("by_token", (q) => q.eq("token", token)).first();
+  const hashed = await sha256Hex(token);
+  const session = await ctx.db.query("sessions").withIndex("by_token", (q) => q.eq("token", hashed)).first();
   if (!session || session.expires_at < Date.now()) throw new ConvexError("Unauthorized");
   const user = await ctx.db.get(session.user_id);
   if (!user || !user.is_active) throw new ConvexError("Unauthorized");
