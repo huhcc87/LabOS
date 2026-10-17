@@ -837,7 +837,7 @@ export const integrationsApi = {
   sync: async (id: IdLike) => {
     const token = getToken();
     // Update last_sync timestamp
-    await client.mutation(api.integrations.update, { token, id: toStr(id) as any, status: "active" });
+    await client.mutation(api.integrations.update, { token, id: toStr(id) as any, status: "active", last_sync: Date.now() });
     return { data: { success: true, synced_at: Date.now() } };
   },
 };

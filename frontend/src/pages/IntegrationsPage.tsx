@@ -39,6 +39,40 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   error: { label: 'Error', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
 };
 
+/** Ready-made tools an admin can add in one click. These open the tool; they do not sync data on their own. */
+const CATALOG = [
+  {
+    name: 'ImageJ / Fiji',
+    icon: '🔬',
+    integration_type: 'analytics',
+    description: 'Open-source image analysis for microscopy: cell counts, intensity and area measurements.',
+    howTo: 'Open ImageJ, run your analysis, then use Results → Save As to export a CSV and attach it to your experiment or notebook entry in LabOS.',
+    config: { launch_url: 'https://ij.imjoy.io', docs_url: 'https://imagej.net', export_format: 'CSV' },
+  },
+  {
+    name: 'jamovi',
+    icon: '📈',
+    integration_type: 'analytics',
+    description: 'Free, open statistical software with a spreadsheet interface: t-tests, ANOVA, regression, correlations.',
+    howTo: 'Export your data from LabOS as CSV, open it in jamovi, run the tests, and save the results (File → Export) back to your experiment.',
+    config: { launch_url: 'https://cloud.jamovi.org', docs_url: 'https://www.jamovi.org', export_format: 'CSV' },
+  },
+];
+
+function parseConfig(raw: unknown): Record<string, string> {
+  if (raw && typeof raw === 'object') return raw as Record<string, string>;
+  if (typeof raw !== 'string' || !raw) return {};
+  try { const v = JSON.parse(raw); return v && typeof v === 'object' ? v : {}; } catch { return {}; }
+}
+
+/** Only web links are opened: a saved "javascript:" or "data:" address is ignored. */
+function launchUrl(config: Record<string, string>): string | null {
+  try {
+    const u = new URL(config.launch_url);
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
+  } catch { return null; }
+}
+
 export default function IntegrationsPage() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +124,19 @@ export default function IntegrationsPage() {
       description: integration.description,
       integration_type: integration.integration_type,
       status: integration.status,
-      config: JSON.stringify(integration.config || {}, null, 2),
+      config: JSON.stringify(parseConfig(integration.config), null, 2),
+    });
+    setModalOpen(true);
+  }
+
+  function openPreset(tool: typeof CATALOG[number]) {
+    setConfiguring(null);
+    reset({
+      name: tool.name,
+      description: tool.description,
+      integration_type: tool.integration_type,
+      status: 'inactive',
+      config: JSON.stringify(tool.config, null, 2),
     });
     setModalOpen(true);
   }
@@ -98,15 +144,18 @@ export default function IntegrationsPage() {
   async function onSubmit(data: any) {
     setSaving(true);
     try {
-      let config = {};
       try {
-        config = JSON.parse(data.config || '{}');
+        JSON.parse(data.config || '{}');
       } catch {
         toast.error('Invalid JSON in config');
         setSaving(false);
         return;
       }
-      const payload = { ...data, config };
+      // Convex stores config as text and only knows these fields.
+      const payload = {
+        name: data.name, description: data.description, integration_type: data.integration_type,
+        status: data.status, config: data.config || '{}',
+      };
       if (configuring) {
         await integrationsApi.update(configuring.id, payload);
         toast.success('Integration updated');
@@ -266,6 +315,27 @@ export default function IntegrationsPage() {
           ))}
         </div>
 
+        {!loading && CATALOG.some(t => !integrations.some(i => i.name.toLowerCase() === t.name.toLowerCase())) && (
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ fontSize: 15, margin: '0 0 10px' }}>Add popular lab tools</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+              {CATALOG.filter(t => !integrations.some(i => i.name.toLowerCase() === t.name.toLowerCase())).map(tool => (
+                <div key={tool.name} style={{ background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 24 }} aria-hidden="true">{tool.icon}</span>
+                    <strong>{tool.name}</strong>
+                  </div>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-muted)' }}>{tool.description}</p>
+                  <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-soft)' }}><strong>How to use:</strong> {tool.howTo}</p>
+                  <button onClick={() => openPreset(tool)} style={{ padding: '7px 14px', borderRadius: 6, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                    + Add {tool.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
             Loading integrations...
@@ -323,6 +393,13 @@ export default function IntegrationsPage() {
                 <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                   {integration.description || 'No description'}
                 </p>
+
+                {launchUrl(parseConfig(integration.config)) && (
+                  <a href={launchUrl(parseConfig(integration.config))!} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-block', marginBottom: 14, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
+                    Open {integration.name} ↗
+                  </a>
+                )}
 
                 {integration.status === 'active' && (
                   <div style={{ fontSize: 12, color: 'var(--text-soft)', marginBottom: 16 }}>
@@ -395,6 +472,17 @@ export default function IntegrationsPage() {
                         fontWeight: 500,
                       }}>
                         Connect
+                      </button>
+                      <button onClick={() => openEdit(integration)} style={{
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        background: 'var(--surface2)',
+                        color: 'var(--text)',
+                        border: '1px solid var(--border)',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                      }}>
+                        Configure
                       </button>
                       <button onClick={() => setDeleting(integration)} style={{
                         padding: '8px 12px',
