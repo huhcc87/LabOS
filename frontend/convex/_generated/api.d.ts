@@ -42,6 +42,7 @@ import type * as maintenance from "../maintenance.js";
 import type * as meetings from "../meetings.js";
 import type * as migrate from "../migrate.js";
 import type * as notifications from "../notifications.js";
+import type * as ollama from "../ollama.js";
 import type * as org from "../org.js";
 import type * as payments from "../payments.js";
 import type * as piAccess from "../piAccess.js";
@@ -112,6 +113,7 @@ declare const fullApi: ApiFromModules<{
   meetings: typeof meetings;
   migrate: typeof migrate;
   notifications: typeof notifications;
+  ollama: typeof ollama;
   org: typeof org;
   payments: typeof payments;
   piAccess: typeof piAccess;
