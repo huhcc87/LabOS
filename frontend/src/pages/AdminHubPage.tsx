@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { usersAdminApi, auditApi } from '../lib/api';
+import { usersAdminApi, auditApi, integrationsApi } from '../lib/api';
 import { Icon } from '../components/Icon';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
 import { AdminPasswordReset } from '../components/AdminPasswordReset';
@@ -44,9 +44,26 @@ interface Integration {
   description: string;
   icon: string;
   connected: boolean;
+  type: string;
+  /** Web address the Open link goes to (http/https only). */
+  launchUrl?: string;
   lastSync?: string;
   config?: Record<string, string>;
 }
+
+// What an admin can switch on. "Connected" is saved for the lab; tools with an Open link open in a new tab.
+// ImageJ, jamovi and Gmail are link-outs: data moves by CSV or email, there is no automatic sync.
+const INTEGRATION_CATALOG: Integration[] = [
+  { id: 1, name: 'Slack', description: 'Team communication', icon: '💬', type: 'communication', connected: false },
+  { id: 2, name: 'Google Calendar', description: 'Schedule sync', icon: '📅', type: 'communication', connected: false },
+  { id: 3, name: 'Dropbox', description: 'File storage', icon: '📦', type: 'storage', connected: false },
+  { id: 4, name: 'Zapier', description: 'Workflow automation', icon: '⚡', type: 'communication', connected: false },
+  { id: 5, name: 'Microsoft Teams', description: 'Team collaboration', icon: '👥', type: 'communication', connected: false },
+  { id: 6, name: 'GitHub', description: 'Code repository', icon: '🐙', type: 'communication', connected: false },
+  { id: 7, name: 'ImageJ / Fiji', description: 'Microscopy image analysis. Export measurements as CSV and attach them to your experiment.', icon: '🔬', type: 'analytics', launchUrl: 'https://ij.imjoy.io', connected: false },
+  { id: 8, name: 'jamovi', description: 'Statistics with a spreadsheet interface. Export data from LabOS as CSV, analyze, save results back.', icon: '📈', type: 'analytics', launchUrl: 'https://cloud.jamovi.org', connected: false },
+  { id: 9, name: 'Gmail', description: 'Open Gmail for lab email. Sending LabOS email (invites, alerts) from a Gmail account needs a Google sign-in setup that is not built yet.', icon: '✉️', type: 'communication', launchUrl: 'https://mail.google.com', connected: false },
+];
 
 interface NotificationSetting {
   id: string;
@@ -131,14 +148,24 @@ export default function AdminHubPage() {
   const [newFile, setNewFile] = useState({ name: '', type: 'PDF', category: 'Manual' });
 
   // Integrations state
-  const [integrations, setIntegrations] = useState<Integration[]>([
-    { id: 1, name: 'Slack', description: 'Team communication', icon: '💬', connected: false },
-    { id: 2, name: 'Google Calendar', description: 'Schedule sync', icon: '📅', connected: false },
-    { id: 3, name: 'Dropbox', description: 'File storage', icon: '📦', connected: false },
-    { id: 4, name: 'Zapier', description: 'Workflow automation', icon: '⚡', connected: false },
-    { id: 5, name: 'Microsoft Teams', description: 'Team collaboration', icon: '👥', connected: false },
-    { id: 6, name: 'GitHub', description: 'Code repository', icon: '🐙', connected: false },
-  ]);
+  const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATION_CATALOG);
+  // Saved records, by tool name, so Connect/Disconnect survives a reload.
+  const [savedIntegrations, setSavedIntegrations] = useState<Record<string, { id: string; status: string }>>({});
+
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      const res = await integrationsApi.list(1, 200);
+      const saved: Record<string, { id: string; status: string }> = {};
+      for (const r of res.data.items) saved[String(r.name).toLowerCase()] = { id: String(r.id), status: r.status };
+      setSavedIntegrations(saved);
+      setIntegrations(INTEGRATION_CATALOG.map(c => {
+        const s = saved[c.name.toLowerCase()];
+        return { ...c, connected: s?.status === 'active' };
+      }));
+    } catch {
+      // Not an admin, or offline: keep the catalog as not connected.
+    }
+  }, []);
 
   // Notification settings state
   const [notificationSettings, setNotificationSettings] = useState<NotificationSetting[]>([
@@ -189,7 +216,7 @@ export default function AdminHubPage() {
     } catch { /* no-op */ }
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchAuditLogs(); }, [fetchUsers, fetchAuditLogs]);
+  useEffect(() => { fetchUsers(); fetchAuditLogs(); fetchIntegrations(); }, [fetchUsers, fetchAuditLogs, fetchIntegrations]);
 
   // Add audit log
   const addAuditLog = (action: string, target: string, targetType: string, details?: string) => {
@@ -299,14 +326,24 @@ export default function AdminHubPage() {
   };
 
   // Integration handlers
-  const handleToggleIntegration = (integration: Integration) => {
-    setIntegrations(prev => prev.map(i => i.id === integration.id ? {
-      ...i,
-      connected: !i.connected,
-      lastSync: !i.connected ? new Date().toLocaleString() : undefined
-    } : i));
-    addAuditLog(integration.connected ? 'disconnected' : 'connected', integration.name, 'integration');
-    showToast(integration.connected ? 'Disconnected' : 'Connected!');
+  const handleToggleIntegration = async (integration: Integration) => {
+    const status = integration.connected ? 'inactive' : 'active';
+    const saved = savedIntegrations[integration.name.toLowerCase()];
+    try {
+      if (saved) {
+        await integrationsApi.update(saved.id, { status });
+      } else {
+        await integrationsApi.create({
+          name: integration.name, description: integration.description, integration_type: integration.type, status,
+          config: JSON.stringify(integration.launchUrl ? { launch_url: integration.launchUrl } : {}),
+        });
+      }
+      await fetchIntegrations();
+      addAuditLog(integration.connected ? 'disconnected' : 'connected', integration.name, 'integration');
+      showToast(integration.connected ? 'Disconnected' : 'Connected!');
+    } catch (err: any) {
+      showToast(err?.data ?? err?.message ?? 'Could not save. Only admins can change integrations.', 'error');
+    }
   };
 
   // Notification handlers
@@ -659,6 +696,12 @@ export default function AdminHubPage() {
                 </div>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{integration.description}</p>
+              {integration.launchUrl && (
+                <a href={integration.launchUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-block', marginBottom: 12, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
+                  Open {integration.name} ↗
+                </a>
+              )}
               {integration.connected && integration.lastSync && (
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
                   Last sync: {integration.lastSync}
