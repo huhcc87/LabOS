@@ -36,6 +36,20 @@ for _ in $(seq 1 90); do
 done
 grep -q "functions ready" "$ROOT/.convex-local.log" || { echo "Database took too long. See .convex-local.log"; exit 1; }
 
+# Local AI: use Ollama if it is running. Pick a model with OLLAMA_MODEL=name ./run-local.sh
+if curl -fs -m 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+  MODEL="${OLLAMA_MODEL:-}"
+  # Default: the first installed model that runs on this Mac (skip ":cloud" models, which are not local)
+  [ -n "$MODEL" ] || MODEL="$(curl -fs http://127.0.0.1:11434/api/tags | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | grep -v ':cloud' | grep -v 'coder\|embed' | head -1)"
+  if [ -n "$MODEL" ]; then
+    npx convex env set OLLAMA_MODEL "$MODEL" >/dev/null && echo "AI: using Ollama model $MODEL"
+  else
+    echo "AI: Ollama is running but has no chat model. Run: ollama pull llama3.1"
+  fi
+else
+  echo "AI: Ollama is not running (open the Ollama app, or run: ollama serve). AI features use built-in answers until then."
+fi
+
 if [ "${1:-}" = "--admin" ]; then
   read -r -p "Admin email: " EMAIL
   read -r -s -p "Admin password (12+ characters): " PW; echo
