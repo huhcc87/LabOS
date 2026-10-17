@@ -1,6 +1,9 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { useQuery } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TwoFactorGate } from './components/TwoFactorGate';
 import { NavigationContext } from './context/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -47,7 +50,7 @@ const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
-const PrivacyCenterPage      = lazy(() => import('./pages/PrivacyCenterPage'));
+const SecurityCenterPage      = lazy(() => import('./pages/SecurityCenterPage'));
 const SecurityDashboardPage  = lazy(() => import('./pages/SecurityDashboardPage'));
 const CapaPage               = lazy(() => import('./pages/CapaPage'));
 const EmailSettingsPage      = lazy(() => import('./pages/EmailSettingsPage'));
@@ -95,7 +98,9 @@ function PageLoader() {
 }
 
 function AppInner() {
-  const { user, loading } = useAuth();
+  const { user, loading, token, logout } = useAuth();
+  // Skipped until signed in. security.status answers null (never throws) for a dead session.
+  const security = useQuery(api.security.status, user && token ? { token } : 'skip');
   const [page, setPage] = useState('dashboard');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   // Invite links look like /?invite=<token>
@@ -136,6 +141,10 @@ function AppInner() {
       ? <RegisterPage onBackToLogin={() => setAuthView('login')} />
       : <LoginPage onCreateAccount={() => setAuthView('register')} />;
   }
+
+  // The lab requires two-factor for this role and it isn't set up yet: nothing else works until it is
+  // (the server refuses everything else too, so this screen is the only way forward).
+  if (security?.must_setup_2fa) return <TwoFactorGate onLogout={logout} />;
 
   const renderPage = () => {
     switch (page) {
@@ -227,7 +236,7 @@ function AppInner() {
       case 'freezer-biobank': return <FreezerBiobankPage />;
       case 'vendor-intelligence': return <VendorIntelligencePage />;
       case 'training-cert': return <TrainingCertPage />;
-      case 'privacy-center': return <PrivacyCenterPage />;
+      case 'privacy-center': return <SecurityCenterPage />;
       case 'security-dashboard': return <SecurityDashboardPage />;
       case 'reagent-hub': return <ReagentHubPage />;
       case 'capa': return <CapaPage />;

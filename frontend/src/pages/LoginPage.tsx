@@ -6,6 +6,7 @@ import { useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { AuthBrand } from '../components/AuthBrand';
+import { SecurityInfo } from '../components/SecurityInfo';
 import '../styles/auth.css';
 
 function errorMessage(err: unknown): string {
@@ -30,6 +31,7 @@ export default function LoginPage({ onCreateAccount }: Props) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [totpCode, setTotpCode] = useState('');
+  const [showSecurity, setShowSecurity] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetResult, setResetResult] = useState<'sent' | 'no-email' | null>(null);
   const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<LoginForm>({
@@ -51,7 +53,7 @@ export default function LoginPage({ onCreateAccount }: Props) {
   }
 
   async function onTotpSubmit() {
-    if (!totpRequired || totpCode.length !== 6) return;
+    if (!totpRequired || totpCode.trim().length < 6) return;
     setLoading(true);
     try {
       await login(totpRequired.email, totpRequired.password, totpCode, totpRequired.remember);
@@ -91,17 +93,17 @@ export default function LoginPage({ onCreateAccount }: Props) {
         {totpRequired ? (
           <>
             <h1 className="auth-title">Verification code</h1>
-            <p className="auth-sub">Enter the 6-digit code from your authenticator app.</p>
+            <p className="auth-sub">Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
             <div className="auth-field">
               <label className="auth-label" htmlFor="totp">Code</label>
               <input
-                id="totp" className="auth-input code" value={totpCode} autoFocus maxLength={6}
-                inputMode="numeric" autoComplete="one-time-code" placeholder="000000"
-                onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                id="totp" className="auth-input code" value={totpCode} autoFocus maxLength={12}
+                autoComplete="one-time-code" placeholder="000000" autoCapitalize="characters" spellCheck={false}
+                onChange={e => setTotpCode(e.target.value.replace(/[^0-9A-Za-z-]/g, '').slice(0, 12))}
                 onKeyDown={e => { if (e.key === 'Enter') onTotpSubmit(); }}
               />
             </div>
-            <button type="button" className="auth-btn" disabled={loading || totpCode.length !== 6} onClick={onTotpSubmit}>
+            <button type="button" className="auth-btn" disabled={loading || totpCode.trim().length < 6} onClick={onTotpSubmit}>
               {loading ? <><span className="auth-spinner" />Verifying…</> : 'Verify and sign in'}
             </button>
             <p className="auth-foot">
@@ -184,7 +186,8 @@ export default function LoginPage({ onCreateAccount }: Props) {
           </>
         )}
       </div>
-      <p className="auth-legal">Encrypted connection · Your lab's data stays in your workspace</p>
+      <p className="auth-legal">Encrypted connection · <button type="button" className="auth-link" onClick={() => setShowSecurity(true)}>How your data is protected</button></p>
+      {showSecurity && <SecurityInfo onClose={() => setShowSecurity(false)} />}
     </main>
   );
 }

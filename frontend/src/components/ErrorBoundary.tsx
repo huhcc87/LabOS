@@ -60,7 +60,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <p style={{ fontSize: 14, color: 'var(--text-muted, #64748b)', marginBottom: 20, lineHeight: 1.6 }}>
               The app hit an unexpected error. Your data is safe — try reloading the page, or click below to recover.
             </p>
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV ? (
               <pre style={{
                 fontSize: 11, background: 'var(--surface2, #f1f5f9)', padding: 12,
                 borderRadius: 6, overflow: 'auto', maxHeight: 160, marginBottom: 16,
@@ -68,6 +68,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
               }}>
                 {this.state.error.message}
               </pre>
+            ) : (
+              <details style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted, #64748b)' }}>
+                <summary style={{ cursor: 'pointer' }}>Technical details (send these if you ask for help)</summary>
+                <code style={{ display: 'block', marginTop: 6, wordBreak: 'break-word' }}>{this.state.error.message.slice(0, 300)}</code>
+              </details>
             )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button
