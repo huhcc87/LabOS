@@ -2,6 +2,7 @@
 # LabOS — run everything on this Mac, free, no accounts.
 #   ./run-local.sh            start database + website (data is kept between runs)
 #   ./run-local.sh --admin    also create the first admin account (asks for a password)
+#   ./run-local.sh --backup   save all your data to backups/ (run while the app is running)
 # Open http://localhost:5173 when it says "ready". Press Ctrl+C to stop.
 #
 # The database is Convex's free local backend (127.0.0.1:3210). It stores data on this Mac in
@@ -20,6 +21,14 @@ if [ -f .env.local ] && grep -q '^CONVEX_DEPLOYMENT=' .env.local && ! grep -q '^
   cp .env.local ".env.local.cloud-backup"
   grep -v '^CONVEX_DEPLOYMENT=' .env.local > .env.local.tmp && mv .env.local.tmp .env.local
   echo "Saved your old .env.local as frontend/.env.local.cloud-backup"
+fi
+
+if [ "${1:-}" = "--backup" ]; then
+  # Needs the database running (run ./run-local.sh in another terminal first).
+  mkdir -p "$ROOT/backups"
+  OUT="$ROOT/backups/labos-$(date +%Y%m%d-%H%M%S).zip"
+  npx convex export --path "$OUT" && echo "Backup saved: $OUT (restore with: npx convex import --replace $OUT)"
+  exit 0
 fi
 
 PIDS=()
