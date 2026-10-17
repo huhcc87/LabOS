@@ -133,3 +133,7 @@ frontend/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 # Stale Grant module
 grant-writing-port/
 .vercel
+
+# local run
+.convex-local.log
+frontend/.env.local.cloud-backup
