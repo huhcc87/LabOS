@@ -12,6 +12,7 @@ import type {
   SwarmChatMessage,
 } from './swarmTypes'
 import { AGENT_DEFINITIONS } from './swarmTypes'
+import { protocolAiApi } from '../../../lib/convexClient'
 
 // ── Utility ───────────────────────────────────────────────────────────────
 const uid = () => `sw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -509,8 +510,6 @@ export async function askSwarm(
   question: string,
   context: { protocolTitle?: string; technique?: string; category?: string },
 ): Promise<SwarmChatMessage> {
-  await delay(600 + Math.random() * 1200)
-
   const q = question.toLowerCase()
   let agentId: AgentId = 'reviewer'
   let content = ''
@@ -537,6 +536,12 @@ export async function askSwarm(
     agentId = 'reviewer'
     content = `🔬 **Scientific Guidance**\n\nRegarding your question about ${context.protocolTitle || context.technique || 'this protocol'}:\n\nThe AI Swarm has analyzed your question across all specialized agents. Here is a consolidated response:\n\n• The methodology follows established best practices in ${context.category || 'biomedical research'}.\n• Ensure all critical parameters are documented and controlled.\n• Include appropriate controls in every experiment.\n• Document any deviations from the standard protocol.\n\nFor specific guidance, try asking about: safety, controls, troubleshooting, optimization, reagents, equipment, or training.`
   }
+
+  // Local Ollama answers when it is on; otherwise the keyword answer above stands.
+  const ai = await protocolAiApi.complete('chat',
+    `Answer as the ${agentId} expert.\nProtocol: ${context.protocolTitle || context.technique || 'general lab protocol'} (${context.category || 'biomedical research'})\nQuestion: ${question}`)
+  if (ai) content = ai.trim()
+  else await delay(400 + Math.random() * 600)
 
   const suggestions = [
     'What controls should I use?',

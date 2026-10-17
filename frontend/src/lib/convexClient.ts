@@ -1233,6 +1233,18 @@ export const protocolsPrintApi = {
   },
 };
 
+/** Local Ollama via Convex. `text` is null when Ollama is off or fails: callers use their built-in draft. */
+export const protocolAiApi = {
+  complete: async (kind: 'protocol' | 'chat', prompt: string): Promise<string | null> => {
+    try {
+      const r = await client.action(api.protocolAi.complete, { token: getToken(), kind, prompt });
+      return r.text;
+    } catch {
+      return null;
+    }
+  },
+};
+
 export const orgApi = {
   list: async () => {
     const result = await client.query(api.org.listOrgs, {});
