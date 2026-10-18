@@ -875,7 +875,6 @@ export default function SampleHubPage() {
       {/* Quick actions */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
-          { icon: '🏷️', label: 'Labels', action: () => navigate('labels') },
           { icon: '📥', label: 'Batch Import', action: () => setActiveTab('import') },
           { icon: '📊', label: 'Analytics', action: () => setActiveTab('analytics') },
           { icon: '📄', label: 'Export CSV', action: () => exportToCSV() },
