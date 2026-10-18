@@ -905,7 +905,6 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {/* More Tools Quick Access */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {([
-          { icon: 'flask', label: 'Experiments', page: 'experiments' },
           { icon: 'file', label: 'Documents', page: 'documents' },
         ] as const).map(tool => (
           <button key={tool.page} className="chip-link" onClick={() => navigate(tool.page)}>
