@@ -34,6 +34,7 @@ export default function InstrumentBooking() {
 
   const [picked, setPicked] = useState<Id<'instruments'> | null>(null);
   const [date, setDate] = useState(today());
+  const [toDate, setToDate] = useState(''); // empty = same day as the start
   const [from, setFrom] = useState('09:00');
   const [to, setTo] = useState('10:00');
   const [purpose, setPurpose] = useState('');
@@ -52,7 +53,7 @@ export default function InstrumentBooking() {
   const submit = async () => {
     if (!token || !picked) return;
     const start = new Date(`${date}T${from}`).getTime();
-    const end = new Date(`${date}T${to}`).getTime();
+    const end = new Date(`${toDate || date}T${to}`).getTime();
     setBusy(true);
     try {
       setDone(await book({ token, instrument_id: picked, start_time: start, end_time: end, purpose, remind_every_2_days: remind }));
@@ -90,13 +91,18 @@ export default function InstrumentBooking() {
             <button className="btn btn-primary btn-sm" onClick={saveInstrument}>Save</button>
           </div>
         )}
-        {instruments.length === 0 ? (
-          <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet.{data.can_add_instrument ? ' Use "+ Add instrument" and pick one from the list.' : ' A manager can add them.'}</div>
-        ) : (
+        {instruments.length === 0 && (
+          <div className="card" style={{ padding: 16, marginBottom: 10, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet. Use the list below: choose "Other" to add one, or press "+ Add instrument" to pick from common ones.</div>
+        )}
+        {(
           <>
-            <select aria-label="Instrument" value={picked ?? ''} onChange={(e) => { setPicked((e.target.value || null) as Id<'instruments'> | null); setDone(null); }} style={{ ...input, marginBottom: 10 }}>
+            <select aria-label="Instrument" value={picked ?? ''} onChange={(e) => {
+              if (e.target.value === '__add__') { setAdding({ preset: OTHER, name: '', location: '' }); return; } // not in the list: type it yourself
+              setPicked((e.target.value || null) as Id<'instruments'> | null); setDone(null);
+            }} style={{ ...input, marginBottom: 10 }}>
               <option value="">Select an instrument…</option>
               {instruments.map((i) => <option key={i._id} value={i._id} disabled={!i.bookable}>{i.name}{i.location ? ` (${i.location})` : ''} — {statusOf(i).text}</option>)}
+              <option value="__add__">➕ Other: my instrument isn't listed (add it)</option>
             </select>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {instruments.map((i, n) => {
@@ -109,7 +115,7 @@ export default function InstrumentBooking() {
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[i.location, next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}</div>
                     </div>
                     <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
-                    {data.can_add_instrument && (
+                    {data.can_manage && (
                       <button className="btn btn-secondary btn-sm" onClick={() => act(() => setActive({ token: token!, id: i._id, active: !i.bookable }), i.bookable ? 'Marked not used' : 'Marked active')}>{i.bookable ? 'Mark not used' : 'Mark active'}</button>
                     )}
                   </div>
@@ -126,22 +132,26 @@ export default function InstrumentBooking() {
         {!current ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Choose an instrument on the left.</div> : (
           <>
             <div style={{ fontWeight: 700, marginBottom: 10 }}>{current.name}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
-              <div><label style={lbl} htmlFor="bk-date">Date</label><input id="bk-date" type="date" min={today()} value={date} onChange={(e) => { setDate(e.target.value); setDone(null); }} style={input} /></div>
-              <div><label style={lbl} htmlFor="bk-from">From</label><input id="bk-from" type="time" value={from} onChange={(e) => { setFrom(e.target.value); setDone(null); }} style={input} /></div>
-              <div><label style={lbl} htmlFor="bk-to">To</label><input id="bk-to" type="time" value={to} onChange={(e) => { setTo(e.target.value); setDone(null); }} style={input} /></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div><label style={lbl} htmlFor="bk-lab">Lab</label><input id="bk-lab" readOnly value={data.lab || '—'} style={{ ...input, opacity: 0.8 }} /></div>
+              <div><label style={lbl} htmlFor="bk-person">Booked by</label><input id="bk-person" readOnly value={data.person} style={{ ...input, opacity: 0.8 }} /></div>
+              <div><label style={lbl} htmlFor="bk-date">From date</label><input id="bk-date" type="date" min={today()} value={date} onChange={(e) => { setDate(e.target.value); setDone(null); }} style={input} /></div>
+              <div><label style={lbl} htmlFor="bk-from">From time</label><input id="bk-from" type="time" value={from} onChange={(e) => { setFrom(e.target.value); setDone(null); }} style={input} /></div>
+              <div><label style={lbl} htmlFor="bk-todate">To date</label><input id="bk-todate" type="date" min={date} value={toDate || date} onChange={(e) => { setToDate(e.target.value); setDone(null); }} style={input} /></div>
+              <div><label style={lbl} htmlFor="bk-to">To time</label><input id="bk-to" type="time" value={to} onChange={(e) => { setTo(e.target.value); setDone(null); }} style={input} /></div>
             </div>
             <label style={lbl} htmlFor="bk-purpose">What for? (optional)</label>
             <input id="bk-purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="e.g. qPCR plate, 96 wells" style={{ ...input, marginBottom: 10 }} />
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
-              <input type="checkbox" checked={remind} onChange={(e) => setRemind(e.target.checked)} /> Remind me every 2 days until then
+              <input type="checkbox" checked={remind} onChange={(e) => setRemind(e.target.checked)} /> Reminder: notify me every 2 days until the booking starts
             </label>
             <button className="btn btn-primary" onClick={submit} disabled={busy} style={{ width: '100%' }}>{busy ? 'Booking…' : 'Confirm booking'}</button>
 
             {done && (
               <div role="status" style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--text)', fontSize: 13 }}>
                 <strong>✓ Booked: {done.instrument}</strong><br />
-                {when(done.start_time)} to {new Date(done.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{done.location ? ` · ${done.location}` : ''}<br />
+                {data.person}{data.lab ? ` · ${data.lab}` : ''}<br />
+                From {when(done.start_time)} to {when(done.end_time)}{done.location ? ` · ${done.location}` : ''}<br />
                 {done.reminders ? 'You will get a reminder every 2 days until it starts.' : 'No reminders set.'}
               </div>
             )}

@@ -10,7 +10,7 @@ const { requireAuth } = hubGuard("Lab Hub");
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
-const MAX_LEN = 12 * HOUR;
+const MAX_LEN = 7 * DAY;
 /** Instruments in these states can't be booked. */
 const NOT_BOOKABLE = ["not_used", "maintenance", "out_of_service", "retired", "offline"];
 
@@ -23,6 +23,8 @@ export const overview = query({
   handler: async (ctx, { token }) => {
     const userId = await requireAuth(ctx, token);
     const me = (await ctx.db.get(userId))!;
+    const labId = me.role === "superadmin" ? me.active_lab_id ?? me.home_lab_id : me.home_lab_id;
+    const lab = labId ? await ctx.db.get(labId) : null;
     const instruments = (await ctx.db.query("instruments").collect()).filter((i) => i.status !== "retired");
     const now = Date.now();
     const upcoming = (await ctx.db.query("bookings").withIndex("by_start", (q) => q.gte("start_time", now - MAX_LEN)).collect())
@@ -36,7 +38,10 @@ export const overview = query({
     return {
       instruments: instruments.map((i) => ({ ...i, bookable: !NOT_BOOKABLE.includes(i.status) })),
       bookings,
-      can_add_instrument: hasRole(me.role, "manager"),
+      can_add_instrument: true, // anyone can add one that isn't in the list
+      can_manage: hasRole(me.role, "manager"), // switch Active / Not used
+      person: me.full_name,
+      lab: lab?.name ?? "",
     };
   },
 });
@@ -58,7 +63,7 @@ export const book = mutation({
     if (NOT_BOOKABLE.includes(inst.status)) throw new ConvexError(`${inst.name} can't be booked right now (${inst.status.replace(/_/g, " ")}).`);
     if (!Number.isFinite(a.start_time) || !Number.isFinite(a.end_time)) throw new ConvexError("Choose a start and end time.");
     if (a.end_time <= a.start_time) throw new ConvexError("The end must be after the start.");
-    if (a.end_time - a.start_time > MAX_LEN) throw new ConvexError("A booking can be 12 hours at most.");
+    if (a.end_time - a.start_time > MAX_LEN) throw new ConvexError("A booking can be 7 days at most.");
     if (a.start_time < Date.now() - 5 * 60_000) throw new ConvexError("That time is in the past.");
 
     const clash = (await ctx.db.query("bookings").withIndex("by_instrument", (q) => q.eq("instrument_id", a.instrument_id)).collect())
