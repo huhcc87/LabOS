@@ -13,7 +13,7 @@ export const LAB_TABLES = [
   "activity", "integrations", "procurement_rules", "procurement_budgets", "restricted_chemicals", "borrow_requests",
   "video_rooms", "video_chat_messages", "payment_methods", "payment_orders", "alt_prices", "sds_records",
   "recurrence_rules", "ai_chat_history", "hypothesis_ratings", "inventory_lots", "erasure_requests", "cart_invoices",
-  "experiments", "experiment_results", "experiment_files", "experiment_events",
+  "experiments", "experiment_results", "experiment_files", "experiment_events", "protocol_library",
 ] as const;
 
 export type LabTable = (typeof LAB_TABLES)[number];

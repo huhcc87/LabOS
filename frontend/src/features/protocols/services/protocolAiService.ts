@@ -59,7 +59,7 @@ export async function generateProtocol(params: AiGenerationParams): Promise<Prot
   }
 }
 
-function templateDraft(params: AiGenerationParams): Protocol {
+export function templateDraft(params: AiGenerationParams): Protocol {
   const now = new Date().toISOString()
   return {
     id: `ai-${Date.now()}`,

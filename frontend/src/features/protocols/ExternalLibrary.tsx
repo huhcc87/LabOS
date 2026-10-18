@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { useLabProtocols, errText } from '../../lib/useLabProtocols';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { errText } from '../../lib/errors';
+import { PROTOCOL_CATEGORIES } from './data/categories';
+import { templateDraft } from './services/protocolAiService';
+import type { Protocol } from './types/protocol.types';
 
 interface ExternalProtocol {
   id: string; title: string; source: string; sourceColor: string; sourceUrl: string;
@@ -53,23 +58,31 @@ const EXTERNAL_PROTOCOLS: ExternalProtocol[] = [
 /** Published protocols from open sources (Cold Spring Harbor, Springer, JoVE, protocols.io …): read the steps, open the source, or import into your protocols. */
 export default function ExternalLibrary() {
   const { token } = useAuth();
-  const labProtocols = useLabProtocols(token);
-  const protocols = labProtocols.protocols;
+  const library = useQuery(api.protocolLibrary.list, token ? { token } : 'skip');
+  const save = useMutation(api.protocolLibrary.save);
   const [libSearch, setLibSearch] = useState('');
   const [libCategory, setLibCategory] = useState('all');
   const [viewLibProtocol, setViewLibProtocol] = useState<ExternalProtocol | null>(null);
 
   const importLibProtocol = async (ep: ExternalProtocol) => {
-    if (protocols.find(p => p.name === ep.title)) { toast.error('Protocol already in your protocols'); return; }
-    try {
-      await labProtocols.create({
-        name: ep.title, version: '1.0', status: 'active',
-        description: `${ep.description}\n\nSource: ${ep.source} — ${ep.sourceUrl}`,
-        category: ep.category, duration: ep.duration, steps: ep.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-      });
-      toast.success(`"${ep.title}" imported to your protocols`);
-      setViewLibProtocol(null);
-    } catch (e) { toast.error(errText(e)); }
+    if (!token) return;
+    const id = `ext-${ep.id}`;
+    if (library?.some(r => r.key === id)) { toast.error('Already in your Protocols library'); return; }
+    const cat = PROTOCOL_CATEGORIES.find(c => c.name.toLowerCase() === ep.category.toLowerCase()) ?? PROTOCOL_CATEGORIES.find(c => ep.category.toLowerCase().includes(c.name.split(' ')[0].toLowerCase()))
+    const base = templateDraft({ title: ep.title, category: cat?.id ?? '', subcategory: '', sampleType: '', organism: '', goal: ep.description, platform: '', difficulty: 'intermediate', safetyLevel: 'BSL-1', notes: '' });
+    const level = ep.difficulty.toLowerCase();
+    const p: Protocol = {
+      ...base, id, slug: id, title: ep.title, summary: ep.description, abstract: ep.description,
+      protocolType: 'imported', approvalStatus: 'draft', sourceType: 'manual', sourceName: ep.source, sourceUrl: ep.sourceUrl,
+      authors: [ep.source], tags: ['imported', ep.source], field: ep.category, estimatedTime: ep.duration,
+      difficulty: (['beginner', 'intermediate', 'advanced', 'expert'].includes(level) ? level : 'intermediate') as Protocol['difficulty'],
+      steps: ep.steps.map((s, i) => ({ stepNumber: i + 1, title: `Step ${i + 1}`, instruction: s })),
+      reagents: [], equipment: [], prerequisites: [], safetyNotes: ['Imported from a public source: review before use.'], qcChecklist: [], troubleshooting: [],
+      references: [{ id: `${id}-ref`, title: ep.title, url: ep.sourceUrl, source: 'manual', citationText: `${ep.source}: ${ep.sourceUrl}`, openAccess: true }],
+      aiGenerated: false, aiModel: undefined, confidenceScore: undefined, reviewNotes: `Imported from ${ep.source}.`, createdBy: 'Import', owner: 'Pending Assignment', version: '1.0',
+    };
+    try { await save({ token, key: id, data: JSON.stringify(p) }); toast.success(`"${ep.title}" added to your Protocols library (Draft)`); setViewLibProtocol(null); }
+    catch (e) { toast.error(errText(e)); }
   };
 
   return (

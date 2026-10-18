@@ -165,11 +165,6 @@ export default function ProtocolsPage() {
       {/* ── Library Tab ── */}
       {mainTab === 'library' && (
         <>
-          <ProtocolCategoryCards
-            categories={store.categories}
-            activeCategory={store.activeCategory}
-            onSelectCategory={store.setActiveCategory}
-          />
           <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             <SubcategoryBrowser
               categories={store.categories}
@@ -257,6 +252,14 @@ export default function ProtocolsPage() {
               )}
             </div>
           </div>
+          <details style={{ marginTop: 20 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 12 }}>Category overview (cards)</summary>
+            <ProtocolCategoryCards
+              categories={store.categories}
+              activeCategory={store.activeCategory}
+              onSelectCategory={store.setActiveCategory}
+            />
+          </details>
         </>
       )}
 

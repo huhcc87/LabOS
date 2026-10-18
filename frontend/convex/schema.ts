@@ -363,6 +363,14 @@ export default defineSchema({
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_instrument", ["instrument_id"]),
 
+  protocol_library: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    key: v.string(),
+    data: v.string(),
+    created_by: v.id("users"),
+    updated_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_key", ["key"]),
+
   // ── Experiments Hub ──────────────────────────────────────────────────
   experiments: defineTable({
     lab_id: v.optional(v.id("labs")),

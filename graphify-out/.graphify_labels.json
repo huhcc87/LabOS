@@ -472,5 +472,16 @@
   "470": "settings.gradle",
   "471": "variables.gradle",
   "472": "Any",
-  "473": "CapApp-SPM.swift"
+  "473": "CapApp-SPM.swift",
+  "474": "key",
+  "475": "payments.ts",
+  "480": "CollaboratorNetworkPage.tsx",
+  "481": "GrantCalendarPage.tsx",
+  "482": "dataModel.d.ts",
+  "483": "@capacitor/push-notifications",
+  "484": "socket.io-client",
+  "486": "@tiptap/extension-typography",
+  "487": "@tiptap/pm",
+  "488": "@vercel/analytics",
+  "489": "get_supplier_categories"
 }
