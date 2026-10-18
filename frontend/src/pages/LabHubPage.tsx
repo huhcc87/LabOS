@@ -9,7 +9,6 @@ import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
 import SopsPanel from '../features/sops/SopsPanel';
 import InstrumentBooking from '../features/instruments/InstrumentBooking';
-import MaintenancePanel from '../features/instruments/MaintenancePanel';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
@@ -138,7 +137,7 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-type HubTab = 'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library';
+type HubTab = 'protocols' | 'sops' | 'instruments' | 'bookings' | 'library';
 export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -808,7 +807,6 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
-    { key: 'maintenance', label: 'Equipment & Maintenance', icon: '🔧', count: mf?.open ?? 0 },
     { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
   ];
 
@@ -887,7 +885,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
           { tab: 'maintenance', value: mf?.open ?? 0, label: 'open instrument problems', alert: true },
         ] as const).map(s => (
-          <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
+          <button key={s.tab} className="auth-link-reset" onClick={() => (s.tab === 'maintenance' ? navigate('equipment') : setActiveTab(s.tab))}
             style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
             <strong style={{ color: 'alert' in s && s.value > 0 ? 'var(--bad-text)' : 'var(--text)', fontSize: 16 }}>{s.value}</strong> {s.label}
           </button>
@@ -900,7 +898,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
           <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>{mf.open} open instrument problem{mf.open > 1 ? 's' : ''}:</span>
           <span style={{ color: 'var(--text)', fontSize: 13 }}>{[...new Set(mf.issues.filter(i => i.status !== 'completed').map(i => i.instrument_name))].join(', ')}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
+          <button className="btn btn-sm btn-secondary" onClick={() => navigate('equipment')} style={{ marginLeft: 'auto' }}>View</button>
         </div>
       )}
 
@@ -1148,7 +1146,6 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
 
       {/* Maintenance Tab */}
-      {activeTab === 'maintenance' && <MaintenancePanel />}
 
       {/* Feature 1+2+3: External Protocol Library Tab */}
       {activeTab === 'library' && (() => {

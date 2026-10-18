@@ -37,6 +37,7 @@ const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
 const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
+const EquipmentMaintenancePage = lazy(() => import('./pages/EquipmentMaintenancePage'));
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
@@ -178,9 +179,9 @@ function AppInner() {
       case 'settings': return <AdminHubPage />;
       // Lab Hub
       case 'sops': return <LabHubPage initialTab="sops" />;
-      case 'maintenance': return <LabHubPage initialTab="maintenance" />;
+      case 'maintenance': return <EquipmentMaintenancePage />;
       // Equipment Hub
-      case 'equipment': return <LabHubPage initialTab="maintenance" />; // Equipment management now lives in Lab Hub > Equipment & Maintenance
+      case 'equipment': return <EquipmentMaintenancePage />;
       // Experiments Hub
       case 'experiments': return <ExperimentsHubPage />;
       // Reports & Analytics
