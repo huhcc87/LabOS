@@ -138,7 +138,8 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-export default function LabHubPage() {
+type HubTab = 'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library';
+export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
@@ -146,7 +147,7 @@ export default function LabHubPage() {
   const mf = useQuery(api.maintenanceFlow.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
-  const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
+  const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
 
   // Modal states
   const [showProtocolModal, setShowProtocolModal] = useState(false);
@@ -807,7 +808,7 @@ export default function LabHubPage() {
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
-    { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: mf?.open ?? 0 },
+    { key: 'maintenance', label: 'Equipment & Maintenance', icon: '🔧', count: mf?.open ?? 0 },
     { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
   ];
 
@@ -907,8 +908,6 @@ export default function LabHubPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {([
           { icon: 'book', label: 'Lab Notebook', page: 'lab-notebook' },
-          { icon: 'map', label: 'Storage Map', page: 'storage-map' },
-          { icon: 'wrench', label: 'Equipment Hub', page: 'equipment' },
           { icon: 'flask', label: 'Experiments', page: 'experiments' },
           { icon: 'file', label: 'Documents', page: 'documents' },
         ] as const).map(tool => (

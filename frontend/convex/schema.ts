@@ -351,6 +351,13 @@ export default defineSchema({
     // Problem reports: anyone reports, a PI/admin handles (status reported -> in_progress -> completed)
     reported_by: v.optional(v.id("users")),
     not_working: v.optional(v.boolean()),
+    category: v.optional(v.string()),
+    priority: v.optional(v.string()),
+    impact: v.optional(v.string()),
+    error_code: v.optional(v.string()),
+    vendor: v.optional(v.string()),
+    expected_date: v.optional(v.number()),
+    updates: v.optional(v.array(v.object({ at: v.number(), by: v.string(), status: v.string(), note: v.optional(v.string()) }))),
     resolution_note: v.optional(v.string()),
     handled_by: v.optional(v.id("users")),
     created_at: v.number(),

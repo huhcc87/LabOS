@@ -11,12 +11,12 @@ const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'bloc
 const when = (ms: number) => new Date(ms).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const today = () => new Date().toISOString().slice(0, 10);
 
-const OTHER = '__other__';
+export const OTHER = '__other__';
 /** Common lab instruments, so adding one is a pick from a list. */
-const PRESETS = ['PCR Thermocycler', 'qPCR / Real-time PCR System', 'Centrifuge', 'Ultracentrifuge', 'Microscope (Fluorescence)', 'Confocal Microscope', 'Plate Reader', 'Flow Cytometer', 'Gel Imager', 'NanoDrop Spectrophotometer', 'Biosafety Cabinet', 'CO2 Incubator', 'Shaking Incubator', 'Autoclave', '-80 °C Freezer', 'Water Bath', 'Sequencer', 'Mass Spectrometer', 'HPLC'];
+export const PRESETS = ['PCR Thermocycler', 'qPCR / Real-time PCR System', 'Centrifuge', 'Ultracentrifuge', 'Microscope (Fluorescence)', 'Confocal Microscope', 'Plate Reader', 'Flow Cytometer', 'Gel Imager', 'NanoDrop Spectrophotometer', 'Biosafety Cabinet', 'CO2 Incubator', 'Shaking Incubator', 'Autoclave', '-80 °C Freezer', 'Water Bath', 'Sequencer', 'Mass Spectrometer', 'HPLC'];
 
 /** Active = can be booked. Not used = switched off by a manager. */
-const statusOf = (i: { bookable: boolean; status: string }) =>
+export const statusOf = (i: { bookable: boolean; status: string }) =>
   i.bookable ? { text: 'Active', color: '#15803d', bg: 'rgba(34,197,94,0.14)' }
     : i.status === 'not_used' ? { text: 'Not used', color: '#475569', bg: 'rgba(100,116,139,0.16)' }
     : i.status === 'maintenance' ? { text: 'Under repair', color: '#b91c1c', bg: 'rgba(220,38,38,0.12)' } // set by a problem report in Maintenance

@@ -27,6 +27,7 @@ export default function SopsPanel() {
   const [cat, setCat] = useState('all');
   const [form, setForm] = useState<{ title: string; category: string; version: string; file: File | null } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [customCat, setCustomCat] = useState(false); // typing a category that isn't in the list
 
   const sops = data?.sops ?? [];
   const categories = useMemo(() => [...new Set([...CATEGORIES, ...sops.map((s) => s.category ?? 'Other')])], [sops]);
@@ -35,6 +36,7 @@ export default function SopsPanel() {
   const submit = async () => {
     if (!token || !form) return;
     if (!form.title.trim()) return toast.error('Enter a title.');
+    if (!form.category.trim()) return toast.error('Choose or type a category.');
     if (!form.file) return toast.error('Choose a file to upload.');
     setBusy(true);
     try {
@@ -67,16 +69,18 @@ export default function SopsPanel() {
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setForm({ title: '', category: CATEGORIES[0], version: '1.0', file: null })}>⬆ Upload SOP</button>
+        <button className="btn btn-primary" onClick={() => { setCustomCat(false); setForm({ title: '', category: CATEGORIES[0], version: '1.0', file: null }); }}>⬆ Upload SOP</button>
       </div>
 
       {form && (
         <div className="card" role="region" aria-label="Upload SOP" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             <input aria-label="Title" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} style={input} />
-            <select aria-label="Upload category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={input}>
+            <select aria-label="Upload category" value={customCat ? '__other__' : form.category} onChange={(e) => { const other = e.target.value === '__other__'; setCustomCat(other); setForm({ ...form, category: other ? '' : e.target.value }); }} style={input}>
               {categories.map((c) => <option key={c}>{c}</option>)}
+              <option value="__other__">Other: type my own category…</option>
             </select>
+            {customCat && <input aria-label="Your own category" autoFocus placeholder="New category" maxLength={60} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={input} />}
             <input aria-label="Version" placeholder="Version" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} style={input} />
             <input aria-label="SOP file" type="file" accept=".pdf,.doc,.docx,.txt,.md" onChange={(e) => setForm({ ...form, file: e.target.files?.[0] ?? null })} style={input} />
           </div>

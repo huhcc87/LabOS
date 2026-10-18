@@ -22,7 +22,6 @@ const GrantHubPage           = lazy(() => import('./pages/GrantHubPage'));
 const SafetyHubPage          = lazy(() => import('./pages/SafetyHubPage'));
 const CollaborationHubPage   = lazy(() => import('./pages/CollaborationHubPage'));
 const AdminHubPage           = lazy(() => import('./pages/AdminHubPage'));
-const EquipmentHubPage       = lazy(() => import('./pages/EquipmentHubPage'));
 const ExperimentsHubPage     = lazy(() => import('./pages/ExperimentsHubPage'));
 const ProcurementHubPage     = lazy(() => import('./pages/ProcurementHubPage'));
 const ClinicalResearchHubPage= lazy(() => import('./pages/ClinicalResearchHubPage'));
@@ -75,7 +74,6 @@ const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
 const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
 const LabNotebookPage            = lazy(() => import('./pages/LabNotebookPage'));
-const StorageMapPage             = lazy(() => import('./pages/StorageMapPage'));
 const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
@@ -146,8 +144,8 @@ function AppInner() {
       case 'dashboard': return <DashboardPage />;
       case 'protocols': return <ProtocolsPage />;
       case 'lab-hub': return <LabHubPage />;
-      case 'instruments': return <LabHubPage />;
-      case 'bookings': return <LabHubPage />;
+      case 'instruments': return <LabHubPage initialTab="instruments" />;
+      case 'bookings': return <LabHubPage initialTab="instruments" />;
       case 'tasks': return <TasksPage />;
       case 'calendar': return <CalendarPage />;
       // Sample Hub
@@ -180,10 +178,10 @@ function AppInner() {
       case 'integrations': return <AdminHubPage />;
       case 'settings': return <AdminHubPage />;
       // Lab Hub
-      case 'sops': return <LabHubPage />;
-      case 'maintenance': return <LabHubPage />;
+      case 'sops': return <LabHubPage initialTab="sops" />;
+      case 'maintenance': return <LabHubPage initialTab="maintenance" />;
       // Equipment Hub
-      case 'equipment': return <EquipmentHubPage />;
+      case 'equipment': return <LabHubPage initialTab="maintenance" />; // Equipment management now lives in Lab Hub > Equipment & Maintenance
       // Experiments Hub
       case 'experiments': return <ExperimentsHubPage />;
       // Reports & Analytics
@@ -212,7 +210,7 @@ function AppInner() {
       case 'version-history': return <VersionHistoryPage />;
       // New v2 pages
       case 'lab-notebook': return <LabNotebookPage />;
-      case 'storage-map': return <StorageMapPage />;
+      case 'storage-map': return <FreezerBiobankPage />; // old Storage Map merged into Freezer / Biobank
       case 'supplier-directory': return <SupplierDirectoryPage />;
       // Tier 1 — AI Research Intelligence
       case 'eln': return <ELNPage />;
