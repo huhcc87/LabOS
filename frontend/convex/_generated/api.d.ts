@@ -21,6 +21,7 @@ import type * as crons from "../crons.js";
 import type * as cryptoSecrets from "../cryptoSecrets.js";
 import type * as customAuth from "../customAuth.js";
 import type * as dashboard from "../dashboard.js";
+import type * as experiments from "../experiments.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
 import type * as freezer from "../freezer.js";
@@ -97,6 +98,7 @@ declare const fullApi: ApiFromModules<{
   cryptoSecrets: typeof cryptoSecrets;
   customAuth: typeof customAuth;
   dashboard: typeof dashboard;
+  experiments: typeof experiments;
   feedback: typeof feedback;
   files: typeof files;
   freezer: typeof freezer;

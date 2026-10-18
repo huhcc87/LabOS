@@ -363,6 +363,59 @@ export default defineSchema({
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_instrument", ["instrument_id"]),
 
+  // ── Experiments Hub ──────────────────────────────────────────────────
+  experiments: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    code: v.string(), // EXP-001
+    title: v.string(),
+    description: v.string(),
+    protocol: v.string(),
+    status: v.string(),
+    priority: v.string(),
+    start_date: v.string(),
+    end_date: v.optional(v.string()),
+    lead_researcher: v.string(),
+    team: v.array(v.object({ id: v.string(), name: v.string(), role: v.string() })),
+    steps: v.array(v.object({ id: v.string(), name: v.string(), description: v.string(), status: v.string(), startedAt: v.optional(v.string()), completedAt: v.optional(v.string()), notes: v.optional(v.string()) })),
+    samples: v.array(v.string()),
+    tags: v.array(v.string()),
+    created_by: v.id("users"),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_lab", ["lab_id"]),
+  experiment_results: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    code: v.string(), // RES-001
+    experiment_id: v.id("experiments"),
+    title: v.string(),
+    type: v.string(),
+    value: v.string(),
+    unit: v.optional(v.string()),
+    notes: v.string(),
+    recorded_by: v.string(),
+    recorded_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_experiment", ["experiment_id"]),
+  experiment_files: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    experiment_id: v.id("experiments"),
+    name: v.string(),
+    type: v.string(),
+    size: v.number(),
+    category: v.string(),
+    storage_id: v.id("_storage"),
+    uploaded_by: v.string(),
+    uploaded_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_experiment", ["experiment_id"]),
+  experiment_events: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    experiment_id: v.optional(v.id("experiments")),
+    experiment_title: v.string(),
+    type: v.string(),
+    description: v.string(),
+    user: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]),
+
   // ── Costs ────────────────────────────────────────────────────────────
   costs: defineTable({
     lab_id: v.optional(v.id("labs")),
