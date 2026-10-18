@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 import { errText } from '../lib/errors';
 import {
-  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
+  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, QuickSetupDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
 } from '../features/freezer/dialogs';
 
 type Shelf = Doc<'freezer_shelves'>;
@@ -17,13 +17,19 @@ type Slot = Doc<'freezer_slots'>;
 
 /** What the open dialog is for (one at a time). */
 type Dialog =
-  | { kind: 'newFreezer' } | { kind: 'editFreezer' } | { kind: 'deleteFreezer' }
+  | { kind: 'quickSetup' } | { kind: 'newFreezer' } | { kind: 'editFreezer' } | { kind: 'deleteFreezer' }
   | { kind: 'newShelf' } | { kind: 'renameShelf'; shelf: Shelf } | { kind: 'deleteShelf'; shelf: Shelf }
   | { kind: 'newRack'; shelf: Shelf } | { kind: 'renameRack'; rack: Rack } | { kind: 'deleteRack'; rack: Rack }
   | { kind: 'newBox'; rack: Rack } | { kind: 'renameBox'; box: Box } | { kind: 'deleteBox'; box: Box }
   | { kind: 'sample'; box: Box; row: number; col: number };
 
 const letter = (n: number) => String.fromCharCode(65 + n);
+/** Tall storage tile (rack or box): grey bar on top, name at the bottom. */
+const tile: React.CSSProperties = {
+  minHeight: 104, padding: '10px 8px 8px', borderRadius: 10, cursor: 'pointer', color: 'var(--text)',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 4,
+};
+const tileBar: React.CSSProperties = { width: 34, height: 4, borderRadius: 2, background: '#b8b9d6', marginBottom: 'auto' };
 const DAY = 86400000;
 
 function slotState(s: Slot | undefined): 'empty' | 'ok' | 'soon' | 'expired' {
@@ -189,6 +195,7 @@ export default function FreezerBiobankPage() {
                 </button>
                 {canBuild && (
                   <>
+                    <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => setDialog({ kind: 'quickSetup' })} title="Add shelves, racks and boxes in one go">⚡ Quick setup</button>
                     <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
                     <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
                   </>
@@ -208,26 +215,26 @@ export default function FreezerBiobankPage() {
                       {canBuild && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setDialog({ kind: 'newRack', shelf: s })}>
-                            <Icon name="plus" size={13} /> Add rack
+                            <Icon name="plus" size={13} /> Add storage
                           </button>
                           <button className="icon-btn" aria-label={`Rename ${s.name}`} title="Rename shelf" onClick={() => setDialog({ kind: 'renameShelf', shelf: s })}><Icon name="pencil" /></button>
                           <button className="icon-btn danger" aria-label={`Delete ${s.name}`} title="Delete shelf" onClick={() => setDialog({ kind: 'deleteShelf', shelf: s })}><Icon name="trash" /></button>
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
                       {(racksByShelf.get(s._id) ?? []).map(r => {
                         const n = structure.boxes.filter(b => b.rack_id === r._id).length;
                         const on = r._id === rack?._id;
                         return (
-                          <button key={r._id} onClick={() => { setRackId(r._id); setBoxId(null); }} aria-pressed={on}
+                          <button key={r._id} onClick={() => { setRackId(r._id); setBoxId(null); }} aria-pressed={on} title={`${r.name}: ${n} box${n === 1 ? '' : 'es'}`}
                             style={{
-                              padding: '12px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
-                              background: on ? 'var(--accent-light)' : 'var(--surface2)', color: 'var(--text)',
-                              border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                              ...tile, background: on ? 'var(--accent-light)' : 'var(--surface)',
+                              border: `${on ? 2 : 1}px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
                             }}>
-                            <div style={{ fontWeight: 700, fontSize: 13 }}>{r.name}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n} box{n === 1 ? '' : 'es'}</div>
+                            <span aria-hidden="true" style={tileBar} />
+                            <span style={{ fontWeight: 600, fontSize: 12, textAlign: 'center' }}>{r.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{n} box{n === 1 ? '' : 'es'}</span>
                           </button>
                         );
                       })}
@@ -263,28 +270,27 @@ export default function FreezerBiobankPage() {
                     </span>
                   )}
                 </header>
-                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
                   {boxes.map(b => {
                     const total = b.rows * b.cols;
                     const on = b._id === box?._id;
                     return (
-                      <button key={b._id} onClick={() => setBoxId(b._id)} aria-pressed={on} style={{
-                        padding: 12, borderRadius: 8, cursor: 'pointer', textAlign: 'left', color: 'var(--text)',
-                        background: on ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                      <button key={b._id} onClick={() => setBoxId(b._id)} aria-pressed={on} title={`${b.name}: ${b.rows} × ${b.cols}, ${b.filled}/${total} used`} style={{
+                        ...tile, background: on ? 'var(--accent-light)' : 'var(--surface)', border: `${on ? 2 : 1}px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
                       }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{b.rows} × {b.cols} · {b.filled}/{total} used</div>
-                        <div style={{ height: 4, borderRadius: 2, background: 'var(--surface3)' }} aria-hidden="true">
-                          <div style={{ width: `${Math.round((b.filled / total) * 100)}%`, height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
-                        </div>
+                        <span aria-hidden="true" style={tileBar} />
+                        <span style={{ fontWeight: 600, fontSize: 12, textAlign: 'center', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.rows} × {b.cols} · {b.filled}/{total}</span>
+                        <span style={{ height: 3, width: '100%', borderRadius: 2, background: 'var(--surface3)' }} aria-hidden="true">
+                          <span style={{ display: 'block', width: `${Math.round((b.filled / total) * 100)}%`, height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
+                        </span>
                       </button>
                     );
                   })}
                   {canBuild && (
-                    <button onClick={() => setDialog({ kind: 'newBox', rack })} style={{
-                      padding: 12, borderRadius: 8, cursor: 'pointer', border: '1px dashed var(--border)', background: 'transparent',
-                      color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 74,
-                    }}><Icon name="plus" /> New box</button>
+                    <button onClick={() => setDialog({ kind: 'newBox', rack })} aria-label="Add box" style={{
+                      ...tile, border: '1px dashed var(--border)', background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 26, justifyContent: 'center',
+                    }}>⊕<span style={{ fontSize: 11 }}>Add box</span></button>
                   )}
                   {boxes.length === 0 && !canBuild && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>No boxes in this rack yet.</span>}
                 </div>
@@ -331,6 +337,17 @@ export default function FreezerBiobankPage() {
       {dialog?.kind === 'deleteFreezer' && freezer && (
         <ConfirmDelete title="Delete freezer" what={freezer.name} impact={impact} onClose={close}
           onConfirm={async () => { await m.removeFreezer({ token: t, id: freezer._id }); setFreezerId(null); setRackId(null); setBoxId(null); }} />
+      )}
+      {dialog?.kind === 'quickSetup' && freezer && (
+        <QuickSetupDialog onClose={close} onSubmit={async v => {
+          for (let i = 0; i < v.shelves; i++) {
+            const shelfId = await m.addShelf({ token: t, freezer_id: freezer._id, name: v.names[i] });
+            for (let r = 1; r <= v.racks; r++) {
+              const rackId = await m.addRack({ token: t, shelf_id: shelfId, name: `Rack #${r}` });
+              for (let b = 1; b <= v.boxes; b++) await m.addBox({ token: t, rack_id: rackId, name: `Box ${b}`, rows: v.rows, cols: v.cols });
+            }
+          }
+        }} />
       )}
       {dialog?.kind === 'newShelf' && freezer && (
         <ShelfDialog count={structure?.shelves.length ?? 0} onClose={close}
