@@ -218,7 +218,8 @@ export function SignaturePanel({ entityType, entityId, entityTitle, content = ''
     setLoading(true);
     try {
       const res = await axios.get(`${API}/signatures/${entityType}/${entityId}`, { headers: authHeaders() });
-      setSignatures(res.data);
+      // No signature service behind this app yet: anything but a list (e.g. an HTML page) means "none".
+      setSignatures(Array.isArray(res.data) ? res.data : []);
     } catch {
       setSignatures([]);
     } finally {

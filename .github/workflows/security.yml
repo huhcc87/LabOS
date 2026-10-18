@@ -1,0 +1,51 @@
+name: Security
+
+on:
+  push: { branches: [main] }
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1" # Mondays
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: "${{ matrix.language }}" }
+      - uses: github/codeql-action/analyze@v3
+
+  npm-audit:
+    name: Dependency audit (production)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      # Reports known-vulnerable packages. Not blocking yet: there are findings to work through first.
+      - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
+  dependency-review:
+    name: Dependency review (new vulnerable packages)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with: { fail-on-severity: critical }

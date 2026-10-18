@@ -21,8 +21,9 @@ import type { Protocol } from '../types/protocol.types'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { useSwarm, SwarmDashboard } from '../ai-swarm'
+import ExternalLibrary from '../ExternalLibrary'
 
-type MainTab = 'library' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
+type MainTab = 'library' | 'external' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
 type ViewerTab = 'genomics' | 'protein' | 'microscopy'
 
 const BIOSAFETY_COLORS: Record<string, string> = {
@@ -95,6 +96,7 @@ export default function ProtocolsPage() {
 
   const MAIN_TABS: { id: MainTab; label: string; icon: string }[] = [
     { id: 'library', label: 'Library', icon: '📚' },
+    { id: 'external', label: 'Protocol Library (open sources)', icon: '🌐' },
     { id: 'editor', label: 'Editor', icon: '✏️' },
     { id: 'ai-swarm', label: 'AI Swarm', icon: '🧬' },
     { id: 'ai', label: 'AI Assistant', icon: '🤖' },
@@ -163,11 +165,6 @@ export default function ProtocolsPage() {
       {/* ── Library Tab ── */}
       {mainTab === 'library' && (
         <>
-          <ProtocolCategoryCards
-            categories={store.categories}
-            activeCategory={store.activeCategory}
-            onSelectCategory={store.setActiveCategory}
-          />
           <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             <SubcategoryBrowser
               categories={store.categories}
@@ -255,6 +252,14 @@ export default function ProtocolsPage() {
               )}
             </div>
           </div>
+          <details style={{ marginTop: 20 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 12 }}>Category overview (cards)</summary>
+            <ProtocolCategoryCards
+              categories={store.categories}
+              activeCategory={store.activeCategory}
+              onSelectCategory={store.setActiveCategory}
+            />
+          </details>
         </>
       )}
 
@@ -332,6 +337,8 @@ export default function ProtocolsPage() {
       )}
 
       {/* ── Analytics Tab ── */}
+      {mainTab === 'external' && <ExternalLibrary />}
+
       {mainTab === 'analytics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>

@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TwoFactorGate } from './components/TwoFactorGate';
 import { NavigationContext } from './context/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -21,7 +22,6 @@ const GrantHubPage           = lazy(() => import('./pages/GrantHubPage'));
 const SafetyHubPage          = lazy(() => import('./pages/SafetyHubPage'));
 const CollaborationHubPage   = lazy(() => import('./pages/CollaborationHubPage'));
 const AdminHubPage           = lazy(() => import('./pages/AdminHubPage'));
-const EquipmentHubPage       = lazy(() => import('./pages/EquipmentHubPage'));
 const ExperimentsHubPage     = lazy(() => import('./pages/ExperimentsHubPage'));
 const ProcurementHubPage     = lazy(() => import('./pages/ProcurementHubPage'));
 const ClinicalResearchHubPage= lazy(() => import('./pages/ClinicalResearchHubPage'));
@@ -35,11 +35,12 @@ const LabMeetingsPage        = lazy(() => import('./pages/LabMeetingsPage'));
 const ReportsPage            = lazy(() => import('./pages/ReportsPage'));
 const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
-const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
+const EquipmentMaintenancePage = lazy(() => import('./pages/EquipmentMaintenancePage'));
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
+const ReceivingPage          = lazy(() => import('./pages/ReceivingPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
 const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
@@ -47,7 +48,7 @@ const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
-const PrivacyCenterPage      = lazy(() => import('./pages/PrivacyCenterPage'));
+const SecurityCenterPage      = lazy(() => import('./pages/SecurityCenterPage'));
 const SecurityDashboardPage  = lazy(() => import('./pages/SecurityDashboardPage'));
 const CapaPage               = lazy(() => import('./pages/CapaPage'));
 const EmailSettingsPage      = lazy(() => import('./pages/EmailSettingsPage'));
@@ -71,8 +72,6 @@ const SubcontractManagerPage     = lazy(() => import('./pages/SubcontractManager
 const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
 const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
-const LabNotebookPage            = lazy(() => import('./pages/LabNotebookPage'));
-const StorageMapPage             = lazy(() => import('./pages/StorageMapPage'));
 const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
@@ -137,13 +136,14 @@ function AppInner() {
       : <LoginPage onCreateAccount={() => setAuthView('register')} />;
   }
 
+
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <DashboardPage />;
       case 'protocols': return <ProtocolsPage />;
       case 'lab-hub': return <LabHubPage />;
-      case 'instruments': return <LabHubPage />;
-      case 'bookings': return <LabHubPage />;
+      case 'instruments': return <LabHubPage initialTab="instruments" />;
+      case 'bookings': return <LabHubPage initialTab="instruments" />;
       case 'tasks': return <TasksPage />;
       case 'calendar': return <CalendarPage />;
       // Sample Hub
@@ -176,10 +176,10 @@ function AppInner() {
       case 'integrations': return <AdminHubPage />;
       case 'settings': return <AdminHubPage />;
       // Lab Hub
-      case 'sops': return <LabHubPage />;
-      case 'maintenance': return <LabHubPage />;
+      case 'sops': return <LabHubPage initialTab="sops" />;
+      case 'maintenance': return <EquipmentMaintenancePage />;
       // Equipment Hub
-      case 'equipment': return <EquipmentHubPage />;
+      case 'equipment': return <EquipmentMaintenancePage />;
       // Experiments Hub
       case 'experiments': return <ExperimentsHubPage />;
       // Reports & Analytics
@@ -207,16 +207,18 @@ function AppInner() {
       case 'writing-resources': return <WritingResourcesPage />;
       case 'version-history': return <VersionHistoryPage />;
       // New v2 pages
-      case 'lab-notebook': return <LabNotebookPage />;
-      case 'storage-map': return <StorageMapPage />;
+      case 'lab-notebook': return <LabHubPage initialTab="notebook" />;
+      case 'storage-map': return <FreezerBiobankPage />; // old Storage Map merged into Freezer / Biobank
       case 'supplier-directory': return <SupplierDirectoryPage />;
       // Tier 1 — AI Research Intelligence
-      case 'eln': return <ELNPage />;
+      case 'eln': return <LabHubPage initialTab="notebook" />;
       case 'iot-dashboard': return <IoTDashboardPage />;
       case 'label-printer': return <LabelsPage />;
       case 'labels': return <LabelsPage />;
+      case 'barcode-scanner': case 'barcode-labels': case 'label-designer': return <LabelsPage />; // all merged into Sample Hub > Labels
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
+      case 'receiving': return <ReceivingPage />;
       case 'payment-methods': return <PaymentMethodsPage />;
       case 'procurement-hub': return <ProcurementHubPage />;
       case 'lab-members': return <LabMembersPage />;
@@ -227,7 +229,7 @@ function AppInner() {
       case 'freezer-biobank': return <FreezerBiobankPage />;
       case 'vendor-intelligence': return <VendorIntelligencePage />;
       case 'training-cert': return <TrainingCertPage />;
-      case 'privacy-center': return <PrivacyCenterPage />;
+      case 'privacy-center': return <SecurityCenterPage />;
       case 'security-dashboard': return <SecurityDashboardPage />;
       case 'reagent-hub': return <ReagentHubPage />;
       case 'capa': return <CapaPage />;
@@ -242,13 +244,15 @@ function AppInner() {
 
   return (
     <NavigationContext.Provider value={setPage}>
-      <Layout activePage={page} onNavigate={setPage}>
-        <ErrorBoundary key={page}>
-          <Suspense fallback={<PageLoader />}>
-            {renderPage()}
-          </Suspense>
-        </ErrorBoundary>
-      </Layout>
+      <TwoFactorGate>
+        <Layout activePage={page} onNavigate={setPage}>
+          <ErrorBoundary key={page}>
+            <Suspense fallback={<PageLoader />}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
+        </Layout>
+      </TwoFactorGate>
       <ErrorBoundary fallback={() => null}><CookieConsent /></ErrorBoundary>
     </NavigationContext.Provider>
   );

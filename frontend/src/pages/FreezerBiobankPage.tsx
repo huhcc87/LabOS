@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 import { errText } from '../lib/errors';
 import {
-  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
+  BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, QuickSetupDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
 } from '../features/freezer/dialogs';
 
 type Shelf = Doc<'freezer_shelves'>;
@@ -17,13 +17,19 @@ type Slot = Doc<'freezer_slots'>;
 
 /** What the open dialog is for (one at a time). */
 type Dialog =
-  | { kind: 'newFreezer' } | { kind: 'editFreezer' } | { kind: 'deleteFreezer' }
+  | { kind: 'quickSetup' } | { kind: 'newFreezer' } | { kind: 'editFreezer' } | { kind: 'deleteFreezer' }
   | { kind: 'newShelf' } | { kind: 'renameShelf'; shelf: Shelf } | { kind: 'deleteShelf'; shelf: Shelf }
   | { kind: 'newRack'; shelf: Shelf } | { kind: 'renameRack'; rack: Rack } | { kind: 'deleteRack'; rack: Rack }
   | { kind: 'newBox'; rack: Rack } | { kind: 'renameBox'; box: Box } | { kind: 'deleteBox'; box: Box }
   | { kind: 'sample'; box: Box; row: number; col: number };
 
 const letter = (n: number) => String.fromCharCode(65 + n);
+/** Tall storage tile (rack or box): grey bar on top, name at the bottom. */
+const tile: React.CSSProperties = {
+  minHeight: 104, padding: '10px 8px 8px', borderRadius: 10, cursor: 'pointer', color: 'var(--text)',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 4,
+};
+const tileBar: React.CSSProperties = { width: 34, height: 4, borderRadius: 2, background: '#b8b9d6', marginBottom: 'auto' };
 const DAY = 86400000;
 
 function slotState(s: Slot | undefined): 'empty' | 'ok' | 'soon' | 'expired' {
@@ -52,7 +58,7 @@ export default function FreezerBiobankPage() {
   const [rackId, setRackId] = useState<Id<'freezer_racks'> | null>(null);
   const [boxId, setBoxId] = useState<Id<'freezer_boxes'> | null>(null);
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  const [tab, setTab] = useState<'storage' | 'expiring' | 'search'>('storage');
+  const [tab, setTab] = useState<'storage' | 'reagents' | 'expiring' | 'search'>('storage');
 
   const racksByShelf = useMemo(() => {
     const m = new Map<string, Rack[]>();
@@ -150,7 +156,7 @@ export default function FreezerBiobankPage() {
 
       {/* Tabs */}
       <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['storage', 'Storage'], ['expiring', 'Expiring soon'], ['search', 'Find a sample']] as const).map(([k, l]) => (
+        {([['storage', 'Freezers & racks'], ['reagents', 'Reagents by location'], ['expiring', 'Expiring soon'], ['search', 'Search & download']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
             padding: '10px 16px', background: 'none', border: 0, cursor: 'pointer', fontSize: 14, marginBottom: -1,
             borderBottom: `2px solid ${tab === k ? 'var(--accent)' : 'transparent'}`,
@@ -159,8 +165,9 @@ export default function FreezerBiobankPage() {
         ))}
       </div>
 
+      {tab === 'reagents' && <ReagentsByLocation token={t} />}
       {tab === 'expiring' && <Expiring token={t} />}
-      {tab === 'search' && <Search token={t} />}
+      {tab === 'search' && <Search token={t} freezers={freezers ?? []} />}
 
       {tab === 'storage' && (loading ? (
         <p style={{ color: 'var(--text-muted)' }}>Loading freezers…</p>
@@ -188,6 +195,7 @@ export default function FreezerBiobankPage() {
                 </button>
                 {canBuild && (
                   <>
+                    <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => setDialog({ kind: 'quickSetup' })} title="Add shelves, racks and boxes in one go">⚡ Quick setup</button>
                     <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
                     <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
                   </>
@@ -207,26 +215,26 @@ export default function FreezerBiobankPage() {
                       {canBuild && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setDialog({ kind: 'newRack', shelf: s })}>
-                            <Icon name="plus" size={13} /> Add rack
+                            <Icon name="plus" size={13} /> Add storage
                           </button>
                           <button className="icon-btn" aria-label={`Rename ${s.name}`} title="Rename shelf" onClick={() => setDialog({ kind: 'renameShelf', shelf: s })}><Icon name="pencil" /></button>
                           <button className="icon-btn danger" aria-label={`Delete ${s.name}`} title="Delete shelf" onClick={() => setDialog({ kind: 'deleteShelf', shelf: s })}><Icon name="trash" /></button>
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
                       {(racksByShelf.get(s._id) ?? []).map(r => {
                         const n = structure.boxes.filter(b => b.rack_id === r._id).length;
                         const on = r._id === rack?._id;
                         return (
-                          <button key={r._id} onClick={() => { setRackId(r._id); setBoxId(null); }} aria-pressed={on}
+                          <button key={r._id} onClick={() => { setRackId(r._id); setBoxId(null); }} aria-pressed={on} title={`${r.name}: ${n} box${n === 1 ? '' : 'es'}`}
                             style={{
-                              padding: '12px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
-                              background: on ? 'var(--accent-light)' : 'var(--surface2)', color: 'var(--text)',
-                              border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                              ...tile, background: on ? 'var(--accent-light)' : 'var(--surface)',
+                              border: `${on ? 2 : 1}px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
                             }}>
-                            <div style={{ fontWeight: 700, fontSize: 13 }}>{r.name}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n} box{n === 1 ? '' : 'es'}</div>
+                            <span aria-hidden="true" style={tileBar} />
+                            <span style={{ fontWeight: 600, fontSize: 12, textAlign: 'center' }}>{r.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{n} box{n === 1 ? '' : 'es'}</span>
                           </button>
                         );
                       })}
@@ -262,28 +270,27 @@ export default function FreezerBiobankPage() {
                     </span>
                   )}
                 </header>
-                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
                   {boxes.map(b => {
                     const total = b.rows * b.cols;
                     const on = b._id === box?._id;
                     return (
-                      <button key={b._id} onClick={() => setBoxId(b._id)} aria-pressed={on} style={{
-                        padding: 12, borderRadius: 8, cursor: 'pointer', textAlign: 'left', color: 'var(--text)',
-                        background: on ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                      <button key={b._id} onClick={() => setBoxId(b._id)} aria-pressed={on} title={`${b.name}: ${b.rows} × ${b.cols}, ${b.filled}/${total} used`} style={{
+                        ...tile, background: on ? 'var(--accent-light)' : 'var(--surface)', border: `${on ? 2 : 1}px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
                       }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{b.rows} × {b.cols} · {b.filled}/{total} used</div>
-                        <div style={{ height: 4, borderRadius: 2, background: 'var(--surface3)' }} aria-hidden="true">
-                          <div style={{ width: `${Math.round((b.filled / total) * 100)}%`, height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
-                        </div>
+                        <span aria-hidden="true" style={tileBar} />
+                        <span style={{ fontWeight: 600, fontSize: 12, textAlign: 'center', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.rows} × {b.cols} · {b.filled}/{total}</span>
+                        <span style={{ height: 3, width: '100%', borderRadius: 2, background: 'var(--surface3)' }} aria-hidden="true">
+                          <span style={{ display: 'block', width: `${Math.round((b.filled / total) * 100)}%`, height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
+                        </span>
                       </button>
                     );
                   })}
                   {canBuild && (
-                    <button onClick={() => setDialog({ kind: 'newBox', rack })} style={{
-                      padding: 12, borderRadius: 8, cursor: 'pointer', border: '1px dashed var(--border)', background: 'transparent',
-                      color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 74,
-                    }}><Icon name="plus" /> New box</button>
+                    <button onClick={() => setDialog({ kind: 'newBox', rack })} aria-label="Add box" style={{
+                      ...tile, border: '1px dashed var(--border)', background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 26, justifyContent: 'center',
+                    }}>⊕<span style={{ fontSize: 11 }}>Add box</span></button>
                   )}
                   {boxes.length === 0 && !canBuild && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>No boxes in this rack yet.</span>}
                 </div>
@@ -330,6 +337,17 @@ export default function FreezerBiobankPage() {
       {dialog?.kind === 'deleteFreezer' && freezer && (
         <ConfirmDelete title="Delete freezer" what={freezer.name} impact={impact} onClose={close}
           onConfirm={async () => { await m.removeFreezer({ token: t, id: freezer._id }); setFreezerId(null); setRackId(null); setBoxId(null); }} />
+      )}
+      {dialog?.kind === 'quickSetup' && freezer && (
+        <QuickSetupDialog onClose={close} onSubmit={async v => {
+          for (let i = 0; i < v.shelves; i++) {
+            const shelfId = await m.addShelf({ token: t, freezer_id: freezer._id, name: v.names[i] });
+            for (let r = 1; r <= v.racks; r++) {
+              const rackId = await m.addRack({ token: t, shelf_id: shelfId, name: `Rack #${r}` });
+              for (let b = 1; b <= v.boxes; b++) await m.addBox({ token: t, rack_id: rackId, name: `Box ${b}`, rows: v.rows, cols: v.cols });
+            }
+          }
+        }} />
       )}
       {dialog?.kind === 'newShelf' && freezer && (
         <ShelfDialog count={structure?.shelves.length ?? 0} onClose={close}
@@ -426,23 +444,126 @@ function Expiring({ token }: { token: string | undefined }) {
   );
 }
 
-function Search({ token }: { token: string | undefined }) {
+const CLASSES = ['-80 °C', '-20 °C', '4 °C', 'Liquid nitrogen', 'Other / not set'];
+/** Same grouping the server uses for the Storage column. */
+const storageOf = (temp?: number) => temp === undefined ? CLASSES[4] : temp <= -150 ? CLASSES[3] : temp <= -60 ? CLASSES[0] : temp <= -10 ? CLASSES[1] : temp >= 0 && temp <= 10 ? CLASSES[2] : CLASSES[4];
+
+/** Search every freezer for any sample, and download the matches (or everything) from the freezers you pick. */
+function Search({ token, freezers }: { token: string | undefined; freezers: { _id: Id<'freezers'>; name: string; temperature?: number }[] }) {
   const [q, setQ] = useState('');
-  const rows = useQuery(api.freezer.search, token && q.trim().length >= 2 ? { token, query: q } : 'skip');
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(freezers.map(f => f._id)));
+  const [scope, setScope] = useState<'matches' | 'all'>('matches');
+  const [withLayout, setWithLayout] = useState(true);
+  const convex = useConvex();
+  const [busy, setBusy] = useState(false);
+  const ids = freezers.filter(f => picked.has(f._id)).map(f => f._id);
+  const term = q.trim();
+  const data = useQuery(api.freezer.exportMany, token && ids.length ? { token, freezer_ids: ids, query: term.length >= 2 ? term : undefined } : 'skip');
+  const classes = CLASSES.filter(c => freezers.some(f => storageOf(f.temperature) === c));
+  const toggle = (id: string) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleClass = (c: string) => {
+    const group = freezers.filter(f => storageOf(f.temperature) === c).map(f => f._id as string);
+    setPicked(p => { const n = new Set(p); const all = group.every(i => n.has(i)); group.forEach(i => all ? n.delete(i) : n.add(i)); return n; });
+  };
+
+  const download = async () => {
+    if (!token || !ids.length) return toast.error('Choose at least one freezer.');
+    setBusy(true);
+    try {
+      const rows = await convex.query(api.freezer.exportMany, { token, freezer_ids: ids, query: scope === 'matches' && term.length >= 2 ? term : undefined });
+      if (scope === 'matches' && term.length < 2) { toast.error('Type a search first, or choose "Everything in the selected freezers".'); return; }
+      if (rows.samples.length === 0) { toast.error('Nothing to download for this choice.'); return; }
+      const XLSX = await import('xlsx');
+      const lead = ['Freezer', 'Storage', 'Temperature C', 'Shelf', 'Rack', 'Box', 'Position', 'Sample ID', 'Name', 'Type', 'Owner', 'Volume', 'Expiry', 'Barcode', 'Label code', 'Notes'];
+      const extra = [...new Set(rows.samples.flatMap(r => Object.keys(r)))].filter(k => !lead.includes(k));
+      const wb = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet(rows.samples, { header: [...lead, ...extra] });
+      sheet['!cols'] = [...lead, ...extra].map(h => ({ wch: Math.max(h.length + 2, 14) }));
+      XLSX.utils.book_append_sheet(wb, sheet, 'Samples');
+      if (withLayout) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.layout), 'Layout');
+      const places = classes.filter(c => freezers.some(f => picked.has(f._id) && storageOf(f.temperature) === c)).join(', ');
+      XLSX.writeFile(wb, `Samples ${scope === 'matches' ? `matching ${term.replace(/[^\w\-. ]+/g, '').slice(0, 30)}` : 'all'} (${places.replace(/[^\w\-.,° ]+/g, '')}) ${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(`Downloaded ${rows.samples.length} sample${rows.samples.length === 1 ? '' : 's'}${rows.truncated ? ' (limit reached)' : ''}`);
+    } catch (e) { toast.error(errText(e)); } finally { setBusy(false); }
+  };
+
   return (
-    <section aria-label="Find a sample">
-      <label htmlFor="fz-search" style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Search by sample ID, name, type, owner or barcode</label>
-      <input id="fz-search" className="form-input" style={{ width: '100%', maxWidth: 520 }} value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. HeLa, S-00123, DNA" />
-      <div className="card" style={{ padding: 0, marginTop: 14 }}>
-        {q.trim().length < 2 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Type at least 2 characters.</p>
-          : rows === undefined ? <p style={{ padding: 16, margin: 0 }}>Searching…</p>
-            : rows.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>No samples match “{q}”.</p>
-              : <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{rows.map(s => (
-                <li key={s._id} style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-                  <strong>{s.sample_id || s.label}</strong>{s.sample_type ? ` · ${s.sample_type}` : ''}{s.owner ? ` · ${s.owner}` : ''}
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.path}</div>
-                </li>))}</ul>}
+    <section aria-label="Search and download">
+      <label htmlFor="fz-search" style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Search any sample: ID, name, type, owner, barcode, notes, or where it is (shelf, rack, box, position)</label>
+      <input id="fz-search" className="form-input" style={{ width: '100%', maxWidth: 520 }} value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. HeLa, S-00123, DNA, Rack 2" />
+
+      <div className="card" style={{ padding: 14, marginTop: 14 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Search and download from</div>
+        {freezers.length === 0 ? <p style={{ margin: 0, color: 'var(--text-muted)' }}>No freezers yet.</p> : classes.map(c => {
+          const group = freezers.filter(f => storageOf(f.temperature) === c);
+          const all = group.every(f => picked.has(f._id));
+          return (
+            <div key={c} style={{ marginBottom: 8 }}>
+              <label style={{ fontWeight: 600, fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                <input type="checkbox" checked={all} onChange={() => toggleClass(c)} /> {c} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({group.length} freezer{group.length === 1 ? '' : 's'})</span>
+              </label>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', margin: '4px 0 0 22px' }}>
+                {group.map(f => <label key={f._id} style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={picked.has(f._id)} onChange={() => toggle(f._id)} /> {f.name}</label>)}
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'matches'} onChange={() => setScope('matches')} /> Only samples matching my search</label>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'all'} onChange={() => setScope('all')} /> Everything in the selected freezers</label>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={withLayout} onChange={e => setWithLayout(e.target.checked)} /> Include box layout sheet</label>
+          <button className="btn btn-primary btn-sm" onClick={download} disabled={busy || !ids.length}>{busy ? 'Preparing…' : '⬇ Download Excel'}</button>
+        </div>
       </div>
+
+      <div className="card" style={{ padding: 0, marginTop: 14 }}>
+        {!ids.length ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Choose at least one freezer above.</p>
+          : term.length < 2 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Type at least 2 characters to search. To download everything, choose "Everything in the selected freezers".</p>
+            : data === undefined ? <p style={{ padding: 16, margin: 0 }}>Searching…</p>
+              : data.samples.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>No samples match “{term}”.</p>
+                : <>
+                  <p style={{ margin: 0, padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>{data.samples.length} match{data.samples.length === 1 ? '' : 'es'}{data.samples.length > 100 ? ' (showing the first 100)' : ''}</p>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{data.samples.slice(0, 100).map((s, i) => (
+                    <li key={i} style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+                      <strong>{s['Sample ID'] || s.Name}</strong>{s.Type ? ` · ${s.Type}` : ''}{s.Owner ? ` · ${s.Owner}` : ''}
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{[s.Freezer, s.Storage, s.Shelf, s.Rack, s.Box, s.Position].filter(Boolean).join(' › ')}</div>
+                    </li>))}</ul>
+                </>}
+      </div>
+    </section>
+  );
+}
+
+/** Reagents and supplies grouped by where they are kept (from Inventory), so one page shows samples and stock. */
+function ReagentsByLocation({ token }: { token: string | undefined }) {
+  const [q, setQ] = useState('');
+  const stock = useQuery(api.receiving.stockLots, token ? { token } : 'skip');
+  if (!stock) return <p style={{ color: 'var(--text-muted)' }}>Loading…</p>;
+  const term = q.trim().toLowerCase();
+  const items = stock.items.filter((i) => !term || [i.name, i.location, i.catalog_number].some((x) => (x ?? '').toLowerCase().includes(term)));
+  const groups = new Map<string, typeof items>();
+  for (const i of items) { const k = (i.location ?? '').trim() || 'No location set'; groups.set(k, [...(groups.get(k) ?? []), i]); }
+  const now = Date.now();
+  return (
+    <section aria-label="Reagents by location">
+      <input aria-label="Search reagents" placeholder="Search by name, catalog number or location…" value={q} onChange={(e) => setQ(e.target.value)} className="form-input" style={{ maxWidth: 360, marginBottom: 14 }} />
+      {groups.size === 0 ? <p style={{ color: 'var(--text-muted)' }}>No reagents found. Receive a delivery or add inventory items; set where they are kept and they appear here.</p> : [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([loc, rows]) => (
+        <div key={loc} className="card" style={{ padding: 0, marginBottom: 12, overflow: 'hidden' }}>
+          <h3 style={{ margin: 0, padding: '10px 14px', fontSize: 14, background: 'var(--surface2)' }}>{loc} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({rows.length})</span></h3>
+          {rows.map((i) => {
+            const low = i.minimum_quantity !== undefined && i.quantity <= i.minimum_quantity;
+            const exp = i.expiry_date !== undefined && i.expiry_date < now + 30 * 86_400_000;
+            return (
+              <div key={i._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 14px', borderTop: '1px solid var(--border)', flexWrap: 'wrap', fontSize: 14 }}>
+                <span style={{ flex: 1, minWidth: 180, fontWeight: 600 }}>{i.name}{i.catalog_number ? <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {i.catalog_number}</span> : null}</span>
+                <span>{i.quantity} {i.unit ?? ''}</span>
+                {low && <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 12 }}>Low stock</span>}
+                {exp && i.expiry_date !== undefined && <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 12 }}>{i.expiry_date < now ? 'Expired' : 'Expires'} {new Date(i.expiry_date).toLocaleDateString()}</span>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </section>
   );
 }

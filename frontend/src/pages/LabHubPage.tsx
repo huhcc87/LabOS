@@ -7,6 +7,11 @@ import { ProtocolFormFields, type ProtocolDetails } from '../components/Protocol
 import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
+import SopsPanel from '../features/sops/SopsPanel';
+import NotebookHubPage from './NotebookHubPage';
+import InstrumentBooking from '../features/instruments/InstrumentBooking';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
 import type { Id } from '../../convex/_generated/dataModel';
 
@@ -71,53 +76,6 @@ const TIME_SLOTS = [
 ];
 
 // ── External Protocol Library ─────────────────────────────────────────────────
-interface ExternalProtocol {
-  id: string; title: string; source: string; sourceColor: string; sourceUrl: string;
-  category: string; description: string; duration: string; difficulty: string;
-  steps: string[];
-}
-
-const EXTERNAL_PROTOCOLS: ExternalProtocol[] = [
-  // Cold Spring Harbor Protocols
-  { id: 'cshl-001', title: 'Western Blotting', source: 'Cold Spring Harbor', sourceColor: '#c2410c', sourceUrl: 'https://cshprotocols.cshlp.org/content/2006/1/pdb.prot3942', category: 'Protein Analysis', description: 'Standard Western blot protocol for protein detection using antibodies.', duration: '4–6 hrs', difficulty: 'Intermediate', steps: ['Prepare SDS-PAGE gel and run electrophoresis', 'Transfer proteins to PVDF membrane', 'Block membrane with 5% milk in TBST', 'Incubate with primary antibody overnight at 4°C', 'Wash 3× with TBST', 'Incubate with HRP-secondary antibody 1 hr', 'Develop with ECL reagent and image'] },
-  { id: 'cshl-002', title: 'Chromatin Immunoprecipitation (ChIP)', source: 'Cold Spring Harbor', sourceColor: '#c2410c', sourceUrl: 'https://cshprotocols.cshlp.org/content/2009/9/pdb.prot5279', category: 'Genomics', description: 'ChIP for mapping protein–DNA interactions genome-wide.', duration: '2 days', difficulty: 'Advanced', steps: ['Cross-link cells with 1% formaldehyde', 'Lyse cells and sonicate chromatin', 'Immunoprecipitate with target antibody', 'Reverse cross-links at 65°C overnight', 'Purify DNA', 'Analyze by qPCR or sequencing'] },
-  { id: 'cshl-003', title: 'RNA Extraction (TRIzol)', source: 'Cold Spring Harbor', sourceColor: '#c2410c', sourceUrl: 'https://cshprotocols.cshlp.org/content/2010/6/pdb.prot5445', category: 'Molecular Biology', description: 'Total RNA isolation from cells and tissues using TRIzol reagent.', duration: '1–2 hrs', difficulty: 'Beginner', steps: ['Lyse sample in TRIzol', 'Add chloroform and phase-separate', 'Precipitate RNA with isopropanol', 'Wash pellet with 75% ethanol', 'Resuspend in RNase-free water', 'Quantify by NanoDrop'] },
-  { id: 'cshl-004', title: 'Agarose Gel Electrophoresis', source: 'Cold Spring Harbor', sourceColor: '#c2410c', sourceUrl: 'https://cshprotocols.cshlp.org/content/2012/1/pdb.prot067694', category: 'Molecular Biology', description: 'Standard DNA separation by agarose gel electrophoresis.', duration: '45 min', difficulty: 'Beginner', steps: ['Prepare 1% agarose in TAE buffer', 'Add ethidium bromide or SYBR safe', 'Load DNA samples with loading dye', 'Run at 100V for 30 min', 'Image under UV light'] },
-  { id: 'cshl-005', title: 'Immunofluorescence Staining', source: 'Cold Spring Harbor', sourceColor: '#c2410c', sourceUrl: 'https://cshprotocols.cshlp.org/content/2015/1/pdb.prot083295', category: 'Imaging', description: 'Fluorescent antibody staining of cells for confocal microscopy.', duration: '3–4 hrs', difficulty: 'Intermediate', steps: ['Fix cells with 4% paraformaldehyde', 'Permeabilize with 0.1% Triton X-100', 'Block with 5% BSA', 'Incubate primary antibody 1 hr at RT', 'Wash 3× with PBS', 'Incubate fluorescent secondary antibody', 'Mount with DAPI and image'] },
-
-  // Springer Nature Experiments
-  { id: 'spr-001', title: 'CRISPR-Cas9 Gene Editing', source: 'Springer Protocols', sourceColor: '#0891b2', sourceUrl: 'https://experiments.springernature.com/articles/10.1038/nprot.2013.143', category: 'Genomics', description: 'CRISPR-Cas9 guide RNA design and delivery for gene knockout in mammalian cells.', duration: '2–3 weeks', difficulty: 'Advanced', steps: ['Design sgRNA targeting sequence', 'Clone sgRNA into expression vector', 'Transfect cells with Cas9 + sgRNA', 'Select with puromycin 48 hrs', 'Extract DNA and verify editing by sequencing', 'Screen clones by PCR and Western blot'] },
-  { id: 'spr-002', title: 'Flow Cytometry Panel Design', source: 'Springer Protocols', sourceColor: '#0891b2', sourceUrl: 'https://experiments.springernature.com/articles/10.1038/nmeth.2698', category: 'Cell Analysis', description: 'Multi-color flow cytometry panel design and cell surface staining.', duration: '3 hrs', difficulty: 'Intermediate', steps: ['Design panel using spectral overlap matrix', 'Prepare single-color compensation controls', 'Block Fc receptors with FcR blocking reagent', 'Stain with primary antibody cocktail 30 min', 'Wash twice with FACS buffer', 'Acquire on flow cytometer', 'Analyze with FlowJo or FCS Express'] },
-  { id: 'spr-003', title: 'Co-Immunoprecipitation (Co-IP)', source: 'Springer Protocols', sourceColor: '#0891b2', sourceUrl: 'https://experiments.springernature.com/articles/10.1038/nprot.2015.146', category: 'Protein Analysis', description: 'Co-IP for identifying protein–protein interactions from cell lysates.', duration: '2 days', difficulty: 'Intermediate', steps: ['Lyse cells in IP lysis buffer with protease inhibitors', 'Pre-clear lysate with protein A/G beads', 'Incubate with antibody 2 hrs at 4°C', 'Add protein A/G beads overnight', 'Wash beads 4× with lysis buffer', 'Elute and run on SDS-PAGE', 'Detect by Western blot'] },
-  { id: 'spr-004', title: 'Single-Cell RNA Sequencing (scRNA-seq)', source: 'Springer Protocols', sourceColor: '#0891b2', sourceUrl: 'https://experiments.springernature.com/articles/10.1038/nprot.2017.149', category: 'Genomics', description: 'Droplet-based single-cell RNA sequencing library preparation (10x Genomics compatible).', duration: '2 days', difficulty: 'Advanced', steps: ['Prepare single-cell suspension', 'Check viability with trypan blue', 'Load cells into 10x Chromium controller', 'Perform GEM generation and barcoding', 'cDNA amplification and library prep', 'Quality control with Bioanalyzer', 'Sequence and analyze data'] },
-  { id: 'spr-005', title: 'Protein Purification (His-tag)', source: 'Springer Protocols', sourceColor: '#0891b2', sourceUrl: 'https://experiments.springernature.com/articles/10.1007/978-1-59745-439-7_7', category: 'Biochemistry', description: 'Recombinant His-tagged protein purification using Ni-NTA affinity chromatography.', duration: '1 day', difficulty: 'Intermediate', steps: ['Induce protein expression with IPTG', 'Harvest cells by centrifugation', 'Lyse cells by sonication', 'Load lysate on Ni-NTA column', 'Wash with 20 mM imidazole', 'Elute with 250 mM imidazole', 'Dialyze and assess purity by SDS-PAGE'] },
-
-  // Bio-Protocol
-  { id: 'bio-001', title: 'MTT Cell Viability Assay', source: 'Bio-Protocol', sourceColor: '#059669', sourceUrl: 'https://bio-protocol.org/e1174', category: 'Cell Biology', description: 'Colorimetric MTT assay to measure cell proliferation and cytotoxicity.', duration: '4 hrs', difficulty: 'Beginner', steps: ['Seed cells at 5×10³/well in 96-well plate', 'Treat with compounds for 24–72 hrs', 'Add MTT solution (0.5 mg/mL) for 4 hrs', 'Remove medium; add DMSO to dissolve formazan', 'Read absorbance at 570 nm', 'Calculate % viability vs control'] },
-  { id: 'bio-002', title: 'ELISA for Cytokine Quantification', source: 'Bio-Protocol', sourceColor: '#059669', sourceUrl: 'https://bio-protocol.org/e2095', category: 'Immunology', description: 'Sandwich ELISA for measuring secreted cytokine levels in conditioned media.', duration: '5 hrs', difficulty: 'Beginner', steps: ['Coat plate with capture antibody overnight', 'Block with 1% BSA 1 hr', 'Add samples and standards 2 hrs', 'Wash and add detection antibody 1 hr', 'Add streptavidin-HRP 30 min', 'Add TMB substrate, stop with H₂SO₄', 'Read at 450 nm'] },
-  { id: 'bio-003', title: 'Lentiviral Transduction', source: 'Bio-Protocol', sourceColor: '#059669', sourceUrl: 'https://bio-protocol.org/e3473', category: 'Molecular Biology', description: 'Lentiviral vector production and transduction for stable gene expression.', duration: '1 week', difficulty: 'Advanced', steps: ['Transfect HEK293T with transfer + packaging plasmids', 'Collect viral supernatant at 48 and 72 hrs', 'Concentrate by ultracentrifugation', 'Titer virus by qPCR', 'Transduce target cells with polybrene', 'Select stable integrants with antibiotic'] },
-  { id: 'bio-004', title: 'Wound Healing Migration Assay', source: 'Bio-Protocol', sourceColor: '#059669', sourceUrl: 'https://bio-protocol.org/e1wound', category: 'Cell Biology', description: 'Simple scratch assay to measure cell migration in vitro.', duration: '24–48 hrs', difficulty: 'Beginner', steps: ['Seed cells to confluency in 6-well plate', 'Scratch monolayer with sterile pipette tip', 'Wash to remove debris', 'Image at 0, 12, 24 and 48 hrs', 'Measure wound closure area with ImageJ', 'Calculate migration rate'] },
-
-  // OpenWetWare
-  { id: 'oww-001', title: 'Miniprep Plasmid Isolation', source: 'OpenWetWare', sourceColor: '#7c3aed', sourceUrl: 'https://openwetware.org/wiki/Miniprep', category: 'Molecular Biology', description: 'Alkaline lysis miniprep for plasmid DNA isolation from E. coli.', duration: '30 min', difficulty: 'Beginner', steps: ['Pellet 1.5 mL overnight culture', 'Resuspend in buffer P1', 'Lyse with buffer P2, 5 min', 'Neutralize with buffer N3', 'Centrifuge 10 min at 13,000 rpm', 'Bind to spin column, wash, elute', 'Quantify by NanoDrop'] },
-  { id: 'oww-002', title: 'Bacterial Transformation (Chemical)', source: 'OpenWetWare', sourceColor: '#7c3aed', sourceUrl: 'https://openwetware.org/wiki/Bacterial_transformation', category: 'Molecular Biology', description: 'Chemical transformation of competent E. coli with plasmid DNA.', duration: '2 hrs', difficulty: 'Beginner', steps: ['Thaw competent cells on ice', 'Add 1–5 ng plasmid DNA', 'Incubate on ice 30 min', 'Heat shock at 42°C for 45 sec', 'Return to ice 2 min', 'Add SOC medium, shake 1 hr at 37°C', 'Plate on selective agar'] },
-  { id: 'oww-003', title: 'SDS-PAGE Protein Gel', source: 'OpenWetWare', sourceColor: '#7c3aed', sourceUrl: 'https://openwetware.org/wiki/SDS-PAGE', category: 'Protein Analysis', description: 'Denaturing polyacrylamide gel electrophoresis for protein size separation.', duration: '2 hrs', difficulty: 'Beginner', steps: ['Prepare resolving and stacking gels', 'Boil samples with loading buffer 5 min', 'Load protein ladder and samples', 'Run at 150V for 1 hr', 'Stain with Coomassie or transfer for WB'] },
-  { id: 'oww-004', title: 'Yeast Two-Hybrid Assay', source: 'OpenWetWare', sourceColor: '#7c3aed', sourceUrl: 'https://openwetware.org/wiki/Yeast_two-hybrid', category: 'Biochemistry', description: 'Y2H assay for detecting protein–protein interactions in yeast.', duration: '1 week', difficulty: 'Advanced', steps: ['Clone bait and prey into Y2H vectors', 'Transform yeast strain AH109', 'Plate on double dropout medium', 'Verify growth on triple dropout', 'Confirm with β-galactosidase assay'] },
-
-  // JoVE
-  { id: 'jove-001', title: 'Confocal Microscopy – Live Cell Imaging', source: 'JoVE', sourceColor: '#dc2626', sourceUrl: 'https://www.jove.com/t/51047', category: 'Imaging', description: 'Live-cell fluorescence imaging on a laser scanning confocal microscope.', duration: '2 hrs', difficulty: 'Intermediate', steps: ['Seed cells on glass-bottom dish', 'Transfect with fluorescent reporter', 'Pre-warm microscope stage to 37°C', 'Set CO₂ and humidity control', 'Find field of interest in widefield', 'Switch to confocal mode, optimize settings', 'Capture time-lapse series'] },
-  { id: 'jove-002', title: 'In Vivo Tumor Xenograft Model', source: 'JoVE', sourceColor: '#dc2626', sourceUrl: 'https://www.jove.com/t/1556', category: 'Animal Studies', description: 'Subcutaneous tumor xenograft implantation in immunocompromised mice.', duration: '3–5 weeks', difficulty: 'Advanced', steps: ['Culture tumor cells and verify viability', 'Resuspend in Matrigel (50:50) on ice', 'Anesthetize mice with isoflurane', 'Inject 1–5×10⁶ cells subcutaneously', 'Monitor tumor growth with calipers', 'Calculate tumor volume (L × W² / 2)', 'Euthanize per IACUC protocol'] },
-  { id: 'jove-003', title: 'Patch-Clamp Electrophysiology', source: 'JoVE', sourceColor: '#dc2626', sourceUrl: 'https://www.jove.com/t/2173', category: 'Biochemistry', description: 'Whole-cell patch-clamp recording of ion channel activity in neurons.', duration: '4 hrs', difficulty: 'Advanced', steps: ['Pull borosilicate glass pipettes (3–5 MΩ)', 'Fill pipette with intracellular solution', 'Position pipette near cell under DIC optics', 'Form GΩ seal by gentle suction', 'Break in by brief suction/voltage pulse', 'Record in whole-cell configuration', 'Apply voltage or current protocols'] },
-
-  // Protocol Online
-  { id: 'po-001', title: 'qPCR Gene Expression Analysis', source: 'Protocol Online', sourceColor: '#b45309', sourceUrl: 'https://www.protocol-online.org/prot/Molecular_Biology/PCR/qPCR_gene_expression_analysis.html', category: 'Molecular Biology', description: 'SYBR Green qPCR for relative gene expression quantification using ΔΔCt method.', duration: '3 hrs', difficulty: 'Intermediate', steps: ['Prepare cDNA from RNA using reverse transcriptase', 'Design primers with 80–150 bp amplicon', 'Prepare master mix with SYBR Green', 'Set up 10 µL reactions in triplicate', 'Run: 95°C 10 min, 40× (95°C 15s, 60°C 1 min)', 'Analyze melt curve for specificity', 'Calculate 2^-ΔΔCt relative expression'] },
-  { id: 'po-002', title: 'Subcellular Fractionation', source: 'Protocol Online', sourceColor: '#b45309', sourceUrl: 'https://www.protocol-online.org/prot/Cell_Biology/subcellular_fractionation.html', category: 'Cell Biology', description: 'Sequential centrifugation to isolate nuclear, cytoplasmic, and membrane fractions.', duration: '3 hrs', difficulty: 'Intermediate', steps: ['Lyse cells in hypotonic buffer', 'Centrifuge 300 × g to pellet nuclei', 'Collect cytoplasmic supernatant', 'Centrifuge 10,000 × g for mitochondria', 'Centrifuge 100,000 × g for microsomes', 'Verify fractions by marker proteins on WB'] },
-
-  // Addgene
-  { id: 'add-001', title: 'Lipofectamine Transfection', source: 'Addgene', sourceColor: '#1d4ed8', sourceUrl: 'https://www.addgene.org/protocols/transfection/', category: 'Cell Biology', description: 'Lipid-based transient transfection of mammalian cells for plasmid delivery.', duration: '2 hrs + 24–48 hrs expression', difficulty: 'Beginner', steps: ['Seed cells 24 hrs before transfection (60–80% confluent)', 'Dilute Lipofectamine in Opti-MEM', 'Dilute DNA in Opti-MEM', 'Mix DNA + Lipofectamine, incubate 15 min', 'Add complex dropwise to cells', 'Change medium after 4–6 hrs', 'Harvest after 24–72 hrs'] },
-  { id: 'add-002', title: 'Luciferase Reporter Assay', source: 'Addgene', sourceColor: '#1d4ed8', sourceUrl: 'https://www.addgene.org/protocols/luciferase-assay/', category: 'Molecular Biology', description: 'Dual luciferase reporter assay for measuring transcriptional activity.', duration: '3 hrs', difficulty: 'Beginner', steps: ['Transfect cells with firefly + Renilla reporter', 'Lyse cells in passive lysis buffer', 'Measure firefly luciferase activity', 'Add Stop & Glo reagent', 'Measure Renilla luciferase activity', 'Normalize firefly to Renilla', 'Compare experimental vs control'] },
-];
-
 // Protocol Categories
 const PROTOCOL_CATEGORIES = [
   'Molecular Biology', 'Cell Biology', 'Protein Analysis', 'Immunology',
@@ -133,12 +91,16 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-export default function LabHubPage() {
+type HubTab = 'protocols' | 'notebook' | 'sops' | 'instruments' | 'bookings';
+export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
+  const ib = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
+  const mf = useQuery(api.maintenanceFlow.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
-  const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
+  const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
 
   // Modal states
   const [showProtocolModal, setShowProtocolModal] = useState(false);
@@ -207,9 +169,6 @@ export default function LabHubPage() {
     const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d;
   });
   // Feature: Library search + category
-  const [libSearch, setLibSearch] = useState('');
-  const [libCategory, setLibCategory] = useState('all');
-  const [viewLibProtocol, setViewLibProtocol] = useState<ExternalProtocol | null>(null);
 
   // AI states
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -254,11 +213,7 @@ export default function LabHubPage() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([
-    { id: 1, instrument: 'Spectrophotometer', type: 'Calibration', date: '2024-03-19', status: 'scheduled' },
-    { id: 2, instrument: 'Centrifuge XR-500', type: 'Annual Service', date: '2024-03-15', status: 'completed' },
-    { id: 3, instrument: 'PCR Thermocycler', type: 'Filter Replacement', date: '2024-03-10', status: 'overdue' },
-  ]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([]); // old local list, now unused
 
   // AI Generate Protocol Description
   const generateAIProtocol = (protocolName: string) => {
@@ -775,21 +730,6 @@ export default function LabHubPage() {
     void saveProtocol(() => labProtocols.markUsed(protocolId), 'Protocol marked as used!');
 
   // Feature 1: import external protocol into the lab's saved protocols
-  const importLibProtocol = async (ep: ExternalProtocol) => {
-    const exists = protocols.find(p => p.name === ep.title);
-    if (exists) { showToast('Protocol already in your library', 'error'); return; }
-    const ok = await saveProtocol(() => labProtocols.create({
-      name: ep.title,
-      version: '1.0',
-      status: 'active',
-      description: `${ep.description}\n\nSource: ${ep.source} — ${ep.sourceUrl}`,
-      category: ep.category,
-      duration: ep.duration,
-      steps: ep.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-    }), `"${ep.title}" imported to My Protocols!`);
-    if (ok) setViewLibProtocol(null);
-  };
-
   // Feature 4: quick instrument status cycle
   const cycleInstrumentStatus = (id: number) => {
     setInstruments(prev => prev.map(inst => {
@@ -801,11 +741,9 @@ export default function LabHubPage() {
 
   const tabs = [
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
-    { key: 'sops', label: 'SOPs', icon: '📚', count: sops.length },
-    { key: 'instruments', label: 'Instruments', icon: '🔬', count: instruments.length },
-    { key: 'bookings', label: 'Bookings', icon: '📅', count: bookings.length },
-    { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: maintenanceLogs.filter(m => m.status !== 'completed').length },
-    { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
+    { key: 'notebook', label: 'Lab Notebook', icon: '📓' },
+    { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
+    { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
   ];
 
   const modalStyle: React.CSSProperties = {
@@ -878,57 +816,31 @@ export default function LabHubPage() {
       <nav aria-label="Lab at a glance" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }}>
         {([
           { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
-          { tab: 'sops', value: sops.length, label: 'SOPs' },
-          { tab: 'instruments', value: instruments.filter(i => i.status === 'available').length, label: 'instruments available' },
-          { tab: 'bookings', value: bookings.filter(b => b.status === 'pending').length, label: 'pending bookings' },
-          { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
+          { tab: 'sops', value: sopCount, label: 'SOPs' },
+          { tab: 'instruments', value: ib?.instruments.filter(i => i.bookable).length ?? 0, label: 'instruments available' },
+          { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
+          { tab: 'maintenance', value: mf?.open ?? 0, label: 'open instrument problems', alert: true },
         ] as const).map(s => (
-          <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
+          <button key={s.tab} className="auth-link-reset" onClick={() => (s.tab === 'maintenance' ? navigate('equipment') : setActiveTab(s.tab))}
             style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
             <strong style={{ color: 'alert' in s && s.value > 0 ? 'var(--bad-text)' : 'var(--text)', fontSize: 16 }}>{s.value}</strong> {s.label}
           </button>
         ))}
       </nav>
 
-      {/* Feature 6: Maintenance Due Alert Banner */}
-      {(() => {
-        const today = new Date().toISOString().slice(0, 10);
-        const soon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-        const overdue = maintenanceLogs.filter(m => m.status === 'overdue');
-        const upcoming = maintenanceLogs.filter(m => m.status === 'scheduled' && m.date <= soon && m.date >= today);
-        if (overdue.length === 0 && upcoming.length === 0) return null;
-        return (
-          <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            {overdue.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bad-bg)', borderBottom: upcoming.length > 0 ? '1px solid var(--border)' : 'none' }}>
-                <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
-                <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>
-                  {overdue.length} overdue maintenance{overdue.length > 1 ? 's' : ''}:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{overdue.map(m => m.instrument).join(', ')}</span>
-                <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
-              </div>
-            )}
-            {upcoming.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--warn-bg)' }}>
-                <Icon name="clock" style={{ color: 'var(--warn-text)' }} />
-                <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 13 }}>
-                  {upcoming.length} maintenance due within 7 days:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{upcoming.map(m => `${m.instrument} (${m.date})`).join(', ')}</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {/* Open instrument problems, from the Maintenance reports */}
+      {mf && mf.open > 0 && (
+        <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 16, borderRadius: 10, background: 'var(--bad-bg)', border: '1px solid var(--border)' }}>
+          <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
+          <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>{mf.open} open instrument problem{mf.open > 1 ? 's' : ''}:</span>
+          <span style={{ color: 'var(--text)', fontSize: 13 }}>{[...new Set(mf.issues.filter(i => i.status !== 'completed').map(i => i.instrument_name))].join(', ')}</span>
+          <button className="btn btn-sm btn-secondary" onClick={() => navigate('equipment')} style={{ marginLeft: 'auto' }}>View</button>
+        </div>
+      )}
 
       {/* More Tools Quick Access */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {([
-          { icon: 'book', label: 'Lab Notebook', page: 'lab-notebook' },
-          { icon: 'map', label: 'Storage Map', page: 'storage-map' },
-          { icon: 'wrench', label: 'Equipment Hub', page: 'equipment' },
-          { icon: 'flask', label: 'Experiments', page: 'experiments' },
           { icon: 'file', label: 'Documents', page: 'documents' },
         ] as const).map(tool => (
           <button key={tool.page} className="chip-link" onClick={() => navigate(tool.page)}>
@@ -1162,781 +1074,13 @@ export default function LabHubPage() {
       )}
 
       {/* SOPs Tab */}
-      {activeTab === 'sops' && (
-        <div>
-          {/* Search & Actions Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search SOPs..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 150 }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-                <option value="all">All Categories</option>
-                <option value="Safety">Safety</option>
-                <option value="Quality">Quality</option>
-                <option value="Operations">Operations</option>
-                <option value="Equipment">Equipment</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('sops')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowSOPModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>✨</span> New SOP
-              </button>
-            </div>
-          </div>
+      {activeTab === 'sops' && <SopsPanel />}
+      {activeTab === 'notebook' && <NotebookHubPage />}
 
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllSOPs}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneSOPs}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedSOPs.size} of {sops.length} selected
-              </span>
-            </div>
-            {selectedSOPs.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'sop', count: selectedSOPs.size })}
-              >
-                Delete Selected ({selectedSOPs.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {sops
-              .filter(s => {
-                const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
-                return matchesSearch && matchesCategory;
-              })
-              .map(sop => (
-              <div
-                key={sop.id}
-                className="card"
-                style={{
-                  position: 'relative',
-                  border: selectedSOPs.has(sop.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedSOPs.has(sop.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                {/* Selection Checkbox */}
-                <div style={{ position: 'absolute', top: 12, left: 12 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSOPs.has(sop.id)}
-                    onChange={() => toggleSOPSelection(sop.id)}
-                    style={{ cursor: 'pointer', width: 18, height: 18 }}
-                  />
-                </div>
-                <div style={{
-                  position: 'absolute', top: 12, right: 12,
-                  padding: '4px 10px', borderRadius: 12, fontSize: 10, fontWeight: 600,
-                  background: sop.category === 'Safety' ? 'var(--bad-bg)' : sop.category === 'Quality' ? 'var(--info-bg)' : 'var(--ok-bg)',
-                  color: sop.category === 'Safety' ? 'var(--bad-text)' : sop.category === 'Quality' ? 'var(--info-text)' : 'var(--ok-text)',
-                }}>
-                  {sop.category}
-                </div>
-                <div style={{ fontSize: 32, marginBottom: 12, marginLeft: 28 }}>📚</div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, paddingRight: 70, paddingLeft: 28 }}>{sop.title}</h3>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, paddingLeft: 28 }}>Version {sop.version}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(false); }}>👁️ View</button>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(true); }}>✏️ Edit</button>
-                  <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none', padding: '4px 8px' }}
-                    onClick={() => setDeleteConfirm({ type: 'sop', id: sop.id, name: sop.title })}
-                    title="Delete SOP"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Instruments Tab */}
-      {activeTab === 'instruments' && (
-        <div>
-          {/* Stats & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="🔍 Search instruments..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="in_use">In Use</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              {[
-                { label: 'Available', value: instruments.filter(i => i.status === 'available').length, color: 'var(--ok-text)' },
-                { label: 'In Use', value: instruments.filter(i => i.status === 'in_use').length, color: 'var(--info-text)' },
-                { label: 'Maintenance', value: instruments.filter(i => i.status === 'maintenance').length, color: 'var(--warn-text)' },
-              ].map(stat => (
-                <div key={stat.label} style={{
-                  background: 'var(--surface2)', borderRadius: 8, padding: '8px 16px',
-                  display: 'flex', alignItems: 'center', gap: 8
-                }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>{stat.value}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stat.label}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('instruments')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowInstrumentModal(true)}>+ Add Instrument</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllInstruments}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneInstruments}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedInstruments.size} of {instruments.length} selected
-              </span>
-            </div>
-            {selectedInstruments.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'instrument', count: selectedInstruments.size })}
-              >
-                Delete Selected ({selectedInstruments.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {instruments
-              .filter(i => {
-                const matchesSearch = i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (i.type || '').toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
-                return matchesSearch && matchesStatus;
-              })
-              .map(inst => (
-              <div
-                key={inst.id}
-                className="card"
-                style={{
-                  border: selectedInstruments.has(inst.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedInstruments.has(inst.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'start', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInstruments.has(inst.id)}
-                      onChange={() => toggleInstrumentSelection(inst.id)}
-                      style={{ cursor: 'pointer', marginTop: 4 }}
-                    />
-                    <div>
-                      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{inst.name}</h3>
-                      {inst.type && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{inst.type}</div>}
-                    </div>
-                  </div>
-                  {/* Feature 4: quick status toggle */}
-                  <button
-                    onClick={() => cycleInstrumentStatus(inst.id)}
-                    title="Click to change status"
-                    style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(inst.status).bg, color: statusColor(inst.status).text, border: 'none', cursor: 'pointer' }}
-                  >
-                    {inst.status === 'available' ? '✓ Available' : inst.status === 'in_use' ? '⏳ In Use' : '🔧 Maintenance'}
-                  </button>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, marginLeft: 26 }}>📍 {inst.location}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    style={{ flex: 1 }}
-                    disabled={inst.status !== 'available'}
-                    onClick={() => {
-                      if (inst.status === 'available') {
-                        setNewBooking({ ...newBooking, instrument: inst.name });
-                        setShowBookingModal(true);
-                      }
-                    }}
-                  >
-                    {inst.status === 'available' ? '📅 Book Now' : inst.status === 'in_use' ? 'In Use' : '🔧 Maintenance'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'instrument', id: inst.id, name: inst.name })}
-                    title="Delete Instrument"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bookings Tab */}
-      {activeTab === 'bookings' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search bookings..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <input
-                type="date"
-                className="form-input"
-                style={{ width: 150 }}
-                value={dateFilter}
-                onChange={e => setDateFilter(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {/* Feature 5: calendar/list toggle */}
-              <button
-                className="btn btn-secondary"
-                onClick={() => setBookingView(bookingView === 'list' ? 'calendar' : 'list')}
-                style={{ fontWeight: 600 }}
-              >
-                {bookingView === 'list' ? '📅 Calendar View' : '☰ List View'}
-              </button>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('bookings')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowBookingModal(true)}>+ New Booking</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllBookings}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneBookings}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedBookings.size} of {filterBookings().length} selected
-              </span>
-            </div>
-            {selectedBookings.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('booking', 'confirmed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Confirm Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'booking', count: selectedBookings.size })}
-                >
-                  Cancel Selected ({selectedBookings.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Feature 5: 7-day calendar view */}
-          {bookingView === 'calendar' && (() => {
-            const days = Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(calendarWeekStart);
-              d.setDate(d.getDate() + i);
-              return d;
-            });
-            const fmt = (d: Date) => d.toISOString().slice(0, 10);
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() - 7); setCalendarWeekStart(d); }}>← Prev Week</button>
-                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                    {days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() + 7); setCalendarWeekStart(d); }}>Next Week →</button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
-                  {days.map(day => {
-                    const dayStr = fmt(day);
-                    const dayBookings = bookings.filter(b => b.date === dayStr);
-                    const isToday = dayStr === fmt(new Date());
-                    return (
-                      <div key={dayStr} style={{ background: isToday ? 'var(--accent-light)' : 'var(--surface)', border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 10, minHeight: 100 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 6 }}>
-                          {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
-                        </div>
-                        {dayBookings.length === 0 ? (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>Free</div>
-                        ) : dayBookings.map(b => (
-                          <div key={b.id} style={{ background: b.status === 'confirmed' ? 'var(--ok-bg)' : 'var(--warn-bg)', border: `1px solid ${b.status === 'confirmed' ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}`, borderRadius: 6, padding: '4px 6px', marginBottom: 4 }}>
-                            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{b.instrument}</div>
-                            <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.time}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterBookings().map(b => (
-              <div
-                key={b.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: selectedBookings.has(b.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedBookings.has(b.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedBookings.has(b.id)}
-                    onChange={() => toggleBookingSelection(b.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{ width: 48, height: 48, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                    🔬
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{b.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.user} • {new Date(b.date).toLocaleDateString()} • {b.time}</div>
-                    {b.purpose && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>Purpose: {b.purpose}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(b.status).bg, color: statusColor(b.status).text }}>
-                    {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                  </span>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => {
-                      setBookings(prev => prev.map(booking =>
-                        booking.id === b.id
-                          ? { ...booking, status: booking.status === 'pending' ? 'confirmed' : 'pending' }
-                          : booking
-                      ));
-                    }}
-                  >
-                    {b.status === 'pending' ? '✓ Confirm' : '↩ Pending'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'booking', id: b.id, name: `${b.instrument} - ${b.date}` })}
-                    title="Cancel Booking"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterBookings().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No bookings found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Instruments + Bookings: one screen */}
+      {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
 
       {/* Maintenance Tab */}
-      {activeTab === 'maintenance' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search maintenance..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('maintenance')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowMaintenanceModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🔧</span> Log Maintenance
-              </button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllMaintenance}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneMaintenance}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedMaintenance.size} of {filterMaintenance().length} selected
-              </span>
-            </div>
-            {selectedMaintenance.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('maintenance', 'completed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Complete Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'maintenance', count: selectedMaintenance.size })}
-                >
-                  Delete Selected ({selectedMaintenance.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Overdue Alert */}
-          {maintenanceLogs.filter(m => m.status === 'overdue').length > 0 && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8, padding: 12, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12
-            }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <span style={{ color: '#ef4444', fontWeight: 500 }}>
-                {maintenanceLogs.filter(m => m.status === 'overdue').length} maintenance task(s) are overdue and require immediate attention
-              </span>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterMaintenance().map(m => (
-              <div
-                key={m.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: m.status === 'overdue' ? '1px solid #ef4444' : selectedMaintenance.has(m.id) ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedMaintenance.has(m.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedMaintenance.has(m.id)}
-                    onChange={() => toggleMaintenanceSelection(m.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                    background: m.status === 'overdue' ? 'var(--bad-bg)' : m.status === 'completed' ? 'var(--ok-bg)' : 'var(--surface2)',
-                  }}>
-                    {m.status === 'completed' ? '✅' : m.status === 'overdue' ? '⚠️' : '🔧'}
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{m.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.type} • {new Date(m.date).toLocaleDateString()}</div>
-                    {m.notes && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>{m.notes}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(m.status).bg, color: statusColor(m.status).text }}>
-                    {m.status.charAt(0).toUpperCase() + m.status.slice(1)}
-                  </span>
-                  {m.status !== 'completed' && (
-                    <button
-                      className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        setMaintenanceLogs(prev => prev.map(log =>
-                          log.id === m.id ? { ...log, status: 'completed' } : log
-                        ));
-                        showToast('Maintenance marked as completed', 'success');
-                      }}
-                    >
-                      ✓ Complete
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'maintenance', id: m.id, name: `${m.instrument} - ${m.type}` })}
-                    title="Delete Maintenance Log"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterMaintenance().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No maintenance logs found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Feature 1+2+3: External Protocol Library Tab */}
-      {activeTab === 'library' && (() => {
-        const libCategories = ['all', ...Array.from(new Set(EXTERNAL_PROTOCOLS.map(p => p.category)))];
-        const filtered = EXTERNAL_PROTOCOLS.filter(p => {
-          const q = libSearch.toLowerCase();
-          const matchQ = !q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.source.toLowerCase().includes(q);
-          const matchCat = libCategory === 'all' || p.category === libCategory;
-          return matchQ && matchCat;
-        });
-        const sources = Array.from(new Set(EXTERNAL_PROTOCOLS.map(p => p.source)));
-        return (
-          <div>
-            {/* Source badges */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-              {sources.map(src => {
-                const ep = EXTERNAL_PROTOCOLS.find(p => p.source === src)!;
-                return (
-                  <span key={src} style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: ep.sourceColor + '22', color: ep.sourceColor, border: `1px solid ${ep.sourceColor}44` }}>
-                    {src} ({EXTERNAL_PROTOCOLS.filter(p => p.source === src).length})
-                  </span>
-                );
-              })}
-            </div>
-
-            {/* Feature 3: search + category filter */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                placeholder="🔍 Search protocols, sources, categories..."
-                className="form-input"
-                style={{ flex: 1, minWidth: 220 }}
-                value={libSearch}
-                onChange={e => setLibSearch(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 180 }} value={libCategory} onChange={e => setLibCategory(e.target.value)}>
-                {libCategories.map(c => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
-              </select>
-              <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-muted)' }}>{filtered.length} protocols</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-              {filtered.map(ep => (
-                <div key={ep.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700, background: ep.sourceColor + '22', color: ep.sourceColor }}>{ep.source}</span>
-                        <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, background: 'var(--surface2)', color: 'var(--text-muted)' }}>{ep.category}</span>
-                      </div>
-                      <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{ep.title}</h3>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>{ep.description}</p>
-                  <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
-                    <span>⏱ {ep.duration}</span>
-                    <span>📊 {ep.difficulty}</span>
-                    <span>📝 {ep.steps.length} steps</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      style={{ flex: 1 }}
-                      onClick={() => setViewLibProtocol(ep)}
-                    >
-                      👁 View Steps
-                    </button>
-                    <a href={ep.sourceUrl} target="_blank" rel="noopener noreferrer"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textDecoration: 'none', border: '1px solid var(--border)' }}>
-                      🔗 Source
-                    </a>
-                    <button
-                      className="btn btn-sm btn-primary"
-                      style={{ flex: 1 }}
-                      onClick={() => importLibProtocol(ep)}
-                    >
-                      ↓ Import
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {filtered.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                No protocols match your search. Try a different keyword or category.
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Feature 2: Step-by-step external protocol viewer */}
-      {viewLibProtocol && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 580, maxHeight: '85vh', overflow: 'auto', padding: 28, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div>
-                <span style={{ padding: '3px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: viewLibProtocol.sourceColor + '22', color: viewLibProtocol.sourceColor, marginBottom: 8, display: 'inline-block' }}>{viewLibProtocol.source}</span>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '4px 0' }}>{viewLibProtocol.title}</h2>
-                <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-                  <span>📂 {viewLibProtocol.category}</span>
-                  <span>⏱ {viewLibProtocol.duration}</span>
-                  <span>📊 {viewLibProtocol.difficulty}</span>
-                </div>
-              </div>
-              <button onClick={() => setViewLibProtocol(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>{viewLibProtocol.description}</p>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>Step-by-Step Procedure</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {viewLibProtocol.steps.map((step, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <span style={{ minWidth: 26, height: 26, borderRadius: '50%', background: viewLibProtocol.sourceColor, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
-                  <span style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.5 }}>{step}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <a href={viewLibProtocol.sourceUrl} target="_blank" rel="noopener noreferrer"
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, textDecoration: 'none', border: '1px solid var(--border)' }}>
-                🔗 Open Full Source
-              </a>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => importLibProtocol(viewLibProtocol)}>
-                ↓ Import to My Protocols
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Protocol Modal - Enhanced with AI */}
       {showProtocolModal && (

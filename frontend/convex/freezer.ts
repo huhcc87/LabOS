@@ -395,11 +395,7 @@ export const search = query({
 
 // ── Excel export ──────────────────────────────────────────────────────────
 
-/** Everything in one freezer as flat rows (the page turns these into an .xlsx file). */
-export const exportRows = query({
-  args: { token: v.optional(v.string()), freezer_id: v.id("freezers") },
-  handler: async (ctx, { token, freezer_id }) => {
-    await requireAuth(ctx, token);
+async function collectRows(ctx: QueryCtx, freezer_id: Id<"freezers">) {
     const freezer = await ctx.db.get(freezer_id);
     if (!freezer) throw new ConvexError("Freezer not found");
     const [shelves, racks, boxes, slots] = await Promise.all([
@@ -441,7 +437,53 @@ export const exportRows = query({
       };
     }).sort((a, b) => { for (let i = 0; i < 5; i++) if (a.sort[i] !== b.sort[i]) return a.sort[i] - b.sort[i]; return 0; })
       .map((x) => x.row);
-
     return { freezer: { name: freezer.name, location: freezer.location ?? "", temperature: freezer.temperature }, samples, layout };
+}
+
+/** Everything in one freezer as flat rows (the page turns these into an .xlsx file). */
+export const exportRows = query({
+  args: { token: v.optional(v.string()), freezer_id: v.id("freezers") },
+  handler: async (ctx, { token, freezer_id }) => {
+    await requireAuth(ctx, token);
+    return await collectRows(ctx, freezer_id);
+  },
+});
+
+/** Storage class from the freezer's temperature, for "download from -80 / -20 / 4 / liquid nitrogen". */
+export function storageClass(temp?: number): string {
+  if (temp === undefined) return "Other / not set";
+  if (temp <= -150) return "Liquid nitrogen";
+  if (temp <= -60) return "-80 °C";
+  if (temp <= -10) return "-20 °C";
+  if (temp >= 0 && temp <= 10) return "4 °C";
+  return "Other / not set";
+}
+
+const MAX_EXPORT_ROWS = 20000;
+
+/**
+ * Samples (and layout) from the chosen freezers, optionally only those matching a search.
+ * The search looks at every column, including shelf, rack, box and position.
+ */
+export const exportMany = query({
+  args: { token: v.optional(v.string()), freezer_ids: v.array(v.id("freezers")), query: v.optional(v.string()) },
+  handler: async (ctx, { token, freezer_ids, query: q }) => {
+    await requireAuth(ctx, token);
+    const term = q?.trim().toLowerCase();
+    const samples: Record<string, string>[] = [];
+    const layout: Record<string, string | number>[] = [];
+    let truncated = false;
+    for (const id of freezer_ids) {
+      const data = await collectRows(ctx, id);
+      const where = { Freezer: data.freezer.name, Storage: storageClass(data.freezer.temperature), "Temperature C": data.freezer.temperature === undefined ? "" : String(data.freezer.temperature) };
+      for (const row of data.samples) {
+        const full = { ...where, ...row };
+        if (term && !Object.values(full).some((x) => String(x).toLowerCase().includes(term))) continue;
+        if (samples.length >= MAX_EXPORT_ROWS) { truncated = true; break; }
+        samples.push(full);
+      }
+      for (const row of data.layout) layout.push({ Freezer: data.freezer.name, Storage: where.Storage, ...row });
+    }
+    return { samples, layout, truncated };
   },
 });

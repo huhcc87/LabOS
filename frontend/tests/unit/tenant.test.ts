@@ -6,6 +6,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
+import { sha256Hex } from "../../convex/cryptoSecrets";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -21,7 +22,7 @@ async function setup() {
     const piB = await ctx.db.insert("users", { ...base, email: "pib@b.test", full_name: "PI B", role: "pi", home_lab_id: labB });
     const root = await ctx.db.insert("users", { ...base, email: "root@x.test", full_name: "Root", role: "superadmin", home_lab_id: labA });
     const loner = await ctx.db.insert("users", { ...base, email: "none@x.test", full_name: "No Lab", role: "staff" });
-    const tok = async (user: typeof piA, token: string) => { await ctx.db.insert("sessions", { user_id: user, token, expires_at: now + 1e9, created_at: now }); return token; };
+    const tok = async (user: typeof piA, token: string) => { await ctx.db.insert("sessions", { user_id: user, token: await sha256Hex(token), expires_at: now + 1e9, created_at: now }); return token; };
     await tok(piA, "tA"); await tok(staffA, "tSA"); await tok(piB, "tB"); await tok(root, "tRoot"); await tok(loner, "tNone");
     return { labA, labB, piA, staffA, piB, root };
   });

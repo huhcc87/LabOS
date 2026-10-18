@@ -62,8 +62,8 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-        {s.specialty.slice(0, expanded ? undefined : 3).map(sp => (
-          <span key={sp} style={{
+        {s.specialty.slice(0, expanded ? undefined : 3).map((sp, i) => (
+          <span key={sp + i} style={{
             fontSize: 11, padding: '2px 8px', borderRadius: 12,
             background: 'var(--surface2)', color: 'var(--text-muted)',
             border: '1px solid var(--border)',
@@ -208,7 +208,7 @@ export default function SupplierDirectoryPage() {
                 {search ? ` matching "${search}"` : ''}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-                {filtered.map(s => <SupplierCard key={s.name} s={s} />)}
+                {filtered.map((s, i) => <SupplierCard key={s.name + i} s={s} />)}
               </div>
             </>
           )}

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { ExportMenu } from '../components/ExportMenu';
-import { comingSoon } from '../lib/comingSoon';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
+import { useAuth } from '../context/AuthContext';
+import { errText } from '../lib/errors';
 
 type TabType = 'experiments' | 'results' | 'timeline' | 'files';
 
@@ -117,11 +121,44 @@ const EVENT_ICONS: Record<string, string> = {
 };
 
 export default function ExperimentsHubPage() {
+  const { token } = useAuth();
+  const data = useQuery(api.experiments.overview, token ? { token } : 'skip');
+  const saveExpM = useMutation(api.experiments.save);
+  const removeExpM = useMutation(api.experiments.remove);
+  const setStatusM = useMutation(api.experiments.setStatus);
+  const addStepM = useMutation(api.experiments.addStep);
+  const setStepStatusM = useMutation(api.experiments.setStepStatus);
+  const saveResultM = useMutation(api.experiments.saveResult);
+  const removeResultM = useMutation(api.experiments.removeResult);
+  const makeUploadUrl = useMutation(api.experiments.generateUploadUrl);
+  const addFileM = useMutation(api.experiments.addFile);
+  const removeFileM = useMutation(api.experiments.removeFile);
+
   const [activeTab, setActiveTab] = useState<TabType>('experiments');
-  const [experiments, setExperiments] = useState<Experiment[]>(INITIAL_EXPERIMENTS);
-  const [results, setResults] = useState<Result[]>(INITIAL_RESULTS);
-  const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
-  const [files, setFiles] = useState<ExperimentFile[]>(INITIAL_FILES);
+
+  // Saved data, shaped for the screens below. `id` is the visible code (EXP-001); `docId` is the database id.
+  const experiments: (Experiment & { docId: Id<'experiments'> })[] = (data?.experiments ?? []).map(e => ({
+    id: e.code, docId: e._id, title: e.title, description: e.description, protocol: e.protocol,
+    status: e.status as Experiment['status'], priority: e.priority as Experiment['priority'],
+    startDate: e.start_date, endDate: e.end_date, leadResearcher: e.lead_researcher, team: e.team,
+    steps: e.steps as ExperimentStep[], samples: e.samples, tags: e.tags,
+    createdAt: new Date(e.created_at).toISOString().split('T')[0], updatedAt: new Date(e.updated_at).toISOString().split('T')[0],
+  }));
+  const expByCode = (code: string) => experiments.find(e => e.id === code);
+  const results: (Result & { docId: Id<'experiment_results'> })[] = (data?.results ?? []).map(r => ({
+    id: r.code, docId: r._id, experimentId: experiments.find(e => e.docId === r.experiment_id)?.id ?? '', experimentTitle: r.experiment_title,
+    title: r.title, type: r.type as Result['type'], value: r.value, unit: r.unit, notes: r.notes, attachments: [],
+    recordedBy: r.recorded_by, recordedAt: new Date(r.recorded_at).toISOString().split('T')[0],
+  }));
+  const files: (ExperimentFile & { docId: Id<'experiment_files'>; url: string | null })[] = (data?.files ?? []).map(f => ({
+    id: f._id, docId: f._id, url: f.url, experimentId: experiments.find(e => e.docId === f.experiment_id)?.id ?? '', experimentTitle: f.experiment_title,
+    name: f.name, type: f.type, size: f.size > 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(f.size / 1024))} KB`,
+    category: f.category as ExperimentFile['category'], uploadedBy: f.uploaded_by, uploadedAt: new Date(f.uploaded_at).toISOString().split('T')[0],
+  }));
+  const timeline: TimelineEvent[] = (data?.events ?? []).map(ev => ({
+    id: ev._id, experimentId: ev.experiment_id ?? '', experimentTitle: ev.experiment_title, type: ev.type as TimelineEvent['type'],
+    description: ev.description, user: ev.user, timestamp: new Date(ev.at).toLocaleString(),
+  }));
 
   // Modals
   const [showExpModal, setShowExpModal] = useState(false);
@@ -131,7 +168,8 @@ export default function ExperimentsHubPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [editingExp, setEditingExp] = useState<Experiment | null>(null);
   const [editingResult, setEditingResult] = useState<Result | null>(null);
-  const [viewingExp, setViewingExp] = useState<Experiment | null>(null);
+  const [viewingSnap, setViewingExp] = useState<Experiment | null>(null);
+  const viewingExp = viewingSnap ? experiments.find(e => e.id === viewingSnap.id) ?? viewingSnap : null; // always the saved copy
 
   // Filters
   const [expStatusFilter, setExpStatusFilter] = useState('');
@@ -139,183 +177,90 @@ export default function ExperimentsHubPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Form states
-  const [expForm, setExpForm] = useState({
-    title: '', description: '', protocol: '', status: 'draft' as Experiment['status'],
-    priority: 'medium' as Experiment['priority'], startDate: '', leadResearcher: '', tags: ''
-  });
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const emptyExp = () => ({ title: '', description: '', protocol: '', status: 'draft' as Experiment['status'], priority: 'medium' as Experiment['priority'], startDate: today(), leadResearcher: '', tags: '' });
+  const [expForm, setExpForm] = useState(emptyExp);
   const [resultForm, setResultForm] = useState({
     experimentId: '', title: '', type: 'measurement' as Result['type'], value: '', unit: '', notes: ''
   });
-  const [fileForm, setFileForm] = useState({
-    experimentId: '', name: '', type: '', size: '', category: 'data' as ExperimentFile['category']
-  });
+  const [fileForm, setFileForm] = useState<{ experimentId: string; category: ExperimentFile['category']; file: File | null }>({ experimentId: '', category: 'data', file: null });
+  const [busy, setBusy] = useState(false);
 
-  const addTimelineEvent = (experimentId: string, experimentTitle: string, type: TimelineEvent['type'], description: string) => {
-    const event: TimelineEvent = {
-      id: `t${Date.now()}`,
-      experimentId,
-      experimentTitle,
-      type,
-      description,
-      user: 'Current User',
-      timestamp: new Date().toLocaleString(),
-    };
-    setTimeline(prev => [event, ...prev]);
+  /** Run a saved-data action and show its error in plain words. */
+  const run = async (fn: () => Promise<unknown>, ok?: string) => {
+    try { await fn(); if (ok) toast.success(ok); return true; } catch (e) { toast.error(errText(e)); return false; }
   };
 
   // Experiment CRUD
-  const handleSaveExp = () => {
-    if (!expForm.title || !expForm.startDate || !expForm.leadResearcher) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-
-    if (editingExp) {
-      setExperiments(prev => prev.map(e => e.id === editingExp.id ? {
-        ...e,
-        ...expForm,
-        tags: expForm.tags.split(',').map(t => t.trim()).filter(Boolean),
-        updatedAt: new Date().toISOString().split('T')[0],
-      } : e));
-      addTimelineEvent(editingExp.id, expForm.title, 'note_added', 'Experiment updated');
-      toast.success('Experiment updated');
-    } else {
-      const newExp: Experiment = {
-        id: `EXP-${String(experiments.length + 1).padStart(3, '0')}`,
-        ...expForm,
-        endDate: undefined,
-        team: [{ id: '1', name: expForm.leadResearcher, role: 'Lead' }],
-        steps: [],
-        samples: [],
-        tags: expForm.tags.split(',').map(t => t.trim()).filter(Boolean),
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-      };
-      setExperiments(prev => [...prev, newExp]);
-      addTimelineEvent(newExp.id, newExp.title, 'created', 'Experiment created');
-      toast.success('Experiment created');
-    }
-    resetExpForm();
+  const handleSaveExp = async () => {
+    if (!token) return;
+    const missing = [!expForm.title.trim() && 'title', !expForm.leadResearcher.trim() && 'lead researcher', !expForm.startDate && 'start date'].filter(Boolean);
+    if (missing.length) { toast.error(`Please fill in: ${missing.join(', ')}`); return; }
+    setBusy(true);
+    const exp = editingExp ? experiments.find(e => e.id === editingExp.id) : undefined;
+    const ok = await run(() => saveExpM({
+      token, id: exp?.docId, title: expForm.title, description: expForm.description, protocol: expForm.protocol, status: expForm.status,
+      priority: expForm.priority, start_date: expForm.startDate, lead_researcher: expForm.leadResearcher,
+      tags: expForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+    }), editingExp ? 'Experiment updated' : 'Experiment created');
+    setBusy(false);
+    if (ok) resetExpForm();
   };
 
   const resetExpForm = () => {
-    setExpForm({ title: '', description: '', protocol: '', status: 'draft', priority: 'medium', startDate: '', leadResearcher: '', tags: '' });
+    setExpForm(emptyExp());
     setEditingExp(null);
     setShowExpModal(false);
   };
 
   const handleEditExp = (exp: Experiment) => {
     setExpForm({
-      title: exp.title,
-      description: exp.description,
-      protocol: exp.protocol,
-      status: exp.status,
-      priority: exp.priority,
-      startDate: exp.startDate,
-      leadResearcher: exp.leadResearcher,
-      tags: exp.tags.join(', '),
+      title: exp.title, description: exp.description, protocol: exp.protocol, status: exp.status, priority: exp.priority,
+      startDate: exp.startDate, leadResearcher: exp.leadResearcher, tags: exp.tags.join(', '),
     });
     setEditingExp(exp);
     setShowExpModal(true);
   };
 
-  const handleDeleteExp = (id: string) => {
-    if (confirm('Delete this experiment? All associated data will be removed.')) {
-      const exp = experiments.find(e => e.id === id);
-      setExperiments(prev => prev.filter(e => e.id !== id));
-      setResults(prev => prev.filter(r => r.experimentId !== id));
-      setFiles(prev => prev.filter(f => f.experimentId !== id));
-      if (exp) addTimelineEvent(id, exp.title, 'note_added', 'Experiment deleted');
-      toast.success('Experiment deleted');
-    }
+  const handleDeleteExp = (code: string) => {
+    const exp = expByCode(code);
+    if (!exp || !token) return;
+    if (confirm('Delete this experiment? All its results and files will be removed.')) run(() => removeExpM({ token, id: exp.docId }), 'Experiment deleted');
   };
 
   const handleStartExp = (exp: Experiment) => {
-    setExperiments(prev => prev.map(e => e.id === exp.id ? { ...e, status: 'active', updatedAt: new Date().toISOString().split('T')[0] } : e));
-    addTimelineEvent(exp.id, exp.title, 'started', 'Experiment started');
-    toast.success('Experiment started');
+    const e = expByCode(exp.id);
+    if (e && token) run(() => setStatusM({ token, id: e.docId, status: 'active' }), 'Experiment started');
   };
 
   const handleCompleteExp = (exp: Experiment) => {
-    setExperiments(prev => prev.map(e => e.id === exp.id ? {
-      ...e,
-      status: 'completed',
-      endDate: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
-    } : e));
-    addTimelineEvent(exp.id, exp.title, 'completed', 'Experiment completed');
-    toast.success('Experiment marked as completed');
+    const e = expByCode(exp.id);
+    if (e && token) run(() => setStatusM({ token, id: e.docId, status: 'completed' }), 'Experiment marked as completed');
   };
 
   // Steps management
-  const handleUpdateStep = (expId: string, stepId: string, newStatus: ExperimentStep['status']) => {
-    setExperiments(prev => prev.map(e => {
-      if (e.id !== expId) return e;
-      const updatedSteps = e.steps.map(s => {
-        if (s.id !== stepId) return s;
-        return {
-          ...s,
-          status: newStatus,
-          startedAt: newStatus === 'in-progress' ? new Date().toISOString().split('T')[0] : s.startedAt,
-          completedAt: newStatus === 'completed' ? new Date().toISOString().split('T')[0] : s.completedAt,
-        };
-      });
-      return { ...e, steps: updatedSteps, updatedAt: new Date().toISOString().split('T')[0] };
-    }));
-    const exp = experiments.find(e => e.id === expId);
-    const step = exp?.steps.find(s => s.id === stepId);
-    if (exp && step) {
-      addTimelineEvent(expId, exp.title, 'step_completed', `Step "${step.name}" status changed to ${newStatus}`);
-    }
-    toast.success('Step updated');
+  const handleUpdateStep = (expCode: string, stepId: string, newStatus: ExperimentStep['status']) => {
+    const e = expByCode(expCode);
+    if (e && token) run(() => setStepStatusM({ token, id: e.docId, step_id: stepId, status: newStatus }), 'Step updated');
   };
 
-  const handleAddStep = (expId: string, stepName: string, stepDesc: string) => {
-    if (!stepName) return;
-    setExperiments(prev => prev.map(e => {
-      if (e.id !== expId) return e;
-      const newStep: ExperimentStep = {
-        id: `s${Date.now()}`,
-        name: stepName,
-        description: stepDesc,
-        status: 'pending',
-      };
-      return { ...e, steps: [...e.steps, newStep], updatedAt: new Date().toISOString().split('T')[0] };
-    }));
-    toast.success('Step added');
+  const handleAddStep = (expCode: string, stepName: string, stepDesc: string) => {
+    const e = expByCode(expCode);
+    if (!stepName || !e || !token) return;
+    run(() => addStepM({ token, id: e.docId, name: stepName, description: stepDesc }), 'Step added');
   };
 
   // Result CRUD
-  const handleSaveResult = () => {
-    if (!resultForm.experimentId || !resultForm.title || !resultForm.value) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-
-    const exp = experiments.find(e => e.id === resultForm.experimentId);
-    if (!exp) return;
-
-    if (editingResult) {
-      setResults(prev => prev.map(r => r.id === editingResult.id ? {
-        ...r,
-        ...resultForm,
-        experimentTitle: exp.title,
-      } : r));
-      toast.success('Result updated');
-    } else {
-      const newResult: Result = {
-        id: `RES-${String(results.length + 1).padStart(3, '0')}`,
-        ...resultForm,
-        experimentTitle: exp.title,
-        attachments: [],
-        recordedBy: 'Current User',
-        recordedAt: new Date().toISOString().split('T')[0],
-      };
-      setResults(prev => [...prev, newResult]);
-      addTimelineEvent(exp.id, exp.title, 'result_added', `New result recorded: ${resultForm.title}`);
-      toast.success('Result recorded');
-    }
-    resetResultForm();
+  const handleSaveResult = async () => {
+    if (!token) return;
+    const exp = expByCode(resultForm.experimentId);
+    if (!exp || !resultForm.title.trim() || !resultForm.value.trim()) { toast.error('Please fill in: experiment, title and value'); return; }
+    const existing = editingResult ? results.find(r => r.id === editingResult.id) : undefined;
+    const ok = await run(() => saveResultM({
+      token, id: existing?.docId, experiment_id: exp.docId, title: resultForm.title, type: resultForm.type,
+      value: resultForm.value, unit: resultForm.unit || undefined, notes: resultForm.notes,
+    }), editingResult ? 'Result updated' : 'Result recorded');
+    if (ok) resetResultForm();
   };
 
   const resetResultForm = () => {
@@ -326,57 +271,40 @@ export default function ExperimentsHubPage() {
 
   const handleEditResult = (result: Result) => {
     setResultForm({
-      experimentId: result.experimentId,
-      title: result.title,
-      type: result.type,
-      value: result.value,
-      unit: result.unit || '',
-      notes: result.notes,
+      experimentId: result.experimentId, title: result.title, type: result.type, value: result.value,
+      unit: result.unit || '', notes: result.notes,
     });
     setEditingResult(result);
     setShowResultModal(true);
   };
 
-  const handleDeleteResult = (id: string) => {
-    if (confirm('Delete this result?')) {
-      setResults(prev => prev.filter(r => r.id !== id));
-      toast.success('Result deleted');
-    }
+  const handleDeleteResult = (code: string) => {
+    const r = results.find(x => x.id === code);
+    if (r && token && confirm('Delete this result?')) run(() => removeResultM({ token, id: r.docId }), 'Result deleted');
   };
 
-  // File CRUD
-  const handleSaveFile = () => {
-    if (!fileForm.experimentId || !fileForm.name) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-
-    const exp = experiments.find(e => e.id === fileForm.experimentId);
-    if (!exp) return;
-
-    const newFile: ExperimentFile = {
-      id: `f${Date.now()}`,
-      experimentId: fileForm.experimentId,
-      experimentTitle: exp.title,
-      name: fileForm.name,
-      type: fileForm.name.split('.').pop() || 'unknown',
-      size: fileForm.size || 'Unknown',
-      category: fileForm.category,
-      uploadedBy: 'Current User',
-      uploadedAt: new Date().toISOString().split('T')[0],
-    };
-    setFiles(prev => [...prev, newFile]);
-    toast.success('File added');
-    setFileForm({ experimentId: '', name: '', type: '', size: '', category: 'data' });
-    setShowFileModal(false);
+  // File CRUD: the file itself is uploaded and kept
+  const handleSaveFile = async () => {
+    if (!token) return;
+    const exp = expByCode(fileForm.experimentId);
+    if (!exp || !fileForm.file) { toast.error('Choose the experiment and a file'); return; }
+    setBusy(true);
+    const ok = await run(async () => {
+      const url = await makeUploadUrl({ token });
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': fileForm.file!.type || 'application/octet-stream' }, body: fileForm.file });
+      if (!res.ok) throw new Error('Upload failed. Try again.');
+      const { storageId } = await res.json();
+      await addFileM({ token, experiment_id: exp.docId, name: fileForm.file!.name, category: fileForm.category, storage_id: storageId });
+    }, 'File uploaded');
+    setBusy(false);
+    if (ok) { setFileForm({ experimentId: '', category: 'data', file: null }); setShowFileModal(false); }
   };
 
   const handleDeleteFile = (id: string) => {
-    if (confirm('Delete this file?')) {
-      setFiles(prev => prev.filter(f => f.id !== id));
-      toast.success('File deleted');
-    }
+    const f = files.find(x => x.id === id);
+    if (f && token && confirm('Delete this file?')) run(() => removeFileM({ token, id: f.docId }), 'File deleted');
   };
+
 
   // Filtering
   const filteredExperiments = experiments.filter(e => {
@@ -743,7 +671,7 @@ export default function ExperimentsHubPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 12px', fontSize: 12 }} onClick={() => comingSoon('Download')}>Download</button>
+                    <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 12px', fontSize: 12 }} onClick={() => file.url && window.open(file.url, '_blank', 'noopener')} disabled={!file.url}>Download</button>
                     <button onClick={() => handleDeleteFile(file.id)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444' }}>Delete</button>
                   </div>
                 </div>
@@ -811,7 +739,7 @@ export default function ExperimentsHubPage() {
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
               <button onClick={resetExpForm} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
-              <button onClick={handleSaveExp} className="btn btn-primary" style={{ padding: '10px 20px' }}>{editingExp ? 'Update' : 'Create'}</button>
+              <button onClick={handleSaveExp} disabled={busy} className="btn btn-primary" style={{ padding: '10px 20px' }}>{editingExp ? 'Update' : 'Create'}</button>
             </div>
           </div>
         </div>
@@ -886,14 +814,11 @@ export default function ExperimentsHubPage() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>File Name *</label>
-                <input type="text" value={fileForm.name} onChange={e => setFileForm({ ...fileForm, name: e.target.value })} placeholder="filename.pdf" style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }} />
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>File *</label>
+                <input type="file" aria-label="Experiment file" onChange={e => setFileForm({ ...fileForm, file: e.target.files?.[0] ?? null })} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }} />
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Any file up to 50 MB.</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Size</label>
-                  <input type="text" value={fileForm.size} onChange={e => setFileForm({ ...fileForm, size: e.target.value })} placeholder="e.g., 2.5 MB" style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }} />
-                </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Category</label>
                   <select value={fileForm.category} onChange={e => setFileForm({ ...fileForm, category: e.target.value as ExperimentFile['category'] })} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>
@@ -907,8 +832,8 @@ export default function ExperimentsHubPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-              <button onClick={() => { setFileForm({ experimentId: '', name: '', type: '', size: '', category: 'data' }); setShowFileModal(false); }} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
-              <button onClick={handleSaveFile} className="btn btn-primary" style={{ padding: '10px 20px' }}>Upload</button>
+              <button onClick={() => { setFileForm({ experimentId: '', category: 'data', file: null }); setShowFileModal(false); }} className="btn btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
+              <button onClick={handleSaveFile} disabled={busy} className="btn btn-primary" style={{ padding: '10px 20px' }}>{busy ? 'Uploading…' : 'Upload'}</button>
             </div>
           </div>
         </div>
