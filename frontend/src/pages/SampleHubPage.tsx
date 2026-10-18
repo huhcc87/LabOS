@@ -828,12 +828,6 @@ export default function SampleHubPage() {
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Track and manage laboratory samples with full chain of custody</p>
         </div>
-        <button
-          onClick={() => exportToCSV()}
-          style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)' }}
-        >
-          📥 Export CSV
-        </button>
       </div>
 
       {/* Stats */}
@@ -872,26 +866,6 @@ export default function SampleHubPage() {
         );
       })()}
 
-      {/* Quick actions */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[
-          { icon: '📥', label: 'Batch Import', action: () => setActiveTab('import') },
-          { icon: '📊', label: 'Analytics', action: () => setActiveTab('analytics') },
-          { icon: '📄', label: 'Export CSV', action: () => exportToCSV() },
-        ].map(a => (
-          <button key={a.label} onClick={a.action} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 20,
-            color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontWeight: 500, transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e'; (e.currentTarget as HTMLButtonElement).style.color = '#22c55e'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
-          >
-            <span>{a.icon}</span><span>{a.label}</span>
-          </button>
-        ))}
-      </div>
-
       {/* Tabs */}
       <div className="tabs-row" style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
         {tabs.map(tab => (
@@ -920,6 +894,7 @@ export default function SampleHubPage() {
             )}
           </button>
         ))}
+        <button onClick={() => exportToCSV()} style={{ marginLeft: 'auto', flexShrink: 0, whiteSpace: 'nowrap', padding: '12px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1 }}><span>📄</span><span>Export CSV</span></button>
       </div>
 
       {/* Samples Tab */}
