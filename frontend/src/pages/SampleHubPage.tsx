@@ -878,7 +878,6 @@ export default function SampleHubPage() {
           { icon: '🏷️', label: 'Labels', action: () => navigate('labels') },
           { icon: '📥', label: 'Batch Import', action: () => setActiveTab('import') },
           { icon: '📊', label: 'Analytics', action: () => setActiveTab('analytics') },
-          { icon: '📋', label: 'Protocols', action: () => navigate('protocols') },
           { icon: '📄', label: 'Export CSV', action: () => exportToCSV() },
         ].map(a => (
           <button key={a.label} onClick={a.action} style={{
