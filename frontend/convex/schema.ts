@@ -348,6 +348,11 @@ export default defineSchema({
     notes: v.optional(v.string()),
     cost: v.optional(v.number()),
     next_due: v.optional(v.number()),
+    // Problem reports: anyone reports, a PI/admin handles (status reported -> in_progress -> completed)
+    reported_by: v.optional(v.id("users")),
+    not_working: v.optional(v.boolean()),
+    resolution_note: v.optional(v.string()),
+    handled_by: v.optional(v.id("users")),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_instrument", ["instrument_id"]),
 

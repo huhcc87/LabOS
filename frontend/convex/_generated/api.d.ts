@@ -42,6 +42,7 @@ import type * as labNotebook from "../labNotebook.js";
 import type * as labels from "../labels.js";
 import type * as labsAdmin from "../labsAdmin.js";
 import type * as maintenance from "../maintenance.js";
+import type * as maintenanceFlow from "../maintenanceFlow.js";
 import type * as meetings from "../meetings.js";
 import type * as migrate from "../migrate.js";
 import type * as notifications from "../notifications.js";
@@ -117,6 +118,7 @@ declare const fullApi: ApiFromModules<{
   labels: typeof labels;
   labsAdmin: typeof labsAdmin;
   maintenance: typeof maintenance;
+  maintenanceFlow: typeof maintenanceFlow;
   meetings: typeof meetings;
   migrate: typeof migrate;
   notifications: typeof notifications;

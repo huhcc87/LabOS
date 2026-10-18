@@ -19,6 +19,7 @@ const PRESETS = ['PCR Thermocycler', 'qPCR / Real-time PCR System', 'Centrifuge'
 const statusOf = (i: { bookable: boolean; status: string }) =>
   i.bookable ? { text: 'Active', color: '#15803d', bg: 'rgba(34,197,94,0.14)' }
     : i.status === 'not_used' ? { text: 'Not used', color: '#475569', bg: 'rgba(100,116,139,0.16)' }
+    : i.status === 'maintenance' ? { text: 'Under repair', color: '#b91c1c', bg: 'rgba(220,38,38,0.12)' } // set by a problem report in Maintenance
     : { text: i.status.replace(/_/g, ' '), color: '#b45309', bg: 'rgba(245,158,11,0.14)' };
 
 interface Confirmation { instrument: string; location?: string; start_time: number; end_time: number; reminders: boolean }

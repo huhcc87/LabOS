@@ -9,6 +9,7 @@ import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
 import SopsPanel from '../features/sops/SopsPanel';
 import InstrumentBooking from '../features/instruments/InstrumentBooking';
+import MaintenancePanel from '../features/instruments/MaintenancePanel';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
@@ -142,6 +143,7 @@ export default function LabHubPage() {
   const { user, token } = useAuth();
   const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
   const ib = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
+  const mf = useQuery(api.maintenanceFlow.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
   const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
@@ -260,11 +262,7 @@ export default function LabHubPage() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([
-    { id: 1, instrument: 'Spectrophotometer', type: 'Calibration', date: '2024-03-19', status: 'scheduled' },
-    { id: 2, instrument: 'Centrifuge XR-500', type: 'Annual Service', date: '2024-03-15', status: 'completed' },
-    { id: 3, instrument: 'PCR Thermocycler', type: 'Filter Replacement', date: '2024-03-10', status: 'overdue' },
-  ]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([]); // old local list, now unused
 
   // AI Generate Protocol Description
   const generateAIProtocol = (protocolName: string) => {
@@ -809,7 +807,7 @@ export default function LabHubPage() {
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
-    { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: maintenanceLogs.filter(m => m.status !== 'completed').length },
+    { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: mf?.open ?? 0 },
     { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
   ];
 
@@ -886,7 +884,7 @@ export default function LabHubPage() {
           { tab: 'sops', value: sopCount, label: 'SOPs' },
           { tab: 'instruments', value: ib?.instruments.filter(i => i.bookable).length ?? 0, label: 'instruments available' },
           { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
-          { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
+          { tab: 'maintenance', value: mf?.open ?? 0, label: 'open instrument problems', alert: true },
         ] as const).map(s => (
           <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
             style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
@@ -895,37 +893,15 @@ export default function LabHubPage() {
         ))}
       </nav>
 
-      {/* Feature 6: Maintenance Due Alert Banner */}
-      {(() => {
-        const today = new Date().toISOString().slice(0, 10);
-        const soon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-        const overdue = maintenanceLogs.filter(m => m.status === 'overdue');
-        const upcoming = maintenanceLogs.filter(m => m.status === 'scheduled' && m.date <= soon && m.date >= today);
-        if (overdue.length === 0 && upcoming.length === 0) return null;
-        return (
-          <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            {overdue.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bad-bg)', borderBottom: upcoming.length > 0 ? '1px solid var(--border)' : 'none' }}>
-                <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
-                <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>
-                  {overdue.length} overdue maintenance{overdue.length > 1 ? 's' : ''}:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{overdue.map(m => m.instrument).join(', ')}</span>
-                <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
-              </div>
-            )}
-            {upcoming.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--warn-bg)' }}>
-                <Icon name="clock" style={{ color: 'var(--warn-text)' }} />
-                <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 13 }}>
-                  {upcoming.length} maintenance due within 7 days:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{upcoming.map(m => `${m.instrument} (${m.date})`).join(', ')}</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {/* Open instrument problems, from the Maintenance reports */}
+      {mf && mf.open > 0 && (
+        <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 16, borderRadius: 10, background: 'var(--bad-bg)', border: '1px solid var(--border)' }}>
+          <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
+          <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>{mf.open} open instrument problem{mf.open > 1 ? 's' : ''}:</span>
+          <span style={{ color: 'var(--text)', fontSize: 13 }}>{[...new Set(mf.issues.filter(i => i.status !== 'completed').map(i => i.instrument_name))].join(', ')}</span>
+          <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
+        </div>
+      )}
 
       {/* More Tools Quick Access */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -1173,166 +1149,7 @@ export default function LabHubPage() {
       {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
 
       {/* Maintenance Tab */}
-      {activeTab === 'maintenance' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search maintenance..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('maintenance')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowMaintenanceModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🔧</span> Log Maintenance
-              </button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllMaintenance}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneMaintenance}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedMaintenance.size} of {filterMaintenance().length} selected
-              </span>
-            </div>
-            {selectedMaintenance.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('maintenance', 'completed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Complete Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'maintenance', count: selectedMaintenance.size })}
-                >
-                  Delete Selected ({selectedMaintenance.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Overdue Alert */}
-          {maintenanceLogs.filter(m => m.status === 'overdue').length > 0 && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8, padding: 12, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12
-            }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <span style={{ color: '#ef4444', fontWeight: 500 }}>
-                {maintenanceLogs.filter(m => m.status === 'overdue').length} maintenance task(s) are overdue and require immediate attention
-              </span>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterMaintenance().map(m => (
-              <div
-                key={m.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: m.status === 'overdue' ? '1px solid #ef4444' : selectedMaintenance.has(m.id) ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedMaintenance.has(m.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedMaintenance.has(m.id)}
-                    onChange={() => toggleMaintenanceSelection(m.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                    background: m.status === 'overdue' ? 'var(--bad-bg)' : m.status === 'completed' ? 'var(--ok-bg)' : 'var(--surface2)',
-                  }}>
-                    {m.status === 'completed' ? '✅' : m.status === 'overdue' ? '⚠️' : '🔧'}
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{m.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.type} • {new Date(m.date).toLocaleDateString()}</div>
-                    {m.notes && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>{m.notes}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(m.status).bg, color: statusColor(m.status).text }}>
-                    {m.status.charAt(0).toUpperCase() + m.status.slice(1)}
-                  </span>
-                  {m.status !== 'completed' && (
-                    <button
-                      className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        setMaintenanceLogs(prev => prev.map(log =>
-                          log.id === m.id ? { ...log, status: 'completed' } : log
-                        ));
-                        showToast('Maintenance marked as completed', 'success');
-                      }}
-                    >
-                      ✓ Complete
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'maintenance', id: m.id, name: `${m.instrument} - ${m.type}` })}
-                    title="Delete Maintenance Log"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterMaintenance().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No maintenance logs found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {activeTab === 'maintenance' && <MaintenancePanel />}
 
       {/* Feature 1+2+3: External Protocol Library Tab */}
       {activeTab === 'library' && (() => {
