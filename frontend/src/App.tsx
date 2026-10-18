@@ -72,7 +72,6 @@ const SubcontractManagerPage     = lazy(() => import('./pages/SubcontractManager
 const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
 const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
-const NotebookHubPage            = lazy(() => import('./pages/NotebookHubPage'));
 const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
@@ -208,11 +207,11 @@ function AppInner() {
       case 'writing-resources': return <WritingResourcesPage />;
       case 'version-history': return <VersionHistoryPage />;
       // New v2 pages
-      case 'lab-notebook': return <NotebookHubPage />;
+      case 'lab-notebook': return <LabHubPage initialTab="notebook" />;
       case 'storage-map': return <FreezerBiobankPage />; // old Storage Map merged into Freezer / Biobank
       case 'supplier-directory': return <SupplierDirectoryPage />;
       // Tier 1 — AI Research Intelligence
-      case 'eln': return <NotebookHubPage />;
+      case 'eln': return <LabHubPage initialTab="notebook" />;
       case 'iot-dashboard': return <IoTDashboardPage />;
       case 'label-printer': return <LabelsPage />;
       case 'labels': return <LabelsPage />;

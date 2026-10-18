@@ -71,8 +71,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Protocols, instruments & scheduling',
     items: [
       { key: 'lab-hub', label: 'Lab Hub Overview', icon: '🔬', minRole: 'trainee' },
-      { key: 'protocols', label: 'Protocols / SOPs', icon: '📋', minRole: 'trainee' },
-      { key: 'eln', label: 'Lab Notebook', icon: '📓', minRole: 'trainee' },
+      { key: 'protocols', label: 'Protocols', icon: '📋', minRole: 'trainee' },
       { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
       { key: 'equipment', label: 'Equipment & Maintenance', icon: '🔭', minRole: 'trainee' },
     ]
@@ -143,7 +142,7 @@ const NAV_CATEGORIES: NavCategory[] = [
 // Routed pages that aren't in the sidebar, mapped to the hub that owns them (for the student access check).
 const EXTRA_PAGE_HUB: Record<string, string> = {
   instruments: 'Lab Hub', bookings: 'Lab Hub', sops: 'Lab Hub', maintenance: 'Lab Hub',
-  'lab-notebook': 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Resources',
+  'lab-notebook': 'Lab Hub', eln: 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Resources',
   'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'barcode-scanner': 'Sample Hub', 'barcode-labels': 'Sample Hub', 'label-designer': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
   'grant-hub': 'Grant Hub', 'grant-budget': 'Grant Hub', 'funding-opportunities': 'Grant Hub', 'reviewer-feedback': 'Grant Hub',
   'collaborator-network': 'Grant Hub', 'reference-manager': 'Grant Hub', 'biosketch-generator': 'Grant Hub', 'grant-calendar': 'Grant Hub',
