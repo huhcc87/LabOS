@@ -150,7 +150,7 @@ export default function FreezerBiobankPage() {
 
       {/* Tabs */}
       <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['storage', 'Freezers & racks'], ['reagents', 'Reagents by location'], ['expiring', 'Expiring soon'], ['search', 'Find a sample']] as const).map(([k, l]) => (
+        {([['storage', 'Freezers & racks'], ['reagents', 'Reagents by location'], ['expiring', 'Expiring soon'], ['search', 'Search & download']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
             padding: '10px 16px', background: 'none', border: 0, cursor: 'pointer', fontSize: 14, marginBottom: -1,
             borderBottom: `2px solid ${tab === k ? 'var(--accent)' : 'transparent'}`,
@@ -161,7 +161,7 @@ export default function FreezerBiobankPage() {
 
       {tab === 'reagents' && <ReagentsByLocation token={t} />}
       {tab === 'expiring' && <Expiring token={t} />}
-      {tab === 'search' && <Search token={t} />}
+      {tab === 'search' && <Search token={t} freezers={freezers ?? []} />}
 
       {tab === 'storage' && (loading ? (
         <p style={{ color: 'var(--text-muted)' }}>Loading freezers…</p>
@@ -427,22 +427,91 @@ function Expiring({ token }: { token: string | undefined }) {
   );
 }
 
-function Search({ token }: { token: string | undefined }) {
+const CLASSES = ['-80 °C', '-20 °C', '4 °C', 'Liquid nitrogen', 'Other / not set'];
+/** Same grouping the server uses for the Storage column. */
+const storageOf = (temp?: number) => temp === undefined ? CLASSES[4] : temp <= -150 ? CLASSES[3] : temp <= -60 ? CLASSES[0] : temp <= -10 ? CLASSES[1] : temp >= 0 && temp <= 10 ? CLASSES[2] : CLASSES[4];
+
+/** Search every freezer for any sample, and download the matches (or everything) from the freezers you pick. */
+function Search({ token, freezers }: { token: string | undefined; freezers: { _id: Id<'freezers'>; name: string; temperature?: number }[] }) {
   const [q, setQ] = useState('');
-  const rows = useQuery(api.freezer.search, token && q.trim().length >= 2 ? { token, query: q } : 'skip');
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(freezers.map(f => f._id)));
+  const [scope, setScope] = useState<'matches' | 'all'>('matches');
+  const [withLayout, setWithLayout] = useState(true);
+  const convex = useConvex();
+  const [busy, setBusy] = useState(false);
+  const ids = freezers.filter(f => picked.has(f._id)).map(f => f._id);
+  const term = q.trim();
+  const data = useQuery(api.freezer.exportMany, token && ids.length ? { token, freezer_ids: ids, query: term.length >= 2 ? term : undefined } : 'skip');
+  const classes = CLASSES.filter(c => freezers.some(f => storageOf(f.temperature) === c));
+  const toggle = (id: string) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleClass = (c: string) => {
+    const group = freezers.filter(f => storageOf(f.temperature) === c).map(f => f._id as string);
+    setPicked(p => { const n = new Set(p); const all = group.every(i => n.has(i)); group.forEach(i => all ? n.delete(i) : n.add(i)); return n; });
+  };
+
+  const download = async () => {
+    if (!token || !ids.length) return toast.error('Choose at least one freezer.');
+    setBusy(true);
+    try {
+      const rows = await convex.query(api.freezer.exportMany, { token, freezer_ids: ids, query: scope === 'matches' && term.length >= 2 ? term : undefined });
+      if (scope === 'matches' && term.length < 2) { toast.error('Type a search first, or choose "Everything in the selected freezers".'); return; }
+      if (rows.samples.length === 0) { toast.error('Nothing to download for this choice.'); return; }
+      const XLSX = await import('xlsx');
+      const lead = ['Freezer', 'Storage', 'Temperature C', 'Shelf', 'Rack', 'Box', 'Position', 'Sample ID', 'Name', 'Type', 'Owner', 'Volume', 'Expiry', 'Barcode', 'Label code', 'Notes'];
+      const extra = [...new Set(rows.samples.flatMap(r => Object.keys(r)))].filter(k => !lead.includes(k));
+      const wb = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet(rows.samples, { header: [...lead, ...extra] });
+      sheet['!cols'] = [...lead, ...extra].map(h => ({ wch: Math.max(h.length + 2, 14) }));
+      XLSX.utils.book_append_sheet(wb, sheet, 'Samples');
+      if (withLayout) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.layout), 'Layout');
+      const places = classes.filter(c => freezers.some(f => picked.has(f._id) && storageOf(f.temperature) === c)).join(', ');
+      XLSX.writeFile(wb, `Samples ${scope === 'matches' ? `matching ${term.replace(/[^\w\-. ]+/g, '').slice(0, 30)}` : 'all'} (${places.replace(/[^\w\-.,° ]+/g, '')}) ${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(`Downloaded ${rows.samples.length} sample${rows.samples.length === 1 ? '' : 's'}${rows.truncated ? ' (limit reached)' : ''}`);
+    } catch (e) { toast.error(errText(e)); } finally { setBusy(false); }
+  };
+
   return (
-    <section aria-label="Find a sample">
-      <label htmlFor="fz-search" style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Search by sample ID, name, type, owner or barcode</label>
-      <input id="fz-search" className="form-input" style={{ width: '100%', maxWidth: 520 }} value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. HeLa, S-00123, DNA" />
+    <section aria-label="Search and download">
+      <label htmlFor="fz-search" style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Search any sample: ID, name, type, owner, barcode, notes, or where it is (shelf, rack, box, position)</label>
+      <input id="fz-search" className="form-input" style={{ width: '100%', maxWidth: 520 }} value={q} onChange={e => setQ(e.target.value)} placeholder="e.g. HeLa, S-00123, DNA, Rack 2" />
+
+      <div className="card" style={{ padding: 14, marginTop: 14 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Search and download from</div>
+        {freezers.length === 0 ? <p style={{ margin: 0, color: 'var(--text-muted)' }}>No freezers yet.</p> : classes.map(c => {
+          const group = freezers.filter(f => storageOf(f.temperature) === c);
+          const all = group.every(f => picked.has(f._id));
+          return (
+            <div key={c} style={{ marginBottom: 8 }}>
+              <label style={{ fontWeight: 600, fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                <input type="checkbox" checked={all} onChange={() => toggleClass(c)} /> {c} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({group.length} freezer{group.length === 1 ? '' : 's'})</span>
+              </label>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', margin: '4px 0 0 22px' }}>
+                {group.map(f => <label key={f._id} style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={picked.has(f._id)} onChange={() => toggle(f._id)} /> {f.name}</label>)}
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'matches'} onChange={() => setScope('matches')} /> Only samples matching my search</label>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'all'} onChange={() => setScope('all')} /> Everything in the selected freezers</label>
+          <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={withLayout} onChange={e => setWithLayout(e.target.checked)} /> Include box layout sheet</label>
+          <button className="btn btn-primary btn-sm" onClick={download} disabled={busy || !ids.length}>{busy ? 'Preparing…' : '⬇ Download Excel'}</button>
+        </div>
+      </div>
+
       <div className="card" style={{ padding: 0, marginTop: 14 }}>
-        {q.trim().length < 2 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Type at least 2 characters.</p>
-          : rows === undefined ? <p style={{ padding: 16, margin: 0 }}>Searching…</p>
-            : rows.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>No samples match “{q}”.</p>
-              : <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{rows.map(s => (
-                <li key={s._id} style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-                  <strong>{s.sample_id || s.label}</strong>{s.sample_type ? ` · ${s.sample_type}` : ''}{s.owner ? ` · ${s.owner}` : ''}
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.path}</div>
-                </li>))}</ul>}
+        {!ids.length ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Choose at least one freezer above.</p>
+          : term.length < 2 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>Type at least 2 characters to search. To download everything, choose "Everything in the selected freezers".</p>
+            : data === undefined ? <p style={{ padding: 16, margin: 0 }}>Searching…</p>
+              : data.samples.length === 0 ? <p style={{ padding: 24, margin: 0, color: 'var(--text-muted)' }}>No samples match “{term}”.</p>
+                : <>
+                  <p style={{ margin: 0, padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>{data.samples.length} match{data.samples.length === 1 ? '' : 'es'}{data.samples.length > 100 ? ' (showing the first 100)' : ''}</p>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{data.samples.slice(0, 100).map((s, i) => (
+                    <li key={i} style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+                      <strong>{s['Sample ID'] || s.Name}</strong>{s.Type ? ` · ${s.Type}` : ''}{s.Owner ? ` · ${s.Owner}` : ''}
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{[s.Freezer, s.Storage, s.Shelf, s.Rack, s.Box, s.Position].filter(Boolean).join(' › ')}</div>
+                    </li>))}</ul>
+                </>}
       </div>
     </section>
   );
