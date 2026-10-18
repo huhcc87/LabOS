@@ -5,7 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
-import { OTHER, PRESETS, statusOf } from './InstrumentBooking';
+import { PRESETS, statusOf } from './InstrumentBooking';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -31,7 +31,7 @@ const stamp = (ms: number) => new Date(ms).toLocaleString([], { month: 'short', 
 const dayOnly = (ms: number) => new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 const pretty = (s?: string) => (s ?? '').replace(/_/g, ' ');
 
-interface Form { instrument: string; type: string; category: string; priority: string; impact: string; code: string; note: string }
+interface Form { customName: string; instrument: string; type: string; category: string; priority: string; impact: string; code: string; note: string }
 interface Plan { status: string; vendor: string; expected: string; cost: string; note: string }
 
 const CUSTOM = '__custom__';
@@ -61,7 +61,7 @@ export default function MaintenancePanel() {
   // Equipment list (the same instruments used for booking)
   const equipment = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
   const addEquipment = useMutation(api.instruments.create);
-  const [addingEq, setAddingEq] = useState<{ preset: string; name: string; model: string; serial: string; location: string } | null>(null);
+  const [addingEq, setAddingEq] = useState<{ picked: string[]; custom: string; model: string; serial: string; location: string } | null>(null);
 
   const [form, setForm] = useState<Form | null>(null);
   const [filter, setFilter] = useState('open');
@@ -77,8 +77,14 @@ export default function MaintenancePanel() {
     if (!token || !form) return;
     if (!form.instrument) return toast.error('Choose the instrument.');
     if (!form.note.trim()) return toast.error('Write a short note about the problem.');
+    // A common instrument or your own that isn't in the equipment list yet is added first.
+    const newName = form.instrument === '__custom__' ? form.customName.trim() : form.instrument.startsWith('preset:') ? form.instrument.slice(7) : '';
+    if (form.instrument === '__custom__' && !newName) return toast.error('Type the instrument name.');
     setBusy(true);
-    const ok = await act(() => report({ token, instrument_id: form.instrument as Id<'instruments'>, maintenance_type: form.type, category: form.category, priority: form.priority, impact: form.impact, error_code: form.code, note: form.note }), 'Sent to the PI and admins.');
+    const ok = await act(async () => {
+      const id = newName ? await addEquipment({ token, name: newName.slice(0, 80), status: 'active' }) : (form.instrument as Id<'instruments'>);
+      await report({ token, instrument_id: id as Id<'instruments'>, maintenance_type: form.type, category: form.category, priority: form.priority, impact: form.impact, error_code: form.code, note: form.note });
+    }, 'Sent to the PI and admins.');
     setBusy(false);
     if (ok) setForm(null);
   };
@@ -100,11 +106,16 @@ export default function MaintenancePanel() {
   const priorityRank = (p?: string) => PRIORITIES.findIndex(([k]) => k === p);
   shown.sort((a, b) => Number(open(b.status)) - Number(open(a.status)) || priorityRank(b.priority) - priorityRank(a.priority) || b.created_at - a.created_at);
 
+  const haveNames = new Set((equipment?.instruments ?? []).map((i) => i.name.toLowerCase()));
+  const pickedNames = (a: { picked: string[]; custom: string }) => [...new Set([...a.picked, ...a.custom.split(/[\n,]/).map((s) => s.trim()).filter(Boolean)])].filter((n) => !haveNames.has(n.toLowerCase()));
   const saveEquipment = async () => {
     if (!token || !addingEq) return;
-    const name = addingEq.preset === OTHER ? addingEq.name.trim() : addingEq.preset;
-    if (!name) return toast.error('Enter the equipment name.');
-    const ok = await act(() => addEquipment({ token, name, model: addingEq.model.trim() || undefined, serial_number: addingEq.serial.trim() || undefined, location: addingEq.location.trim() || undefined, status: 'active' }), 'Equipment added');
+    const names = pickedNames(addingEq);
+    if (names.length === 0) return toast.error('Tick at least one instrument or type your own.');
+    const single = names.length === 1;
+    const ok = await act(async () => {
+      for (const name of names) await addEquipment({ token, name: name.slice(0, 80), model: single ? addingEq.model.trim() || undefined : undefined, serial_number: single ? addingEq.serial.trim() || undefined : undefined, location: addingEq.location.trim() || undefined, status: 'active' });
+    }, `${names.length} instrument${names.length === 1 ? '' : 's'} added`);
     if (ok) setAddingEq(null);
   };
   const openCount = (id: string) => data.issues.filter((i) => i.instrument_id === id && open(i.status)).length;
@@ -115,23 +126,37 @@ export default function MaintenancePanel() {
       <section aria-label="Equipment" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>Equipment <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({equipment?.instruments.length ?? 0})</span></h3>
-          <button className="btn btn-secondary btn-sm" onClick={() => setAddingEq(addingEq ? null : { preset: PRESETS[0], name: '', model: '', serial: '', location: '' })}>+ Add equipment</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setAddingEq(addingEq ? null : { picked: [], custom: '', model: '', serial: '', location: '' })}>+ Add equipment</button>
         </div>
         {addingEq && (
           <div className="card" style={{ padding: 12, marginBottom: 10 }}>
-            <div style={grid}>
-              <div>
-                <label style={lbl} htmlFor="eq-type">Equipment type</label>
-                <select id="eq-type" value={addingEq.preset} onChange={(e) => setAddingEq({ ...addingEq, preset: e.target.value })} style={input}>
-                  {PRESETS.map((p) => <option key={p}>{p}</option>)}<option value={OTHER}>Other: type my own…</option>
-                </select>
-              </div>
-              {addingEq.preset === OTHER && <div><label style={lbl} htmlFor="eq-name">Name</label><input id="eq-name" value={addingEq.name} onChange={(e) => setAddingEq({ ...addingEq, name: e.target.value })} style={input} /></div>}
-              <div><label style={lbl} htmlFor="eq-model">Model (optional)</label><input id="eq-model" value={addingEq.model} onChange={(e) => setAddingEq({ ...addingEq, model: e.target.value })} style={input} /></div>
-              <div><label style={lbl} htmlFor="eq-serial">Serial number (optional)</label><input id="eq-serial" value={addingEq.serial} onChange={(e) => setAddingEq({ ...addingEq, serial: e.target.value })} style={input} /></div>
-              <div><label style={lbl} htmlFor="eq-loc">Room / location</label><input id="eq-loc" value={addingEq.location} onChange={(e) => setAddingEq({ ...addingEq, location: e.target.value })} style={input} /></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <strong style={{ fontSize: 13 }}>Pick the instruments your lab has</strong>
+              <span style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setAddingEq({ ...addingEq, picked: PRESETS.filter((p) => !haveNames.has(p.toLowerCase())) })}>Select all</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setAddingEq({ ...addingEq, picked: [] })}>Clear</button>
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary btn-sm" onClick={saveEquipment}>Save</button><button className="btn btn-secondary btn-sm" onClick={() => setAddingEq(null)}>Cancel</button></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 4, marginBottom: 10 }}>
+              {PRESETS.map((p) => {
+                const have = haveNames.has(p.toLowerCase());
+                return (
+                  <label key={p} style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center', opacity: have ? 0.5 : 1 }}>
+                    <input type="checkbox" disabled={have} checked={have || addingEq.picked.includes(p)} onChange={(e) => setAddingEq({ ...addingEq, picked: e.target.checked ? [...addingEq.picked, p] : addingEq.picked.filter((x) => x !== p) })} /> {p}{have ? ' (added)' : ''}
+                  </label>
+                );
+              })}
+            </div>
+            <div style={grid}>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lbl} htmlFor="eq-custom">Not in the list? Type your own (one per line or separated by commas)</label><textarea id="eq-custom" rows={2} value={addingEq.custom} onChange={(e) => setAddingEq({ ...addingEq, custom: e.target.value })} placeholder="e.g. Cell sorter, Lyophilizer" style={input} /></div>
+              <div><label style={lbl} htmlFor="eq-loc">Room / location (for all of these)</label><input id="eq-loc" value={addingEq.location} onChange={(e) => setAddingEq({ ...addingEq, location: e.target.value })} style={input} /></div>
+              <div><label style={lbl} htmlFor="eq-model">Model (only if adding one instrument)</label><input id="eq-model" value={addingEq.model} onChange={(e) => setAddingEq({ ...addingEq, model: e.target.value })} style={input} /></div>
+              <div><label style={lbl} htmlFor="eq-serial">Serial number (only if adding one)</label><input id="eq-serial" value={addingEq.serial} onChange={(e) => setAddingEq({ ...addingEq, serial: e.target.value })} style={input} /></div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn btn-primary btn-sm" onClick={saveEquipment}>Add {pickedNames(addingEq).length || ''} selected</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setAddingEq(null)}>Cancel</button>
+            </div>
           </div>
         )}
         {!equipment || equipment.instruments.length === 0 ? (
@@ -149,7 +174,7 @@ export default function MaintenancePanel() {
                   </div>
                   {problems > 0 && <span style={{ fontSize: 11, color: '#b91c1c', fontWeight: 700 }}>{problems} open problem{problems > 1 ? 's' : ''}</span>}
                   <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setForm({ instrument: i._id, type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}>Report problem</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setForm({ customName: '', instrument: i._id, type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}>Report problem</button>
                 </div>
               );
             })}
@@ -169,7 +194,7 @@ export default function MaintenancePanel() {
             {data.instruments.map((i) => <option key={i._id} value={i._id}>{i.name}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setForm({ instrument: '', type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}>🔧 Report a problem</button>
+        <button className="btn btn-primary" onClick={() => setForm({ customName: '', instrument: '', type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}>🔧 Report a problem</button>
       </div>
 
       {form && (
@@ -179,9 +204,15 @@ export default function MaintenancePanel() {
               <label style={lbl} htmlFor="mt-inst">Instrument</label>
               <select id="mt-inst" value={form.instrument} onChange={(e) => set('instrument', e.target.value)} style={input}>
                 <option value="">Select an instrument…</option>
-                {data.instruments.map((i) => <option key={i._id} value={i._id}>{i.name}{i.location ? ` (${i.location})` : ''} — {INSTRUMENT_STATE[i.status] ?? i.status}</option>)}
+                {data.instruments.length > 0 && <optgroup label="Your equipment">
+                  {data.instruments.map((i) => <option key={i._id} value={i._id}>{i.name}{i.location ? ` (${i.location})` : ''} — {INSTRUMENT_STATE[i.status] ?? i.status}</option>)}
+                </optgroup>}
+                <optgroup label="Other common instruments (added to your equipment when you send)">
+                  {PRESETS.filter((p) => !haveNames.has(p.toLowerCase())).map((p) => <option key={p} value={`preset:${p}`}>{p}</option>)}
+                </optgroup>
+                <option value="__custom__">Other: type my own instrument…</option>
               </select>
-              {data.instruments.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>No instruments yet. Add one in Instruments &amp; Booking first.</div>}
+              {form.instrument === '__custom__' && <input aria-label="Your own instrument name" autoFocus placeholder="Instrument name" maxLength={80} value={form.customName} onChange={(e) => set('customName', e.target.value)} style={{ ...input, marginTop: 6 }} />}
             </div>
             <Select id="mt-type" label="What is needed" value={form.type} onChange={(v) => set('type', v)} options={TYPES} custom />
             <Select id="mt-cat" label="Kind of problem" value={form.category} onChange={(v) => set('category', v)} options={CATEGORIES} custom />
