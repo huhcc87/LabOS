@@ -104,7 +104,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Inventory, sensors, video calls & procurement',
     items: [
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
-      { key: 'receiving', label: 'Receiving', icon: '📥', minRole: 'trainee' }, { key: 'barcode-scanner', label: 'Barcode Scanner', icon: '📷', minRole: 'trainee' }, { key: 'barcode-labels', label: 'Barcode Labels', icon: '🏷️', minRole: 'trainee' }, { key: 'label-designer', label: 'Label Designer', icon: '🎨', minRole: 'trainee' },
+      { key: 'receiving', label: 'Receiving', icon: '📥', minRole: 'trainee' },
       { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
       { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
@@ -144,7 +144,7 @@ const NAV_CATEGORIES: NavCategory[] = [
 const EXTRA_PAGE_HUB: Record<string, string> = {
   instruments: 'Lab Hub', bookings: 'Lab Hub', sops: 'Lab Hub', maintenance: 'Lab Hub',
   'lab-notebook': 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Resources',
-  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
+  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'barcode-scanner': 'Sample Hub', 'barcode-labels': 'Sample Hub', 'label-designer': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
   'grant-hub': 'Grant Hub', 'grant-budget': 'Grant Hub', 'funding-opportunities': 'Grant Hub', 'reviewer-feedback': 'Grant Hub',
   'collaborator-network': 'Grant Hub', 'reference-manager': 'Grant Hub', 'biosketch-generator': 'Grant Hub', 'grant-calendar': 'Grant Hub',
   'budget-calculator': 'Grant Hub', 'progress-reports': 'Grant Hub', 'support-letters': 'Grant Hub', 'success-analytics': 'Grant Hub',
@@ -364,7 +364,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     'equipment': 'lab-hub', 'lab-meetings': 'inventory',
     'freezer-biobank': 'samples', 'labels': 'samples', 'label-printer': 'samples',
     'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
-    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'receiving': 'inventory', 'barcode-scanner': 'inventory', 'barcode-labels': 'inventory', 'label-designer': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
+    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'receiving': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
     'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',
   };
 

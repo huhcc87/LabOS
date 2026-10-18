@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import { parseScan } from './scanCode';
 import { LocationPicker, type Location } from './LocationPicker';
+import { StockResult, type StockHits } from './StockResult';
 
 /** Label fields that map onto the sample record; everything else is kept under "details". */
 const MAPPED = ['name', 'type', 'owner', 'volume', 'expiry'];
@@ -24,6 +25,9 @@ export default function ScanStore({ initialCode }: { initialCode?: string }) {
   const [done, setDone] = useState<string | null>(null);
 
   const result = useQuery(api.labels.lookup, code && token ? { token: t, code } : 'skip');
+  // The same scan also covers stock: a lot label, an item barcode or an open order.
+  const stock = useQuery(api.receiving.lookup, code && token ? { token: t, code } : 'skip') as StockHits | undefined;
+  const stockOnly = !!result && !result.known && !!stock && stock.orders.length + stock.items.length + stock.lots.length > 0;
   const store = useMutation(api.labels.store);
   const unstore = useMutation(api.labels.unstore);
 
@@ -57,7 +61,7 @@ export default function ScanStore({ initialCode }: { initialCode?: string }) {
         </>
       )}
 
-      {code && !done && (result === undefined ? <p style={{ color: 'var(--text-muted)' }}>Looking up {code}…</p> : (
+      {code && !done && (result === undefined || stock === undefined ? <p style={{ color: 'var(--text-muted)' }}>Looking up {code}…</p> : (
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <h2 style={{ fontSize: 18, margin: 0 }}>{code}</h2>
@@ -77,6 +81,8 @@ export default function ScanStore({ initialCode }: { initialCode?: string }) {
                 </button>
               </div>
             </>
+          ) : stockOnly && stock ? (
+            <div style={{ marginTop: 12 }}><StockResult code={code} hits={stock} onChanged={() => {}} /></div>
           ) : (
             <StoreForm
               code={code} token={t} defaultOwner={user?.full_name ?? ''}
