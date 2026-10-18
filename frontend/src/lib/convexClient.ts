@@ -367,34 +367,102 @@ export const meetingsApi = {
   },
 };
 
+/** Convex request row -> the shape the Reagent Cart screen uses. */
+const cartRow = (r: any) => ({
+  id: r._id,
+  vendor: r.supplier ?? '',
+  name: r.name,
+  catalog: r.catalog_number ?? '',
+  size: r.size ?? r.unit ?? '',
+  unit_price: r.unit_price ?? null,
+  quantity: r.quantity,
+  currency: 'USD',
+  url: r.url ?? '',
+  image_url: '',
+  cas: r.cas ?? '',
+  notes: r.notes ?? '',
+  status: r.status,
+  captured_at: new Date(r.created_at).toISOString(),
+  ordered_at: r.ordered_at ? new Date(r.ordered_at).toISOString() : null,
+  requested_by: r.requested_by ?? '',
+  project: r.project ?? '',
+  grant: r.grant ?? '',
+  budget_code: r.budget_code ?? '',
+  urgency: r.urgency ?? 'normal',
+  needed_by: r.needed_by ?? null,
+  po_number: r.po_number ?? '',
+  decision_note: r.decision_note ?? '',
+  received_quantity: r.received_quantity ?? 0,
+  over_budget: (r.over_budget ?? []) as string[],
+});
+
+/** The fields the screen may send, renamed to what Convex stores. Anything else is dropped. */
+const cartFields = (d: any) => {
+  const out: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    name: 'name', quantity: 'quantity', vendor: 'supplier', supplier: 'supplier', catalog: 'catalog_number', catalog_number: 'catalog_number',
+    unit_price: 'unit_price', url: 'url', notes: 'notes', size: 'size', cas: 'cas', project: 'project', grant: 'grant',
+    budget_code: 'budget_code', urgency: 'urgency', needed_by: 'needed_by', unit: 'unit',
+  };
+  for (const [from, to] of Object.entries(map)) {
+    const val = d?.[from];
+    if (val === undefined || val === null || val === '') continue;
+    out[to] = val;
+  }
+  return out;
+};
+
 export const reagentCartApi = {
   list: async () => {
-    const token = getToken();
-    const result = await client.query(api.reagentCart.list, { token });
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.reagentCart.listAll, { token: getToken() });
+    return { data: (result ?? []).map(cartRow) };
   },
   create: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.reagentCart.create, { token, ...data });
+    const result = await client.mutation(api.reagentCart.create, { token: getToken(), ...(cartFields(data) as any) });
     return { data: result };
   },
   update: async (id: IdLike, data: any) => {
     const token = getToken();
-    await client.mutation(api.reagentCart.update, { token, id: id as any, ...data });
+    // Approving is a decision, not an edit: it goes through decide so the role is checked.
+    if (data?.status === 'approved' || data?.status === 'rejected') {
+      await client.mutation(api.reagentCart.decide, {
+        token, ids: [toStr(id) as any], decision: data.status === 'approved' ? 'approve' : 'reject', note: data.decision_note,
+      });
+    } else {
+      await client.mutation(api.reagentCart.update, { token, id: toStr(id) as any, ...(cartFields(data) as any), ...(data?.status ? { status: data.status } : {}) });
+    }
     return { data: { id } };
   },
   delete: async (id: IdLike) => {
-    const token = getToken();
-    await client.mutation(api.reagentCart.remove, { token, id: id as any });
+    await client.mutation(api.reagentCart.remove, { token: getToken(), id: toStr(id) as any });
     return { data: { success: true } };
   },
-  checkout: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.reagentCart.checkout, {
-      token,
-      item_ids: data.item_ids,
-    });
+  /** `override` approves even when a request goes over a budget limit. `blocked` lists the ones held back. */
+  decide: async (ids: IdLike[], decision: 'approve' | 'reject', note?: string, override?: boolean) => {
+    const result = await client.mutation(api.reagentCart.decide, { token: getToken(), ids: ids.map((i) => toStr(i) as any), decision, note, override });
     return { data: result };
+  },
+  invoiceMatch: async () => ({ data: await client.query(api.reagentCart.invoiceMatch, { token: getToken() }) }),
+  addInvoice: async (data: { po_number: string; invoice_number: string; invoice_date?: number; amount: number; notes?: string }) => {
+    await client.mutation(api.reagentCart.addInvoice, { token: getToken(), ...data });
+    return { data: { ok: true } };
+  },
+  removeInvoice: async (id: string) => {
+    await client.mutation(api.reagentCart.removeInvoice, { token: getToken(), id: id as any });
+    return { data: { ok: true } };
+  },
+  /** Orders the approved requests among `item_ids`; one PO number per supplier. */
+  checkout: async (data: any) => {
+    const result = await client.mutation(api.reagentCart.placeOrder, { token: getToken(), ids: (data.item_ids ?? []).map((i: IdLike) => toStr(i) as any) });
+    const total = result.orders.reduce((s: number, o: { total: number }) => s + o.total, 0);
+    return { data: { mode: 'manual', ordered_count: result.ordered, skipped: result.skipped, total_amount: total, orders: result.orders } };
+  },
+  reorderLowStock: async () => ({ data: await client.mutation(api.reagentCart.reorderLowStock, { token: getToken() }) }),
+  spend: async () => ({ data: await client.query(api.reagentCart.spend, { token: getToken() }) }),
+  config: async () => ({ data: await client.query(api.reagentCart.config, { token: getToken() }) }),
+  setAutoApproveLimit: async (limit: number) => {
+    await client.mutation(api.reagentCart.setAutoApproveLimit, { token: getToken(), limit });
+    return { data: { limit } };
   },
   health: async () => {
     // Verify Convex connection is alive
@@ -1172,6 +1240,18 @@ export const protocolsPrintApi = {
       return { data: html };
     } catch {
       return { data: "<p>Error loading protocol for print</p>" };
+    }
+  },
+};
+
+/** Local Ollama via Convex. `text` is null when Ollama is off or fails: callers use their built-in draft. */
+export const protocolAiApi = {
+  complete: async (kind: 'protocol' | 'chat', prompt: string): Promise<string | null> => {
+    try {
+      const r = await client.action(api.protocolAi.complete, { token: getToken(), kind, prompt });
+      return r.text;
+    } catch {
+      return null;
     }
   },
 };

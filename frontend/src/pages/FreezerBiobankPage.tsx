@@ -52,7 +52,7 @@ export default function FreezerBiobankPage() {
   const [rackId, setRackId] = useState<Id<'freezer_racks'> | null>(null);
   const [boxId, setBoxId] = useState<Id<'freezer_boxes'> | null>(null);
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  const [tab, setTab] = useState<'storage' | 'expiring' | 'search'>('storage');
+  const [tab, setTab] = useState<'storage' | 'reagents' | 'expiring' | 'search'>('storage');
 
   const racksByShelf = useMemo(() => {
     const m = new Map<string, Rack[]>();
@@ -150,7 +150,7 @@ export default function FreezerBiobankPage() {
 
       {/* Tabs */}
       <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['storage', 'Storage'], ['expiring', 'Expiring soon'], ['search', 'Find a sample']] as const).map(([k, l]) => (
+        {([['storage', 'Freezers & racks'], ['reagents', 'Reagents by location'], ['expiring', 'Expiring soon'], ['search', 'Find a sample']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
             padding: '10px 16px', background: 'none', border: 0, cursor: 'pointer', fontSize: 14, marginBottom: -1,
             borderBottom: `2px solid ${tab === k ? 'var(--accent)' : 'transparent'}`,
@@ -159,6 +159,7 @@ export default function FreezerBiobankPage() {
         ))}
       </div>
 
+      {tab === 'reagents' && <ReagentsByLocation token={t} />}
       {tab === 'expiring' && <Expiring token={t} />}
       {tab === 'search' && <Search token={t} />}
 
@@ -443,6 +444,40 @@ function Search({ token }: { token: string | undefined }) {
                   <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.path}</div>
                 </li>))}</ul>}
       </div>
+    </section>
+  );
+}
+
+/** Reagents and supplies grouped by where they are kept (from Inventory), so one page shows samples and stock. */
+function ReagentsByLocation({ token }: { token: string | undefined }) {
+  const [q, setQ] = useState('');
+  const stock = useQuery(api.receiving.stockLots, token ? { token } : 'skip');
+  if (!stock) return <p style={{ color: 'var(--text-muted)' }}>Loading…</p>;
+  const term = q.trim().toLowerCase();
+  const items = stock.items.filter((i) => !term || [i.name, i.location, i.catalog_number].some((x) => (x ?? '').toLowerCase().includes(term)));
+  const groups = new Map<string, typeof items>();
+  for (const i of items) { const k = (i.location ?? '').trim() || 'No location set'; groups.set(k, [...(groups.get(k) ?? []), i]); }
+  const now = Date.now();
+  return (
+    <section aria-label="Reagents by location">
+      <input aria-label="Search reagents" placeholder="Search by name, catalog number or location…" value={q} onChange={(e) => setQ(e.target.value)} className="form-input" style={{ maxWidth: 360, marginBottom: 14 }} />
+      {groups.size === 0 ? <p style={{ color: 'var(--text-muted)' }}>No reagents found. Receive a delivery or add inventory items; set where they are kept and they appear here.</p> : [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([loc, rows]) => (
+        <div key={loc} className="card" style={{ padding: 0, marginBottom: 12, overflow: 'hidden' }}>
+          <h3 style={{ margin: 0, padding: '10px 14px', fontSize: 14, background: 'var(--surface2)' }}>{loc} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({rows.length})</span></h3>
+          {rows.map((i) => {
+            const low = i.minimum_quantity !== undefined && i.quantity <= i.minimum_quantity;
+            const exp = i.expiry_date !== undefined && i.expiry_date < now + 30 * 86_400_000;
+            return (
+              <div key={i._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 14px', borderTop: '1px solid var(--border)', flexWrap: 'wrap', fontSize: 14 }}>
+                <span style={{ flex: 1, minWidth: 180, fontWeight: 600 }}>{i.name}{i.catalog_number ? <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {i.catalog_number}</span> : null}</span>
+                <span>{i.quantity} {i.unit ?? ''}</span>
+                {low && <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 12 }}>Low stock</span>}
+                {exp && i.expiry_date !== undefined && <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 12 }}>{i.expiry_date < now ? 'Expired' : 'Expires'} {new Date(i.expiry_date).toLocaleDateString()}</span>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </section>
   );
 }

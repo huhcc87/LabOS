@@ -10,7 +10,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { requireRole } from "./authHelper";
 import { emailConfigured } from "./inviteEmail";
-import { checkRateLimit } from "./rateLimit";
+import { passwordProblem } from "./security";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -108,8 +108,9 @@ export const consume = internalMutation({
 export const accept = action({
   args: { invite: v.string(), password: v.string() },
   handler: async (ctx, { invite, password }): Promise<{ email: string }> => {
-    if (password.length < 8) throw new ConvexError("Password must be at least 8 characters");
-    if (!/\d/.test(password)) throw new ConvexError("Password must contain at least one digit");
+    await ctx.runMutation(internal.security.rateLimit, { key: `accept:${invite.slice(0, 16)}`, max: 10, window_ms: 15 * 60_000 });
+    const problem = passwordProblem(password);
+    if (problem) throw new ConvexError(problem);
     const bcrypt = await import("bcryptjs");
     const hashed_password = await bcrypt.hash(password, 12);
     return await ctx.runMutation(internal.invites.consume, { invite, hashed_password });
@@ -133,7 +134,7 @@ export const requestReset = action({
   args: { email: v.string() },
   handler: async (ctx, { email }): Promise<{ emailEnabled: boolean }> => {
     const normalized = email.trim().toLowerCase();
-    checkRateLimit(`reset:${normalized}`);
+    await ctx.runMutation(internal.security.rateLimit, { key: `reset:${normalized}`, max: 5, window_ms: 60 * 60_000 });
     if (!emailConfigured()) return { emailEnabled: false };
     await ctx.runMutation(internal.invites.startReset, { email: normalized });
     return { emailEnabled: true };

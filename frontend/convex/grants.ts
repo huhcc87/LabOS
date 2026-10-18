@@ -1,5 +1,6 @@
 import { action } from "./_generated/server";
 import { query, mutation } from "./tenant";
+import { callOllama } from "./ollama";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
 import { internal } from "./_generated/api";
@@ -243,7 +244,11 @@ export const aiDraft = action({
       .filter(Boolean)
       .join("\n");
 
-    // Try Anthropic first
+    // Local Ollama first when a model is configured
+    const localDraft = await callOllama([{ role: "user", content: userContent }], systemPrompt, 2048);
+    if (localDraft) return { content: localDraft, source: "ollama" };
+
+    // Try Anthropic
     if (process.env.ANTHROPIC_API_KEY) {
       try {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -502,6 +507,7 @@ async function runProvider(
   else if (key === "claude-haiku") raw = await callAnthropic("claude-haiku-5-5", system, user);
   else if (key === "gpt-4o") raw = await callOpenAI(system, user);
   else if (key === "deepseek") raw = await callDeepSeek(system, user);
+  else if (key === "ollama") raw = await callOllama([{ role: "user", content: user }], system, 4096);
   return raw ? { raw, source: key } : null;
 }
 

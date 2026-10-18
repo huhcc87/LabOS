@@ -9,9 +9,28 @@ export default defineSchema({
     token: v.string(),
     expires_at: v.number(),
     created_at: v.number(),
-  }).index("by_token", ["token"]),
+  }).index("by_token", ["token"]).index("by_user", ["user_id"]),
 
   // ── Users ────────────────────────────────────────────────────────────
+  // Sliding-window counters that slow down password guessing and abuse. Shared by every function instance.
+  rate_limits: defineTable({
+    key: v.string(),
+    window_start: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
+
+  // Right-to-erasure requests: a person asks, an admin reviews.
+  erasure_requests: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    user_id: v.id("users"),
+    reason: v.optional(v.string()),
+    status: v.string(),
+    reviewed_by: v.optional(v.id("users")),
+    rejection_reason: v.optional(v.string()),
+    created_at: v.number(),
+    reviewed_at: v.optional(v.number()),
+  }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
+
   users: defineTable({
     email: v.string(),
     hashed_password: v.string(),
@@ -26,6 +45,8 @@ export default defineSchema({
     avatar_url: v.optional(v.string()),
     totp_secret: v.optional(v.string()),
     totp_enabled: v.boolean(),
+    // SHA-256 hashes of unused one-time recovery codes for when the authenticator is lost.
+    recovery_codes: v.optional(v.array(v.string())),
     failed_login_attempts: v.number(),
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
@@ -119,6 +140,13 @@ export default defineSchema({
     purpose: v.optional(v.string()),
     status: v.string(),
     notes: v.optional(v.string()),
+    // Auto reminder to the person who booked: every 2 days until the booking starts
+    lab_name: v.optional(v.string()),
+    person_name: v.optional(v.string()),
+    room: v.optional(v.string()),
+    when_text: v.optional(v.string()), // "Mon, Oct 19, 9:00 AM to Tue, Oct 20, 5:00 PM" in the booker's time zone, for reminders
+    remind_every_2_days: v.optional(v.boolean()),
+    last_reminded_at: v.optional(v.number()),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"])
     .index("by_instrument", ["instrument_id"])
@@ -148,6 +176,25 @@ export default defineSchema({
   }).index("by_lab", ["lab_id"])
     .index("by_category", ["category"])
     .searchIndex("search_name", { searchField: "name" }),
+
+  // One row per received lot of an inventory item (traceability: which lot, expiry, where it went).
+  inventory_lots: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    inventory_id: v.id("inventory"),
+    lot_number: v.string(),
+    expiry_date: v.optional(v.number()),
+    quantity_received: v.number(),
+    quantity_remaining: v.number(),
+    unit: v.optional(v.string()),
+    location: v.optional(v.string()),
+    supplier: v.optional(v.string()),
+    cart_item_id: v.optional(v.id("reagent_cart")),
+    notes: v.optional(v.string()),
+    received_by: v.id("users"),
+    received_at: v.number(),
+  }).index("by_lab", ["lab_id"])
+    .index("by_inventory", ["inventory_id"])
+    .index("by_expiry", ["expiry_date"]),
 
   // ── Samples ──────────────────────────────────────────────────────────
   samples: defineTable({
@@ -277,6 +324,12 @@ export default defineSchema({
     approved_by: v.optional(v.id("users")),
     approved_at: v.optional(v.number()),
     review_date: v.optional(v.number()),
+    // Uploaded document (anyone uploads; status stays "pending" until a PI approves or rejects it)
+    storage_id: v.optional(v.id("_storage")),
+    file_name: v.optional(v.string()),
+    file_type: v.optional(v.string()),
+    file_size: v.optional(v.number()),
+    decision_note: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
   }).index("by_lab", ["lab_id"])
@@ -295,6 +348,18 @@ export default defineSchema({
     notes: v.optional(v.string()),
     cost: v.optional(v.number()),
     next_due: v.optional(v.number()),
+    // Problem reports: anyone reports, a PI/admin handles (status reported -> in_progress -> completed)
+    reported_by: v.optional(v.id("users")),
+    not_working: v.optional(v.boolean()),
+    category: v.optional(v.string()),
+    priority: v.optional(v.string()),
+    impact: v.optional(v.string()),
+    error_code: v.optional(v.string()),
+    vendor: v.optional(v.string()),
+    expected_date: v.optional(v.number()),
+    updates: v.optional(v.array(v.object({ at: v.number(), by: v.string(), status: v.string(), note: v.optional(v.string()) }))),
+    resolution_note: v.optional(v.string()),
+    handled_by: v.optional(v.id("users")),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_instrument", ["instrument_id"]),
 
@@ -742,8 +807,36 @@ export default defineSchema({
     url: v.optional(v.string()),
     notes: v.optional(v.string()),
     status: v.string(),
+    received_quantity: v.optional(v.number()),
+    received_at: v.optional(v.number()),
+    // Request details (Quartzy-style): what it is for, who pays, how urgent
+    size: v.optional(v.string()),
+    cas: v.optional(v.string()),
+    project: v.optional(v.string()),
+    grant: v.optional(v.string()),
+    budget_code: v.optional(v.string()),
+    urgency: v.optional(v.string()),
+    needed_by: v.optional(v.number()),
+    // Approval and ordering
+    approved_by: v.optional(v.id("users")),
+    approved_at: v.optional(v.number()),
+    decision_note: v.optional(v.string()),
+    po_number: v.optional(v.string()),
+    ordered_at: v.optional(v.number()),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_user", ["user_id"]),
+
+  // Supplier invoices entered against a PO, for the PO / receipt / invoice match.
+  cart_invoices: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    po_number: v.string(),
+    invoice_number: v.string(),
+    invoice_date: v.optional(v.number()),
+    amount: v.number(),
+    notes: v.optional(v.string()),
+    entered_by: v.id("users"),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_po", ["po_number"]),
 
   // ── CAPA ─────────────────────────────────────────────────────────────
   capa: defineTable({

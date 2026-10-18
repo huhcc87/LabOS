@@ -44,6 +44,8 @@ interface LabelField {
 
 const DEFAULT_FIELDS: LabelField[] = [
   { key: 'name', label: 'Name', value: '', show: true },
+  { key: 'lab', label: 'Lab', value: '', show: false },
+  { key: 'notes', label: 'Notes', value: '', show: false },
   { key: 'type', label: 'Type', value: '', show: true },
   { key: 'origin', label: 'Origin', value: '', show: true },
   { key: 'purpose', label: 'Purpose', value: '', show: true },
@@ -139,6 +141,9 @@ interface LabelTemplate {
   createdAt: string;
   entityType: string;
   sizeId: string;
+  customW?: string;
+  customH?: string;
+  codeType?: 'qrcode' | 'datamatrix';
   showQr: boolean;
   showBarcode: boolean;
   brand: string;
@@ -149,12 +154,12 @@ interface LabelTemplate {
 
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
 function LabelCard({
-  size, fields, uid, showQr, showBarcode, brand, typo,
+  size, fields, uid, codeType, showQr, showBarcode, brand, typo,
 }: {
   size: LabelSize;
   fields: LabelField[];
   uid: string;
-  codeType: 'qrcode' | 'barcode';
+  codeType: 'qrcode' | 'datamatrix'; // the 2D code drawn when "2D code" is on
   showQr: boolean;
   showBarcode: boolean;
   brand: string;
@@ -195,7 +200,7 @@ function LabelCard({
       {/* Left: QR / barcode */}
       {(showQr || showBarcode) && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {showQr && <Barcode value={scanUrl(uid)} type="qrcode" width={qrSize} height={qrSize} />}
+          {showQr && <Barcode value={scanUrl(uid)} type={codeType} width={qrSize} height={qrSize} />}
           {showBarcode && !showQr && (
             <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
               showText textSize={typo.uidPt} />
@@ -265,7 +270,9 @@ export default function LabelPrinterPage() {
   const { token } = useAuth();
   const [entityType, setEntityType] = useState('sample');
   const [sizeId, setSizeId] = useState('dymo30334');
-  const [codeType, setCodeType] = useState<'qrcode' | 'barcode'>('qrcode');
+  const [customW, setCustomW] = useState('40');
+  const [customH, setCustomH] = useState('20');
+  const [codeType, setCodeType] = useState<'qrcode' | 'datamatrix'>('qrcode');
   const [showQr, setShowQr] = useState(true);
   const [showBarcode, setShowBarcode] = useState(false);
   const [brand, setBrand] = useState('LabOS');
@@ -288,7 +295,11 @@ export default function LabelPrinterPage() {
 
   const updateTypo = (patch: Partial<Typography>) => setTypo(prev => ({ ...prev, ...patch }));
 
-  const size = useMemo(() => LABEL_SIZES.find(s => s.id === sizeId)!, [sizeId]);
+  // "Custom" lets the user type any size in mm (kept between 5 and 300 so a typo can't break the page).
+  const clampMm = (s: string, fallback: number) => { const n = Number(s); return Number.isFinite(n) ? Math.min(300, Math.max(5, n)) : fallback; };
+  const size = useMemo<LabelSize>(() => sizeId === 'custom'
+    ? { id: 'custom', name: 'Custom size', description: 'Any size you type, in millimetres', widthMm: clampMm(customW, 40), heightMm: clampMm(customH, 20), layout: 'roll' }
+    : LABEL_SIZES.find(s => s.id === sizeId) ?? LABEL_SIZES[0], [sizeId, customW, customH]);
 
   // Apply preset visibility when entity type changes
   useEffect(() => {
@@ -335,7 +346,7 @@ export default function LabelPrinterPage() {
       id: Date.now().toString(),
       name,
       createdAt: new Date().toISOString(),
-      entityType, sizeId, showQr, showBarcode, brand, fields, copies, typo,
+      entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo,
     };
     persistTemplates([...savedTemplates, tpl]);
     setTemplateName('');
@@ -346,6 +357,9 @@ export default function LabelPrinterPage() {
   const loadTemplate = (tpl: LabelTemplate) => {
     setEntityType(tpl.entityType);
     setSizeId(tpl.sizeId);
+    if (tpl.customW) setCustomW(tpl.customW);
+    if (tpl.customH) setCustomH(tpl.customH);
+    setCodeType(tpl.codeType ?? 'qrcode');
     setShowQr(tpl.showQr);
     setShowBarcode(tpl.showBarcode);
     setBrand(tpl.brand);
@@ -518,7 +532,7 @@ export default function LabelPrinterPage() {
               style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13, marginBottom: 6, boxSizing: 'border-box' }}
             />
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 18 }}>
-              Saving: <strong>{ENTITY_PRESETS[entityType]?.emoji} {ENTITY_PRESETS[entityType]?.label}</strong> · {LABEL_SIZES.find(s => s.id === sizeId)?.name} · {fields.filter(f => f.show).length} fields
+              Saving: <strong>{ENTITY_PRESETS[entityType]?.emoji} {ENTITY_PRESETS[entityType]?.label}</strong> · {size.name} · {fields.filter(f => f.show).length} fields
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowSaveModal(false)}
@@ -599,10 +613,19 @@ export default function LabelPrinterPage() {
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Label format</div>
             <select value={sizeId} onChange={e => setSizeId(e.target.value)}
               style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}>
+              <option value="custom">Custom size…</option>
               {LABEL_SIZES.map(s => (
                 <option key={s.id} value={s.id}>{s.name} — {s.widthMm} × {s.heightMm} mm</option>
               ))}
             </select>
+            {sizeId === 'custom' && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                <input aria-label="Width in mm" type="number" min={5} max={300} value={customW} onChange={e => setCustomW(e.target.value)} style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }} />
+                <span>×</span>
+                <input aria-label="Height in mm" type="number" min={5} max={300} value={customH} onChange={e => setCustomH(e.target.value)} style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }} />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>mm (width × height)</span>
+              </div>
+            )}
             <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>{size.description}</p>
           </div>
 
@@ -716,8 +739,13 @@ export default function LabelPrinterPage() {
             <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={showQr} onChange={e => setShowQr(e.target.checked)} />
-                QR code
+                2D code
               </label>
+              <select aria-label="2D code type" value={codeType} onChange={e => setCodeType(e.target.value as 'qrcode' | 'datamatrix')} disabled={!showQr}
+                style={{ padding: '2px 6px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12 }}>
+                <option value="qrcode">QR code</option>
+                <option value="datamatrix">Data Matrix</option>
+              </select>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={showBarcode} onChange={e => setShowBarcode(e.target.checked)} />
                 Code128 barcode

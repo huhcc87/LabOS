@@ -12,7 +12,7 @@ export const LAB_TABLES = [
   "grant_versions", "grant_submissions", "biosketches", "settings", "reagent_cart", "capa", "consent_records",
   "activity", "integrations", "procurement_rules", "procurement_budgets", "restricted_chemicals", "borrow_requests",
   "video_rooms", "video_chat_messages", "payment_methods", "payment_orders", "alt_prices", "sds_records",
-  "recurrence_rules", "ai_chat_history", "hypothesis_ratings",
+  "recurrence_rules", "ai_chat_history", "hypothesis_ratings", "inventory_lots", "erasure_requests", "cart_invoices",
 ] as const;
 
 export type LabTable = (typeof LAB_TABLES)[number];

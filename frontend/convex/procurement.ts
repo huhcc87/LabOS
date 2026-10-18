@@ -1,6 +1,7 @@
 import { query, mutation } from "./tenant";
 import { v } from "convex/values";
 import { hubGuard } from "./authHelper";
+import { committedFor } from "./cartBudgets";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -102,7 +103,9 @@ export const listBudgets = query({
   args: { token: v.optional(v.string()) },
   handler: async (ctx, { token }) => {
     await requireAuth(ctx, token);
-    return ctx.db.query("procurement_budgets").collect();
+    // "Spent" is what reagent requests with the same grant/project/budget code have committed.
+    const rows = await ctx.db.query("reagent_cart").collect();
+    return (await ctx.db.query("procurement_budgets").collect()).map((b) => ({ ...b, spent: committedFor(b, rows) }));
   },
 });
 

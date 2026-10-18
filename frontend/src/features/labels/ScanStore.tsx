@@ -69,6 +69,8 @@ export default function ScanStore({ initialCode }: { initialCode?: string }) {
               <Details details={result.known ? result.details : {}} />
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
                 <button className="btn btn-secondary" onClick={() => setMoving(true)}>Move to another position</button>
+                <button className="btn btn-secondary" onClick={async () => { try { await unstore({ token: t, code, reason: 'used_up' }); toast.success('Marked as used up'); reset(); } catch (e) { toast.error(errText(e)); } }}>Used up</button>
+                <button className="btn btn-secondary" onClick={async () => { try { await unstore({ token: t, code, reason: 'discarded' }); toast.success('Marked as discarded'); reset(); } catch (e) { toast.error(errText(e)); } }}>Discard</button>
                 <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: '1px solid transparent', fontWeight: 700 }}
                   onClick={async () => { try { await unstore({ token: t, code }); toast.success('Removed from storage'); reset(); } catch (e) { toast.error(errText(e)); } }}>
                   Remove from storage

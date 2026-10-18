@@ -36,6 +36,8 @@ export default function PaymentMethodsPage() {
 
   const load = useCallback(async () => {
     if (!token) return;
+    // No Stripe key (local, free setup): nothing to list, and no server error to log.
+    if (!isConfigured) { setMethods([]); setLoading(false); return; }
     setLoading(true);
     try {
       const result = await listPaymentMethods({ token });
@@ -45,7 +47,7 @@ export default function PaymentMethodsPage() {
       setMethods([]);
     }
     setLoading(false);
-  }, [token, listPaymentMethods]);
+  }, [token, listPaymentMethods, isConfigured]);
 
   useEffect(() => { load(); }, [load]);
 

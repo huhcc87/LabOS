@@ -113,7 +113,7 @@ const STEPS = [
           { icon: '📋', text: 'Create a protocol and try execution mode', page: 'protocols' },
           { icon: '📝', text: 'Draft a grant section with AI assistance', page: 'grants' },
           { icon: '🏪', text: 'Browse 70+ biomedical suppliers in the directory', page: 'suppliers' },
-          { icon: '🗺️', text: 'Map your lab storage in the Storage Map', page: 'storage-map' },
+          { icon: '🗺️', text: 'Map your lab storage in Freezer / Biobank', page: 'freezer-biobank' },
         ].map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10 }}>
             <span style={{ fontSize: 20 }}>{item.icon}</span>

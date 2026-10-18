@@ -7,6 +7,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { Doc } from "./_generated/dataModel";
 import { DEFAULT_HUBS, type Hub } from "./hubs";
+import { sha256Hex } from "./cryptoSecrets";
 
 /**
  * Validates a session token and returns the user_id.
@@ -17,13 +18,18 @@ export async function requireAuth(
   token: string | undefined | null
 ): Promise<Id<"users">> {
   if (!token) throw new ConvexError("Unauthorized");
+  const hashed = await sha256Hex(token); // sessions store only the hash of the token
   const session = await ctx.db
     .query("sessions")
-    .withIndex("by_token", (q) => q.eq("token", token))
+    .withIndex("by_token", (q) => q.eq("token", hashed))
     .first();
   if (!session || session.expires_at < Date.now()) {
     throw new ConvexError("Unauthorized");
   }
+  // A manager, PI or admin whose lab requires two-factor can't use anything until they set it up
+  // (security.ts, which the setup screen uses, reads the session itself).
+  const user = await ctx.db.get(session.user_id);
+  if (user && (await mustSetUp2fa(ctx, user))) throw new ConvexError("Two-factor sign-in is required. Set it up to continue.");
   return session.user_id;
 }
 
@@ -88,9 +94,27 @@ export function hubGuard(hub: Hub) {
 }
 
 /** Strips password hash and TOTP secret before a user document crosses a function boundary. */
-export function sanitizeUser<T extends { hashed_password?: unknown; totp_secret?: unknown }>(
+export function sanitizeUser<T extends { hashed_password?: unknown; totp_secret?: unknown; recovery_codes?: unknown }>(
   user: T
-): Omit<T, "hashed_password" | "totp_secret"> {
-  const { hashed_password: _h, totp_secret: _t, ...safe } = user;
+): Omit<T, "hashed_password" | "totp_secret" | "recovery_codes"> {
+  const { hashed_password: _h, totp_secret: _t, recovery_codes: _r, ...safe } = user;
   return safe;
+}
+
+// ── Two-factor policy ────────────────────────────────────────────────────
+
+export const REQUIRE_2FA_KEY = "require_2fa_privileged";
+export const PRIVILEGED_ROLES = ["manager", "pi", "admin", "superadmin"];
+
+/** Does this lab require two-factor for managers, PIs and admins? Stored as a per-lab setting. */
+export async function twoFactorPolicyOn(ctx: QueryCtx | MutationCtx, labId: Id<"labs"> | undefined): Promise<boolean> {
+  // A person with no lab has no lab policy. (The lab-scoped database refuses them, so don't ask it.)
+  if (!labId) return false;
+  const rows = await ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", REQUIRE_2FA_KEY)).collect();
+  return rows.some((r) => r.lab_id === labId && r.value === "true");
+}
+
+/** True when this person must turn on two-factor before using anything else. */
+export async function mustSetUp2fa(ctx: QueryCtx | MutationCtx, user: Doc<"users">): Promise<boolean> {
+  return !user.totp_enabled && PRIVILEGED_ROLES.includes(user.role) && (await twoFactorPolicyOn(ctx, user.home_lab_id));
 }

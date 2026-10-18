@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { reagentCartApi, paymentsApi, procurementApi } from '../lib/api';
+import { RequestForm, SpendPanel, type RequestInput } from '../features/cart/CartPanels';
+import { cartCsv, downloadText, openPrint, poHtml } from '../features/cart/cartExport';
+import { InvoicePanel } from '../features/cart/CartPanels';
+import { useNavigate } from '../context/NavigationContext';
 
 interface CartItem {
   id: number;
@@ -14,10 +18,23 @@ interface CartItem {
   image_url: string;
   cas: string;
   notes: string;
-  status: 'pending' | 'approved' | 'ordered' | 'received' | 'cancelled';
+  status: 'pending' | 'approved' | 'rejected' | 'ordered' | 'received' | 'cancelled';
   captured_at: string;
   ordered_at: string | null;
+  requested_by?: string;
+  project?: string;
+  grant?: string;
+  budget_code?: string;
+  urgency?: string;
+  needed_by?: number | null;
+  po_number?: string;
+  decision_note?: string;
+  over_budget?: string[];
 }
+
+interface ApproveResult { changed: number; blocked: { id: string; name: string; budgets: string[] }[] }
+
+interface OrderResult { po_number: string; supplier: string; total: number; ids: string[] }
 
 interface PaymentMethod {
   id: string;
@@ -31,6 +48,7 @@ interface PaymentMethod {
 const STATUS_META: Record<CartItem['status'], { label: string; color: string; bg: string }> = {
   pending:   { label: 'Pending review', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   approved:  { label: 'Approved',       color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+  rejected:  { label: 'Rejected',       color: '#dc2626', bg: 'rgba(220,38,38,0.12)' },
   ordered:   { label: 'Ordered',        color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
   received:  { label: 'Received',       color: '#0891b2', bg: 'rgba(8,145,178,0.12)' },
   cancelled: { label: 'Cancelled',      color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
@@ -48,6 +66,13 @@ export default function ReagentCartPage() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [voiceListening, setVoiceListening] = useState(false);
+  const [cfg, setCfg] = useState({ auto_approve_limit: 0, can_manage: false });
+  const [showForm, setShowForm] = useState(false);
+  const [showSpend, setShowSpend] = useState(false);
+  const [showInvoices, setShowInvoices] = useState(false);
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<OrderResult[]>([]);
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,7 +96,7 @@ export default function ReagentCartPage() {
     }
   }, []);
 
-  useEffect(() => { load(); loadPaymentStatus(); }, [load, loadPaymentStatus]);
+  useEffect(() => { load(); loadPaymentStatus(); reagentCartApi.config().then(r => setCfg(r.data as typeof cfg)).catch(() => {}); }, [load, loadPaymentStatus]);
 
   // Polling so items appear in near-real-time as the extension captures them
   useEffect(() => {
@@ -119,9 +144,70 @@ export default function ReagentCartPage() {
     load();
   };
 
-  const handleApprove = async (id: number) => {
-    await reagentCartApi.update(id, { status: 'approved' });
+  const fail = (e: any) => setNotice(String(e?.data ?? e?.message ?? 'Something went wrong.'));
+
+  /** Approve; anything that would go over a budget limit is held back until the manager confirms. */
+  const approveIds = async (ids: number[]) => {
+    try {
+      let r = (await reagentCartApi.decide(ids, 'approve')).data as ApproveResult;
+      if (r.blocked.length && confirm(`These go over a budget limit:\n${r.blocked.map(b => `• ${b.name} (over ${b.budgets.join(', ')})`).join('\n')}\n\nApprove them anyway?`)) {
+        const o = (await reagentCartApi.decide(r.blocked.map(b => b.id), 'approve', undefined, true)).data as ApproveResult;
+        r = { changed: r.changed + o.changed, blocked: [] };
+      }
+      setNotice(`${r.changed} approved${r.blocked.length ? `, ${r.blocked.length} held back (over budget)` : ''}.`);
+    } catch (e) { fail(e); }
     load();
+  };
+  const handleApprove = (id: number) => approveIds([id]);
+
+  const handleReject = async (id: number) => {
+    const note = prompt('Why is this rejected? (optional, the requester sees it)') ?? undefined;
+    if (note === undefined) return;
+    try { await reagentCartApi.decide([id], 'reject', note); setNotice(''); } catch (e) { fail(e); }
+    load();
+  };
+
+  const approveSelected = async () => {
+    const ids = filtered.filter(i => selectedIds.has(i.id) && i.status === 'pending').map(i => i.id);
+    if (!ids.length) return setNotice('Select pending requests to approve.');
+    await approveIds(ids);
+    clearSelection();
+  };
+
+  const submitRequest = async (r: RequestInput) => {
+    await reagentCartApi.create(r);
+    setShowForm(false);
+    setNotice('Request submitted.');
+    load();
+  };
+
+  const orderAgain = async (item: CartItem) => {
+    try {
+      await reagentCartApi.create({ name: item.name, vendor: item.vendor, catalog: item.catalog, size: item.size, quantity: item.quantity, unit_price: item.unit_price, url: item.url, project: item.project, grant: item.grant, budget_code: item.budget_code, notes: `Re-order of ${item.po_number || 'earlier request'}` });
+      setNotice(`Requested ${item.name} again.`);
+    } catch (e) { fail(e); }
+    load();
+  };
+
+  const reorderLow = async () => {
+    try {
+      const r = (await reagentCartApi.reorderLowStock()).data as { created: number; low: number };
+      setNotice(r.low === 0 ? 'No inventory items are at or under their minimum.' : r.created === 0 ? 'Every low-stock item already has an open request.' : `${r.created} low-stock item${r.created > 1 ? 's' : ''} requested.`);
+    } catch (e) { fail(e); }
+    load();
+  };
+
+  const exportCsv = () => downloadText(`reagent-requests-${new Date().toISOString().slice(0, 10)}.csv`, cartCsv(filtered));
+
+  const changeLimit = async () => {
+    const v = prompt('Auto-approve requests with a total up to ($). Enter 0 to turn off.', String(cfg.auto_approve_limit));
+    if (v === null) return;
+    try { await reagentCartApi.setAutoApproveLimit(Number(v)); setCfg({ ...cfg, auto_approve_limit: Number(v) }); } catch (e) { fail(e); }
+  };
+
+  const printPo = (o: OrderResult) => {
+    const rows = items.filter(i => i.po_number === o.po_number);
+    if (!openPrint(poHtml(o.po_number, o.supplier, rows))) setNotice('Allow pop-ups to print the purchase order.');
   };
 
   // F1: cross-vendor price compare — simulate fetching alt prices for an item
@@ -188,21 +274,16 @@ export default function ReagentCartPage() {
     if (selectedIds.size === 0) return;
     setCheckingOut(true);
     try {
-      const defaultMethod = methods.find(m => m.is_default) || methods[0];
-      const res = await reagentCartApi.checkout({
-        item_ids: Array.from(selectedIds),
-        payment_method_id: defaultMethod?.id,
-      });
+      const res = await reagentCartApi.checkout({ item_ids: Array.from(selectedIds) });
       const data = res.data as any;
-      if (data.mode === 'stripe') {
-        alert(`✓ ${data.ordered_count} item(s) ordered and charged. Total: $${data.total_amount.toFixed(2)}\nStripe charge: ${data.stripe_charge_id}`);
-      } else {
-        alert(`✓ ${data.ordered_count} item(s) marked as ordered. Total: $${data.total_amount.toFixed(2)}\n\nStripe is not configured — process the payment externally and the items will appear as 'ordered' for tracking.`);
-      }
+      setOrders(data.orders as OrderResult[]);
+      setNotice(data.ordered_count === 0
+        ? 'Nothing was ordered: only approved requests can be ordered.'
+        : `${data.ordered_count} request${data.ordered_count > 1 ? 's' : ''} ordered on ${data.orders.length} PO${data.orders.length > 1 ? 's' : ''}, total $${data.total_amount.toFixed(2)}.${data.skipped ? ` ${data.skipped} skipped (not approved).` : ''} Place the order with the supplier, then receive it on the Receiving page.`);
       clearSelection();
       load();
     } catch (e: any) {
-      alert('Checkout failed: ' + (e?.response?.data?.detail || e?.message));
+      fail(e);
     }
     setCheckingOut(false);
   };
@@ -217,13 +298,39 @@ export default function ReagentCartPage() {
             Items captured from Sigma, Thermo, VWR, Abcam, NEB and 15+ other vendors via the LabOS browser extension
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => setShowForm(s => !s)} className="btn btn-primary btn-sm">+ New request</button>
+          <button onClick={reorderLow} className="btn btn-secondary btn-sm" title="Request every inventory item that is at or under its minimum">⟲ Reorder low stock</button>
+          <button onClick={exportCsv} className="btn btn-secondary btn-sm">⬇ Export CSV</button>
+          {cfg.can_manage && <button onClick={() => setShowSpend(s => !s)} className="btn btn-secondary btn-sm">📊 Spend</button>}
+          {cfg.can_manage && <button onClick={() => setShowInvoices(s => !s)} className="btn btn-secondary btn-sm" title="Enter supplier invoices and check them against the PO and what was received">🧾 Invoices</button>}
+          {cfg.can_manage && <button onClick={changeLimit} className="btn btn-secondary btn-sm" title="Requests up to this total skip approval">⚙ Auto-approve: {cfg.auto_approve_limit > 0 ? `$${cfg.auto_approve_limit}` : 'off'}</button>}
           <button onClick={load}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
             ↻ Refresh
           </button>
         </div>
       </div>
+
+      {notice && (
+        <div className="card" role="status" style={{ marginBottom: 14, padding: 12, fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <span>{notice}</span><button className="btn btn-sm btn-secondary" onClick={() => setNotice('')}>Dismiss</button>
+        </div>
+      )}
+      {orders.length > 0 && (
+        <div className="card" style={{ marginBottom: 14, padding: 12 }}>
+          <strong style={{ fontSize: 13 }}>Purchase orders</strong>
+          {orders.map(o => (
+            <div key={o.po_number} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: 13, flexWrap: 'wrap' }}>
+              <code>{o.po_number}</code><span>{o.supplier}</span><span>${o.total.toFixed(2)}</span>
+              <button className="btn btn-sm btn-secondary" onClick={() => printPo(o)}>🖨️ Print PO</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {showForm && <RequestForm autoLimit={cfg.auto_approve_limit} onSubmit={submitRequest} onCancel={() => setShowForm(false)} />}
+      {showSpend && cfg.can_manage && <SpendPanel onClose={() => setShowSpend(false)} />}
+      {showInvoices && cfg.can_manage && <InvoicePanel onClose={() => setShowInvoices(false)} />}
 
       {/* Extension install banner */}
       {items.length === 0 && !loading && (
@@ -290,6 +397,7 @@ export default function ReagentCartPage() {
           <option value="all">All statuses</option>
           <option value="pending">Pending review</option>
           <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
           <option value="ordered">Ordered</option>
           <option value="received">Received</option>
           <option value="cancelled">Cancelled</option>
@@ -356,6 +464,13 @@ export default function ReagentCartPage() {
                             {item.url ? <a href={item.url} target="_blank" rel="noreferrer" style={{ color: 'var(--text)', textDecoration: 'none' }}>{item.name}</a> : item.name}
                           </div>
                           {item.cas && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>CAS {item.cas}</div>}
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {[item.requested_by && `by ${item.requested_by}`, item.project, item.grant, item.budget_code, item.po_number].filter(Boolean).join(' · ')}
+                            {item.urgency === 'urgent' && <strong style={{ color: '#dc2626', marginLeft: 6 }}>URGENT</strong>}
+                            {item.needed_by ? <span> · needed by {new Date(item.needed_by).toLocaleDateString()}</span> : null}
+                            {item.over_budget && item.over_budget.length > 0 && <strong style={{ color: '#dc2626', marginLeft: 6 }}>OVER BUDGET: {item.over_budget.join(', ')}</strong>}
+                          </div>
+                          {item.decision_note && <div style={{ fontSize: 11, fontStyle: 'italic', color: 'var(--text-muted)' }}>“{item.decision_note}”</div>}
                         </div>
                       </div>
                     </td>
@@ -381,10 +496,28 @@ export default function ReagentCartPage() {
                           style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontSize: 11 }}>
                           {expandedId === item.id ? '▴' : '▾'}
                         </button>
-                        {item.status === 'pending' && (
-                          <button onClick={() => handleApprove(item.id)} title="Approve"
-                            style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(99,102,241,0.15)', color: '#818cf8', cursor: 'pointer', fontSize: 11 }}>
-                            ✓
+                        {item.status === 'pending' && cfg.can_manage && (
+                          <>
+                            <button onClick={() => handleApprove(item.id)} title="Approve" aria-label="Approve"
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(99,102,241,0.15)', color: '#818cf8', cursor: 'pointer', fontSize: 11 }}>
+                              ✓
+                            </button>
+                            <button onClick={() => handleReject(item.id)} title="Reject" aria-label="Reject"
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(220,38,38,0.12)', color: '#dc2626', cursor: 'pointer', fontSize: 11 }}>
+                              ✕
+                            </button>
+                          </>
+                        )}
+                        {item.status === 'ordered' && (
+                          <button onClick={() => { sessionStorage.setItem('labos_receive_order', String(item.id)); navigate('receiving'); }} title="Receive this order" aria-label="Receive this order"
+                            style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', fontSize: 11 }}>
+                            📥
+                          </button>
+                        )}
+                        {(item.status === 'ordered' || item.status === 'received') && (
+                          <button onClick={() => orderAgain(item)} title="Order again" aria-label="Order again"
+                            style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(8,145,178,0.12)', color: '#0891b2', cursor: 'pointer', fontSize: 11 }}>
+                            ↻
                           </button>
                         )}
                         <button onClick={() => handleDelete(item.id)} title="Remove"
@@ -421,10 +554,7 @@ export default function ReagentCartPage() {
             <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} selected</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Total: <strong style={{ color: '#22c55e' }}>${totalSelected.toFixed(2)}</strong>
-              {stripeConfigured && methods.length > 0 && (
-                <> · paying with {(methods.find(m => m.is_default) || methods[0]).brand} ····{(methods.find(m => m.is_default) || methods[0]).last4}</>
-              )}
-              {stripeConfigured === false && <> · Stripe not configured — items will be marked ordered without charging</>}
+              {cfg.can_manage ? <> · only approved requests are ordered; one PO per supplier</> : <> · a manager approves and orders requests</>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -432,15 +562,18 @@ export default function ReagentCartPage() {
               style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
               Clear selection
             </button>
-            <button onClick={handleCheckout} disabled={checkingOut}
-              style={{
-                padding: '10px 22px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 700, color: '#fff',
-                background: stripeConfigured ? 'linear-gradient(135deg, #22c55e, #16a34a)' : '#6366f1',
-                opacity: checkingOut ? 0.6 : 1,
-              }}>
-              {checkingOut ? 'Processing…' : stripeConfigured ? `💳 Charge & order ($${totalSelected.toFixed(2)})` : `📋 Mark as ordered ($${totalSelected.toFixed(2)})`}
-            </button>
+            {cfg.can_manage && (
+              <button onClick={approveSelected}
+                style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                ✓ Approve selected
+              </button>
+            )}
+            {cfg.can_manage && (
+              <button onClick={handleCheckout} disabled={checkingOut}
+                style={{ padding: '10px 22px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', background: '#6366f1', opacity: checkingOut ? 0.6 : 1 }}>
+                {checkingOut ? 'Processing…' : `📋 Place order ($${totalSelected.toFixed(2)})`}
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
 // Students only reach this module if their PI allowed this hub.
-const { requireAuth } = hubGuard("Lab Hub");
+const { requireAuth, requireRole } = hubGuard("Lab Hub");
 
 // ── List SOPs (paginated, with search and status filter) ──────────────────
 
@@ -156,9 +156,12 @@ export const update = mutation({
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("sops") },
   handler: async (ctx, { token, id }) => {
-    await requireAuth(ctx, token);
+    const userId = await requireAuth(ctx, token);
     const sop = await ctx.db.get(id);
     if (!sop) throw new ConvexError("SOP not found");
+    const me = (await ctx.db.get(userId))!;
+    if (sop.author_id !== userId && !["pi", "admin", "superadmin"].includes(me.role)) throw new ConvexError("Only the uploader or a PI can delete this SOP.");
+    if (sop.storage_id) await ctx.storage.delete(sop.storage_id);
     await ctx.db.delete(id);
     return id;
   },
@@ -170,19 +173,111 @@ export const approve = mutation({
   args: {
     token: v.optional(v.string()),
     id: v.id("sops"),
-    approved_by: v.id("users"),
+    approved_by: v.optional(v.id("users")), // ignored; kept so older callers still type-check
   },
-  handler: async (ctx, { token, id, approved_by }) => {
-    await requireAuth(ctx, token);
+  handler: async (ctx, { token, id }) => {
+    const pi = await requireRole(ctx, token, "pi"); // approver is the caller, never a client-supplied id
     const sop = await ctx.db.get(id);
     if (!sop) throw new ConvexError("SOP not found");
 
     await ctx.db.patch(id, {
       status: "approved",
-      approved_by: approved_by,
+      approved_by: pi._id,
       approved_at: Date.now(),
       updated_at: Date.now(),
     });
     return id;
+  },
+});
+
+// ── Uploaded SOPs: anyone uploads, a PI approves ──────────────────────────
+
+const MAX_FILE = 25 * 1024 * 1024;
+const FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "text/markdown"];
+
+export const generateUploadUrl = mutation({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Save an uploaded file as a SOP. It waits for PI approval. */
+export const upload = mutation({
+  args: {
+    token: v.optional(v.string()),
+    title: v.string(),
+    category: v.string(),
+    version: v.string(),
+    storage_id: v.id("_storage"),
+    file_name: v.string(),
+  },
+  handler: async (ctx, a) => {
+    const userId = await requireAuth(ctx, a.token);
+    const meta = await ctx.db.system.get(a.storage_id);
+    const bad = async (msg: string) => { await ctx.storage.delete(a.storage_id); throw new ConvexError(msg); };
+    if (!meta) throw new ConvexError("The file did not upload. Try again.");
+    if (meta.size > MAX_FILE) return await bad("File is too big (25 MB max).");
+    if (!FILE_TYPES.includes(meta.contentType ?? "")) return await bad("Upload a PDF, Word or text file.");
+    if (!a.title.trim() || !a.category.trim() || !a.version.trim()) return await bad("Title, category and version are required.");
+    const now = Date.now();
+    return await ctx.db.insert("sops", {
+      title: a.title.trim().slice(0, 200),
+      category: a.category.trim().slice(0, 60),
+      version: a.version.trim().slice(0, 20),
+      status: "pending",
+      author_id: userId,
+      storage_id: a.storage_id,
+      file_name: a.file_name.slice(0, 200),
+      file_type: meta.contentType,
+      file_size: meta.size,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+/** Everything the SOP screen needs: rows with who uploaded/approved and a download link. */
+export const overview = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    const userId = await requireAuth(ctx, token);
+    const me = (await ctx.db.get(userId))!;
+    const rows = (await ctx.db.query("sops").order("desc").collect()).filter((s) => s.storage_id || s.status !== "draft");
+    const names = new Map<string, string>();
+    const name = async (id?: string) => {
+      if (!id) return undefined;
+      if (!names.has(id)) names.set(id, ((await ctx.db.get(id as any)) as any)?.full_name ?? "Unknown");
+      return names.get(id);
+    };
+    const out = [];
+    for (const s of rows) {
+      out.push({
+        ...s,
+        uploaded_by: await name(s.author_id),
+        approved_by_name: await name(s.approved_by),
+        url: s.storage_id ? await ctx.storage.getUrl(s.storage_id) : null,
+        can_delete: s.author_id === userId || ["pi", "admin", "superadmin"].includes(me.role),
+      });
+    }
+    return { sops: out, can_approve: ["pi", "admin", "superadmin"].includes(me.role) };
+  },
+});
+
+/** PI decision. Only a PI (or admin) can approve or reject. */
+export const decide = mutation({
+  args: { token: v.optional(v.string()), id: v.id("sops"), decision: v.union(v.literal("approve"), v.literal("reject")), note: v.optional(v.string()) },
+  handler: async (ctx, { token, id, decision, note }) => {
+    const pi = await requireRole(ctx, token, "pi");
+    const sop = await ctx.db.get(id);
+    if (!sop) throw new ConvexError("SOP not found");
+    await ctx.db.patch(id, {
+      status: decision === "approve" ? "approved" : "rejected",
+      approved_by: pi._id,
+      approved_at: Date.now(),
+      decision_note: note?.trim().slice(0, 500) || undefined,
+      updated_at: Date.now(),
+    });
   },
 });

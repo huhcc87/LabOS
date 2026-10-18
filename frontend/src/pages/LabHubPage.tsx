@@ -7,6 +7,11 @@ import { ProtocolFormFields, type ProtocolDetails } from '../components/Protocol
 import { approvalBadge, canDecide, isApproved } from '../lib/protocolApproval';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
 import { Icon } from '../components/Icon';
+import SopsPanel from '../features/sops/SopsPanel';
+import InstrumentBooking from '../features/instruments/InstrumentBooking';
+import MaintenancePanel from '../features/instruments/MaintenancePanel';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
 import type { Id } from '../../convex/_generated/dataModel';
 
@@ -133,12 +138,16 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-export default function LabHubPage() {
+type HubTab = 'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library';
+export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
+  const ib = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
+  const mf = useQuery(api.maintenanceFlow.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
   const protocols = labProtocols.protocols;
-  const [activeTab, setActiveTab] = useState<'protocols' | 'sops' | 'instruments' | 'bookings' | 'maintenance' | 'library'>('protocols');
+  const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
 
   // Modal states
   const [showProtocolModal, setShowProtocolModal] = useState(false);
@@ -254,11 +263,7 @@ export default function LabHubPage() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([
-    { id: 1, instrument: 'Spectrophotometer', type: 'Calibration', date: '2024-03-19', status: 'scheduled' },
-    { id: 2, instrument: 'Centrifuge XR-500', type: 'Annual Service', date: '2024-03-15', status: 'completed' },
-    { id: 3, instrument: 'PCR Thermocycler', type: 'Filter Replacement', date: '2024-03-10', status: 'overdue' },
-  ]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<Maintenance[]>([]); // old local list, now unused
 
   // AI Generate Protocol Description
   const generateAIProtocol = (protocolName: string) => {
@@ -801,10 +806,9 @@ export default function LabHubPage() {
 
   const tabs = [
     { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
-    { key: 'sops', label: 'SOPs', icon: '📚', count: sops.length },
-    { key: 'instruments', label: 'Instruments', icon: '🔬', count: instruments.length },
-    { key: 'bookings', label: 'Bookings', icon: '📅', count: bookings.length },
-    { key: 'maintenance', label: 'Maintenance', icon: '🔧', count: maintenanceLogs.filter(m => m.status !== 'completed').length },
+    { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
+    { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
+    { key: 'maintenance', label: 'Equipment & Maintenance', icon: '🔧', count: mf?.open ?? 0 },
     { key: 'library', label: 'Protocol Library', icon: '🌐', count: EXTERNAL_PROTOCOLS.length },
   ];
 
@@ -878,10 +882,10 @@ export default function LabHubPage() {
       <nav aria-label="Lab at a glance" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }}>
         {([
           { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
-          { tab: 'sops', value: sops.length, label: 'SOPs' },
-          { tab: 'instruments', value: instruments.filter(i => i.status === 'available').length, label: 'instruments available' },
-          { tab: 'bookings', value: bookings.filter(b => b.status === 'pending').length, label: 'pending bookings' },
-          { tab: 'maintenance', value: maintenanceLogs.filter(m => m.status === 'overdue').length, label: 'overdue maintenance', alert: true },
+          { tab: 'sops', value: sopCount, label: 'SOPs' },
+          { tab: 'instruments', value: ib?.instruments.filter(i => i.bookable).length ?? 0, label: 'instruments available' },
+          { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
+          { tab: 'maintenance', value: mf?.open ?? 0, label: 'open instrument problems', alert: true },
         ] as const).map(s => (
           <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab)}
             style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
@@ -890,44 +894,20 @@ export default function LabHubPage() {
         ))}
       </nav>
 
-      {/* Feature 6: Maintenance Due Alert Banner */}
-      {(() => {
-        const today = new Date().toISOString().slice(0, 10);
-        const soon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-        const overdue = maintenanceLogs.filter(m => m.status === 'overdue');
-        const upcoming = maintenanceLogs.filter(m => m.status === 'scheduled' && m.date <= soon && m.date >= today);
-        if (overdue.length === 0 && upcoming.length === 0) return null;
-        return (
-          <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            {overdue.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bad-bg)', borderBottom: upcoming.length > 0 ? '1px solid var(--border)' : 'none' }}>
-                <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
-                <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>
-                  {overdue.length} overdue maintenance{overdue.length > 1 ? 's' : ''}:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{overdue.map(m => m.instrument).join(', ')}</span>
-                <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
-              </div>
-            )}
-            {upcoming.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--warn-bg)' }}>
-                <Icon name="clock" style={{ color: 'var(--warn-text)' }} />
-                <span style={{ color: 'var(--warn-text)', fontWeight: 700, fontSize: 13 }}>
-                  {upcoming.length} maintenance due within 7 days:
-                </span>
-                <span style={{ color: 'var(--text)', fontSize: 13 }}>{upcoming.map(m => `${m.instrument} (${m.date})`).join(', ')}</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {/* Open instrument problems, from the Maintenance reports */}
+      {mf && mf.open > 0 && (
+        <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 16, borderRadius: 10, background: 'var(--bad-bg)', border: '1px solid var(--border)' }}>
+          <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
+          <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>{mf.open} open instrument problem{mf.open > 1 ? 's' : ''}:</span>
+          <span style={{ color: 'var(--text)', fontSize: 13 }}>{[...new Set(mf.issues.filter(i => i.status !== 'completed').map(i => i.instrument_name))].join(', ')}</span>
+          <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('maintenance')} style={{ marginLeft: 'auto' }}>View</button>
+        </div>
+      )}
 
       {/* More Tools Quick Access */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {([
           { icon: 'book', label: 'Lab Notebook', page: 'lab-notebook' },
-          { icon: 'map', label: 'Storage Map', page: 'storage-map' },
-          { icon: 'wrench', label: 'Equipment Hub', page: 'equipment' },
           { icon: 'flask', label: 'Experiments', page: 'experiments' },
           { icon: 'file', label: 'Documents', page: 'documents' },
         ] as const).map(tool => (
@@ -1162,651 +1142,13 @@ export default function LabHubPage() {
       )}
 
       {/* SOPs Tab */}
-      {activeTab === 'sops' && (
-        <div>
-          {/* Search & Actions Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search SOPs..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 150 }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-                <option value="all">All Categories</option>
-                <option value="Safety">Safety</option>
-                <option value="Quality">Quality</option>
-                <option value="Operations">Operations</option>
-                <option value="Equipment">Equipment</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('sops')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowSOPModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>✨</span> New SOP
-              </button>
-            </div>
-          </div>
+      {activeTab === 'sops' && <SopsPanel />}
 
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllSOPs}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneSOPs}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedSOPs.size} of {sops.length} selected
-              </span>
-            </div>
-            {selectedSOPs.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'sop', count: selectedSOPs.size })}
-              >
-                Delete Selected ({selectedSOPs.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {sops
-              .filter(s => {
-                const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
-                return matchesSearch && matchesCategory;
-              })
-              .map(sop => (
-              <div
-                key={sop.id}
-                className="card"
-                style={{
-                  position: 'relative',
-                  border: selectedSOPs.has(sop.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedSOPs.has(sop.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                {/* Selection Checkbox */}
-                <div style={{ position: 'absolute', top: 12, left: 12 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSOPs.has(sop.id)}
-                    onChange={() => toggleSOPSelection(sop.id)}
-                    style={{ cursor: 'pointer', width: 18, height: 18 }}
-                  />
-                </div>
-                <div style={{
-                  position: 'absolute', top: 12, right: 12,
-                  padding: '4px 10px', borderRadius: 12, fontSize: 10, fontWeight: 600,
-                  background: sop.category === 'Safety' ? 'var(--bad-bg)' : sop.category === 'Quality' ? 'var(--info-bg)' : 'var(--ok-bg)',
-                  color: sop.category === 'Safety' ? 'var(--bad-text)' : sop.category === 'Quality' ? 'var(--info-text)' : 'var(--ok-text)',
-                }}>
-                  {sop.category}
-                </div>
-                <div style={{ fontSize: 32, marginBottom: 12, marginLeft: 28 }}>📚</div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, paddingRight: 70, paddingLeft: 28 }}>{sop.title}</h3>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, paddingLeft: 28 }}>Version {sop.version}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(false); }}>👁️ View</button>
-                  <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => { setViewSOP(sop); setEditMode(true); }}>✏️ Edit</button>
-                  <button className="btn btn-sm btn-secondary" onClick={() => duplicateSOP(sop)} title="Duplicate" aria-label="Duplicate protocol">📋</button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none', padding: '4px 8px' }}
-                    onClick={() => setDeleteConfirm({ type: 'sop', id: sop.id, name: sop.title })}
-                    title="Delete SOP"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Instruments Tab */}
-      {activeTab === 'instruments' && (
-        <div>
-          {/* Stats & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="🔍 Search instruments..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="in_use">In Use</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              {[
-                { label: 'Available', value: instruments.filter(i => i.status === 'available').length, color: 'var(--ok-text)' },
-                { label: 'In Use', value: instruments.filter(i => i.status === 'in_use').length, color: 'var(--info-text)' },
-                { label: 'Maintenance', value: instruments.filter(i => i.status === 'maintenance').length, color: 'var(--warn-text)' },
-              ].map(stat => (
-                <div key={stat.label} style={{
-                  background: 'var(--surface2)', borderRadius: 8, padding: '8px 16px',
-                  display: 'flex', alignItems: 'center', gap: 8
-                }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>{stat.value}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stat.label}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('instruments')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowInstrumentModal(true)}>+ Add Instrument</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllInstruments}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneInstruments}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedInstruments.size} of {instruments.length} selected
-              </span>
-            </div>
-            {selectedInstruments.size > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  fontWeight: 500,
-                  padding: '8px 16px',
-                  borderRadius: 8
-                }}
-                onClick={() => setBulkDeleteConfirm({ type: 'instrument', count: selectedInstruments.size })}
-              >
-                Delete Selected ({selectedInstruments.size})
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {instruments
-              .filter(i => {
-                const matchesSearch = i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (i.type || '').toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
-                return matchesSearch && matchesStatus;
-              })
-              .map(inst => (
-              <div
-                key={inst.id}
-                className="card"
-                style={{
-                  border: selectedInstruments.has(inst.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedInstruments.has(inst.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'start', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInstruments.has(inst.id)}
-                      onChange={() => toggleInstrumentSelection(inst.id)}
-                      style={{ cursor: 'pointer', marginTop: 4 }}
-                    />
-                    <div>
-                      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{inst.name}</h3>
-                      {inst.type && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{inst.type}</div>}
-                    </div>
-                  </div>
-                  {/* Feature 4: quick status toggle */}
-                  <button
-                    onClick={() => cycleInstrumentStatus(inst.id)}
-                    title="Click to change status"
-                    style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(inst.status).bg, color: statusColor(inst.status).text, border: 'none', cursor: 'pointer' }}
-                  >
-                    {inst.status === 'available' ? '✓ Available' : inst.status === 'in_use' ? '⏳ In Use' : '🔧 Maintenance'}
-                  </button>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, marginLeft: 26 }}>📍 {inst.location}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    style={{ flex: 1 }}
-                    disabled={inst.status !== 'available'}
-                    onClick={() => {
-                      if (inst.status === 'available') {
-                        setNewBooking({ ...newBooking, instrument: inst.name });
-                        setShowBookingModal(true);
-                      }
-                    }}
-                  >
-                    {inst.status === 'available' ? '📅 Book Now' : inst.status === 'in_use' ? 'In Use' : '🔧 Maintenance'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'instrument', id: inst.id, name: inst.name })}
-                    title="Delete Instrument"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bookings Tab */}
-      {activeTab === 'bookings' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search bookings..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <input
-                type="date"
-                className="form-input"
-                style={{ width: 150 }}
-                value={dateFilter}
-                onChange={e => setDateFilter(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {/* Feature 5: calendar/list toggle */}
-              <button
-                className="btn btn-secondary"
-                onClick={() => setBookingView(bookingView === 'list' ? 'calendar' : 'list')}
-                style={{ fontWeight: 600 }}
-              >
-                {bookingView === 'list' ? '📅 Calendar View' : '☰ List View'}
-              </button>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('bookings')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowBookingModal(true)}>+ New Booking</button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllBookings}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneBookings}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedBookings.size} of {filterBookings().length} selected
-              </span>
-            </div>
-            {selectedBookings.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('booking', 'confirmed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Confirm Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'booking', count: selectedBookings.size })}
-                >
-                  Cancel Selected ({selectedBookings.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Feature 5: 7-day calendar view */}
-          {bookingView === 'calendar' && (() => {
-            const days = Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(calendarWeekStart);
-              d.setDate(d.getDate() + i);
-              return d;
-            });
-            const fmt = (d: Date) => d.toISOString().slice(0, 10);
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() - 7); setCalendarWeekStart(d); }}>← Prev Week</button>
-                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                    {days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <button className="btn btn-sm btn-secondary" onClick={() => { const d = new Date(calendarWeekStart); d.setDate(d.getDate() + 7); setCalendarWeekStart(d); }}>Next Week →</button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
-                  {days.map(day => {
-                    const dayStr = fmt(day);
-                    const dayBookings = bookings.filter(b => b.date === dayStr);
-                    const isToday = dayStr === fmt(new Date());
-                    return (
-                      <div key={dayStr} style={{ background: isToday ? 'var(--accent-light)' : 'var(--surface)', border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 10, minHeight: 100 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 6 }}>
-                          {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
-                        </div>
-                        {dayBookings.length === 0 ? (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>Free</div>
-                        ) : dayBookings.map(b => (
-                          <div key={b.id} style={{ background: b.status === 'confirmed' ? 'var(--ok-bg)' : 'var(--warn-bg)', border: `1px solid ${b.status === 'confirmed' ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}`, borderRadius: 6, padding: '4px 6px', marginBottom: 4 }}>
-                            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{b.instrument}</div>
-                            <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.time}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterBookings().map(b => (
-              <div
-                key={b.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: selectedBookings.has(b.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedBookings.has(b.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedBookings.has(b.id)}
-                    onChange={() => toggleBookingSelection(b.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{ width: 48, height: 48, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                    🔬
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{b.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.user} • {new Date(b.date).toLocaleDateString()} • {b.time}</div>
-                    {b.purpose && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>Purpose: {b.purpose}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(b.status).bg, color: statusColor(b.status).text }}>
-                    {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                  </span>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => {
-                      setBookings(prev => prev.map(booking =>
-                        booking.id === b.id
-                          ? { ...booking, status: booking.status === 'pending' ? 'confirmed' : 'pending' }
-                          : booking
-                      ));
-                    }}
-                  >
-                    {b.status === 'pending' ? '✓ Confirm' : '↩ Pending'}
-                  </button>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'booking', id: b.id, name: `${b.instrument} - ${b.date}` })}
-                    title="Cancel Booking"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterBookings().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No bookings found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Instruments + Bookings: one screen */}
+      {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
 
       {/* Maintenance Tab */}
-      {activeTab === 'maintenance' && (
-        <div>
-          {/* Search & Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="text"
-                placeholder="🔍 Search maintenance..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('maintenance')}>📥 Export</button>
-              <button className="btn btn-primary" onClick={() => setShowMaintenanceModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🔧</span> Log Maintenance
-              </button>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 16
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                className="btn btn-sm"
-                onClick={selectAllMaintenance}
-                style={{ background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 500 }}
-              >
-                Select All
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={selectNoneMaintenance}
-                style={{ background: 'white', color: 'var(--accent)', border: '1px solid #6366f1', fontWeight: 500 }}
-              >
-                Clear Selection
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, padding: '4px 12px', background: 'white', borderRadius: 20 }}>
-                {selectedMaintenance.size} of {filterMaintenance().length} selected
-              </span>
-            </div>
-            {selectedMaintenance.size > 0 && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  className="btn btn-sm"
-                  onClick={() => bulkChangeStatus('maintenance', 'completed')}
-                  style={{ background: '#22c55e', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
-                >
-                  Complete Selected
-                </button>
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    fontWeight: 500,
-                    padding: '8px 16px',
-                    borderRadius: 8
-                  }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'maintenance', count: selectedMaintenance.size })}
-                >
-                  Delete Selected ({selectedMaintenance.size})
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Overdue Alert */}
-          {maintenanceLogs.filter(m => m.status === 'overdue').length > 0 && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8, padding: 12, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12
-            }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <span style={{ color: '#ef4444', fontWeight: 500 }}>
-                {maintenanceLogs.filter(m => m.status === 'overdue').length} maintenance task(s) are overdue and require immediate attention
-              </span>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filterMaintenance().map(m => (
-              <div
-                key={m.id}
-                className="card"
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  border: m.status === 'overdue' ? '1px solid #ef4444' : selectedMaintenance.has(m.id) ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: selectedMaintenance.has(m.id) ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedMaintenance.has(m.id)}
-                    onChange={() => toggleMaintenanceSelection(m.id)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                    background: m.status === 'overdue' ? 'var(--bad-bg)' : m.status === 'completed' ? 'var(--ok-bg)' : 'var(--surface2)',
-                  }}>
-                    {m.status === 'completed' ? '✅' : m.status === 'overdue' ? '⚠️' : '🔧'}
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{m.instrument}</h4>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.type} • {new Date(m.date).toLocaleDateString()}</div>
-                    {m.notes && <div style={{ fontSize: 11, color: 'var(--text-soft)', marginTop: 2 }}>{m.notes}</div>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: statusColor(m.status).bg, color: statusColor(m.status).text }}>
-                    {m.status.charAt(0).toUpperCase() + m.status.slice(1)}
-                  </span>
-                  {m.status !== 'completed' && (
-                    <button
-                      className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        setMaintenanceLogs(prev => prev.map(log =>
-                          log.id === m.id ? { ...log, status: 'completed' } : log
-                        ));
-                        showToast('Maintenance marked as completed', 'success');
-                      }}
-                    >
-                      ✓ Complete
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: 'none' }}
-                    onClick={() => setDeleteConfirm({ type: 'maintenance', id: m.id, name: `${m.instrument} - ${m.type}` })}
-                    title="Delete Maintenance Log"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filterMaintenance().length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                No maintenance logs found matching your criteria
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {activeTab === 'maintenance' && <MaintenancePanel />}
 
       {/* Feature 1+2+3: External Protocol Library Tab */}
       {activeTab === 'library' && (() => {
