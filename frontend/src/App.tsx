@@ -35,7 +35,6 @@ const LabMeetingsPage        = lazy(() => import('./pages/LabMeetingsPage'));
 const ReportsPage            = lazy(() => import('./pages/ReportsPage'));
 const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
-const ELNPage                = lazy(() => import('./pages/ELNPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
 const EquipmentMaintenancePage = lazy(() => import('./pages/EquipmentMaintenancePage'));
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
@@ -73,7 +72,7 @@ const SubcontractManagerPage     = lazy(() => import('./pages/SubcontractManager
 const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
 const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
-const LabNotebookPage            = lazy(() => import('./pages/LabNotebookPage'));
+const NotebookHubPage            = lazy(() => import('./pages/NotebookHubPage'));
 const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
@@ -209,11 +208,11 @@ function AppInner() {
       case 'writing-resources': return <WritingResourcesPage />;
       case 'version-history': return <VersionHistoryPage />;
       // New v2 pages
-      case 'lab-notebook': return <LabNotebookPage />;
+      case 'lab-notebook': return <NotebookHubPage />;
       case 'storage-map': return <FreezerBiobankPage />; // old Storage Map merged into Freezer / Biobank
       case 'supplier-directory': return <SupplierDirectoryPage />;
       // Tier 1 — AI Research Intelligence
-      case 'eln': return <ELNPage />;
+      case 'eln': return <NotebookHubPage />;
       case 'iot-dashboard': return <IoTDashboardPage />;
       case 'label-printer': return <LabelsPage />;
       case 'labels': return <LabelsPage />;
