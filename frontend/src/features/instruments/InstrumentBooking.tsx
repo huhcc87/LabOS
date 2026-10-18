@@ -34,6 +34,10 @@ export default function InstrumentBooking() {
 
   const [picked, setPicked] = useState<Id<'instruments'> | null>(null);
   const [date, setDate] = useState(today());
+  // Lab, person and room start filled in; the booker can type over them.
+  const [labName, setLabName] = useState<string | null>(null);
+  const [personName, setPersonName] = useState<string | null>(null);
+  const [room, setRoom] = useState<string | null>(null);
   const [toDate, setToDate] = useState(''); // empty = same day as the start
   const [from, setFrom] = useState('09:00');
   const [to, setTo] = useState('10:00');
@@ -56,7 +60,11 @@ export default function InstrumentBooking() {
     const end = new Date(`${toDate || date}T${to}`).getTime();
     setBusy(true);
     try {
-      setDone(await book({ token, instrument_id: picked, start_time: start, end_time: end, purpose, remind_every_2_days: remind }));
+      setDone(await book({
+        token, instrument_id: picked, start_time: start, end_time: end, purpose, remind_every_2_days: remind,
+        lab_name: labName ?? data?.lab, person_name: personName ?? data?.person, room: room ?? current?.location,
+        when_text: `${when(start)} to ${when(end)}`,
+      }));
       setPurpose('');
     } catch (e) { toast.error(errText(e)); setDone(null); } finally { setBusy(false); }
   };
@@ -133,8 +141,9 @@ export default function InstrumentBooking() {
           <>
             <div style={{ fontWeight: 700, marginBottom: 10 }}>{current.name}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-              <div><label style={lbl} htmlFor="bk-lab">Lab</label><input id="bk-lab" readOnly value={data.lab || '—'} style={{ ...input, opacity: 0.8 }} /></div>
-              <div><label style={lbl} htmlFor="bk-person">Booked by</label><input id="bk-person" readOnly value={data.person} style={{ ...input, opacity: 0.8 }} /></div>
+              <div><label style={lbl} htmlFor="bk-lab">Lab name</label><input id="bk-lab" value={labName ?? data.lab} onChange={(e) => setLabName(e.target.value)} placeholder="Lab name" style={input} /></div>
+              <div><label style={lbl} htmlFor="bk-person">Person name</label><input id="bk-person" value={personName ?? data.person} onChange={(e) => setPersonName(e.target.value)} placeholder="Your name" style={input} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lbl} htmlFor="bk-room">Room number</label><input id="bk-room" value={room ?? current.location ?? ''} onChange={(e) => setRoom(e.target.value)} placeholder="e.g. Room 214" style={input} /></div>
               <div><label style={lbl} htmlFor="bk-date">From date</label><input id="bk-date" type="date" min={today()} value={date} onChange={(e) => { setDate(e.target.value); setDone(null); }} style={input} /></div>
               <div><label style={lbl} htmlFor="bk-from">From time</label><input id="bk-from" type="time" value={from} onChange={(e) => { setFrom(e.target.value); setDone(null); }} style={input} /></div>
               <div><label style={lbl} htmlFor="bk-todate">To date</label><input id="bk-todate" type="date" min={date} value={toDate || date} onChange={(e) => { setToDate(e.target.value); setDone(null); }} style={input} /></div>
@@ -150,7 +159,7 @@ export default function InstrumentBooking() {
             {done && (
               <div role="status" style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--text)', fontSize: 13 }}>
                 <strong>✓ Booked: {done.instrument}</strong><br />
-                {data.person}{data.lab ? ` · ${data.lab}` : ''}<br />
+                {personName ?? data.person}{(labName ?? data.lab) ? ` · ${labName ?? data.lab}` : ''}<br />
                 From {when(done.start_time)} to {when(done.end_time)}{done.location ? ` · ${done.location}` : ''}<br />
                 {done.reminders ? 'You will get a reminder every 2 days until it starts.' : 'No reminders set.'}
               </div>
@@ -158,7 +167,7 @@ export default function InstrumentBooking() {
 
             <h4 style={{ margin: '16px 0 6px', fontSize: 13 }}>Already booked</h4>
             {itsBookings.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nothing yet. Any time is free.</div> : itsBookings.map((b) => (
-              <div key={b._id} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.user_name}</div>
+              <div key={b._id} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.person_name ?? b.user_name}{b.room ? ` · ${b.room}` : ''}</div>
             ))}
           </>
         )}
@@ -173,7 +182,7 @@ export default function InstrumentBooking() {
               <div key={b._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none' }}>
                 <div style={{ flex: 1, minWidth: 220 }}>
                   <div style={{ fontWeight: 600 }}>{instruments.find((i) => i._id === b.instrument_id)?.name ?? 'Instrument'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{b.purpose ? ` · ${b.purpose}` : ''}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{[b.room, b.lab_name, b.purpose].filter(Boolean).map((x) => ` · ${x}`).join('')}</div>
                 </div>
                 <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
                   <input type="checkbox" checked={!!b.remind_every_2_days} disabled={b.start_time <= Date.now()} onChange={(e) => act(() => setReminder({ token: token!, id: b._id, on: e.target.checked }), e.target.checked ? 'Reminders on' : 'Reminders off')} />

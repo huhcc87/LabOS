@@ -15,6 +15,20 @@ const MAX_LEN = 7 * DAY;
 const NOT_BOOKABLE = ["not_used", "maintenance", "out_of_service", "retired", "offline"];
 
 export const REMINDER_EVERY_MS = 2 * DAY;
+/** All the booking details in one line, for notifications. */
+const detailLine = (
+  b: { room?: string; lab_name?: string; person_name?: string; when_text?: string; purpose?: string; start_time: number },
+  inst: { name: string; location?: string } | null,
+  now: number,
+) => [
+  `Instrument: ${inst?.name ?? "instrument"}`,
+  (b.room || inst?.location) && `Room: ${b.room ?? inst?.location}`,
+  b.lab_name && `Lab: ${b.lab_name}`,
+  b.person_name && `Booked by: ${b.person_name}`,
+  `When: ${b.when_text ?? days(b.start_time - now)}`,
+  b.purpose && `For: ${b.purpose}`,
+].filter(Boolean).join(" · ");
+
 const days = (ms: number) => { const d = Math.ceil(ms / DAY); return d <= 1 ? "within the next day" : `in about ${d} days`; };
 
 /** Instruments with their upcoming bookings (who has it, when). */
@@ -54,6 +68,10 @@ export const book = mutation({
     start_time: v.number(),
     end_time: v.number(),
     purpose: v.optional(v.string()),
+    lab_name: v.optional(v.string()),
+    person_name: v.optional(v.string()),
+    room: v.optional(v.string()),
+    when_text: v.optional(v.string()),
     remind_every_2_days: v.optional(v.boolean()),
   },
   handler: async (ctx, a) => {
@@ -79,12 +97,21 @@ export const book = mutation({
       start_time: a.start_time,
       end_time: a.end_time,
       purpose: a.purpose?.trim().slice(0, 300) || undefined,
+      lab_name: a.lab_name?.trim().slice(0, 100) || undefined,
+      person_name: a.person_name?.trim().slice(0, 100) || undefined,
+      room: a.room?.trim().slice(0, 60) || undefined,
+      when_text: a.when_text?.slice(0, 120),
       status: "confirmed",
       remind_every_2_days: a.remind_every_2_days ? true : undefined,
       last_reminded_at: a.remind_every_2_days ? now : undefined,
       created_at: now,
     });
-    return { id, instrument: inst.name, location: inst.location, start_time: a.start_time, end_time: a.end_time, reminders: !!a.remind_every_2_days };
+    // Send the full details right away; the reminders (if on) repeat them every 2 days.
+    await ctx.db.insert("notifications", {
+      user_id: userId, channel: "in_app", is_read: false, entity_type: "booking", entity_id: id, created_at: now,
+      title: `Booking confirmed: ${inst.name}`, message: detailLine({ ...a, purpose: a.purpose?.trim() }, inst, now),
+    });
+    return { id, instrument: inst.name, location: a.room?.trim() || inst.location, start_time: a.start_time, end_time: a.end_time, reminders: !!a.remind_every_2_days };
   },
 });
 
@@ -126,7 +153,7 @@ export const sendReminders = internalMutation({
         lab_id: b.lab_id, user_id: b.user_id, channel: "in_app", is_read: false, entity_type: "booking", entity_id: b._id, created_at: now,
         title: `Reminder: ${inst?.name ?? "instrument"} booking`,
         // The server has no time zone for the user, so say "in N days" and let My bookings show the clock time.
-        message: `You booked ${inst?.name ?? "an instrument"} ${days(b.start_time - now)}${b.purpose ? ` for "${b.purpose}"` : ""}. See My bookings in Lab Hub.`,
+        message: detailLine(b, inst, now),
       });
       await ctx.db.patch(b._id, { last_reminded_at: now });
     }

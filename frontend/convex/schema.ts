@@ -141,6 +141,10 @@ export default defineSchema({
     status: v.string(),
     notes: v.optional(v.string()),
     // Auto reminder to the person who booked: every 2 days until the booking starts
+    lab_name: v.optional(v.string()),
+    person_name: v.optional(v.string()),
+    room: v.optional(v.string()),
+    when_text: v.optional(v.string()), // "Mon, Oct 19, 9:00 AM to Tue, Oct 20, 5:00 PM" in the booker's time zone, for reminders
     remind_every_2_days: v.optional(v.boolean()),
     last_reminded_at: v.optional(v.number()),
     created_at: v.number(),
