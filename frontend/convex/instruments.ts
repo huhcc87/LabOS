@@ -17,6 +17,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -56,8 +57,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("instruments") },
+  args: { token: v.optional(v.string()), id: v.id("instruments") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
@@ -123,7 +125,7 @@ export const remove = mutation({
 // ── Bookings ────────────────────────────────────────────────────────────────
 
 export const listBookings = query({
-  args: {
+  args: { token: v.optional(v.string()),
     instrumentId: v.optional(v.id("instruments")),
     userId: v.optional(v.id("users")),
     status: v.optional(v.string()),
@@ -135,6 +137,7 @@ export const listBookings = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 50;
     const cursor = args.paginationOpts?.cursor ?? null;
 

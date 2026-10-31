@@ -146,7 +146,8 @@ export const checkBudget = query({
     id: v.id("procurement_budgets"),
     amount: v.number(),
   },
-  handler: async (ctx, { id, amount }) => {
+  handler: async (ctx, { token, id, amount }) => {
+    await requireAuth(ctx, token);
     const budget = await ctx.db.get(id);
     if (!budget) return { within_budget: false };
     return { within_budget: budget.spent + amount <= budget.amount };
@@ -157,7 +158,8 @@ export const checkBudget = query({
 
 export const listRestricted = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return ctx.db.query("restricted_chemicals").collect();
   },
 });
@@ -192,7 +194,8 @@ export const deleteRestricted = mutation({
 
 export const scanChemical = query({
   args: { token: v.optional(v.string()), name: v.string(), cas: v.string() },
-  handler: async (ctx, { name, cas }) => {
+  handler: async (ctx, { token, name, cas }) => {
+    await requireAuth(ctx, token);
     const all = await ctx.db.query("restricted_chemicals").collect();
     const matches = all.filter(
       (r) =>
@@ -207,7 +210,8 @@ export const scanChemical = query({
 
 export const listBorrow = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return ctx.db.query("borrow_requests").order("desc").collect();
   },
 });
@@ -257,7 +261,8 @@ export const respondBorrow = mutation({
 
 export const groupBuy = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const items = await ctx.db.query("reagent_cart").collect();
     const groups: Record<string, { supplier: string; items: number; total: number }> = {};
     for (const item of items) {
@@ -324,7 +329,8 @@ export const recordQuote = mutation({
 
 export const getAltPrices = query({
   args: { token: v.optional(v.string()), id: v.id("purchase_orders") },
-  handler: async (ctx, { id }) => {
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("alt_prices")
       .withIndex("by_order", (q) => q.eq("purchase_order_id", id))
@@ -464,7 +470,8 @@ export const setRecurrence = mutation({
 
 export const findLender = query({
   args: { token: v.optional(v.string()), item_name: v.optional(v.string()) },
-  handler: async (ctx, { item_name }) => {
+  handler: async (ctx, { token, item_name }) => {
+    await requireAuth(ctx, token);
     // Find users who have relevant inventory items
     if (!item_name) return [];
     const term = item_name.toLowerCase();
@@ -493,7 +500,8 @@ export const findLender = query({
 
 export const enrichmentStatus = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const sdsCount = await ctx.db.query("sds_records").collect();
     return { enabled: sdsCount.length > 0, sds_records: sdsCount.length };
   },

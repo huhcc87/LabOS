@@ -7,6 +7,7 @@ const { requireAuth } = hubGuard("Resources");
 export const list = query({
   args: { token: v.optional(v.string()), search: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     if (args.search && args.search.trim().length > 0) {
       return ctx.db.query("templates").withSearchIndex("search_name", (q) => q.search("name", args.search!)).collect();
     }
@@ -34,8 +35,9 @@ export const update = mutation({
 });
 
 export const get = query({
-  args: { id: v.id("templates") },
-  handler: async (ctx, { id }) => {
+  args: { token: v.optional(v.string()), id: v.id("templates") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     return ctx.db.get(id);
   },
 });

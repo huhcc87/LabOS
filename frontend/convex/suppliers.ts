@@ -15,7 +15,8 @@ export const list = query({
       v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })
     ),
   },
-  handler: async (ctx, { search, approval_status, paginationOpts }) => {
+  handler: async (ctx, { token, search, approval_status, paginationOpts }) => {
+    await requireAuth(ctx, token);
     const numItems = paginationOpts?.numItems ?? 50;
 
     let docs;
@@ -54,8 +55,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("suppliers") },
-  handler: async (ctx, { id }) => {
+  args: { token: v.optional(v.string()), id: v.id("suppliers") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     return await ctx.db.get(id);
   },
 });
@@ -133,14 +135,15 @@ export const remove = mutation({
 // ── Purchase Orders ───────────────────────────────────────────────────────────
 
 export const listOrders = query({
-  args: {
+  args: { token: v.optional(v.string()),
     status: v.optional(v.string()),
     supplier_id: v.optional(v.id("suppliers")),
     paginationOpts: v.optional(
       v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })
     ),
   },
-  handler: async (ctx, { status, supplier_id, paginationOpts }) => {
+  handler: async (ctx, { token, status, supplier_id, paginationOpts }) => {
+    await requireAuth(ctx, token);
     const numItems = paginationOpts?.numItems ?? 50;
 
     let docs;

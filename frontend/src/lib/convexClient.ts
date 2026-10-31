@@ -55,7 +55,7 @@ function crudApi(
     },
     get: getFn
       ? async (id: IdLike) => {
-          const result = await client.query(getFn, { id: toStr(id) });
+          const result = await client.query(getFn, { token: getToken(), id: toStr(id) });
           return { data: adapt(result) };
         }
       : async (_id: IdLike) => ({ data: null }),
@@ -159,13 +159,13 @@ export const suppliersApi = {
     api.suppliers.get
   ),
   categories: async () => {
-    const result = await client.query(api.suppliers.list, { paginationOpts: { numItems: 200, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), paginationOpts: { numItems: 200, cursor: null } });
     const cats = new Set<string>();
     for (const s of result?.page ?? []) { if ((s as any).category) cats.add((s as any).category); }
     return { data: Array.from(cats) };
   },
   stats: async () => {
-    const result = await client.query(api.suppliers.list, { paginationOpts: { numItems: 200, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), paginationOpts: { numItems: 200, cursor: null } });
     const items = result?.page ?? [];
     return {
       data: {
@@ -177,7 +177,7 @@ export const suppliersApi = {
   },
   aiRecommend: async (query: string) => {
     // Match suppliers based on query against existing supplier data
-    const result = await client.query(api.suppliers.list, { search: query, paginationOpts: { numItems: 10, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), search: query, paginationOpts: { numItems: 10, cursor: null } });
     const recommendations = (result?.page ?? []).map((s: any) => ({
       id: s._id,
       name: s.name,
@@ -188,7 +188,7 @@ export const suppliersApi = {
     return { data: { recommendations } };
   },
   listOrders: async (page = 1, perPage = 20, status = '') => {
-    const result = await client.query(api.suppliers.listOrders, {
+    const result = await client.query(api.suppliers.listOrders, { token: getToken(),
       status: status || undefined,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -196,7 +196,7 @@ export const suppliersApi = {
     return paginated(items, page, perPage);
   },
   orderStats: async () => {
-    const result = await client.query(api.suppliers.listOrders, {
+    const result = await client.query(api.suppliers.listOrders, { token: getToken(),
       paginationOpts: { numItems: 200, cursor: null },
     });
     const orders = result?.page ?? [];
@@ -238,7 +238,7 @@ export const suppliersApi = {
 
 export const schedulingApi = {
   listCalendar: async (page = 1, perPage = 100) => {
-    const result = await client.query(api.scheduling.listCalendar, {});
+    const result = await client.query(api.scheduling.listCalendar, { token: getToken() });
     return paginated(result ?? [], page, perPage);
   },
   createCalendarEvent: async (data: any) => {
@@ -286,7 +286,7 @@ export const schedulingApi = {
     return { data: { success: true } };
   },
   exportIcs: async () => {
-    const result = await client.query(api.scheduling.listCalendar, {});
+    const result = await client.query(api.scheduling.listCalendar, { token: getToken() });
     const events = result ?? [];
     const lines = [
       "BEGIN:VCALENDAR",
@@ -317,13 +317,13 @@ export const notebookApi = {
   sign: async (id: IdLike) => {
     const token = getToken();
     await client.mutation(api.labNotebook.sign, { token, id: id as any });
-    const entry = await client.query(api.labNotebook.get, { id: id as any });
+    const entry = await client.query(api.labNotebook.get, { token: getToken(), id: id as any });
     return { data: entry ? adapt(entry) : { id, success: true } };
   },
   witness: async (id: IdLike) => {
     const token = getToken();
     await client.mutation(api.labNotebook.witness, { token, id: id as any, witnessed_by: id as any });
-    const entry = await client.query(api.labNotebook.get, { id: id as any });
+    const entry = await client.query(api.labNotebook.get, { token: getToken(), id: id as any });
     return { data: entry ? adapt(entry) : { id, success: true } };
   },
 };
@@ -337,11 +337,11 @@ export const meetingsApi = {
     api.meetings.get
   ),
   upcoming: async (limit = 10) => {
-    const result = await client.query(api.meetings.upcoming, {});
+    const result = await client.query(api.meetings.upcoming, { token: getToken() });
     return { data: (result ?? []).slice(0, limit).map(adapt) };
   },
   past: async (limit = 20) => {
-    const result = await client.query(api.meetings.past, {});
+    const result = await client.query(api.meetings.past, { token: getToken() });
     return { data: (result ?? []).slice(0, limit).map(adapt) };
   },
   cancel: async (id: IdLike) => {
@@ -681,7 +681,7 @@ export const samplesApi = {
   ),
   listEvents: async (page = 1, perPage = 20, _search = '', sampleId?: string) => {
     if (!sampleId) return paginated([], page, perPage);
-    const result = await client.query(api.samples.listEvents, {
+    const result = await client.query(api.samples.listEvents, { token: getToken(),
       sampleId: sampleId as any,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -726,7 +726,7 @@ export const instrumentsApi = {
     api.instruments.get
   ),
   listBookings: async (page = 1, perPage = 20, _search = '') => {
-    const result = await client.query(api.instruments.listBookings, {});
+    const result = await client.query(api.instruments.listBookings, { token: getToken() });
     return paginated(result ?? [], page, perPage);
   },
   createBooking: async (data: any) => {
@@ -912,7 +912,7 @@ export const integrationsApi = {
 export const templatesApi = {
   ...crudApi(api.templates.list, api.templates.create, api.templates.update, api.templates.remove),
   render: async (id: IdLike, vars: Record<string, string>) => {
-    const template = await client.query(api.templates.get, { id: toStr(id) as any });
+    const template = await client.query(api.templates.get, { token: getToken(), id: toStr(id) as any });
     if (!template) return { data: { content: "" } };
     let content = (template as any).content ?? "";
     for (const [key, val] of Object.entries(vars)) {
@@ -924,14 +924,14 @@ export const templatesApi = {
 
 export const activityApi = {
   list: async (page = 1, perPage = 50, _entityType = '', _userId?: string, _action = '') => {
-    const result = await client.query(api.activity.list, {
+    const result = await client.query(api.activity.list, { token: getToken(),
       paginationOpts: { numItems: 200, cursor: null },
     });
     const items = (result as any)?.page ?? (Array.isArray(result) ? result : []);
     return paginated(items, page, perPage);
   },
   recent: async (limit = 20) => {
-    const result = await client.query(api.activity.recent, { limit });
+    const result = await client.query(api.activity.recent, { token: getToken(), limit });
     return { data: (result ?? []).map(adapt) };
   },
   myActivity: async (page = 1, perPage = 50) => {
@@ -940,7 +940,7 @@ export const activityApi = {
     return paginated(result ?? [], page, perPage);
   },
   stats: async () => {
-    const result = await client.query(api.activity.stats, {});
+    const result = await client.query(api.activity.stats, { token: getToken() });
     return { data: result };
   },
 };
@@ -1017,11 +1017,11 @@ export const videoApi = {
     return { data: result };
   },
   getRoom: async (roomId: string) => {
-    const result = await client.query(api.videoRooms.getRoom, { room_id: roomId });
+    const result = await client.query(api.videoRooms.getRoom, { token: getToken(), room_id: roomId });
     return { data: result ? adapt(result) : null };
   },
   getRoomForMeeting: async (meetingId: string) => {
-    const result = await client.query(api.videoRooms.getRoomForMeeting, { meeting_id: meetingId as any });
+    const result = await client.query(api.videoRooms.getRoomForMeeting, { token: getToken(), meeting_id: meetingId as any });
     return { data: result ? adapt(result) : null };
   },
   deleteRoom: async (roomId: string) => {
@@ -1030,7 +1030,7 @@ export const videoApi = {
     return { data: null };
   },
   getChatHistory: async (roomId: string) => {
-    const result = await client.query(api.videoRooms.getChatHistory, { room_id: roomId });
+    const result = await client.query(api.videoRooms.getChatHistory, { token: getToken(), room_id: roomId });
     return { data: (result ?? []).map(adapt) };
   },
   getTranscription: async (_roomId: string) => ({ data: [] }),

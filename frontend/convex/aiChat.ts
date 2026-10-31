@@ -96,7 +96,8 @@ export const chat = mutation({
 
 export const inventoryPredictions = query({
   args: { token: v.optional(v.string()) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const items = await ctx.db.query("inventory").collect();
     const predictions = [];
     for (const item of items) {

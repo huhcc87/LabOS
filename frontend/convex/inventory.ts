@@ -17,6 +17,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 20;
     const cursor = args.paginationOpts?.cursor ?? null;
 
@@ -56,8 +57,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("inventory") },
+  args: { token: v.optional(v.string()), id: v.id("inventory") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
@@ -134,8 +136,9 @@ export const remove = mutation({
 });
 
 export const lowStock = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const allItems = await ctx.db.query("inventory").collect();
     return allItems.filter(
       (item) =>
@@ -146,10 +149,11 @@ export const lowStock = query({
 });
 
 export const expiringSoon = query({
-  args: {
+  args: { token: v.optional(v.string()),
     withinDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const days = args.withinDays ?? 30;
     const now = Date.now();
     const threshold = now + days * 24 * 60 * 60 * 1000;

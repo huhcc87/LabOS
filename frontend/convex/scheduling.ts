@@ -5,11 +5,12 @@ import { requireAuth } from "./authHelper";
 // ── Calendar Events ──────────────────────────────────────────────────────────
 
 export const listCalendar = query({
-  args: {
+  args: { token: v.optional(v.string()),
     start_from: v.optional(v.number()),
     start_to: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     let results = await ctx.db
       .query("calendar_events")
       .withIndex("by_start")

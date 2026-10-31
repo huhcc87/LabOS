@@ -36,6 +36,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 500;
 
     let results = await ctx.db
@@ -67,8 +68,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("meetings") },
+  args: { token: v.optional(v.string()), id: v.id("meetings") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
@@ -154,8 +156,9 @@ export const remove = mutation({
 });
 
 export const upcoming = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const now = Date.now();
     const results = await ctx.db
       .query("meetings")
@@ -170,8 +173,9 @@ export const upcoming = query({
 });
 
 export const past = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const now = Date.now();
     const results = await ctx.db
       .query("meetings")

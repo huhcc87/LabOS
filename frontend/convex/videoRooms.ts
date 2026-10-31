@@ -24,8 +24,9 @@ export const createRoom = mutation({
 });
 
 export const getRoom = query({
-  args: { room_id: v.string() },
-  handler: async (ctx, { room_id }) => {
+  args: { token: v.optional(v.string()), room_id: v.string() },
+  handler: async (ctx, { token, room_id }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("video_rooms")
       .withIndex("by_room_id", (q) => q.eq("room_id", room_id))
@@ -34,8 +35,9 @@ export const getRoom = query({
 });
 
 export const getRoomForMeeting = query({
-  args: { meeting_id: v.id("meetings") },
-  handler: async (ctx, { meeting_id }) => {
+  args: { token: v.optional(v.string()), meeting_id: v.id("meetings") },
+  handler: async (ctx, { token, meeting_id }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("video_rooms")
       .withIndex("by_meeting", (q) => q.eq("meeting_id", meeting_id))
@@ -60,8 +62,9 @@ export const deleteRoom = mutation({
 });
 
 export const getChatHistory = query({
-  args: { room_id: v.string() },
-  handler: async (ctx, { room_id }) => {
+  args: { token: v.optional(v.string()), room_id: v.string() },
+  handler: async (ctx, { token, room_id }) => {
+    await requireAuth(ctx, token);
     return ctx.db
       .query("video_chat_messages")
       .withIndex("by_room", (q) => q.eq("room_id", room_id))
