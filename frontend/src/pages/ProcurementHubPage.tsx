@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { procurementApi, reagentCartApi } from '../lib/api';
 import { API_BASE_URL } from '../lib/api';
 import EmojiIcon from '../components/EmojiIcon';
+import { forecastBudget, type ForecastRow } from '../features/cart/budgetForecast';
 
 type Tab =
   | 'approvals' | 'budgets' | 'hazards' | 'group-buy'
@@ -169,27 +170,42 @@ function ApprovalsTab() {
 }
 
 // ── F6: Budgets ─────────────────────────────────────────────────────────────
+/** Budgets match requests by name: a request counts when its grant, project or budget code equals the budget's name. */
 function BudgetsTab() {
   const [budgets, setBudgets] = useState<any[]>([]);
-  const [form, setForm] = useState({ name: '', budget_code: '', total_amount: '', fiscal_year: '' });
+  const [requests, setRequests] = useState<ForecastRow[]>([]);
+  const [form, setForm] = useState({ name: '', amount: '', period: 'Annual' });
+  const [err, setErr] = useState('');
 
   const load = useCallback(async () => {
-    try { const r = await procurementApi.listBudgets(); setBudgets(r.data || []); } catch {}
+    try { const r = await procurementApi.listBudgets(); setBudgets(r.data || []); } catch { /* shown empty */ }
+    try { setRequests(((await reagentCartApi.list()).data as ForecastRow[]) ?? []); } catch { /* forecast just stays off */ }
   }, []);
   useEffect(() => { load(); }, [load]);
 
   const create = async () => {
-    if (!form.name || !form.budget_code || !form.total_amount) return;
-    await procurementApi.createBudget({
-      name: form.name, budget_code: form.budget_code,
-      total_amount: Number(form.total_amount), fiscal_year: form.fiscal_year,
-    });
-    setForm({ name: '', budget_code: '', total_amount: '', fiscal_year: '' });
-    load();
+    setErr('');
+    const amount = Number(form.amount);
+    if (!form.name.trim()) return setErr('Enter the grant, project or budget code this budget covers.');
+    if (!(amount > 0)) return setErr('Enter an amount above 0.');
+    try {
+      await procurementApi.createBudget({ name: form.name.trim(), amount, period: form.period });
+      setForm({ name: '', amount: '', period: 'Annual' });
+      load();
+    } catch (e: any) { setErr(e?.data ?? e?.message ?? 'Could not create the budget.'); }
+  };
+
+  const money = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const paceText = (b: any) => {
+    const f = forecastBudget({ name: b.name, amount: b.amount }, requests);
+    if (f.remaining <= 0) return 'Over budget: nothing left to spend.';
+    if (f.perDay == null) return 'No spending in the last 90 days, so no pace to project.';
+    const week = f.perDay * 7;
+    return `At about ${money(week)} a week, the remaining ${money(f.remaining)} lasts roughly ${f.daysLeft} days (around ${f.runOut!.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}).`;
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16 }}>
       <div>
         <div className="card">
           <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Active budgets ({budgets.length})</h3>
@@ -198,55 +214,52 @@ function BudgetsTab() {
               No budgets configured. Add one on the right →
             </div>
           ) : budgets.map(b => {
-            const pct = Math.min(100, b.percent_used || 0);
+            const pct = b.amount > 0 ? Math.min(100, (b.spent / b.amount) * 100) : 0;
             const color = pct < 75 ? '#22c55e' : pct < 90 ? '#f59e0b' : '#ef4444';
             return (
               <div key={b.id} style={{ padding: 14, borderTop: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{b.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {b.budget_code}{b.fiscal_year ? ` · FY${b.fiscal_year}` : ''}
-                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.period}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color }}>
-                      ${b.spent_amount.toFixed(0)} / ${b.total_amount.toFixed(0)}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      ${b.remaining.toFixed(0)} remaining
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color }}>{money(b.spent)} / {money(b.amount)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{money(Math.max(0, b.amount - b.spent))} remaining</div>
                   </div>
                 </div>
-                <div style={{ height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }} role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label={`${b.name} used`}>
                   <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 0.3s' }} />
                 </div>
-                <button onClick={async () => { await procurementApi.deleteBudget(b.id); load(); }}
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>{paceText(b)}</div>
+                <button onClick={async () => { if (window.confirm(`Delete the budget "${b.name}"?`)) { await procurementApi.deleteBudget(b.id); load(); } }}
                   style={{ marginTop: 8, padding: '4px 10px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>
                   Delete budget
                 </button>
               </div>
             );
           })}
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '12px 0 0' }}>
+            The pace is worked out from what was approved, ordered or received in the last 90 days. It does not know your award dates, so treat it as a guide.
+          </p>
         </div>
       </div>
       <div className="card">
         <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Add a budget</h3>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 10px' }}>
-          The reagent cart will warn you before checkout if a purchase would exceed remaining balance.
+          Requests are checked against a budget when their grant, project or budget code is the same as its name. A request that would go over it waits for a manager.
         </p>
-        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Name</label>
-        <input style={{ ...INP, width: '100%', marginBottom: 8 }} value={form.name}
-          onChange={e => setForm(s => ({ ...s, name: e.target.value }))} placeholder="e.g. R01 supplies FY2026" />
-        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Budget code</label>
-        <input style={{ ...INP, width: '100%', marginBottom: 8 }} value={form.budget_code}
-          onChange={e => setForm(s => ({ ...s, budget_code: e.target.value }))} placeholder="e.g. R01-CA-001-SUPP" />
-        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total amount ($)</label>
-        <input style={{ ...INP, width: '100%', marginBottom: 8 }} type="number" value={form.total_amount}
-          onChange={e => setForm(s => ({ ...s, total_amount: e.target.value }))} placeholder="50000" />
-        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Fiscal year</label>
-        <input style={{ ...INP, width: '100%', marginBottom: 12 }} value={form.fiscal_year}
-          onChange={e => setForm(s => ({ ...s, fiscal_year: e.target.value }))} placeholder="2026" />
+        <label htmlFor="budget-name" style={{ fontSize: 11, color: 'var(--text-muted)' }}>Name (grant, project or budget code)</label>
+        <input id="budget-name" style={{ ...INP, width: '100%', marginBottom: 8 }} value={form.name}
+          onChange={e => setForm(s => ({ ...s, name: e.target.value }))} placeholder="e.g. R01-CA-001" />
+        <label htmlFor="budget-amount" style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total amount ($)</label>
+        <input id="budget-amount" style={{ ...INP, width: '100%', marginBottom: 8 }} type="number" min="0" value={form.amount}
+          onChange={e => setForm(s => ({ ...s, amount: e.target.value }))} placeholder="50000" />
+        <label htmlFor="budget-period" style={{ fontSize: 11, color: 'var(--text-muted)' }}>Period</label>
+        <select id="budget-period" style={{ ...INP, width: '100%', marginBottom: 12 }} value={form.period} onChange={e => setForm(s => ({ ...s, period: e.target.value }))}>
+          {['Annual', 'Quarterly', 'Monthly', 'Award period'].map((p) => <option key={p}>{p}</option>)}
+        </select>
+        {err && <p role="alert" style={{ color: '#dc2626', fontSize: 12, margin: '0 0 8px' }}>{err}</p>}
         <button onClick={create} style={{ width: '100%', padding: 8, background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>
           + Create budget
         </button>
