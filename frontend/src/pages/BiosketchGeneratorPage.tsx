@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { comingSoon } from '../lib/comingSoon';
 import { biosketchApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface PersonalInfo {
   name: string;
@@ -133,13 +135,12 @@ export default function BiosketchGeneratorPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Biosketch Generator</h1>
-          <p className="page-subtitle">Create NIH, NSF, and custom biosketches</p>
+          <LabBanner art="lab" title="Biosketch Generator" subtitle="Create NIH, NSF, and custom biosketches" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}>📥 Import from ORCID</button>
-          <button className="btn btn-secondary" onClick={() => setShowPreview(true)}>👁️ Preview</button>
-          <button className="btn btn-primary" onClick={() => comingSoon('PDF Export')}>📤 Export PDF</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}><EmojiIcon glyph="📥" /> Import from ORCID</button>
+          <button className="btn btn-secondary" onClick={() => setShowPreview(true)}><EmojiIcon glyph="👁️" /> Preview</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('PDF Export')}><EmojiIcon glyph="📤" /> Export PDF</button>
         </div>
       </div>
 
@@ -192,7 +193,7 @@ export default function BiosketchGeneratorPage() {
                 textAlign: 'left',
               }}
             >
-              <span style={{ fontSize: 18 }}>{section.icon}</span>
+              <span style={{ fontSize: 18 }}><EmojiIcon glyph={section.icon} /></span>
               {section.label}
             </button>
           ))}
@@ -203,7 +204,7 @@ export default function BiosketchGeneratorPage() {
           {/* Personal Info Section */}
           {activeSection === 'personal' && (
             <div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>👤 Personal Information</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}><EmojiIcon glyph="👤" /> Personal Information</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Full Name</label>
@@ -245,7 +246,7 @@ export default function BiosketchGeneratorPage() {
           {activeSection === 'education' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>🎓 Education & Training</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="🎓" /> Education & Training</h3>
                 <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Entry')}>+ Add Entry</button>
               </div>
               <div className="table-wrapper">
@@ -268,8 +269,8 @@ export default function BiosketchGeneratorPage() {
                         <td>{edu.year}</td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn-icon">✏️</button>
-                            <button className="btn-icon">🗑️</button>
+                            <button className="btn-icon"><EmojiIcon glyph="✏️" /></button>
+                            <button className="btn-icon"><EmojiIcon glyph="🗑️" /></button>
                           </div>
                         </td>
                       </tr>
@@ -284,7 +285,7 @@ export default function BiosketchGeneratorPage() {
           {activeSection === 'positions' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>💼 Positions & Employment</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="💼" /> Positions & Employment</h3>
                 <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Position')}>+ Add Position</button>
               </div>
               <div className="table-wrapper">
@@ -307,8 +308,8 @@ export default function BiosketchGeneratorPage() {
                         <td>{pos.endYear}</td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn-icon">✏️</button>
-                            <button className="btn-icon">🗑️</button>
+                            <button className="btn-icon"><EmojiIcon glyph="✏️" /></button>
+                            <button className="btn-icon"><EmojiIcon glyph="🗑️" /></button>
                           </div>
                         </td>
                       </tr>
@@ -323,8 +324,8 @@ export default function BiosketchGeneratorPage() {
           {activeSection === 'statement' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>📝 Personal Statement</h3>
-                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('AI Assist')}>✨ AI Assist</button>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="📝" /> Personal Statement</h3>
+                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('AI Assist')}><EmojiIcon glyph="✨" /> AI Assist</button>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
                 Describe your qualifications and experience relevant to this application. NIH recommends addressing:
@@ -349,7 +350,7 @@ export default function BiosketchGeneratorPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 600 }}>📚 Publications</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="📚" /> Publications</h3>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                     Select up to 4 publications most relevant to this application
                   </p>
@@ -405,7 +406,7 @@ export default function BiosketchGeneratorPage() {
           {activeSection === 'grants' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>💰 Research Support</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="💰" /> Research Support</h3>
                 <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Add Grant')}>+ Add Grant</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -442,8 +443,8 @@ export default function BiosketchGeneratorPage() {
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)' }}>{grant.amount}</div>
                         <div className="table-actions" style={{ marginTop: 8 }}>
-                          <button className="btn-icon">✏️</button>
-                          <button className="btn-icon">🗑️</button>
+                          <button className="btn-icon"><EmojiIcon glyph="✏️" /></button>
+                          <button className="btn-icon"><EmojiIcon glyph="🗑️" /></button>
                         </div>
                       </div>
                     </div>

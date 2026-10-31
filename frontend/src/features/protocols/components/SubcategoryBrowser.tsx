@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ProtocolCategory } from '../types/protocol.types'
 import { getCategoryColor } from '../utils/protocolStatus'
@@ -25,7 +26,7 @@ export default function SubcategoryBrowser({ categories, activeCategory, activeS
       {/* All protocols */}
       <button onClick={() => { onSelectCategory(''); onSelectSubcategory('') }}
         style={{ width: '100%', textAlign: 'left', background: !activeCategory ? 'var(--accent-light)' : 'transparent', border: !activeCategory ? '1px solid var(--accent)' : '1px solid transparent', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontSize: 14, cursor: 'pointer', marginBottom: 8, fontWeight: 500 }}>
-        🧫 All Protocols
+        <EmojiIcon glyph="🧫" /> All Protocols
       </button>
       {categories.map(cat => {
         const color = getCategoryColor(cat.id)
@@ -36,7 +37,7 @@ export default function SubcategoryBrowser({ categories, activeCategory, activeS
             <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
               <button onClick={() => toggle(cat.id)}
                 style={{ background: 'none', border: 'none', color: 'var(--text-soft)', cursor: 'pointer', padding: '0 6px', fontSize: 12 }}>
-                {isExpanded ? '▼' : '▶'}
+                {isExpanded ? '▼' : <><EmojiIcon glyph="▶" /></>}
               </button>
               <button onClick={() => { onSelectCategory(isCatActive ? '' : cat.id); onSelectSubcategory('') }}
                 style={{
@@ -45,7 +46,7 @@ export default function SubcategoryBrowser({ categories, activeCategory, activeS
                   color: 'var(--text)', fontSize: 14, fontWeight: isCatActive ? 600 : 500,
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
-                <span>{cat.icon} {cat.name}</span>
+                <span><EmojiIcon glyph={cat.icon} /> {cat.name}</span>
                 <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>{cat.protocolCount}</span>
               </button>
             </div>

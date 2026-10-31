@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { Protocol, ProtocolStep, ProtocolVersion, ExecutionSession } from '../types/protocol.types'
 import { DifficultyBadge, BiosafetyBadge, OpenAccessBadge, AiGeneratedBadge } from './ProtocolBadges'
@@ -215,13 +216,13 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                               onClick={() => setEditingPrerequisite({ index: i, value: pr })}
                               style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 2, fontSize: 11 }}
                             >
-                              ✏️
+                              <EmojiIcon glyph="✏️" />
                             </button>
                             <button
                               onClick={() => onUpdatePrerequisites(p.prerequisites.filter((_, idx) => idx !== i))}
                               style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 2, fontSize: 11 }}
                             >
-                              🗑️
+                              <EmojiIcon glyph="🗑️" />
                             </button>
                           </div>
                         )}
@@ -236,7 +237,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {/* Safety Notes Section */}
           <div style={{ background: '#7f1d1d22', border: '1px solid #ef444466', borderRadius: 8, padding: 12 }}>
             <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 12, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>⚠️ Safety Notes ({p.safetyNotes.length})</span>
+              <span><EmojiIcon glyph="⚠️" /> Safety Notes ({p.safetyNotes.length})</span>
             </div>
             {/* Add new safety note */}
             {editable && onUpdateSafetyNotes && (
@@ -322,13 +323,13 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                               onClick={() => setEditingSafetyNote({ index: i, value: n })}
                               style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: 2, fontSize: 11 }}
                             >
-                              ✏️
+                              <EmojiIcon glyph="✏️" />
                             </button>
                             <button
                               onClick={() => onUpdateSafetyNotes(p.safetyNotes.filter((_, idx) => idx !== i))}
                               style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 2, fontSize: 11 }}
                             >
-                              🗑️
+                              <EmojiIcon glyph="🗑️" />
                             </button>
                           </div>
                         )}
@@ -369,7 +370,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
 
           {p.steps.length === 0 && (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="📋" /></div>
               <div style={{ fontSize: 15, marginBottom: 8 }}>No steps defined yet</div>
               {editable && onUpdateSteps && (
                 <button
@@ -441,7 +442,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                           cursor: 'pointer', fontSize: 12,
                         }}
                       >
-                        ✏️
+                        <EmojiIcon glyph="✏️" />
                       </button>
                       {/* Delete */}
                       <button
@@ -454,7 +455,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                           padding: '4px 8px', cursor: 'pointer', fontSize: 12,
                         }}
                       >
-                        🗑️
+                        <EmojiIcon glyph="🗑️" />
                       </button>
                     </div>
                   )}
@@ -496,15 +497,15 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                 <p style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7, margin: '0 0 8px' }}>{s.instruction}</p>
                 {(s.duration || s.temperature || s.rpm) && (
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                    {s.duration && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}>⏱ {s.duration}</span>}
-                    {s.temperature && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}>🌡 {s.temperature}</span>}
-                    {s.rpm && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}>🔄 {s.rpm}</span>}
+                    {s.duration && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph="⏱" /> {s.duration}</span>}
+                    {s.temperature && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph="🌡" /> {s.temperature}</span>}
+                    {s.rpm && <span style={{ background: '#242838', color: '#94a3b8', fontSize: 11, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph="🔄" /> {s.rpm}</span>}
                   </div>
                 )}
-                {s.caution && <div style={{ background: '#78350f22', border: '1px solid #d9770666', borderRadius: 6, padding: '8px 10px', color: '#fbbf24', fontSize: 12, marginBottom: 8 }}>⚠️ {s.caution}</div>}
-                {s.notes && <div style={{ color: '#64748b', fontSize: 12, fontStyle: 'italic' }}>📝 {s.notes}</div>}
+                {s.caution && <div style={{ background: '#78350f22', border: '1px solid #d9770666', borderRadius: 6, padding: '8px 10px', color: '#fbbf24', fontSize: 12, marginBottom: 8 }}><EmojiIcon glyph="⚠️" /> {s.caution}</div>}
+                {s.notes && <div style={{ color: '#64748b', fontSize: 12, fontStyle: 'italic' }}><EmojiIcon glyph="📝" /> {s.notes}</div>}
                 {s.expectedOutput && <div style={{ color: '#10b981', fontSize: 12, marginTop: 4 }}>✓ Expected: {s.expectedOutput}</div>}
-                {s.troubleshootingTip && <div style={{ color: '#6366f1', fontSize: 12, marginTop: 4 }}>💡 {s.troubleshootingTip}</div>}
+                {s.troubleshootingTip && <div style={{ color: '#6366f1', fontSize: 12, marginTop: 4 }}><EmojiIcon glyph="💡" /> {s.troubleshootingTip}</div>}
               </div>
             </div>
           ))}
@@ -543,7 +544,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {/* Reagents Column */}
           <div>
             <h4 style={{ color: '#e2e8f0', fontSize: 14, margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #2a2d3e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>🧪 Reagents ({p.reagents.length})</span>
+              <span><EmojiIcon glyph="🧪" /> Reagents ({p.reagents.length})</span>
             </h4>
             {/* Add new reagent */}
             {editable && onUpdateReagents && (
@@ -632,14 +633,14 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                         style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Edit"
                       >
-                        ✏️
+                        <EmojiIcon glyph="✏️" />
                       </button>
                       <button
                         onClick={() => onUpdateReagents(p.reagents.filter((_, idx) => idx !== i))}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Delete"
                       >
-                        🗑️
+                        <EmojiIcon glyph="🗑️" />
                       </button>
                     </div>
                   )}
@@ -651,7 +652,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {/* Equipment Column */}
           <div>
             <h4 style={{ color: '#e2e8f0', fontSize: 14, margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #2a2d3e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>⚙️ Equipment ({p.equipment.length})</span>
+              <span><EmojiIcon glyph="⚙️" /> Equipment ({p.equipment.length})</span>
             </h4>
             {/* Add new equipment */}
             {editable && onUpdateEquipment && (
@@ -740,14 +741,14 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                         style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Edit"
                       >
-                        ✏️
+                        <EmojiIcon glyph="✏️" />
                       </button>
                       <button
                         onClick={() => onUpdateEquipment(p.equipment.filter((_, idx) => idx !== i))}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Delete"
                       >
-                        🗑️
+                        <EmojiIcon glyph="🗑️" />
                       </button>
                     </div>
                   )}
@@ -760,7 +761,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
 
       {tab === 'Literature' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>All references are linked to their original source. Open-access articles are marked 🔓.</div>
+          <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>All references are linked to their original source. Open-access articles are marked <EmojiIcon glyph="🔓" />.</div>
           {p.references.map(ref => (
             <div key={ref.id} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 8, padding: 14 }}>
               <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{ref.title}</div>
@@ -769,7 +770,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                 {ref.openAccess && <OpenAccessBadge />}
                 {ref.doi && <a href={`https://doi.org/${ref.doi}`} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', fontSize: 11, textDecoration: 'none' }}>DOI: {ref.doi}</a>}
                 {ref.pmid && <a href={`https://pubmed.ncbi.nlm.nih.gov/${ref.pmid}/`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', fontSize: 11, textDecoration: 'none' }}>PMID: {ref.pmid}</a>}
-                {ref.url && <a href={ref.url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', fontSize: 11, textDecoration: 'none' }}>🔗 Source</a>}
+                {ref.url && <a href={ref.url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', fontSize: 11, textDecoration: 'none' }}><EmojiIcon glyph="🔗" /> Source</a>}
               </div>
             </div>
           ))}
@@ -781,7 +782,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {/* QC Checklist Section */}
           <div>
             <h4 style={{ color: '#e2e8f0', fontSize: 14, margin: '0 0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>✅ QC Checklist ({p.qcChecklist.length})</span>
+              <span><EmojiIcon glyph="✅" /> QC Checklist ({p.qcChecklist.length})</span>
             </h4>
             {/* Add new QC item */}
             {editable && onUpdateQcChecklist && (
@@ -870,14 +871,14 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                         style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Edit"
                       >
-                        ✏️
+                        <EmojiIcon glyph="✏️" />
                       </button>
                       <button
                         onClick={() => onUpdateQcChecklist(p.qcChecklist.filter((_, idx) => idx !== i))}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, fontSize: 12 }}
                         title="Delete"
                       >
-                        🗑️
+                        <EmojiIcon glyph="🗑️" />
                       </button>
                     </div>
                   )}
@@ -889,7 +890,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {/* Troubleshooting Section */}
           <div>
             <h4 style={{ color: '#e2e8f0', fontSize: 14, margin: '0 0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>🔧 Troubleshooting ({p.troubleshooting.length})</span>
+              <span><EmojiIcon glyph="🔧" /> Troubleshooting ({p.troubleshooting.length})</span>
             </h4>
             {/* Add new troubleshooting */}
             {editable && onUpdateTroubleshooting && (
@@ -1038,14 +1039,14 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                                 style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, fontSize: 12 }}
                                 title="Edit"
                               >
-                                ✏️
+                                <EmojiIcon glyph="✏️" />
                               </button>
                               <button
                                 onClick={() => onUpdateTroubleshooting(p.troubleshooting.filter((_, idx) => idx !== i))}
                                 style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, fontSize: 12 }}
                                 title="Delete"
                               >
-                                🗑️
+                                <EmojiIcon glyph="🗑️" />
                               </button>
                             </td>
                           )}
@@ -1072,7 +1073,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                 background: 'var(--surface)', border: '1px solid var(--border)',
                 borderRadius: 12, padding: 32, textAlign: 'center', color: 'var(--text-muted)',
               }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+                <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="📋" /></div>
                 <div style={{ fontSize: 14 }}>No execution records yet</div>
                 <div style={{ fontSize: 13, marginTop: 4, color: 'var(--text-soft)' }}>
                   Run the protocol to create execution records
@@ -1094,7 +1095,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
                       color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 16,
                     }}>
-                      {exec.status === 'completed' ? '✓' : exec.status === 'aborted' ? '✕' : '⏳'}
+                      {exec.status === 'completed' ? '✓' : exec.status === 'aborted' ? '✕' : <><EmojiIcon glyph="⏳" /></>}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14 }}>
@@ -1136,12 +1137,12 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
           {p.aiGenerated ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ background: '#4c1d9522', border: '1px solid #8b5cf6', borderRadius: 8, padding: 14 }}>
-                <div style={{ color: '#c4b5fd', fontWeight: 600, marginBottom: 4 }}>🤖 AI-Generated Protocol</div>
+                <div style={{ color: '#c4b5fd', fontWeight: 600, marginBottom: 4 }}><EmojiIcon glyph="🤖" /> AI-Generated Protocol</div>
                 <div style={{ color: '#a78bfa', fontSize: 13 }}>Model: {p.aiModel || 'Unknown'}</div>
                 {p.confidenceScore && <div style={{ color: '#a78bfa', fontSize: 13 }}>Confidence: {Math.round(p.confidenceScore * 100)}%</div>}
               </div>
               <div style={{ background: '#7f1d1d22', border: '1px solid #ef4444', borderRadius: 8, padding: 14 }}>
-                <div style={{ color: '#ef4444', fontWeight: 600, marginBottom: 6 }}>⚠️ DISCLAIMER</div>
+                <div style={{ color: '#ef4444', fontWeight: 600, marginBottom: 6 }}><EmojiIcon glyph="⚠️" /> DISCLAIMER</div>
                 <div style={{ color: '#fca5a5', fontSize: 13, lineHeight: 1.6 }}>This protocol is AI-generated and must be reviewed by a qualified scientist before laboratory use. Do not use this protocol without expert validation.</div>
               </div>
               {p.reviewNotes && <div style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.reviewNotes}</div>}
@@ -1151,7 +1152,7 @@ export default function ProtocolDetailTabs({ protocol: p, onUpdateSteps, onUpdat
               This is a published or internal protocol. No AI notes available.
               <br /><br />
               <button style={{ background: '#6366f133', border: '1px solid #6366f1', color: '#6366f1', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
-                🤖 Generate AI Variant
+                <EmojiIcon glyph="🤖" /> Generate AI Variant
               </button>
             </div>
           )}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
 import { EmptyState } from '../components/EmptyState';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface BudgetCategory {
   id: string;
@@ -40,11 +42,10 @@ export default function GrantBudgetPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Grant Budget Tracker</h1>
-          <p className="page-subtitle">Track spending across grants, projects, and funding sources</p>
+          <LabBanner art="lab" title="Grant Budget Tracker" subtitle="Track spending across grants, projects, and funding sources" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}>📊 Export Report</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}><EmojiIcon glyph="📊" /> Export Report</button>
           <button className="btn btn-primary" onClick={() => comingSoon('Log Expense')}>+ Log Expense</button>
         </div>
       </div>
@@ -117,7 +118,7 @@ export default function GrantBudgetPage() {
             return (
               <div key={budget.id} style={{ padding: 16, background: 'var(--surface2)', borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 20 }}>{budget.icon}</span>
+                  <span style={{ fontSize: 20 }}><EmojiIcon glyph={budget.icon} /></span>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{budget.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -134,7 +135,7 @@ export default function GrantBudgetPage() {
                   }} />
                 </div>
                 <div style={{ fontSize: 11, color: isOverBudget ? 'var(--warning)' : 'var(--text-muted)', marginTop: 6, textAlign: 'right' }}>
-                  {percent.toFixed(0)}% used {isOverBudget && '⚠️'}
+                  {percent.toFixed(0)}% used {isOverBudget && <><EmojiIcon glyph="⚠️" /></>}
                 </div>
               </div>
             );
@@ -193,8 +194,8 @@ export default function GrantBudgetPage() {
                   </td>
                   <td>
                     <div className="table-actions">
-                      <button className="btn-icon" title="View">👁️</button>
-                      <button className="btn-icon" title="Edit">✏️</button>
+                      <button className="btn-icon" title="View"><EmojiIcon glyph="👁️" /></button>
+                      <button className="btn-icon" title="Edit"><EmojiIcon glyph="✏️" /></button>
                     </div>
                   </td>
                 </tr>
@@ -217,7 +218,7 @@ export default function GrantBudgetPage() {
             alignItems: 'center',
             gap: 12,
           }}>
-            <span style={{ fontSize: 20 }}>⚠️</span>
+            <span style={{ fontSize: 20 }}><EmojiIcon glyph="⚠️" /></span>
             <div>
               <div style={{ fontWeight: 600, color: '#fbbf24', fontSize: 13 }}>Travel Budget Nearly Exhausted</div>
               <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>Travel category is at 92% utilization. Consider reallocating funds.</div>
@@ -232,7 +233,7 @@ export default function GrantBudgetPage() {
             alignItems: 'center',
             gap: 12,
           }}>
-            <span style={{ fontSize: 20 }}>📅</span>
+            <span style={{ fontSize: 20 }}><EmojiIcon glyph="📅" /></span>
             <div>
               <div style={{ fontWeight: 600, color: '#60a5fa', fontSize: 13 }}>Q2 Report Due</div>
               <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>Quarterly financial report due in 15 days.</div>

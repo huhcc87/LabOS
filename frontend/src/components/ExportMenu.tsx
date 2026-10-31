@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { exportData, EXPORT_OPTIONS, ExportFormat } from '../utils/exportUtils';
 import toast from 'react-hot-toast';
+import EmojiIcon from './EmojiIcon';
 
 interface ExportMenuProps<T extends Record<string, unknown>> {
   data: T[];
@@ -126,7 +127,7 @@ export function ExportMenu<T extends Record<string, unknown>>({
                   color: 'var(--accent)',
                 }}
               >
-                {option.icon}
+                <EmojiIcon glyph={option.icon} />
               </span>
               {option.label}
             </button>

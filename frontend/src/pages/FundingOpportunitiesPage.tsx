@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from '../context/NavigationContext';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface FundingOpportunity {
   id: string;
@@ -68,13 +70,12 @@ export default function FundingOpportunitiesPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Funding Opportunity Finder</h1>
-          <p className="page-subtitle">Search NIH, NSF, DoD, and foundation funding opportunities</p>
+          <LabBanner art="lab" title="Funding Opportunity Finder" subtitle="Search NIH, NSF, DoD, and foundation funding opportunities" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Grants.gov Import')}>📥 Import from Grants.gov</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Funding Alerts')}>🔔 Set Alerts</button>
-          <button className="btn btn-primary" onClick={() => comingSoon('Refresh Database')}>🔄 Refresh Database</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Grants.gov Import')}><EmojiIcon glyph="📥" /> Import from Grants.gov</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Funding Alerts')}><EmojiIcon glyph="🔔" /> Set Alerts</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Refresh Database')}><EmojiIcon glyph="🔄" /> Refresh Database</button>
         </div>
       </div>
 
@@ -162,13 +163,13 @@ export default function FundingOpportunitiesPage() {
           </div>
           {filteredOpportunities.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '60px 40px' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🔍" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Funding Opportunities Found</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24, maxWidth: 400, margin: '0 auto 24px' }}>
                 Click "Refresh Database" to search for funding opportunities from NIH, NSF, DoD, and foundations, or import from Grants.gov.
               </p>
               <button className="btn btn-primary">
-                🔄 Search Funding Opportunities
+                <EmojiIcon glyph="🔄" /> Search Funding Opportunities
               </button>
             </div>
           ) : (
@@ -249,7 +250,7 @@ export default function FundingOpportunitiesPage() {
                           marginBottom: 8,
                         }}
                       >
-                        {opp.isSaved ? '⭐' : '☆'}
+                        {opp.isSaved ? <><EmojiIcon glyph="⭐" /></> : '☆'}
                       </button>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 4 }}>
                         {opp.amount}
@@ -259,7 +260,7 @@ export default function FundingOpportunitiesPage() {
                         fontWeight: 600,
                         color: isUrgent ? '#ef4444' : isClosingSoon ? '#f59e0b' : 'var(--text-soft)',
                       }}>
-                        {isUrgent ? '🔴' : isClosingSoon ? '🟡' : '🟢'} {daysLeft} days left
+                        {isUrgent ? <><EmojiIcon glyph="🔴" /></> : isClosingSoon ? <><EmojiIcon glyph="🟡" /></> : <><EmojiIcon glyph="🟢" /></>} {daysLeft} days left
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                         {new Date(opp.deadline).toLocaleDateString()}
@@ -345,13 +346,13 @@ export default function FundingOpportunitiesPage() {
                 className="btn btn-primary"
                 style={{ textAlign: 'center', textDecoration: 'none' }}
               >
-                🔗 View Full FOA
+                <EmojiIcon glyph="🔗" /> View Full FOA
               </a>
               <button className="btn btn-secondary" onClick={() => navigate('grant-compose')}>
-                📝 Start Application
+                <EmojiIcon glyph="📝" /> Start Application
               </button>
               <button className="btn btn-secondary" onClick={() => toggleSave(selectedOpp.id)}>
-                {selectedOpp.isSaved ? '⭐ Remove from Saved' : '☆ Save to Watchlist'}
+                {selectedOpp.isSaved ? <><EmojiIcon glyph="⭐" />{" Remove from Saved"}</> : '☆ Save to Watchlist'}
               </button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { SourceType } from '../types/protocol.types'
 import type { useProtocolImport } from '../hooks/useProtocolImport'
@@ -27,7 +28,7 @@ export default function ProtocolImportModal({ hook: h }: Props) {
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #2a2d3e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ color: '#e2e8f0', margin: 0, fontSize: 17 }}>📥 Import Published Protocol</h2>
+            <h2 style={{ color: '#e2e8f0', margin: 0, fontSize: 17 }}><EmojiIcon glyph="📥" /> Import Published Protocol</h2>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: '4px 0 0' }}>Search external databases and import into your review queue</p>
           </div>
           <button onClick={() => { h.setIsOpen(false); h.reset() }} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 6, color: '#94a3b8', padding: '6px 10px', cursor: 'pointer', fontSize: 16 }}>✕</button>
@@ -44,7 +45,7 @@ export default function ProtocolImportModal({ hook: h }: Props) {
                     border: `1px solid ${h.selectedSources.includes(src.id) ? '#6366f1' : '#2a2d3e'}`,
                     borderRadius: 6, color: '#e2e8f0', padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 500,
                   }}>
-                  {src.icon} {src.label}
+                  <EmojiIcon glyph={src.icon} /> {src.label}
                 </button>
               ))}
             </div>
@@ -57,7 +58,7 @@ export default function ProtocolImportModal({ hook: h }: Props) {
               style={{ flex: 1, background: '#1a1d27', border: '1px solid #2a2d3e', borderRadius: 8, color: '#e2e8f0', padding: '8px 12px', fontSize: 13, outline: 'none' }} />
             <button onClick={h.search} disabled={h.isSearching || !h.query.trim()}
               style={{ background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, opacity: h.isSearching ? 0.6 : 1 }}>
-              {h.isSearching ? '⏳ Searching...' : '🔍 Search'}
+              {h.isSearching ? <><EmojiIcon glyph="⏳" />{" Searching..."}</> : <><EmojiIcon glyph="🔍" />{" Search"}</>}
             </button>
           </div>
           {h.error && <div style={{ background: '#7f1d1d22', border: '1px solid #ef4444', borderRadius: 6, color: '#ef4444', padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>{h.error}</div>}
@@ -83,8 +84,8 @@ export default function ProtocolImportModal({ hook: h }: Props) {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {r.doi && <span style={{ color: '#6366f1', fontSize: 11 }}>DOI: {r.doi}</span>}
                       {r.pmid && <span style={{ color: '#3b82f6', fontSize: 11 }}>PMID: {r.pmid}</span>}
-                      {r.openAccess && <span style={{ color: '#10b981', fontSize: 11 }}>🔓 Open Access</span>}
-                      <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#94a3b8', fontSize: 11, textDecoration: 'none' }}>🔗 {r.sourceName}</a>
+                      {r.openAccess && <span style={{ color: '#10b981', fontSize: 11 }}><EmojiIcon glyph="🔓" /> Open Access</span>}
+                      <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#94a3b8', fontSize: 11, textDecoration: 'none' }}><EmojiIcon glyph="🔗" /> {r.sourceName}</a>
                     </div>
                   </div>
                 ))}
@@ -104,7 +105,7 @@ export default function ProtocolImportModal({ hook: h }: Props) {
             <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: 32 }}>No results found. Try different keywords or select more sources.</div>
           )}
           <div style={{ marginTop: 16, padding: '10px 14px', background: '#242838', borderRadius: 6, color: '#64748b', fontSize: 11, lineHeight: 1.5 }}>
-            ℹ️ Imported protocols are saved as "Under Review" and must be approved before use. Citation metadata and outbound links are preserved. Full text is only stored for open-access publications.
+            <EmojiIcon glyph="ℹ️" /> Imported protocols are saved as "Under Review" and must be approved before use. Citation metadata and outbound links are preserved. Full text is only stored for open-access publications.
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Resource {
   id: number;
@@ -316,8 +318,7 @@ export default function WritingResourcesPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Writing Resources & Tips</h1>
-          <p className="page-subtitle">Guidelines, templates, and best practices for successful grant applications</p>
+          <LabBanner art="team" title="Writing Resources & Tips" subtitle="Guidelines, templates, and best practices for successful grant applications" style={{ flex: 1, minWidth: 0 }} />
         </div>
       </div>
 
@@ -577,7 +578,7 @@ export default function WritingResourcesPage() {
                 </div>
 
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, lineHeight: 1.5 }}>
-                  💡 {tip.tip}
+                  <EmojiIcon glyph="💡" /> {tip.tip}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

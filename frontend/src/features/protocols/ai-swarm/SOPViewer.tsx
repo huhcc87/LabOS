@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // SOP VIEWER — Full generated SOP document viewer with sections
 // ═══════════════════════════════════════════════════════════════════════════
@@ -61,7 +62,7 @@ export default function SOPViewer({ sop }: Props) {
             cursor: 'pointer', fontSize: 12, fontWeight: activeTab === tab.id ? 600 : 400,
             display: 'flex', alignItems: 'center', gap: 4,
           }}>
-            <span>{tab.icon}</span>{tab.label}
+            <span><EmojiIcon glyph={tab.icon} /></span>{tab.label}
           </button>
         ))}
       </div>
@@ -109,7 +110,7 @@ function ProcedureTab({ steps, expectedResults }: { steps: SOPStep[]; expectedRe
                 borderRadius: '50%', fontSize: 12, fontWeight: 700, flexShrink: 0,
               }}>{step.number}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{step.title}</span>
-              {step.duration && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>⏱ {step.duration}</span>}
+              {step.duration && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}><EmojiIcon glyph="⏱" /> {step.duration}</span>}
               {step.qcPoint && <span style={{ fontSize: 10, background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>QC</span>}
             </button>
 
@@ -120,8 +121,8 @@ function ProcedureTab({ steps, expectedResults }: { steps: SOPStep[]; expectedRe
                 </p>
 
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: 'var(--text-muted)' }}>
-                  {step.temperature && <span>🌡️ {step.temperature}</span>}
-                  {step.duration && <span>⏱️ {step.duration}</span>}
+                  {step.temperature && <span><EmojiIcon glyph="🌡️" /> {step.temperature}</span>}
+                  {step.duration && <span><EmojiIcon glyph="⏱️" /> {step.duration}</span>}
                 </div>
 
                 {step.criticalParams && step.criticalParams.length > 0 && (
@@ -133,19 +134,19 @@ function ProcedureTab({ steps, expectedResults }: { steps: SOPStep[]; expectedRe
 
                 {step.safetyNote && (
                   <div style={{ marginTop: 6, fontSize: 11, color: '#f59e0b', display: 'flex', gap: 4 }}>
-                    <span>⚠️</span><span>{step.safetyNote}</span>
+                    <span><EmojiIcon glyph="⚠️" /></span><span>{step.safetyNote}</span>
                   </div>
                 )}
 
                 {step.tip && (
                   <div style={{ marginTop: 6, fontSize: 11, color: '#10b981', display: 'flex', gap: 4 }}>
-                    <span>💡</span><span>{step.tip}</span>
+                    <span><EmojiIcon glyph="💡" /></span><span>{step.tip}</span>
                   </div>
                 )}
 
                 {step.expectedOutput && (
                   <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 4 }}>
-                    <span>📊</span><span>Expected: {step.expectedOutput}</span>
+                    <span><EmojiIcon glyph="📊" /></span><span>Expected: {step.expectedOutput}</span>
                   </div>
                 )}
               </div>
@@ -156,7 +157,7 @@ function ProcedureTab({ steps, expectedResults }: { steps: SOPStep[]; expectedRe
 
       {expectedResults && (
         <div style={{ marginTop: 16, padding: 16, background: '#10b98110', border: '1px solid #10b98130', borderRadius: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#10b981', marginBottom: 6 }}>📊 Expected Results</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#10b981', marginBottom: 6 }}><EmojiIcon glyph="📊" /> Expected Results</div>
           <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>{expectedResults}</div>
         </div>
       )}
@@ -172,7 +173,7 @@ function MaterialsTab({ sop }: { sop: GeneratedSOP }) {
       {sop.materials.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            📦 Materials
+            <EmojiIcon glyph="📦" /> Materials
           </div>
           <div style={{ padding: 0 }}>
             {sop.materials.map((m, i) => (
@@ -197,7 +198,7 @@ function MaterialsTab({ sop }: { sop: GeneratedSOP }) {
       {sop.reagents.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            🧪 Reagents
+            <EmojiIcon glyph="🧪" /> Reagents
           </div>
           <div>
             {sop.reagents.map((r, i) => (
@@ -232,7 +233,7 @@ function MaterialsTab({ sop }: { sop: GeneratedSOP }) {
       {sop.equipment.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            ⚙️ Equipment
+            <EmojiIcon glyph="⚙️" /> Equipment
           </div>
           <div>
             {sop.equipment.map((e, i) => (
@@ -242,8 +243,8 @@ function MaterialsTab({ sop }: { sop: GeneratedSOP }) {
                 <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{e.specification}</div>
                 <div style={{ display: 'flex', gap: 12, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
-                  {e.calibration && <span>📐 Calibration: {e.calibration}</span>}
-                  {e.maintenance && <span>🔧 Maintenance: {e.maintenance}</span>}
+                  {e.calibration && <span><EmojiIcon glyph="📐" /> Calibration: {e.calibration}</span>}
+                  {e.maintenance && <span><EmojiIcon glyph="🔧" /> Maintenance: {e.maintenance}</span>}
                 </div>
               </div>
             ))}
@@ -264,7 +265,7 @@ function SafetyTab({ sop }: { sop: GeneratedSOP }) {
       {sop.riskAssessment.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            ⚠️ Risk Assessment
+            <EmojiIcon glyph="⚠️" /> Risk Assessment
           </div>
           <div>
             {sop.riskAssessment.map((r, i) => (
@@ -296,7 +297,7 @@ function SafetyTab({ sop }: { sop: GeneratedSOP }) {
       {/* Safety Notes */}
       {sop.safetyNotes.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>🛡️ Safety Notes</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="🛡️" /> Safety Notes</div>
           {sop.safetyNotes.map((n, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#ef4444' }}>•</span><span>{n}</span>
@@ -308,7 +309,7 @@ function SafetyTab({ sop }: { sop: GeneratedSOP }) {
       {/* Waste Disposal */}
       {sop.wasteDisposal.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>🗑️ Waste Disposal</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="🗑️" /> Waste Disposal</div>
           {sop.wasteDisposal.map((w, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#f97316' }}>•</span><span>{w}</span>
@@ -320,7 +321,7 @@ function SafetyTab({ sop }: { sop: GeneratedSOP }) {
       {/* Compliance */}
       {sop.complianceNotes.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>📜 Compliance Notes</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="📜" /> Compliance Notes</div>
           {sop.complianceNotes.map((c, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: 'var(--accent)' }}>•</span><span>{c}</span>
@@ -382,7 +383,7 @@ function TroubleshootingTab({ items }: { items: SOPTroubleshooting[] }) {
             padding: '12px 16px', background: 'transparent', border: 'none',
             cursor: 'pointer', textAlign: 'left',
           }}>
-            <span style={{ fontSize: 14 }}>🔧</span>
+            <span style={{ fontSize: 14 }}><EmojiIcon glyph="🔧" /></span>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{item.problem}</span>
             <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{expanded.has(i) ? '▲' : '▼'}</span>
           </button>
@@ -421,7 +422,7 @@ function TrainingTab({ sop }: { sop: GeneratedSOP }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {sop.trainingRequirements.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>🎓 Training Requirements</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="🎓" /> Training Requirements</div>
           {sop.trainingRequirements.map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#a855f7' }}>•</span><span>{t}</span>
@@ -432,7 +433,7 @@ function TrainingTab({ sop }: { sop: GeneratedSOP }) {
 
       {sop.approvalRequirements.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>✍️ Approval Requirements</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="✍️" /> Approval Requirements</div>
           {sop.approvalRequirements.map((a, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#6366f1' }}>•</span><span>{a}</span>
@@ -443,7 +444,7 @@ function TrainingTab({ sop }: { sop: GeneratedSOP }) {
 
       {sop.references.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>📚 References</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="📚" /> References</div>
           {sop.references.map((r, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#14b8a6' }}>[{i + 1}]</span><span>{r}</span>
@@ -454,7 +455,7 @@ function TrainingTab({ sop }: { sop: GeneratedSOP }) {
 
       {sop.optimizationNotes.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>⚡ Optimization Notes</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="⚡" /> Optimization Notes</div>
           {sop.optimizationNotes.map((o, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <span style={{ color: '#f97316' }}>•</span><span>{o}</span>
@@ -467,7 +468,7 @@ function TrainingTab({ sop }: { sop: GeneratedSOP }) {
       {sop.revisionHistory.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            📝 Revision History
+            <EmojiIcon glyph="📝" /> Revision History
           </div>
           {sop.revisionHistory.map((r, i) => (
             <div key={i} style={{

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { comingSoon } from '../lib/comingSoon';
 import { grantSubmissionsApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface SuccessRate {
   institute: string;
@@ -112,22 +114,21 @@ export default function SuccessAnalyticsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Success Analytics</h1>
-          <p className="page-subtitle">NIH funding rates, trends, and your personal statistics</p>
+          <LabBanner art="lab" title="Success Analytics" subtitle="NIH funding rates, trends, and your personal statistics" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}>📊 Export Report</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Refresh Data')}>🔄 Refresh Data</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Report')}><EmojiIcon glyph="📊" /> Export Report</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Refresh Data')}><EmojiIcon glyph="🔄" /> Refresh Data</button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="view-toggle" style={{ marginBottom: 24 }}>
         <button className={`view-toggle-btn ${activeTab === 'nih' ? 'active' : ''}`} onClick={() => setActiveTab('nih')}>
-          🏛️ NIH Statistics
+          <EmojiIcon glyph="🏛️" /> NIH Statistics
         </button>
         <button className={`view-toggle-btn ${activeTab === 'personal' ? 'active' : ''}`} onClick={() => setActiveTab('personal')}>
-          👤 My Statistics
+          <EmojiIcon glyph="👤" /> My Statistics
         </button>
       </div>
 
@@ -161,7 +162,7 @@ export default function SuccessAnalyticsPage() {
             {/* Success Rates Table */}
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600 }}>📊 Success Rates by Institute</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 600 }}><EmojiIcon glyph="📊" /> Success Rates by Institute</h3>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <select
                     className="form-select"
@@ -232,7 +233,7 @@ export default function SuccessAnalyticsPage() {
 
             {/* Funding Trends */}
             <div className="card">
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>📈 5-Year Trends</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}><EmojiIcon glyph="📈" /> 5-Year Trends</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {INITIAL_FUNDING_TRENDS.map(trend => (
                   <div key={trend.year} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -353,7 +354,7 @@ export default function SuccessAnalyticsPage() {
                         <td>{sub.submitted_at || '—'}</td>
                         <td style={{ fontWeight: 600 }}>{sub.score ?? '—'}</td>
                         <td><span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: sub.status === 'funded' ? 'rgba(34,197,94,0.15)' : sub.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: sub.status === 'funded' ? '#22c55e' : sub.status === 'rejected' ? '#ef4444' : '#fbbf24' }}>{sub.status}</span></td>
-                        <td><button onClick={() => handleDelete(sub.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }}>🗑️</button></td>
+                        <td><button onClick={() => handleDelete(sub.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }}><EmojiIcon glyph="🗑️" /></button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -384,7 +385,7 @@ export default function SuccessAnalyticsPage() {
               </div>
 
               <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05))' }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#22c55e' }}>✨ Your Strengths</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#22c55e' }}><EmojiIcon glyph="✨" /> Your Strengths</h3>
                 <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--text-soft)', lineHeight: 1.8 }}>
                   <li>Above-average success rate (42% vs 20%)</li>
                   <li>Strong scores at NCI and NIAID</li>
@@ -393,7 +394,7 @@ export default function SuccessAnalyticsPage() {
               </div>
 
               <div className="card" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))' }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#f59e0b' }}>💡 Recommendations</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#f59e0b' }}><EmojiIcon glyph="💡" /> Recommendations</h3>
                 <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--text-soft)', lineHeight: 1.8 }}>
                   <li>Consider NHGRI for genomics grants</li>
                   <li>Approach scores improved on revision</li>

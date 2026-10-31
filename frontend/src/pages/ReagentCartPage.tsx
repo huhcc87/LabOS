@@ -4,6 +4,8 @@ import { RequestForm, SpendPanel, type RequestInput } from '../features/cart/Car
 import { cartCsv, downloadText, openPrint, poHtml } from '../features/cart/cartExport';
 import { InvoicePanel } from '../features/cart/CartPanels';
 import { useNavigate } from '../context/NavigationContext';
+import EmojiIcon from '../components/EmojiIcon';
+import { VENDOR_SEARCHES, vendorSearchUrl } from '../data/vendorSearch';
 
 interface CartItem {
   id: number;
@@ -210,21 +212,6 @@ export default function ReagentCartPage() {
     if (!openPrint(poHtml(o.po_number, o.supplier, rows))) setNotice('Allow pop-ups to print the purchase order.');
   };
 
-  // F1: cross-vendor price compare — simulate fetching alt prices for an item
-  const handleComparePrices = async (id: number, name: string, _catalog: string) => {
-    // Simulated comparison — in production this calls vendor APIs in background
-    const variation = (vendor: string) => {
-      const base = (items.find(i => i.id === id)?.unit_price || 50);
-      const factor = { 'Sigma-Aldrich': 1.00, 'Thermo Fisher': 0.92, 'VWR': 0.97, 'Fisher Scientific': 0.88, 'Bio-Rad': 1.03 }[vendor] || 1.0;
-      return Math.round(base * factor * 100) / 100;
-    };
-    const sim = ['Sigma-Aldrich', 'Thermo Fisher', 'VWR', 'Fisher Scientific', 'Bio-Rad'].map(v => ({
-      vendor: v, unit_price: variation(v), url: `https://${v.toLowerCase().replace(/[^a-z]/g, '')}.com/search?q=${encodeURIComponent(name)}`,
-    }));
-    await procurementApi.setAltPrices(id, sim);
-    setExpandedId(id);
-  };
-
   // F8: set recurrence
   const handleRecurrence = async (id: number, pattern: string) => {
     await procurementApi.setRecurrence(id, pattern, true);
@@ -293,7 +280,7 @@ export default function ReagentCartPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>🛒 Reagent Cart</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="🛒" /> Reagent Cart</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             Items captured from Sigma, Thermo, VWR, Abcam, NEB and 15+ other vendors via the LabOS browser extension
           </p>
@@ -301,10 +288,10 @@ export default function ReagentCartPage() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => setShowForm(s => !s)} className="btn btn-primary btn-sm">+ New request</button>
           <button onClick={reorderLow} className="btn btn-secondary btn-sm" title="Request every inventory item that is at or under its minimum">⟲ Reorder low stock</button>
-          <button onClick={exportCsv} className="btn btn-secondary btn-sm">⬇ Export CSV</button>
-          {cfg.can_manage && <button onClick={() => setShowSpend(s => !s)} className="btn btn-secondary btn-sm">📊 Spend</button>}
-          {cfg.can_manage && <button onClick={() => setShowInvoices(s => !s)} className="btn btn-secondary btn-sm" title="Enter supplier invoices and check them against the PO and what was received">🧾 Invoices</button>}
-          {cfg.can_manage && <button onClick={changeLimit} className="btn btn-secondary btn-sm" title="Requests up to this total skip approval">⚙ Auto-approve: {cfg.auto_approve_limit > 0 ? `$${cfg.auto_approve_limit}` : 'off'}</button>}
+          <button onClick={exportCsv} className="btn btn-secondary btn-sm"><EmojiIcon glyph="⬇" /> Export CSV</button>
+          {cfg.can_manage && <button onClick={() => setShowSpend(s => !s)} className="btn btn-secondary btn-sm"><EmojiIcon glyph="📊" /> Spend</button>}
+          {cfg.can_manage && <button onClick={() => setShowInvoices(s => !s)} className="btn btn-secondary btn-sm" title="Enter supplier invoices and check them against the PO and what was received"><EmojiIcon glyph="🧾" /> Invoices</button>}
+          {cfg.can_manage && <button onClick={changeLimit} className="btn btn-secondary btn-sm" title="Requests up to this total skip approval"><EmojiIcon glyph="⚙" /> Auto-approve: {cfg.auto_approve_limit > 0 ? `$${cfg.auto_approve_limit}` : 'off'}</button>}
           <button onClick={load}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
             ↻ Refresh
@@ -323,7 +310,7 @@ export default function ReagentCartPage() {
           {orders.map(o => (
             <div key={o.po_number} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: 13, flexWrap: 'wrap' }}>
               <code>{o.po_number}</code><span>{o.supplier}</span><span>${o.total.toFixed(2)}</span>
-              <button className="btn btn-sm btn-secondary" onClick={() => printPo(o)}>🖨️ Print PO</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => printPo(o)}><EmojiIcon glyph="🖨️" /> Print PO</button>
             </div>
           ))}
         </div>
@@ -336,7 +323,7 @@ export default function ReagentCartPage() {
       {items.length === 0 && !loading && (
         <div className="card" style={{ marginBottom: 20, padding: 20, background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05))', borderColor: 'rgba(99,102,241,0.3)' }}>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 36 }}>🧪</div>
+            <div style={{ fontSize: 36 }}><EmojiIcon glyph="🧪" /></div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Install the LabOS browser extension</div>
               <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55 }}>
@@ -349,7 +336,7 @@ export default function ReagentCartPage() {
                 <li>Open <code style={{ background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4 }}>chrome://extensions</code></li>
                 <li>Toggle <strong>Developer mode</strong></li>
                 <li>Click <strong>Load unpacked</strong> and select the <code style={{ background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4 }}>extension/</code> folder in this repo</li>
-                <li>Pin it to your toolbar, click ⚙️, paste your LabOS API URL + token</li>
+                <li>Pin it to your toolbar, click <EmojiIcon glyph="⚙️" />, paste your LabOS API URL + token</li>
                 <li>Visit a vendor product page — click the orange <strong>Add to LabOS</strong> button</li>
               </ol>
             </div>
@@ -360,7 +347,7 @@ export default function ReagentCartPage() {
       {/* Stripe status banner */}
       {stripeConfigured === false && (
         <div className="card" style={{ marginBottom: 20, padding: 14, background: 'rgba(234,179,8,0.08)', borderColor: 'rgba(234,179,8,0.35)', fontSize: 13 }}>
-          <strong>💳 In-app payment not configured.</strong> You can still capture items and mark them as ordered,
+          <strong><EmojiIcon glyph="💳" /> In-app payment not configured.</strong> You can still capture items and mark them as ordered,
           but to charge a saved card automatically set <code>STRIPE_SECRET_KEY</code> in <code>backend/.env</code>.
           Manage cards in <a href="#" onClick={(e) => { e.preventDefault(); const btn = [...document.querySelectorAll('button')].find(b => /payment methods/i.test(b.textContent || '')); btn?.click(); }} style={{ color: 'var(--accent, #6366f1)' }}>Payment Methods</a>.
         </div>
@@ -414,12 +401,12 @@ export default function ReagentCartPage() {
         <button onClick={startVoiceCapture}
           title="Speak an item to add (Web Speech API)"
           style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: voiceListening ? '#ef4444' : 'var(--surface2)', color: voiceListening ? '#fff' : 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-          {voiceListening ? '🔴 Listening…' : '🎤 Voice add'}
+          {voiceListening ? <><EmojiIcon glyph="🔴" />{" Listening…"}</> : <><EmojiIcon glyph="🎤" />{" Voice add"}</>}
         </button>
         <button onClick={handlePunchOut}
           title="Export selected as PunchOut OCI XML for ERP procurement"
           style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-          ⬇ PunchOut (OCI)
+          <EmojiIcon glyph="⬇" /> PunchOut (OCI)
         </button>
       </div>
 
@@ -511,7 +498,7 @@ export default function ReagentCartPage() {
                         {item.status === 'ordered' && (
                           <button onClick={() => { sessionStorage.setItem('labos_receive_order', String(item.id)); navigate('receiving'); }} title="Receive this order" aria-label="Receive this order"
                             style={{ padding: '4px 8px', borderRadius: 4, border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', fontSize: 11 }}>
-                            📥
+                            <EmojiIcon glyph="📥" />
                           </button>
                         )}
                         {(item.status === 'ordered' || item.status === 'received') && (
@@ -530,7 +517,7 @@ export default function ReagentCartPage() {
                   {expandedId === item.id && (
                     <tr>
                       <td colSpan={9} style={{ padding: 0 }}>
-                        <ItemDetailRow item={item} onChanged={load} onCompare={() => handleComparePrices(item.id, item.name, item.catalog)} onRecurrence={(p) => handleRecurrence(item.id, p)} />
+                        <ItemDetailRow item={item} onChanged={load} onRecurrence={(p) => handleRecurrence(item.id, p)} />
                       </td>
                     </tr>
                   )}
@@ -583,11 +570,10 @@ export default function ReagentCartPage() {
 
 // ─── Per-item expandable detail (F1 prices, F8 recurrence, F9 RFQ, F15 borrow) ──
 function ItemDetailRow({
-  item, onChanged, onCompare, onRecurrence,
+  item, onChanged, onRecurrence,
 }: {
   item: CartItem;
   onChanged: () => void;
-  onCompare: () => void;
   onRecurrence: (pattern: string) => void;
 }) {
   const [altPrices, setAltPrices] = useState<any[]>([]);
@@ -643,18 +629,23 @@ function ItemDetailRow({
         {/* Price comparison */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', marginBottom: 8 }}>
-            💵 Cross-vendor prices
+            <EmojiIcon glyph="💵" /> Cross-vendor prices
           </div>
           {savings > 0 && (
             <div style={{ padding: 8, marginBottom: 8, background: 'rgba(34,197,94,0.1)', borderRadius: 6, fontSize: 12, color: '#22c55e', fontWeight: 700 }}>
-              💰 Save ${savings.toFixed(2)} by switching vendors
+              <EmojiIcon glyph="💰" /> Save ${savings.toFixed(2)} by switching vendors
             </div>
           )}
           {altPrices.length === 0 ? (
-            <button onClick={onCompare} disabled={loadingAlt}
-              style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>
-              🔍 Compare prices across vendors
-            </button>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Check other vendors for this item (opens their site):</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {VENDOR_SEARCHES.filter(v => v.kind !== 'Reference').slice(0, 8).map(v => (
+                  <a key={v.name} href={vendorSearchUrl(v, item.catalog || item.name)} target="_blank" rel="noopener noreferrer"
+                    style={{ padding: '3px 8px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface2)', color: 'var(--text)', textDecoration: 'none' }}>{v.name}</a>
+                ))}
+              </div>
+            </div>
           ) : altPrices.map((p, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', fontSize: 12, borderRadius: 4, background: p.vendor === item.vendor ? 'rgba(99,102,241,0.1)' : 'transparent' }}>
               <span>{p.vendor === item.vendor ? '● ' : '○ '}{p.vendor}</span>
@@ -671,7 +662,7 @@ function ItemDetailRow({
         {/* Recurrence & RFQ */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', marginBottom: 8 }}>
-            ⏰ Recurrence
+            <EmojiIcon glyph="⏰" /> Recurrence
           </div>
           <select onChange={e => onRecurrence(e.target.value)} defaultValue=""
             style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', color: 'var(--text)', marginBottom: 12 }}>
@@ -682,7 +673,7 @@ function ItemDetailRow({
             <option value="quarterly">Reorder every 3 months</option>
           </select>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', marginBottom: 8 }}>
-            📄 RFQ
+            <EmojiIcon glyph="📄" /> RFQ
           </div>
           <button onClick={requestQuote}
             style={{ width: '100%', padding: '6px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>
@@ -693,7 +684,7 @@ function ItemDetailRow({
         {/* Lab-to-lab borrow */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', marginBottom: 8 }}>
-            🔁 Borrow from another lab
+            <EmojiIcon glyph="🔁" /> Borrow from another lab
           </div>
           {lenders.length === 0 ? (
             <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: 8 }}>

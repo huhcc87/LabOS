@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import EmojiIcon from '../components/EmojiIcon';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -180,16 +181,16 @@ export default function ReagentHubPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>⚗️ Reagent Safety Hub</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="⚗️" /> Reagent Safety Hub</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Expiry tracking · SDS compliance · Disposal records</p>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--surface-raised, #f8fafc)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
-        <button style={tabStyle('expiry')} onClick={() => setTab('expiry')}>⏰ Expiry Alerts</button>
-        <button style={tabStyle('sds')} onClick={() => setTab('sds')}>📋 SDS Tracker</button>
-        <button style={tabStyle('disposal')} onClick={() => setTab('disposal')}>🗑 Disposal Log</button>
+        <button style={tabStyle('expiry')} onClick={() => setTab('expiry')}><EmojiIcon glyph="⏰" /> Expiry Alerts</button>
+        <button style={tabStyle('sds')} onClick={() => setTab('sds')}><EmojiIcon glyph="📋" /> SDS Tracker</button>
+        <button style={tabStyle('disposal')} onClick={() => setTab('disposal')}><EmojiIcon glyph="🗑" /> Disposal Log</button>
       </div>
 
       {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Loading…</div>}
@@ -261,7 +262,7 @@ export default function ReagentHubPage() {
 
           {expiry && expiry.total_expiring === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-              ✅ No reagents expiring within {expiryDays} days
+              <EmojiIcon glyph="✅" /> No reagents expiring within {expiryDays} days
             </div>
           )}
         </>
@@ -291,7 +292,7 @@ export default function ReagentHubPage() {
                 padding: '4px 12px', borderRadius: 6, border: `1px solid ${sdsFilter === f ? '#6366f1' : 'var(--border)'}`,
                 background: sdsFilter === f ? 'rgba(99,102,241,0.12)' : 'transparent',
                 color: sdsFilter === f ? '#6366f1' : 'var(--text-muted)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              }}>{f === 'all' ? 'All' : f === 'missing' ? '⚠ Missing SDS' : '✅ Has SDS'}</button>
+              }}>{f === 'all' ? 'All' : f === 'missing' ? <><EmojiIcon glyph="⚠" />{" Missing SDS"}</> : <><EmojiIcon glyph="✅" />{" Has SDS"}</>}</button>
             ))}
           </div>
 
@@ -313,11 +314,11 @@ export default function ReagentHubPage() {
                     <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: 12 }}>{item.storage_temp || '—'} · {item.storage_location || '—'}</td>
                     <td style={{ padding: '8px 12px' }}>
                       {item.sds_url ? (
-                        <a href={item.sds_url} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 12, fontWeight: 600 }}>📄 View SDS</a>
+                        <a href={item.sds_url} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 12, fontWeight: 600 }}><EmojiIcon glyph="📄" /> View SDS</a>
                       ) : item.msds_available ? (
-                        <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>✅ On file</span>
+                        <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}><EmojiIcon glyph="✅" /> On file</span>
                       ) : (
-                        <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 600 }}>⚠ Missing</span>
+                        <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 600 }}><EmojiIcon glyph="⚠" /> Missing</span>
                       )}
                     </td>
                   </tr>
@@ -341,7 +342,7 @@ export default function ReagentHubPage() {
           {/* Disposal form */}
           {showDisposalForm && (
             <div className="card" style={{ marginBottom: 20, background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.3)' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: 'var(--text-muted)', textTransform: 'uppercase' }}>🗑 New Disposal Record</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: 'var(--text-muted)', textTransform: 'uppercase' }}><EmojiIcon glyph="🗑" /> New Disposal Record</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
                 {[
                   { key: 'reagent_name', label: 'Reagent Name *', type: 'text', placeholder: 'e.g. Ethanol 95%' },

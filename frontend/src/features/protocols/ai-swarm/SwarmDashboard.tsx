@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // AI SWARM DASHBOARD — Main orchestration UI for the 10-agent swarm
 // ═══════════════════════════════════════════════════════════════════════════
@@ -23,7 +24,7 @@ export default function SwarmDashboard({ swarm }: Props) {
   if (swarm.phase === 'idle') {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🧬</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🧬" /></div>
         <h2 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>
           AI Swarm Protocol Intelligence
         </h2>
@@ -44,7 +45,7 @@ export default function SwarmDashboard({ swarm }: Props) {
               display: 'flex', alignItems: 'center', gap: 10,
               borderLeft: `3px solid ${agent.color}`,
             }}>
-              <span style={{ fontSize: 20 }}>{agent.icon}</span>
+              <span style={{ fontSize: 20 }}><EmojiIcon glyph={agent.icon} /></span>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{agent.name}</div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{agent.role.slice(0, 40)}</div>
@@ -54,12 +55,12 @@ export default function SwarmDashboard({ swarm }: Props) {
         </div>
 
         <button onClick={swarm.startNewSession} style={{
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: 'var(--accent)',
           border: 'none', borderRadius: 10, color: '#fff', padding: '14px 32px',
           fontSize: 15, fontWeight: 600, cursor: 'pointer',
           boxShadow: '0 4px 16px rgba(99,102,241,0.3)',
         }}>
-          🚀 Launch AI Swarm Analysis
+          <EmojiIcon glyph="🚀" /> Launch AI Swarm Analysis
         </button>
 
         {/* Previous Sessions */}
@@ -103,7 +104,7 @@ export default function SwarmDashboard({ swarm }: Props) {
             cursor: 'pointer', fontSize: 13,
           }}>← Back</button>
           <h2 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, margin: 0 }}>
-            🧬 Configure Protocol Analysis
+            <EmojiIcon glyph="🧬" /> Configure Protocol Analysis
           </h2>
         </div>
         <SOPGeneratorForm onSubmit={swarm.runAnalysis} isRunning={swarm.isRunning} />
@@ -115,7 +116,7 @@ export default function SwarmDashboard({ swarm }: Props) {
   if (swarm.phase === 'running') {
     return (
       <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ fontSize: 42, marginBottom: 16 }}>🧬</div>
+        <div style={{ fontSize: 42, marginBottom: 16 }}><EmojiIcon glyph="🧬" /></div>
         <h2 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>
           AI Swarm Analysis in Progress
         </h2>
@@ -130,7 +131,7 @@ export default function SwarmDashboard({ swarm }: Props) {
         }}>
           <div style={{
             width: `${swarm.progress}%`, height: '100%',
-            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+            background: 'var(--accent)',
             borderRadius: 4, transition: 'width 0.3s ease',
           }} />
         </div>
@@ -154,11 +155,11 @@ export default function SwarmDashboard({ swarm }: Props) {
                 transition: 'all 0.3s ease',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>{agent.icon}</span>
+                  <span style={{ fontSize: 16 }}><EmojiIcon glyph={agent.icon} /></span>
                   <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text)' }}>{agent.name}</span>
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {output ? '✓ Complete' : isActive ? '⚡ Analyzing...' : 'Pending'}
+                  {output ? '✓ Complete' : isActive ? <><EmojiIcon glyph="⚡" />{" Analyzing..."}</> : 'Pending'}
                 </div>
               </div>
             )
@@ -241,7 +242,7 @@ export default function SwarmDashboard({ swarm }: Props) {
             cursor: 'pointer', fontSize: 12, fontWeight: resultTab === tab.id ? 600 : 400,
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
-            <span>{tab.icon}</span>{tab.label}
+            <span><EmojiIcon glyph={tab.icon} /></span>{tab.label}
           </button>
         ))}
       </div>
@@ -295,7 +296,7 @@ function AgentResults({
               borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
               borderLeft: `3px solid ${output.color}`,
             }}>
-              <span style={{ fontSize: 18 }}>{output.icon}</span>
+              <span style={{ fontSize: 18 }}><EmojiIcon glyph={output.icon} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {output.title}
@@ -305,7 +306,7 @@ function AgentResults({
                 </div>
               </div>
               {output.warnings.length > 0 && (
-                <span style={{ fontSize: 11, color: '#f59e0b' }}>⚠️</span>
+                <span style={{ fontSize: 11, color: '#f59e0b' }}><EmojiIcon glyph="⚠️" /></span>
               )}
             </button>
           )
@@ -321,7 +322,7 @@ function AgentResults({
             padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)',
             background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
           }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>👈</div>
+            <div style={{ fontSize: 28, marginBottom: 8 }}><EmojiIcon glyph="👈" /></div>
             <div style={{ fontSize: 13 }}>Select an agent to view detailed analysis</div>
           </div>
         )}

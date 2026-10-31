@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { Meeting } from '../types/meeting.types'
 import { MeetingTypeBadge, MeetingStatusBadge } from './MeetingBadges'
@@ -37,7 +38,7 @@ export default function MeetingCard({ meeting: m, onClick, isPiOrAdmin, onCancel
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 5 }}>
             <MeetingTypeBadge type={m.type} />
             <MeetingStatusBadge status={m.status} />
-            {m.isRecurring && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}>🔁 Recurring</span>}
+            {m.isRecurring && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}><EmojiIcon glyph="🔁" /> Recurring</span>}
           </div>
           <h3 style={{ color: '#1e293b', fontSize: 15, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{m.title}</h3>
         </div>
@@ -54,12 +55,12 @@ export default function MeetingCard({ meeting: m, onClick, isPiOrAdmin, onCancel
       {/* Date/Time/Location */}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ color: '#475569', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-          📅 {formatMeetingDate(m.scheduledAt)}
+          <EmojiIcon glyph="📅" /> {formatMeetingDate(m.scheduledAt)}
         </span>
         <span style={{ color: '#475569', fontSize: 12 }}>
-          🕐 {formatTime(m.scheduledAt)} – {formatTime(m.endTime)} ({formatMeetingDuration(m.scheduledAt, m.endTime)})
+          <EmojiIcon glyph="🕐" /> {formatTime(m.scheduledAt)} – {formatTime(m.endTime)} ({formatMeetingDuration(m.scheduledAt, m.endTime)})
         </span>
-        <span style={{ color: '#475569', fontSize: 12 }}>📍 {m.location}</span>
+        <span style={{ color: '#475569', fontSize: 12 }}><EmojiIcon glyph="📍" /> {m.location}</span>
         {m.zoomLink && (
           <a
             href={m.zoomLink}
@@ -72,7 +73,7 @@ export default function MeetingCard({ meeting: m, onClick, isPiOrAdmin, onCancel
               textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4
             }}
           >
-            🎥 Join Meeting
+            <EmojiIcon glyph="🎥" /> Join Meeting
           </a>
         )}
       </div>
@@ -80,20 +81,20 @@ export default function MeetingCard({ meeting: m, onClick, isPiOrAdmin, onCancel
       {/* Agenda summary */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
         <span style={{ fontSize: 12, color: '#475569' }}>
-          📋 {approvedAgendaItems.length} agenda item{approvedAgendaItems.length !== 1 ? 's' : ''}
+          <EmojiIcon glyph="📋" /> {approvedAgendaItems.length} agenda item{approvedAgendaItems.length !== 1 ? 's' : ''}
           {approvedAgendaItems.length > 0 && <span style={{ color: '#94a3b8' }}> ({getAgendaTotalDuration(m)} min)</span>}
         </span>
         {pendingItems.length > 0 && isPiOrAdmin && (
-          <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600 }}>⏳ {pendingItems.length} pending approval</span>
+          <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600 }}><EmojiIcon glyph="⏳" /> {pendingItems.length} pending approval</span>
         )}
         {m.progressReports.length > 0 && (
-          <span style={{ fontSize: 12, color: '#6366f1' }}>📊 {m.progressReports.length} progress report{m.progressReports.length !== 1 ? 's' : ''}</span>
+          <span style={{ fontSize: 12, color: '#6366f1' }}><EmojiIcon glyph="📊" /> {m.progressReports.length} progress report{m.progressReports.length !== 1 ? 's' : ''}</span>
         )}
         {isPast && m.minutesPublished && (
-          <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>📄 Minutes published</span>
+          <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}><EmojiIcon glyph="📄" /> Minutes published</span>
         )}
         {isPast && !m.minutesPublished && isPiOrAdmin && (
-          <span style={{ fontSize: 12, color: '#ef4444' }}>⚠ Minutes not published</span>
+          <span style={{ fontSize: 12, color: '#ef4444' }}><EmojiIcon glyph="⚠" /> Minutes not published</span>
         )}
       </div>
 

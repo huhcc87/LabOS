@@ -5,6 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -111,7 +112,7 @@ export default function InstrumentBooking() {
             }} style={{ ...input, marginBottom: 10 }}>
               <option value="">Select an instrument…</option>
               {instruments.map((i) => <option key={i._id} value={i._id} disabled={!i.bookable}>{i.name}{i.location ? ` (${i.location})` : ''} — {statusOf(i).text}</option>)}
-              <option value="__add__">➕ Other: my instrument isn't listed (add it)</option>
+              <option value="__add__">Other: my instrument isn't listed (add it)</option>
             </select>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {instruments.map((i, n) => {

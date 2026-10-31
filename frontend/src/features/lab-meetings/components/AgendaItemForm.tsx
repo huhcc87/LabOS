@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { AgendaCategory } from '../types/meeting.types'
 
@@ -53,7 +54,7 @@ export default function AgendaItemForm({ meetingTitle, currentUserName, currentU
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 14px', color: '#1e40af', fontSize: 12 }}>
-        📋 Submitting agenda topic for: <strong>{meetingTitle}</strong>
+        <EmojiIcon glyph="📋" /> Submitting agenda topic for: <strong>{meetingTitle}</strong>
         <br />Your topic will be visible to the PI for approval before it appears on the agenda.
       </div>
 
@@ -66,7 +67,7 @@ export default function AgendaItemForm({ meetingTitle, currentUserName, currentU
         <div>
           <label style={lbl}>Category *</label>
           <select style={{ ...inp }} value={form.category} onChange={e => set('category', e.target.value)}>
-            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}><EmojiIcon glyph={c.icon} /> {c.label}</option>)}
           </select>
         </div>
         <div>

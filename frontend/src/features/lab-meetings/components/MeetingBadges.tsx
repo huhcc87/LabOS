@@ -1,4 +1,5 @@
 import React from 'react'
+import EmojiIcon from '../../../components/EmojiIcon'
 import type { MeetingType, MeetingStatus, ActionItemStatus, ActionItemPriority, AgendaItemStatus, AttendanceStatus } from '../types/meeting.types'
 import { getMeetingTypeLabel, getMeetingTypeColor, getMeetingTypeIcon, getStatusColor, getPriorityColor } from '../utils/meetingUtils'
 
@@ -10,7 +11,7 @@ const badge = (label: string, color: string, icon?: string): React.CSSProperties
 
 export function MeetingTypeBadge({ type }: { type: MeetingType }) {
   const color = getMeetingTypeColor(type)
-  return <span style={badge(getMeetingTypeLabel(type), color)}>{getMeetingTypeIcon(type)} {getMeetingTypeLabel(type)}</span>
+  return <span style={badge(getMeetingTypeLabel(type), color)}><EmojiIcon glyph={getMeetingTypeIcon(type)} /> {getMeetingTypeLabel(type)}</span>
 }
 
 export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {

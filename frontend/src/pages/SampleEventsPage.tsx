@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { formatDateTime } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
   intake: '#6366f1',
@@ -87,7 +88,7 @@ export default function SampleEventsPage() {
       const color = getEventColor(r.event_type);
       return <span style={{ background: color + '22', color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, textTransform: 'capitalize' }}>{r.event_type}</span>;
     }},
-    { key: 'location', header: 'Location', render: (r) => r.location ? <span style={{ color: 'var(--text-soft)', fontSize: 12 }}>📍 {r.location}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span> },
+    { key: 'location', header: 'Location', render: (r) => r.location ? <span style={{ color: 'var(--text-soft)', fontSize: 12 }}><EmojiIcon glyph="📍" /> {r.location}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span> },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.logged;
       return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{r.status?.replace('_', ' ')}</span>;
@@ -109,7 +110,7 @@ export default function SampleEventsPage() {
             <div style={{ display: 'flex', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               {(['timeline', 'table'] as const).map(m => (
                 <button key={m} onClick={() => setViewMode(m)} style={{ background: viewMode === m ? 'var(--accent)' : 'transparent', border: 'none', color: viewMode === m ? '#fff' : 'var(--text-muted)', padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: viewMode === m ? 700 : 400, textTransform: 'capitalize' }}>
-                  {m === 'timeline' ? '⏱ Timeline' : '☰ Table'}
+                  {m === 'timeline' ? <><EmojiIcon glyph="⏱" />{" Timeline"}</> : '☰ Table'}
                 </button>
               ))}
             </div>
@@ -178,8 +179,8 @@ export default function SampleEventsPage() {
                             <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatDateTime(ev.timestamp)}</span>
                           </div>
                           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-muted)' }}>
-                            {ev.location && <span>📍 {ev.location}</span>}
-                            {ev.performer_name && <span>👤 {ev.performer_name}</span>}
+                            {ev.location && <span><EmojiIcon glyph="📍" /> {ev.location}</span>}
+                            {ev.performer_name && <span><EmojiIcon glyph="👤" /> {ev.performer_name}</span>}
                             {ev.notes && <span style={{ color: 'var(--text-soft)' }}>{ev.notes}</span>}
                           </div>
                           {canEdit && (

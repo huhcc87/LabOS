@@ -6,6 +6,8 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 type TabType = 'experiments' | 'results' | 'timeline' | 'files';
 
@@ -334,8 +336,7 @@ export default function ExperimentsHubPage() {
     <div className="page experiments-hub">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Experiments Hub</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 14 }}>Manage experiments, track progress, and document results</p>
+          <LabBanner art="lab" title="Experiments Hub" subtitle="Manage experiments, track progress, and document results" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button onClick={() => setShowHelp(true)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
           ? Help
@@ -362,7 +363,7 @@ export default function ExperimentsHubPage() {
               gap: 8,
             }}
           >
-            <span style={{ fontFamily: 'monospace' }}>{tab.icon}</span> {tab.label}
+            <span style={{ fontFamily: 'monospace' }}><EmojiIcon glyph={tab.icon} /></span> {tab.label}
           </button>
         ))}
       </div>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -196,14 +197,14 @@ export default function ProtocolEditor({ protocol, onSave, onCancel }: Props) {
           <span style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
           <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list">•</ToolbarBtn>
           <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numbered list">1.</ToolbarBtn>
-          <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} title="Checklist">☑</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} title="Checklist"><EmojiIcon glyph="☑" /></ToolbarBtn>
           <span style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
           <ToolbarBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert table">⊞</ToolbarBtn>
           <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Note/Warning">❝</ToolbarBtn>
           <ToolbarBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} title="Code block">&lt;/&gt;</ToolbarBtn>
           <span style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
-          <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Undo">↩</ToolbarBtn>
-          <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} title="Redo">↪</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Undo"><EmojiIcon glyph="↩" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} title="Redo"><EmojiIcon glyph="↪" /></ToolbarBtn>
         </div>
       )}
 
@@ -242,7 +243,7 @@ export default function ProtocolEditor({ protocol, onSave, onCancel }: Props) {
           Cancel
         </button>
         <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: '9px 18px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500 }}>
-          {saving ? 'Saving...' : '💾 Save Draft'}
+          {saving ? 'Saving...' : <><EmojiIcon glyph="💾" />{" Save Draft"}</>}
         </button>
         <button onClick={() => handleSave(true)} disabled={saving} style={{ padding: '9px 18px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
           {saving ? 'Submitting...' : '✓ Submit for Review'}

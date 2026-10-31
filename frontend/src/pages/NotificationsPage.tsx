@@ -8,6 +8,7 @@ import type { Column } from '../components/Table';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
+import EmojiIcon from '../components/EmojiIcon';
 
 const CHANNEL_OPTIONS = ['dashboard', 'email', 'sms'];
 const ROLE_OPTIONS = ['admin', 'pi', 'manager', 'staff', 'trainee'];
@@ -80,7 +81,7 @@ export default function NotificationsPage() {
     { key: 'trigger_event', header: 'Trigger', render: (r) => <span style={{ color: 'var(--text-soft)', fontSize: 12, fontFamily: 'monospace', background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4 }}>{r.trigger_event}</span> },
     { key: 'channel', header: 'Channel', render: (r) => {
       const m = CHANNEL_META[r.channel] || { color: '#94a3b8', bg: '#f1f5f9', icon: '?' };
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.channel}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.channel}</span>;
     }},
     { key: 'recipient_role', header: 'Role', render: (r) => <span style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'capitalize' }}>{r.recipient_role}</span> },
     { key: 'lead_time_hours', header: 'Lead Time', width: '100px', render: (r) => <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{r.lead_time_hours}h</span> },
@@ -119,7 +120,7 @@ export default function NotificationsPage() {
                 borderLeft: `4px solid ${m.color}`, borderRadius: 10, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>{m.icon}</span>
+                  <span style={{ fontSize: 20 }}><EmojiIcon glyph={m.icon} /></span>
                   <div>
                     <div style={{ fontSize: 20, fontWeight: 900, color: m.color }}>{channelCounts[c] || 0}</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'capitalize' }}>{c}</div>

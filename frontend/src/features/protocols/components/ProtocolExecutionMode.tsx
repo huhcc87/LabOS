@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { Protocol, ProtocolStep } from '../types/protocol.types'
 
@@ -280,7 +281,7 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
                   color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 700, fontSize: 13,
                 }}>
-                  {s.outcome === 'success' ? '✓' : s.outcome === 'failed' ? '✕' : s.status === 'skipped' ? '⏭' : i + 1}
+                  {s.outcome === 'success' ? '✓' : s.outcome === 'failed' ? '✕' : s.status === 'skipped' ? <><EmojiIcon glyph="⏭" /></> : i + 1}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14 }}>
@@ -443,7 +444,7 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
                   color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 12, fontWeight: 700,
                 }}>
-                  {exec.status === 'completed' ? '✓' : exec.status === 'skipped' ? '⏭' : i + 1}
+                  {exec.status === 'completed' ? '✓' : exec.status === 'skipped' ? <><EmojiIcon glyph="⏭" /></> : i + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
@@ -509,7 +510,7 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
                     padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
                   }}
                 >
-                  {isTimerRunning ? '⏸ Pause' : '▶ Start'}
+                  {isTimerRunning ? <><EmojiIcon glyph="⏸" />{" Pause"}</> : <><EmojiIcon glyph="▶" />{" Start"}</>}
                 </button>
                 <button
                   onClick={() => {
@@ -544,19 +545,19 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
               {step.duration && (
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' }}>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 4 }}>Duration</div>
-                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>⏱ {step.duration}</div>
+                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}><EmojiIcon glyph="⏱" /> {step.duration}</div>
                 </div>
               )}
               {step.temperature && (
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' }}>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 4 }}>Temperature</div>
-                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>🌡 {step.temperature}</div>
+                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}><EmojiIcon glyph="🌡" /> {step.temperature}</div>
                 </div>
               )}
               {step.rpm && (
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' }}>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 4 }}>RPM</div>
-                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>🔄 {step.rpm}</div>
+                  <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}><EmojiIcon glyph="🔄" /> {step.rpm}</div>
                 </div>
               )}
             </div>
@@ -568,7 +569,7 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
               background: '#7f1d1d22', border: '1px solid #ef4444',
               borderRadius: 12, padding: 16, marginBottom: 20,
             }}>
-              <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>⚠️ CAUTION</div>
+              <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 14, marginBottom: 8 }}><EmojiIcon glyph="⚠️" /> CAUTION</div>
               <div style={{ color: '#fca5a5', fontSize: 15 }}>{step.caution}</div>
             </div>
           )}
@@ -596,9 +597,9 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
               onClick={() => setShowNotes(!showNotes)}
             >
               <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14 }}>
-                📝 Notes & Observations {stepExecution.notes && '(1)'}
+                <EmojiIcon glyph="📝" /> Notes & Observations {stepExecution.notes && '(1)'}
               </div>
-              <span style={{ color: 'var(--text-muted)' }}>{showNotes ? '▼' : '▶'}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{showNotes ? '▼' : <><EmojiIcon glyph="▶" /></>}</span>
             </div>
             {showNotes && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -639,7 +640,7 @@ export default function ProtocolExecutionMode({ protocol, onClose, onComplete }:
               background: 'var(--surface)', border: '1px solid var(--accent)',
               borderRadius: 12, padding: 16, marginBottom: 20,
             }}>
-              <div style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>💡 Troubleshooting Tip</div>
+              <div style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 14, marginBottom: 8 }}><EmojiIcon glyph="💡" /> Troubleshooting Tip</div>
               <div style={{ color: 'var(--text)', fontSize: 14 }}>{step.troubleshootingTip}</div>
             </div>
           )}

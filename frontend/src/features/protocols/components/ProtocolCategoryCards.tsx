@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { ProtocolCategory } from '../types/protocol.types'
 
@@ -24,7 +25,7 @@ export default function ProtocolCategoryCards({ categories, activeCategory, onSe
             onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.borderColor = '#2a2d3e' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span style={{ fontSize: 28 }}>{cat.icon}</span>
+              <span style={{ fontSize: 28 }}><EmojiIcon glyph={cat.icon} /></span>
               <div>
                 <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>{cat.name}</div>
                 <div style={{ color: cat.color, fontSize: 12, fontWeight: 600 }}>{cat.protocolCount} protocols</div>

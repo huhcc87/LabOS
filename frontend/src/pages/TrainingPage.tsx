@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { statusColor, formatDate } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
 
 const STATUS_FILTERS = ['all', 'active', 'expired', 'pending'] as const;
 
@@ -173,7 +174,7 @@ export default function TrainingPage() {
             color: '#854d0e',
             fontSize: 14,
           }}>
-            <span style={{ fontSize: 16 }}>⚠️</span>
+            <span style={{ fontSize: 16 }}><EmojiIcon glyph="⚠️" /></span>
             <strong>{stats.expiringSoon} training record{stats.expiringSoon > 1 ? 's' : ''} expire within 30 days</strong>
           </div>
         )}
@@ -274,7 +275,7 @@ export default function TrainingPage() {
                   <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Completed: {formatDate(r.completed_on)}</div>
                   <div style={{ fontSize: 13, color: expSoon ? 'var(--warning)' : 'var(--text-muted)' }}>
                     Expires: {r.expires_on ? formatDate(r.expires_on) : '—'}
-                    {expSoon && ' ⚠️'}
+                    {expSoon && <>{" "}<EmojiIcon glyph="⚠️" /></>}
                   </div>
                   {canEdit && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

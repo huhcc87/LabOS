@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { LABEL_SIZES, LOT_PREFIX, printLabels, type LabelSize, type LabelSpec } from '../lib/labelPrint';
+import EmojiIcon from '../components/EmojiIcon';
 
 const day = (ms?: number) => (ms ? new Date(ms).toLocaleDateString() : '—');
 
@@ -68,7 +69,7 @@ export default function BarcodeLabelsPage() {
         <div><label htmlFor="lb-copies" style={{ fontSize: 12, display: 'block' }}>Copies each</label>
           <input id="lb-copies" className="form-input" style={{ width: 80 }} type="number" min={1} max={100} value={copies} onChange={(e) => setCopies(e.target.value)} /></div>
         <input className="form-input" style={{ flex: 1, minWidth: 180 }} placeholder="Search…" aria-label="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <button className="btn btn-primary" onClick={print} disabled={chosen.length === 0}>🖨️ Print {chosen.length ? `${chosen.length * n} label${chosen.length * n > 1 ? 's' : ''}` : ''}</button>
+        <button className="btn btn-primary" onClick={print} disabled={chosen.length === 0}><EmojiIcon glyph="🖨️" /> Print {chosen.length ? `${chosen.length * n} label${chosen.length * n > 1 ? 's' : ''}` : ''}</button>
       </div>
       {noCode > 0 && <p className="auth-note warn">{noCode} picked item{noCode > 1 ? 's have' : ' has'} no barcode or catalog number and will be skipped. Print lot labels for them instead.</p>}
 

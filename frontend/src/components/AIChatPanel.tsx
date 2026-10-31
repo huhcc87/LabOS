@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { aiApi } from '../lib/api';
+import EmojiIcon from './EmojiIcon';
 
 type Msg = { role: 'user' | 'assistant'; text: string; suggestions?: string[]; source?: string };
 
@@ -75,7 +76,7 @@ export function AIChatPanel({ onClose, onOpenManager }: { onClose: () => void; o
         background: 'linear-gradient(135deg, #1a2a4a 0%, #1e3a5f 100%)',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}><EmojiIcon glyph="🤖" /></div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>LabOS AI Assistant</div>
           <div style={{ fontSize: 11, color: '#8fa3b8' }}>Real-time lab data access</div>

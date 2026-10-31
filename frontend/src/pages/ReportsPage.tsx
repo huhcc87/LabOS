@@ -6,6 +6,7 @@ import type { Doc } from '../../convex/_generated/dataModel';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import { ExportMenu } from '../components/ExportMenu';
+import LabBanner from '../components/LabBanner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
@@ -329,8 +330,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="page-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Reports & Analytics</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 14 }}>Live insights, metrics, and data visualization</p>
+          <LabBanner art="lab" title="Reports & Analytics" subtitle="Live insights, metrics, and data visualization" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Date Range Filter — wired to data */}

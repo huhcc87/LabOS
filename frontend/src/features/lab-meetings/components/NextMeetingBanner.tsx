@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { Meeting } from '../types/meeting.types'
 import { formatMeetingDate, formatTime, getDaysUntil, getMeetingTypeColor, getMeetingTypeIcon } from '../utils/meetingUtils'
@@ -26,16 +27,16 @@ export default function NextMeetingBanner({ meeting: m, onClick, onSubmitTopic, 
     }}>
       <div style={{ flex: 1, minWidth: 240 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 22 }}>{getMeetingTypeIcon(m.type)}</span>
+          <span style={{ fontSize: 22 }}><EmojiIcon glyph={getMeetingTypeIcon(m.type)} /></span>
           <span style={{ color: '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next Meeting</span>
           <MeetingTypeBadge type={m.type} />
         </div>
         <h2 style={{ color: '#1e293b', fontSize: 18, fontWeight: 800, margin: '0 0 6px' }}>{m.title}</h2>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          <span style={{ color: '#475569', fontSize: 13 }}>📅 {formatMeetingDate(m.scheduledAt)}</span>
-          <span style={{ color: '#475569', fontSize: 13 }}>🕐 {formatTime(m.scheduledAt)}</span>
-          <span style={{ color: '#475569', fontSize: 13 }}>📍 {m.location}</span>
-          {m.zoomLink && <span style={{ color: color, fontSize: 13 }}>🎥 Zoom available</span>}
+          <span style={{ color: '#475569', fontSize: 13 }}><EmojiIcon glyph="📅" /> {formatMeetingDate(m.scheduledAt)}</span>
+          <span style={{ color: '#475569', fontSize: 13 }}><EmojiIcon glyph="🕐" /> {formatTime(m.scheduledAt)}</span>
+          <span style={{ color: '#475569', fontSize: 13 }}><EmojiIcon glyph="📍" /> {m.location}</span>
+          {m.zoomLink && <span style={{ color: color, fontSize: 13 }}><EmojiIcon glyph="🎥" /> Zoom available</span>}
         </div>
       </div>
 
@@ -58,7 +59,7 @@ export default function NextMeetingBanner({ meeting: m, onClick, onSubmitTopic, 
         {approved.length === 0 && <div style={{ color: '#94a3b8', fontSize: 12 }}>No agenda items yet</div>}
         {approved.length > 3 && <div style={{ color: '#6366f1', fontSize: 11, marginTop: 4 }}>+{approved.length - 3} more items</div>}
         {pending.length > 0 && isPiOrAdmin && (
-          <div style={{ color: '#f59e0b', fontSize: 11, marginTop: 4, fontWeight: 600 }}>⏳ {pending.length} awaiting approval</div>
+          <div style={{ color: '#f59e0b', fontSize: 11, marginTop: 4, fontWeight: 600 }}><EmojiIcon glyph="⏳" /> {pending.length} awaiting approval</div>
         )}
       </div>
 
@@ -72,7 +73,7 @@ export default function NextMeetingBanner({ meeting: m, onClick, onSubmitTopic, 
         </button>
         {!isPiOrAdmin && (
           <button onClick={onSubmitReport} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, color: '#475569', padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
-            📊 Progress Report
+            <EmojiIcon glyph="📊" /> Progress Report
           </button>
         )}
       </div>

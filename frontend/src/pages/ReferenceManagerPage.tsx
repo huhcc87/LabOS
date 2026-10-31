@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -177,11 +179,10 @@ export default function ReferenceManagerPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Reference Manager</h1>
-          <p className="page-subtitle">Organize citations, search PubMed, and manage your literature</p>
+          <LabBanner art="team" title="Reference Manager" subtitle="Organize citations, search PubMed, and manage your literature" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => setShowPubMedSearch(true)}>🔍 Search PubMed</button>
+          <button className="btn btn-secondary" onClick={() => setShowPubMedSearch(true)}><EmojiIcon glyph="🔍" /> Search PubMed</button>
           <button className="btn btn-primary" onClick={() => { setShowAddForm(true); setForm({ ...EMPTY_FORM }); }}>+ Add Reference</button>
         </div>
       </div>
@@ -225,7 +226,7 @@ export default function ReferenceManagerPage() {
                 color: folder === f ? 'var(--accent)' : 'var(--text-soft)',
                 fontSize: 13, fontWeight: folder === f ? 600 : 400, cursor: 'pointer', textAlign: 'left',
               }}>
-                <span>{f === 'All' ? '📚' : '📁'} {f}</span>
+                <span>{f === 'All' ? <><EmojiIcon glyph="📚" /></> : <><EmojiIcon glyph="📁" /></>} {f}</span>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   {f === 'All' ? references.length : references.filter(r => r.folder === f).length}
                 </span>
@@ -285,7 +286,7 @@ export default function ReferenceManagerPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <button onClick={e => { e.stopPropagation(); toggleFavorite(ref); }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>
-                          {ref.is_favorite ? '⭐' : '☆'}
+                          {ref.is_favorite ? <><EmojiIcon glyph="⭐" /></> : '☆'}
                         </button>
                         {ref.pmid && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>PMID: {ref.pmid}</span>}
                       </div>
@@ -310,7 +311,7 @@ export default function ReferenceManagerPage() {
                         </div>
                       )}
                       <button onClick={e => { e.stopPropagation(); deleteRef(ref.id); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14 }} title="Remove">🗑</button>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14 }} title="Remove"><EmojiIcon glyph="🗑" /></button>
                     </div>
                   </div>
                 </div>
@@ -389,11 +390,11 @@ export default function ReferenceManagerPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(getCitationFormatted(selectedRef))}>📋 Copy Citation</button>
+              <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(getCitationFormatted(selectedRef))}><EmojiIcon glyph="📋" /> Copy Citation</button>
               <button className="btn btn-secondary" onClick={() => toggleFavorite(selectedRef)}>
-                {selectedRef.is_favorite ? '⭐ Unfavorite' : '☆ Favorite'}
+                {selectedRef.is_favorite ? <><EmojiIcon glyph="⭐" />{" Unfavorite"}</> : '☆ Favorite'}
               </button>
-              <button className="btn btn-secondary" style={{ marginLeft: 'auto', color: '#ef4444' }} onClick={() => deleteRef(selectedRef.id)}>🗑 Remove</button>
+              <button className="btn btn-secondary" style={{ marginLeft: 'auto', color: '#ef4444' }} onClick={() => deleteRef(selectedRef.id)}><EmojiIcon glyph="🗑" /> Remove</button>
             </div>
           </div>
         </div>
@@ -468,7 +469,7 @@ export default function ReferenceManagerPage() {
           onClick={() => setShowPubMedSearch(false)}>
           <div className="card" style={{ width: 700, maxWidth: '90%', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 600 }}>🔍 Search PubMed</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600 }}><EmojiIcon glyph="🔍" /> Search PubMed</h3>
               <button onClick={() => setShowPubMedSearch(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>×</button>
             </div>
             <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
@@ -477,7 +478,7 @@ export default function ReferenceManagerPage() {
                 onKeyDown={e => e.key === 'Enter' && handlePubMedSearch()}
                 style={{ flex: 1 }} />
               <button className="btn btn-primary" onClick={handlePubMedSearch} disabled={searchingPubmed}>
-                {searchingPubmed ? '🔄 Searching…' : '🔍 Search'}
+                {searchingPubmed ? <><EmojiIcon glyph="🔄" />{" Searching…"}</> : <><EmojiIcon glyph="🔍" />{" Search"}</>}
               </button>
             </div>
             {pubmedResults.length > 0 && (

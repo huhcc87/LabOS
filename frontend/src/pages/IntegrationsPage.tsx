@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { integrationsApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 interface Integration {
   id: string | number;
@@ -322,7 +323,7 @@ export default function IntegrationsPage() {
               {CATALOG.filter(t => !integrations.some(i => i.name.toLowerCase() === t.name.toLowerCase())).map(tool => (
                 <div key={tool.name} style={{ background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 24 }} aria-hidden="true">{tool.icon}</span>
+                    <span style={{ fontSize: 24 }} aria-hidden="true"><EmojiIcon glyph={tool.icon} /></span>
                     <strong>{tool.name}</strong>
                   </div>
                   <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-muted)' }}>{tool.description}</p>
@@ -364,7 +365,7 @@ export default function IntegrationsPage() {
                       justifyContent: 'center',
                       fontSize: 24,
                     }}>
-                      {TYPE_ICONS[integration.integration_type] || '🔗'}
+                      {TYPE_ICONS[integration.integration_type] || <><EmojiIcon glyph="🔗" /></>}
                     </div>
                     <div>
                       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{integration.name}</h3>
@@ -397,7 +398,7 @@ export default function IntegrationsPage() {
                 {launchUrl(parseConfig(integration.config)) && (
                   <a href={launchUrl(parseConfig(integration.config))!} target="_blank" rel="noopener noreferrer"
                     style={{ display: 'inline-block', marginBottom: 14, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
-                    Open {integration.name} ↗
+                    Open {integration.name} <EmojiIcon glyph="↗" />
                   </a>
                 )}
 
@@ -505,7 +506,7 @@ export default function IntegrationsPage() {
 
         {!loading && integrations.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔗</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🔗" /></div>
             <p>No integrations configured</p>
             <button onClick={openCreate} style={{
               marginTop: 16,

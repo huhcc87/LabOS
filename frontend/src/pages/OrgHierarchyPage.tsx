@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -119,7 +120,7 @@ export default function OrgHierarchyPage() {
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
       ) : tree.length === 0 ? (
         <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🏢</div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}><EmojiIcon glyph="🏢" /></div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No organizations yet</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             Create your first organization to start building your multi-site hierarchy.
@@ -136,7 +137,7 @@ export default function OrgHierarchyPage() {
               {/* Org header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', cursor: 'pointer', borderBottom: expanded.has(`org-${org.id}`) ? '1px solid var(--border)' : 'none' }}
                 onClick={() => toggle(`org-${org.id}`)}>
-                <span style={{ fontSize: 20 }}>🏢</span>
+                <span style={{ fontSize: 20 }}><EmojiIcon glyph="🏢" /></span>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{org.name}</span>
                   {org.short_code && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-surface)', padding: '2px 6px', borderRadius: 4 }}>{org.short_code}</span>}
@@ -144,7 +145,7 @@ export default function OrgHierarchyPage() {
                 </div>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{org.sites.length} site{org.sites.length !== 1 ? 's' : ''}</span>
                 <button onClick={e => { e.stopPropagation(); deleteOrg(org.id); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14, padding: '2px 6px' }}>🗑</button>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14, padding: '2px 6px' }}><EmojiIcon glyph="🗑" /></button>
                 <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{expanded.has(`org-${org.id}`) ? '▾' : '▸'}</span>
               </div>
 
@@ -161,7 +162,7 @@ export default function OrgHierarchyPage() {
                       <div key={site.id} style={{ marginTop: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-surface, rgba(0,0,0,.04))', cursor: 'pointer' }}
                           onClick={() => toggle(`site-${site.id}`)}>
-                          <span>{TYPE_ICONS[site.site_type] ?? '📍'}</span>
+                          <span>{TYPE_ICONS[site.site_type] ?? <><EmojiIcon glyph="📍" /></>}</span>
                           <div style={{ flex: 1 }}>
                             <span style={{ fontWeight: 600 }}>{site.name}</span>
                             {site.code && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-muted)' }}>[{site.code}]</span>}
@@ -170,7 +171,7 @@ export default function OrgHierarchyPage() {
                           </div>
                           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{site.labs.length} lab{site.labs.length !== 1 ? 's' : ''}</span>
                           <button onClick={e => { e.stopPropagation(); deleteSite(site.id); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}>🗑</button>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}><EmojiIcon glyph="🗑" /></button>
                           <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{expanded.has(`site-${site.id}`) ? '▾' : '▸'}</span>
                         </div>
 
@@ -184,7 +185,7 @@ export default function OrgHierarchyPage() {
                             ) : (
                               site.labs.map(lab => (
                                 <div key={lab.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6, marginBottom: 4, background: 'var(--bg-card)' }}>
-                                  <span style={{ fontSize: 14 }}>{TYPE_ICONS[lab.lab_type] ?? '🔬'}</span>
+                                  <span style={{ fontSize: 14 }}>{TYPE_ICONS[lab.lab_type] ?? <><EmojiIcon glyph="🔬" /></>}</span>
                                   <div style={{ flex: 1 }}>
                                     <span style={{ fontWeight: 500, fontSize: 13 }}>{lab.name}</span>
                                     {lab.code && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-muted)' }}>[{lab.code}]</span>}
@@ -192,7 +193,7 @@ export default function OrgHierarchyPage() {
                                     {lab.capacity_persons > 0 && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)' }}>· {lab.capacity_persons} persons</span>}
                                   </div>
                                   <button onClick={() => deleteLab(lab.id)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}>🗑</button>
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}><EmojiIcon glyph="🗑" /></button>
                                 </div>
                               ))
                             )}

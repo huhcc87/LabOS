@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import LabBanner from '../components/LabBanner';
 
 interface Subcontract {
   id: number;
@@ -77,8 +78,7 @@ export default function SubcontractManagerPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Subcontract Manager</h1>
-          <p className="page-subtitle">Manage multi-institution collaborations and subcontract documentation</p>
+          <LabBanner art="team" title="Subcontract Manager" subtitle="Manage multi-institution collaborations and subcontract documentation" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowNewSubcontract(true)}>+ New Subcontract</button>

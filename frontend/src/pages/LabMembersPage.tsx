@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { labMembersApi } from '../lib/api';
 import client from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 interface Membership {
   id: number;
@@ -145,14 +146,14 @@ export default function LabMembersPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>👥 Lab Members</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="👥" /> Lab Members</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             PI-controlled lab access. Only the PI (or an admin) can approve new members or revoke access.
           </p>
         </div>
         {canManage && selectedLabId && (
           <button onClick={() => setShowInviteModal(true)}
-            style={{ padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', cursor: 'pointer' }}>
+            style={{ padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
             + Invite member
           </button>
         )}
@@ -162,7 +163,7 @@ export default function LabMembersPage() {
       {pendingApprovals.length > 0 && (
         <div className="card" style={{ marginBottom: 20, padding: 16, background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.35)' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 22 }}>⏰</span>
+            <span style={{ fontSize: 22 }}><EmojiIcon glyph="⏰" /></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>
                 {pendingApprovals.length} member{pendingApprovals.length > 1 ? 's' : ''} waiting on your approval
@@ -197,7 +198,7 @@ export default function LabMembersPage() {
       {myMemberships.filter(m => m.status === 'invited').length > 0 && (
         <div className="card" style={{ marginBottom: 20, padding: 16, background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.35)' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 22 }}>📨</span>
+            <span style={{ fontSize: 22 }}><EmojiIcon glyph="📨" /></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>You have pending lab invitations</div>
               {myMemberships.filter(m => m.status === 'invited').map(inv => (
@@ -228,7 +229,7 @@ export default function LabMembersPage() {
           <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
             {canManage ? (
               <span style={{ padding: '4px 12px', borderRadius: 12, background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontWeight: 700 }}>
-                {isPI ? '🔑 You are the PI of this lab' : '🛡 You manage this lab (admin)'}
+                {isPI ? <><EmojiIcon glyph="🔑" />{" You are the PI of this lab"}</> : <><EmojiIcon glyph="🛡" />{" You manage this lab (admin)"}</>}
               </span>
             ) : (
               <span style={{ padding: '4px 12px', borderRadius: 12, background: 'var(--surface2)', color: 'var(--text-muted)' }}>
@@ -318,7 +319,7 @@ export default function LabMembersPage() {
 
       {/* Info card */}
       <div style={{ marginTop: 20, padding: 14, background: 'rgba(99,102,241,0.05)', borderRadius: 10, fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)' }}>
-        <strong>🔐 How lab access works:</strong><br/>
+        <strong><EmojiIcon glyph="🔐" /> How lab access works:</strong><br/>
         <strong>PI</strong> (you, if listed as <code>pi_user_id</code> on the lab) can invite, approve, and revoke members.<br/>
         <strong>Admin / Superadmin</strong> can manage any lab regardless of PI status.<br/>
         <strong>Member</strong>, <strong>Manager</strong>, and <strong>Observer</strong> are per-lab roles, independent of the global User.role.<br/>

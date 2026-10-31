@@ -6,6 +6,7 @@ import type { Column } from '../components/Table';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { maintenanceApi, instrumentsApi } from '../lib/api';
+import LabBanner from '../components/LabBanner';
 
 interface MaintenanceLog {
   id: number;
@@ -241,8 +242,7 @@ export default function MaintenancePage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Maintenance Log</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Equipment maintenance history & scheduling</p>
+          <LabBanner art="lab" title="Maintenance Log" subtitle="Equipment maintenance history & scheduling" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ background: 'var(--surface2)', padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)' }}>

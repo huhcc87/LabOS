@@ -14,6 +14,8 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '../lib/useLabProtocols';
 import type { Id } from '../../convex/_generated/dataModel';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 // Protocols are saved in Convex (shared with the whole lab); see useLabProtocols.
@@ -786,27 +788,9 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
         </div>
       )}
 
-      {/* Header with AI Badge */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Lab Operations</h1>
-            <span style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white',
-              padding: '4px 10px',
-              borderRadius: 20,
-              fontSize: 11,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}>
-              AI-Powered
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage protocols, instruments, and lab resources with AI assistance</p>
-        </div>
+        <LabBanner art="lab" title="Lab Operations" subtitle="Protocols, SOPs, lab notebook and instrument booking in one place" style={{ flex: 1, marginBottom: 0 }} />
         <button className="btn btn-secondary" onClick={() => setShowHelpGuide(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <Icon name="help" /> How to use
         </button>
@@ -864,7 +848,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
               display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1,
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count > 0 && (
               <span style={{
@@ -887,7 +871,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 type="text"
-                placeholder="🔍 Search protocols..."
+                placeholder="Search protocols..."
                 className="form-input"
                 style={{ width: 200 }}
                 value={searchQuery}
@@ -1101,14 +1085,14 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 onClick={() => setNewProtocol({ ...newProtocol, useTemplate: true })}
                 style={{ flex: 1 }}
               >
-                📋 Use Template
+                <EmojiIcon glyph="📋" /> Use Template
               </button>
               <button
                 className={`btn ${!newProtocol.useTemplate ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setNewProtocol({ ...newProtocol, useTemplate: false, name: '' })}
                 style={{ flex: 1 }}
               >
-                ✏️ Create Manually
+                <EmojiIcon glyph="✏️" /> Create Manually
               </button>
             </div>
 
@@ -1207,14 +1191,14 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                   onClick={() => generateAIProtocol(newProtocol.name)}
                   disabled={!newProtocol.name || aiGenerating}
                   style={{
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    background: 'var(--accent)',
                     color: 'white',
                     border: 'none',
                     fontSize: 11,
                     padding: '4px 10px',
                   }}
                 >
-                  {aiGenerating ? '⏳ Generating...' : '✨ AI Generate'}
+                  {aiGenerating ? <><EmojiIcon glyph="⏳" />{" Generating..."}</> : <><EmojiIcon glyph="✨" />{" AI Generate"}</>}
                 </button>
               </div>
               <textarea
@@ -1246,7 +1230,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div>
                 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Create New SOP</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Standard Operating Procedure with AI assistance</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Standard operating procedure</p>
               </div>
               <button onClick={() => setShowSOPModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: 'var(--text-muted)' }}>×</button>
             </div>
@@ -1258,14 +1242,14 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 onClick={() => setNewSOP({ ...newSOP, useTemplate: true })}
                 style={{ flex: 1 }}
               >
-                📚 Use Template
+                <EmojiIcon glyph="📚" /> Use Template
               </button>
               <button
                 className={`btn ${!newSOP.useTemplate ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setNewSOP({ ...newSOP, useTemplate: false, title: '' })}
                 style={{ flex: 1 }}
               >
-                ✏️ Create Manually
+                <EmojiIcon glyph="✏️" /> Create Manually
               </button>
             </div>
 
@@ -1335,14 +1319,14 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                   onClick={() => generateAISOP(newSOP.title)}
                   disabled={!newSOP.title || aiGenerating}
                   style={{
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    background: 'var(--accent)',
                     color: 'white',
                     border: 'none',
                     fontSize: 11,
                     padding: '4px 10px',
                   }}
                 >
-                  {aiGenerating ? '⏳ Generating...' : '✨ AI Generate'}
+                  {aiGenerating ? <><EmojiIcon glyph="⏳" />{" Generating..."}</> : <><EmojiIcon glyph="✨" />{" AI Generate"}</>}
                 </button>
               </div>
               <textarea
@@ -1671,7 +1655,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 borderRadius: 8, padding: 12, marginBottom: 16
               }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  ✨ AI Suggestions
+                  <EmojiIcon glyph="✨" /> AI Suggestions
                 </div>
                 {aiSuggestions.map((suggestion, i) => (
                   <div key={i} style={{ fontSize: 12, color: 'var(--text-soft)', marginBottom: 4 }}>• {suggestion}</div>
@@ -1754,7 +1738,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <div style={{ ...modalContentStyle, width: 600 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 28 }}>📋</span>
+                <span style={{ fontSize: 28 }}><EmojiIcon glyph="📋" /></span>
                 <div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>
                     {editMode ? 'Edit Protocol' : 'Protocol Details'}
@@ -1835,7 +1819,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                     onClick={() => handleUpdateProtocol(viewProtocol)}
                     style={{ flex: 1 }}
                   >
-                    💾 Save Changes
+                    <EmojiIcon glyph="💾" /> Save Changes
                   </button>
                 </div>
               </>
@@ -1844,9 +1828,9 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 20, marginBottom: 20 }}>
                   <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>{viewProtocol.name}</h2>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
-                    <span>📁 {viewProtocol.category || 'General'}</span>
-                    <span>📌 Version {viewProtocol.version}</span>
-                    <span>📅 Updated {new Date(viewProtocol.lastUpdated).toLocaleDateString()}</span>
+                    <span><EmojiIcon glyph="📁" /> {viewProtocol.category || 'General'}</span>
+                    <span><EmojiIcon glyph="📌" /> Version {viewProtocol.version}</span>
+                    <span><EmojiIcon glyph="📅" /> Updated {new Date(viewProtocol.lastUpdated).toLocaleDateString()}</span>
                   </div>
                 </div>
 
@@ -1873,7 +1857,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{body}</div>
                   </div>
                 ))}
-                {viewProtocol.duration && <div style={{ marginBottom: 20, fontSize: 13, color: 'var(--text-muted)' }}>⏱ Duration: {viewProtocol.duration}</div>}
+                {viewProtocol.duration && <div style={{ marginBottom: 20, fontSize: 13, color: 'var(--text-muted)' }}><EmojiIcon glyph="⏱" /> Duration: {viewProtocol.duration}</div>}
 
                 {viewProtocol.approval && (() => {
                   const b = approvalBadge(viewProtocol.approval)!;
@@ -1948,7 +1932,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                               setNewVersionNum(''); setNewVersionNote('');
                             } finally { setSavingVersion(false); }
                           }}
-                        >{savingVersion ? '...' : '💾 Save'}</button>
+                        >{savingVersion ? '...' : <><EmojiIcon glyph="💾" />{" Save"}</>}</button>
                       </div>
                     </div>
                   )}
@@ -1959,18 +1943,18 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                   <button className="btn btn-secondary" onClick={() => {
                     navigator.clipboard.writeText(`Protocol: ${viewProtocol.name}\nVersion: ${viewProtocol.version}\nCategory: ${viewProtocol.category}\n\n${viewProtocol.description || ''}`);
                   }} style={{ flex: 1 }}>
-                    📋 Copy
+                    <EmojiIcon glyph="📋" /> Copy
                   </button>
                   <button
                     className="btn btn-primary"
                     style={{ flex: 1, background: 'var(--accent)' }}
                     onClick={() => runProtocol(viewProtocol)}
                   >
-                    ▶ Execute
+                    <EmojiIcon glyph="▶" /> Execute
                   </button>
-                  <button className="btn btn-secondary" onClick={() => downloadProtocol(viewProtocol)} style={{ flex: 1 }}>⬇ Download</button>
+                  <button className="btn btn-secondary" onClick={() => downloadProtocol(viewProtocol)} style={{ flex: 1 }}><EmojiIcon glyph="⬇" /> Download</button>
                   <button className="btn btn-primary" onClick={() => setEditMode(true)} style={{ flex: 1 }}>
-                    ✏️ Edit
+                    <EmojiIcon glyph="✏️" /> Edit
                   </button>
                 </div>
               </>
@@ -1985,7 +1969,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <div style={{ ...modalContentStyle, width: 600 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 28 }}>📚</span>
+                <span style={{ fontSize: 28 }}><EmojiIcon glyph="📚" /></span>
                 <div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>
                     {editMode ? 'Edit SOP' : 'SOP Details'}
@@ -2054,7 +2038,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                     onClick={() => handleUpdateSOP(viewSOP)}
                     style={{ flex: 1 }}
                   >
-                    💾 Save Changes
+                    <EmojiIcon glyph="💾" /> Save Changes
                   </button>
                 </div>
               </>
@@ -2063,8 +2047,8 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 20, marginBottom: 20 }}>
                   <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>{viewSOP.title}</h2>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)' }}>
-                    <span>📁 {viewSOP.category}</span>
-                    <span>📌 Version {viewSOP.version}</span>
+                    <span><EmojiIcon glyph="📁" /> {viewSOP.category}</span>
+                    <span><EmojiIcon glyph="📌" /> Version {viewSOP.version}</span>
                   </div>
                 </div>
 
@@ -2090,10 +2074,10 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                   <button className="btn btn-secondary" onClick={() => {
                     navigator.clipboard.writeText(`SOP: ${viewSOP.title}\nCategory: ${viewSOP.category}\nVersion: ${viewSOP.version}\n\n${viewSOP.description || ''}`);
                   }} style={{ flex: 1 }}>
-                    📋 Copy
+                    <EmojiIcon glyph="📋" /> Copy
                   </button>
                   <button className="btn btn-primary" onClick={() => setEditMode(true)} style={{ flex: 1 }}>
-                    ✏️ Edit
+                    <EmojiIcon glyph="✏️" /> Edit
                   </button>
                 </div>
               </>
@@ -2106,7 +2090,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {deleteConfirm && (
         <div style={modalStyle} onClick={() => setDeleteConfirm(null)}>
           <div style={{ ...modalContentStyle, width: 400, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="⚠️" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Confirm Delete</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 8 }}>
               Are you sure you want to delete this {deleteConfirm.type}?
@@ -2130,7 +2114,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 onClick={handleDelete}
                 style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none' }}
               >
-                🗑️ Delete
+                <EmojiIcon glyph="🗑️" /> Delete
               </button>
             </div>
           </div>
@@ -2141,7 +2125,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {bulkDeleteConfirm && (
         <div style={modalStyle} onClick={() => setBulkDeleteConfirm(null)}>
           <div style={{ ...modalContentStyle, width: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🗑️</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🗑️" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Bulk Delete Confirmation</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
               You are about to delete <strong style={{ color: '#ef4444' }}>{bulkDeleteConfirm.count}</strong> {bulkDeleteConfirm.type}(s).
@@ -2183,7 +2167,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <div style={{ ...modalContentStyle, width: 700, maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 32 }}>📖</span>
+                <span style={{ fontSize: 32 }}><EmojiIcon glyph="📖" /></span>
                 <h2 style={{ fontSize: 24, fontWeight: 700 }}>How to Use Lab Operations</h2>
               </div>
               <button
@@ -2224,7 +2208,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
             {/* Features Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
               <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}><EmojiIcon glyph="📋" /></div>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Protocols</h4>
                 <ul style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 16, margin: 0 }}>
                   <li>Create from 10+ templates</li>
@@ -2234,7 +2218,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 </ul>
               </div>
               <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>📚</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}><EmojiIcon glyph="📚" /></div>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>SOPs</h4>
                 <ul style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 16, margin: 0 }}>
                   <li>Standard Operating Procedures</li>
@@ -2244,7 +2228,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 </ul>
               </div>
               <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>🔬</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}><EmojiIcon glyph="🔬" /></div>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Instruments</h4>
                 <ul style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 16, margin: 0 }}>
                   <li>Track availability status</li>
@@ -2254,7 +2238,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
                 </ul>
               </div>
               <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>📅</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}><EmojiIcon glyph="📅" /></div>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Bookings</h4>
                 <ul style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 16, margin: 0 }}>
                   <li>Multiple time slot options</li>

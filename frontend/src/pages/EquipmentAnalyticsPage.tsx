@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -92,7 +93,7 @@ export default function EquipmentAnalyticsPage() {
       <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
         {[
           { key: 'conflicts', label: `⚠ Conflicts${conflicts.length ? ` (${conflicts.length})` : ''}` },
-          { key: 'utilization', label: '📊 Utilization Heatmap' },
+          { key: 'utilization', label: "Utilization Heatmap" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
             style={{
@@ -129,7 +130,7 @@ export default function EquipmentAnalyticsPage() {
               {conflicts.map((c, i) => (
                 <div key={i} className="card" style={{ padding: 20, border: '1px solid #ef444444', background: 'rgba(239,68,68,.03)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <span style={{ fontSize: 18 }}>⚠</span>
+                    <span style={{ fontSize: 18 }}><EmojiIcon glyph="⚠" /></span>
                     <div>
                       <span style={{ fontWeight: 700 }}>{c.instrument_name}</span>
                       <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>has an overlapping booking</span>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // SWARM CHAT — Multi-agent protocol Q&A interface
 // ═══════════════════════════════════════════════════════════════════════════
@@ -55,7 +56,7 @@ export default function SwarmChat({ messages, onSend, isRunning }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', height: 520, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>💬 Protocol Intelligence Chat</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}><EmojiIcon glyph="💬" /> Protocol Intelligence Chat</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
           Ask questions about your protocol — the swarm agents will respond with specialized expertise
         </div>
@@ -65,7 +66,7 @@ export default function SwarmChat({ messages, onSend, isRunning }: Props) {
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', padding: '32px 20px' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="🤖" /></div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               Ask anything about your protocol. The AI swarm will route your question to the most relevant agent(s).
             </div>
@@ -142,7 +143,7 @@ function ChatBubble({ message }: { message: SwarmChatMessage }) {
         border: `1px solid ${isUser ? 'var(--accent)' : (agent?.color || 'var(--border)')}`,
         fontSize: 14,
       }}>
-        {isUser ? '👤' : (agent?.icon || '🧬')}
+        {isUser ? <><EmojiIcon glyph="👤" /></> : (agent?.icon || <><EmojiIcon glyph="🧬" /></>)}
       </div>
 
       {/* Message */}

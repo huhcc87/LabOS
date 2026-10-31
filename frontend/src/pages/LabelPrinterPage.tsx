@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import { scanUrl } from '../features/labels/scanCode';
+import EmojiIcon from '../components/EmojiIcon';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -432,7 +433,7 @@ export default function LabelPrinterPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>🏷️ Label Printer</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="🏷️" /> Label Printer</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             Generate QR-coded and barcoded labels for samples, reagents, plasmids, equipment, and freezer boxes
           </p>
@@ -445,7 +446,7 @@ export default function LabelPrinterPage() {
           }}>
             {printerStatus === 'connected'
               ? `🖨️ ${connectedPrinterName ?? 'Paired printer'}`
-              : '🖨️ Browser print'}
+              : <><EmojiIcon glyph="🖨️" />{" Browser print"}</>}
           </div>
           <button onClick={() => setShowPrinterModal(true)}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
@@ -453,11 +454,11 @@ export default function LabelPrinterPage() {
           </button>
           <button onClick={() => { setTemplateName(''); setShowSaveModal(true); }}
             style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid #22c55e', background: 'rgba(34,197,94,0.1)', color: '#22c55e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            💾 Save Template
+            <EmojiIcon glyph="💾" /> Save Template
           </button>
           <button onClick={handlePrint}
             style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', background: 'var(--primary, #6366f1)', color: '#fff', cursor: 'pointer' }}>
-            🖨️ Print {copies > 1 ? `× ${copies}` : ''}
+            <EmojiIcon glyph="🖨️" /> Print {copies > 1 ? `× ${copies}` : ''}
           </button>
         </div>
       </div>
@@ -498,7 +499,7 @@ export default function LabelPrinterPage() {
                   onMouseEnter={e => (e.currentTarget.style.background = `${p.accent}22`)}
                   onMouseLeave={e => (e.currentTarget.style.background = `${p.accent}11`)}
                 >
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{p.icon}</div>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}><EmojiIcon glyph={p.icon} /></div>
                   <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.models}</div>
                 </button>
@@ -518,7 +519,7 @@ export default function LabelPrinterPage() {
           onClick={() => setShowSaveModal(false)}>
           <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 28, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>💾 Save Label Template</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}><EmojiIcon glyph="💾" /> Save Label Template</div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               Save your current label setup — size, fields, font settings — so you can reload it instantly next time.
             </p>
@@ -532,7 +533,7 @@ export default function LabelPrinterPage() {
               style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13, marginBottom: 6, boxSizing: 'border-box' }}
             />
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 18 }}>
-              Saving: <strong>{ENTITY_PRESETS[entityType]?.emoji} {ENTITY_PRESETS[entityType]?.label}</strong> · {size.name} · {fields.filter(f => f.show).length} fields
+              Saving: <strong><EmojiIcon glyph={ENTITY_PRESETS[entityType]?.emoji} /> {ENTITY_PRESETS[entityType]?.label}</strong> · {size.name} · {fields.filter(f => f.show).length} fields
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowSaveModal(false)}
@@ -541,7 +542,7 @@ export default function LabelPrinterPage() {
               </button>
               <button onClick={saveTemplate} disabled={!templateName.trim()}
                 style={{ flex: 2, padding: '9px 0', borderRadius: 8, border: 'none', background: templateName.trim() ? '#22c55e' : 'var(--border)', color: templateName.trim() ? '#fff' : 'var(--text-muted)', cursor: templateName.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: 14 }}>
-                💾 Save
+                <EmojiIcon glyph="💾" /> Save
               </button>
             </div>
           </div>
@@ -552,7 +553,7 @@ export default function LabelPrinterPage() {
       {savedTemplates.length > 0 && (
         <div style={{ marginBottom: 20, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: '14px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>📂 Saved Templates <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>({savedTemplates.length})</span></div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}><EmojiIcon glyph="📂" /> Saved Templates <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>({savedTemplates.length})</span></div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Click a template to load it instantly</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -567,7 +568,7 @@ export default function LabelPrinterPage() {
                   border: '1px solid var(--border)', flex: '0 0 auto', maxWidth: 260,
                   transition: 'border-color 0.15s',
                 }}>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{preset?.emoji || '🏷️'}</span>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>{preset?.emoji || <><EmojiIcon glyph="🏷️" /></>}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tpl.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tplSize?.name || tpl.sizeId} · {date}</div>
@@ -601,7 +602,7 @@ export default function LabelPrinterPage() {
                     borderRadius: 8, background: entityType === key ? 'rgba(99,102,241,0.1)' : 'transparent',
                     cursor: 'pointer', color: 'var(--text)', fontSize: 11, fontWeight: 600, textAlign: 'center',
                   }}>
-                  <div style={{ fontSize: 20, marginBottom: 2 }}>{p.emoji}</div>
+                  <div style={{ fontSize: 20, marginBottom: 2 }}><EmojiIcon glyph={p.emoji} /></div>
                   {p.label}
                 </button>
               ))}
@@ -632,7 +633,7 @@ export default function LabelPrinterPage() {
           {/* Label Style Customisation */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>🎨 Label Style & Font</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="🎨" /> Label Style & Font</div>
               <button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)}
                 style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 Reset all
@@ -816,7 +817,7 @@ export default function LabelPrinterPage() {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>
-                {ENTITY_PRESETS[entityType].emoji} {size.name} — {size.widthMm} × {size.heightMm} mm
+                <EmojiIcon glyph={ENTITY_PRESETS[entityType].emoji} /> {size.name} — {size.widthMm} × {size.heightMm} mm
               </div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>

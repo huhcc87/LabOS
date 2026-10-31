@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 
 const SAMPLE_TRACKS = [
@@ -41,7 +42,7 @@ export default function GenomicsViewer() {
         height: 320, border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--surface)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
       }}>
-        <div style={{ fontSize: 48 }}>🧬</div>
+        <div style={{ fontSize: 48 }}><EmojiIcon glyph="🧬" /></div>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>IGV.js Genomics Viewer</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 420 }}>
           Interactive genome browser for BAM, VCF, BED, and RNA-seq tracks.

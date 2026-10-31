@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 
 const EXAMPLE_STRUCTURES = [
@@ -51,7 +52,7 @@ export default function ProteinStructureViewer() {
         height: 340, border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--surface)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
       }}>
-        <div style={{ fontSize: 52 }}>🔬</div>
+        <div style={{ fontSize: 52 }}><EmojiIcon glyph="🔬" /></div>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Mol* Protein Structure Viewer</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 420 }}>
           3D protein structure viewer powered by Mol* (molstar). Supports PDB, mmCIF, SDF, and MOL2 formats.

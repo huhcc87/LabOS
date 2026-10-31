@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { LOT_PREFIX, printLabels } from '../lib/labelPrint';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 type Order = Doc<'reagent_cart'> & { outstanding: number };
 type Item = Doc<'inventory'>;
@@ -110,10 +112,7 @@ export default function ReceivingPage() {
 
   return (
     <div className="page">
-      <h1 style={{ fontSize: 24, margin: 0 }}>Receiving</h1>
-      <p style={{ color: 'var(--text-muted)', margin: '4px 0 16px', fontSize: 14 }}>
-        Scan a package, enter its lot number and expiry date, and it goes into stock. Every lot is traceable.
-      </p>
+      <LabBanner art="samples" title="Receiving" subtitle="Scan a package, enter its lot number and expiry date, and it goes into stock. Every lot is traceable." />
 
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
         <label htmlFor="rcv-scan" style={{ fontSize: 13, fontWeight: 600 }}>Scan or type a catalog number / barcode</label>
@@ -122,7 +121,7 @@ export default function ReceivingPage() {
             onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); find(code); } }}
             placeholder="A USB barcode scanner types here and presses Enter" />
           <button className="btn btn-primary" onClick={() => find(code)} disabled={!code.trim()}>Find</button>
-          <button className="btn btn-secondary" onClick={() => setScannerOpen(true)}>📷 Camera</button>
+          <button className="btn btn-secondary" onClick={() => setScannerOpen(true)}><EmojiIcon glyph="📷" /> Camera</button>
         </div>
 
         {choices.length > 0 && (
@@ -139,8 +138,8 @@ export default function ReceivingPage() {
 
       {lastLot && !target && (
         <div className="card" style={{ padding: 12, marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span>✅ Received <strong>{lastLot.title}</strong> ({lastLot.sub})</span>
-          <button className="btn btn-secondary btn-sm" onClick={() => { if (!printLabels([{ title: lastLot.title, sub: lastLot.sub, code: `${LOT_PREFIX}${lastLot.id}` }])) toast.error('Allow pop-ups to print labels.'); }}>🖨️ Print lot label</button>
+          <span><EmojiIcon glyph="✅" /> Received <strong>{lastLot.title}</strong> ({lastLot.sub})</span>
+          <button className="btn btn-secondary btn-sm" onClick={() => { if (!printLabels([{ title: lastLot.title, sub: lastLot.sub, code: `${LOT_PREFIX}${lastLot.id}` }])) toast.error('Allow pop-ups to print labels.'); }}><EmojiIcon glyph="🖨️" /> Print lot label</button>
           <button className="btn btn-sm btn-secondary" onClick={() => setLastLot(null)}>Dismiss</button>
         </div>
       )}

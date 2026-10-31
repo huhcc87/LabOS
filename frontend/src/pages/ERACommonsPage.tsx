@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Application {
   id: number;
@@ -78,8 +80,7 @@ export default function ERACommonsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">eRA Commons Status</h1>
-          <p className="page-subtitle">Track NIH application status and funding decisions</p>
+          <LabBanner art="lab" title="eRA Commons Status" subtitle="Track NIH application status and funding decisions" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => comingSoon('eRA Commons Sync')}>Sync Status</button>
@@ -117,7 +118,7 @@ export default function ERACommonsPage() {
       {applications.some(a => a.justInTimeStatus === 'requested') && (
         <div className="card" style={{ background: 'rgba(139, 92, 246, 0.1)', borderColor: '#8b5cf6', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 24 }}>📋</span>
+            <span style={{ fontSize: 24 }}><EmojiIcon glyph="📋" /></span>
             <div>
               <div style={{ fontWeight: 600, color: '#8b5cf6' }}>Just-in-Time Information Requested</div>
               <div style={{ fontSize: 13, color: 'var(--text-soft)' }}>

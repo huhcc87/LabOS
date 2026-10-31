@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
 import { EmptyState } from '../components/EmptyState';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface LetterTemplate {
   id: number;
@@ -130,11 +132,10 @@ export default function SupportLettersPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Support Letters</h1>
-          <p className="page-subtitle">Generate and manage letters of support for grant applications</p>
+          <LabBanner art="team" title="Support Letters" subtitle="Generate and manage letters of support for grant applications" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Import Letter')}>📥 Import Letter</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Letter')}><EmojiIcon glyph="📥" /> Import Letter</button>
           <button className="btn btn-primary" onClick={() => setShowGenerator(true)}>+ Generate New Letter</button>
         </div>
       </div>
@@ -170,10 +171,10 @@ export default function SupportLettersPage() {
       {/* Tabs */}
       <div className="view-toggle" style={{ marginBottom: 24 }}>
         <button className={`view-toggle-btn ${activeTab === 'templates' ? 'active' : ''}`} onClick={() => setActiveTab('templates')}>
-          📋 Letter Templates
+          <EmojiIcon glyph="📋" /> Letter Templates
         </button>
         <button className={`view-toggle-btn ${activeTab === 'saved' ? 'active' : ''}`} onClick={() => setActiveTab('saved')}>
-          💾 Saved Letters ({savedLetters.length})
+          <EmojiIcon glyph="💾" /> Saved Letters ({savedLetters.length})
         </button>
       </div>
 
@@ -277,10 +278,10 @@ export default function SupportLettersPage() {
                       <td>{new Date(letter.createdDate).toLocaleDateString()}</td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn-icon" title="Edit">✏️</button>
-                          <button className="btn-icon" title="Download" onClick={() => comingSoon('Download')}>📥</button>
-                          <button className="btn-icon" title="Send for Signature" onClick={() => comingSoon('Send for Signature')}>✉️</button>
-                          <button className="btn-icon" title="Delete">🗑️</button>
+                          <button className="btn-icon" title="Edit"><EmojiIcon glyph="✏️" /></button>
+                          <button className="btn-icon" title="Download" onClick={() => comingSoon('Download')}><EmojiIcon glyph="📥" /></button>
+                          <button className="btn-icon" title="Send for Signature" onClick={() => comingSoon('Send for Signature')}><EmojiIcon glyph="✉️" /></button>
+                          <button className="btn-icon" title="Delete"><EmojiIcon glyph="🗑️" /></button>
                         </div>
                       </td>
                     </tr>
@@ -381,14 +382,14 @@ export default function SupportLettersPage() {
                     placeholder="MIT"
                   />
                 </div>
-                <button className="btn btn-primary btn-full" onClick={() => comingSoon('AI Generation')}>✨ Generate with AI</button>
+                <button className="btn btn-primary btn-full" onClick={() => comingSoon('AI Generation')}><EmojiIcon glyph="✨" /> Generate with AI</button>
               </div>
 
               {/* Letter Preview */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>LETTER PREVIEW</span>
-                  <button className="btn btn-sm btn-secondary">📋 Copy</button>
+                  <button className="btn btn-sm btn-secondary"><EmojiIcon glyph="📋" /> Copy</button>
                 </div>
                 <textarea
                   className="form-textarea"
@@ -401,8 +402,8 @@ export default function SupportLettersPage() {
 
             <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => setShowGenerator(false)}>Cancel</button>
-              <button className="btn btn-secondary">💾 Save as Draft</button>
-              <button className="btn btn-primary" onClick={() => comingSoon('DOCX Export')}>📤 Export as DOCX</button>
+              <button className="btn btn-secondary"><EmojiIcon glyph="💾" /> Save as Draft</button>
+              <button className="btn btn-primary" onClick={() => comingSoon('DOCX Export')}><EmojiIcon glyph="📤" /> Export as DOCX</button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const CATEGORIES = ['Safety', 'Quality', 'Operations', 'Equipment'];
 const STATUS: Record<string, { text: string; color: string; bg: string }> = {
@@ -69,7 +70,7 @@ export default function SopsPanel() {
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => { setCustomCat(false); setForm({ title: '', category: CATEGORIES[0], version: '1.0', file: null }); }}>⬆ Upload SOP</button>
+        <button className="btn btn-primary" onClick={() => { setCustomCat(false); setForm({ title: '', category: CATEGORIES[0], version: '1.0', file: null }); }}><EmojiIcon glyph="⬆" /> Upload SOP</button>
       </div>
 
       {form && (
@@ -117,7 +118,7 @@ export default function SopsPanel() {
                   </>
                 )}
                 {s.can_delete && (
-                  <button className="btn btn-secondary btn-sm" aria-label={`Delete ${s.title}`} onClick={() => { if (confirm(`Delete "${s.title}"?`)) act(() => remove({ token: token!, id: s._id }), 'Deleted'); }}>🗑 Delete</button>
+                  <button className="btn btn-secondary btn-sm" aria-label={`Delete ${s.title}`} onClick={() => { if (confirm(`Delete "${s.title}"?`)) act(() => remove({ token: token!, id: s._id }), 'Deleted'); }}><EmojiIcon glyph="🗑" /> Delete</button>
                 )}
               </div>
             );

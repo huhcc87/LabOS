@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
 import { passwordChecks } from '../lib/passwordRules';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 type Tab = 'overview' | 'twofactor' | 'sessions' | 'password' | 'privacy' | 'admin' | 'how';
 
@@ -31,8 +33,7 @@ export default function SecurityCenterPage() {
 
   return (
     <div style={{ maxWidth: 920, margin: '0 auto', padding: '24px 16px' }}>
-      <h1 style={{ fontSize: 24, margin: 0 }}>Security & Privacy</h1>
-      <p style={{ ...muted, margin: '4px 0 16px' }}>Protect your account, see who signed in, and control your data. Everything on this page is live.</p>
+      <LabBanner art="safety" title="Security & Privacy" subtitle="Protect your account, see who signed in, and control your data. Everything on this page is live." style={{ flex: 1, minWidth: 0 }} />
       <div role="tablist" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
         {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`btn btn-sm ${tab === k ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab(k)}>{l}</button>)}
       </div>
@@ -57,7 +58,7 @@ type Status = NonNullable<NonNullable<ReturnType<typeof useQuery<typeof api.secu
 function Check({ ok, label, hint, onClick }: { ok: boolean; label: string; hint?: string; onClick?: () => void }) {
   return (
     <div style={{ display: 'flex', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
-      <span aria-hidden="true" style={{ fontSize: 18 }}>{ok ? '✅' : '⚠️'}</span>
+      <span aria-hidden="true" style={{ fontSize: 18 }}>{ok ? <><EmojiIcon glyph="✅" /></> : <><EmojiIcon glyph="⚠️" /></>}</span>
       <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>{hint && <div style={muted}>{hint}</div>}</div>
       {!ok && onClick && <button className="btn btn-sm btn-primary" onClick={onClick}>Fix</button>}
     </div>
@@ -235,7 +236,7 @@ function Privacy() {
       <div style={card}>
         <h2 style={h2}>Download my data</h2>
         <p style={muted}>A JSON file with your profile, consents, security history, requests and notifications. Passwords and two-factor secrets are never included.</p>
-        <button className="btn btn-secondary" onClick={download}>⬇ Download</button>
+        <button className="btn btn-secondary" onClick={download}><EmojiIcon glyph="⬇" /> Download</button>
       </div>
       <div style={card}>
         <h2 style={h2}>Ask for my personal data to be erased</h2>

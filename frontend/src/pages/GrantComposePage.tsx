@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { grantsApi } from '../lib/api';
 import type { GrantExportOptions } from '../lib/exportDocx';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface UploadedFigure {
   id: number;
@@ -222,8 +224,7 @@ export default function GrantComposePage() {
         borderBottom: '1px solid var(--border)'
       }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>Grant Composer</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Write your grant with AI assistance</p>
+          <LabBanner art="lab" title="Grant Composer" subtitle="Draft, review and track grant sections" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -233,8 +234,8 @@ export default function GrantComposePage() {
           >
             {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved' : 'Save Draft'}
           </button>
-          <button className="btn btn-secondary" onClick={handleExportDocx}>⬇ Word (.docx)</button>
-          <button className="btn btn-secondary" onClick={handleExportTxt}>⬇ Text (.txt)</button>
+          <button className="btn btn-secondary" onClick={handleExportDocx}><EmojiIcon glyph="⬇" /> Word (.docx)</button>
+          <button className="btn btn-secondary" onClick={handleExportTxt}><EmojiIcon glyph="⬇" /> Text (.txt)</button>
           <button className="btn btn-primary" onClick={() => setShowCompliance(true)}>
             Check ({complianceScore}%)
           </button>
@@ -309,7 +310,7 @@ export default function GrantComposePage() {
                       fontSize: 13,
                     }}
                   >
-                    <span>{section.icon}</span>
+                    <span><EmojiIcon glyph={section.icon} /></span>
                     <span style={{ flex: 1 }}>{section.label}</span>
                     {sectionWords > 0 && (
                       <span style={{

@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { ExportMenu } from '../components/ExportMenu';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 type TabType = 'all' | 'protocols' | 'sops' | 'reports' | 'templates' | 'archives';
 
@@ -209,8 +211,7 @@ export default function DocumentsPage() {
     <div className="page documents-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Document Management</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 14 }}>Manage protocols, SOPs, reports, and lab documents</p>
+          <LabBanner art="admin" title="Document Management" subtitle="Manage protocols, SOPs, reports, and lab documents" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <ExportMenu
@@ -245,7 +246,7 @@ export default function DocumentsPage() {
         ].map((stat, i) => (
           <div key={i} style={{ background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: 8, background: `${stat.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 18, color: stat.color }}>
-              {stat.icon}
+              <EmojiIcon glyph={stat.icon} />
             </div>
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{stat.value}</div>

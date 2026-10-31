@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useMemo } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
@@ -202,7 +203,7 @@ export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDe
           background: '#7f1d1d22', border: '1px solid #ef4444',
           borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12,
         }}>
-          <span style={{ fontSize: 24 }}>⚠️</span>
+          <span style={{ fontSize: 24 }}><EmojiIcon glyph="⚠️" /></span>
           <div>
             <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 14 }}>
               Some reagents are unavailable
@@ -266,8 +267,8 @@ export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDe
                 </div>
                 {lr.isLinked && lr.inventoryItem && (
                   <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2, display: 'flex', gap: 12 }}>
-                    <span>📍 {lr.inventoryItem.location}</span>
-                    <span>📦 {lr.inventoryItem.currentQuantity} {lr.inventoryItem.unit} available</span>
+                    <span><EmojiIcon glyph="📍" /> {lr.inventoryItem.location}</span>
+                    <span><EmojiIcon glyph="📦" /> {lr.inventoryItem.currentQuantity} {lr.inventoryItem.unit} available</span>
                     {lr.inventoryItem.catalogNumber && <span>#{lr.inventoryItem.catalogNumber}</span>}
                   </div>
                 )}
@@ -317,7 +318,7 @@ export default function ProtocolInventoryCheck({ protocol, onStartProtocol, onDe
             fontSize: 14, fontWeight: 600, opacity: allAvailable || linkedCount === 0 ? 1 : 0.5,
           }}
         >
-          ▶ Start Protocol
+          <EmojiIcon glyph="▶" /> Start Protocol
         </button>
       </div>
 

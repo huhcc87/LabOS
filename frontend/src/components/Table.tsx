@@ -1,4 +1,5 @@
 import React from 'react';
+import EmojiIcon from './EmojiIcon';
 
 export interface Column<T> {
   key: string;
@@ -96,7 +97,7 @@ export function Table<T extends Record<string, any>>({
                         )}
                         {onDelete && (
                           <button className="btn-icon btn-delete" onClick={() => onDelete(row)} title="Delete">
-                            🗑
+                            <EmojiIcon glyph="🗑" />
                           </button>
                         )}
                       </>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ApprovalRequest, ApprovalReviewer } from '../types/protocol.types'
 
@@ -155,7 +156,7 @@ export default function ProtocolApprovalWorkflow({
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: colors.text, fontSize: 14,
                   }}>
-                    {reviewer.status === 'approved' ? '✓' : reviewer.status === 'rejected' ? '✕' : reviewer.status === 'revision_requested' ? '↻' : '⏳'}
+                    {reviewer.status === 'approved' ? '✓' : reviewer.status === 'rejected' ? '✕' : reviewer.status === 'revision_requested' ? '↻' : <><EmojiIcon glyph="⏳" /></>}
                   </div>
 
                   {/* Reviewer Info */}

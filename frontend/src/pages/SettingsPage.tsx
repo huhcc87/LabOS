@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { settingsApi } from '../lib/api';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface SettingsSection {
   id: string;
@@ -153,8 +155,7 @@ export default function SettingsPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Settings</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Configure your lab environment</p>
+          <LabBanner art="admin" title="Settings" subtitle="Configure your lab environment" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button onClick={handleSave} disabled={saving} style={{
           padding: '7px 16px',
@@ -200,7 +201,7 @@ export default function SettingsPage() {
                 textAlign: 'left',
               }}
             >
-              <span>{section.icon}</span>
+              <span><EmojiIcon glyph={section.icon} /></span>
               <span>{section.label}</span>
             </button>
           ))}
@@ -457,7 +458,7 @@ export default function SettingsPage() {
                         background: smtpTesting ? 'var(--border)' : 'var(--accent)',
                         color: '#fff', cursor: smtpTesting ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13,
                       }}>
-                        {smtpTesting ? 'Testing...' : '⚡ Test & Save'}
+                        {smtpTesting ? 'Testing...' : <><EmojiIcon glyph="⚡" />{" Test & Save"}</>}
                       </button>
                       {smtpTestResult === 'ok' && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Settings saved successfully</span>}
                       {smtpTestResult === 'fail' && <span style={{ color: '#f87171', fontSize: 13 }}>✗ Failed — check your credentials</span>}
@@ -517,7 +518,7 @@ export default function SettingsPage() {
                         gap: 8,
                       }}
                     >
-                      <span style={{ fontSize: 24 }}>{t.icon}</span>
+                      <span style={{ fontSize: 24 }}><EmojiIcon glyph={t.icon} /></span>
                       <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.label}</span>
                     </button>
                   ))}

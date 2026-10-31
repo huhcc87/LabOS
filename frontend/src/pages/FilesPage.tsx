@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { filesApi } from '../lib/api';
 import type { Attachment } from '../lib/types';
 import { formatDateTime, downloadBlob } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 const ENTITY_TYPES = ['sample', 'incident', 'protocol', 'inventory', 'instrument', 'training'];
 
@@ -92,8 +94,7 @@ export default function FilesPage() {
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '20px 24px', marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 800, margin: 0 }}>File Attachments</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 0' }}>Upload and manage files for any entity in the system</p>
+            <LabBanner art="admin" title="File Attachments" subtitle="Upload and manage files for any entity in the system" style={{ flex: 1, minWidth: 0 }} />
           </div>
           {attachments.length > 0 && (
             <div style={{ display: 'flex', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
@@ -117,7 +118,7 @@ export default function FilesPage() {
               <button key={et} onClick={() => { setEntityType(et); setAttachments([]); setHasLoaded(false); }} style={{
                 background: active ? m.color + '22' : 'var(--surface)', border: `1px solid ${active ? m.color : 'var(--border)'}`,
                 borderRadius: 8, color: active ? m.color : 'var(--text-muted)', padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 400, textTransform: 'capitalize',
-              }}>{m.icon} {et}</button>
+              }}><EmojiIcon glyph={m.icon} /> {et}</button>
             );
           })}
         </div>
@@ -125,7 +126,7 @@ export default function FilesPage() {
         {/* Lookup bar */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 20, marginBottom: 20 }}>
           <div style={{ color: 'var(--text)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-            {em.icon} Browse {entityType.charAt(0).toUpperCase() + entityType.slice(1)} Attachments
+            <EmojiIcon glyph={em.icon} /> Browse {entityType.charAt(0).toUpperCase() + entityType.slice(1)} Attachments
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 120 }}>
@@ -148,7 +149,7 @@ export default function FilesPage() {
           background: isDragActive ? 'var(--accent)11' : 'var(--surface)', transition: 'all 0.15s',
         }}>
           <input {...getInputProps()} />
-          <div style={{ fontSize: 32, marginBottom: 8 }}>{uploading ? '⏳' : isDragActive ? '📥' : '📤'}</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>{uploading ? <><EmojiIcon glyph="⏳" /></> : isDragActive ? <><EmojiIcon glyph="📥" /></> : <><EmojiIcon glyph="📤" /></>}</div>
           <div style={{ color: isDragActive ? 'var(--accent)' : 'var(--text-soft)', fontWeight: 600, fontSize: 14 }}>
             {uploading ? 'Uploading files…' : isDragActive ? 'Drop files here!' : 'Drag & drop files here, or click to browse'}
           </div>
@@ -164,7 +165,7 @@ export default function FilesPage() {
 
         {!loading && hasLoaded && attachments.length === 0 && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+            <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="📭" /></div>
             No attachments found for {entityType} #{entityId}
           </div>
         )}
@@ -183,7 +184,7 @@ export default function FilesPage() {
                     <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600, wordBreak: 'break-word', textAlign: 'center' }}>{a.filename}</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center' }}>{a.uploader_name || 'Unknown'}</div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => handleDownload(a)} style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 0', cursor: 'pointer', fontSize: 12 }}>⬇ Download</button>
+                      <button onClick={() => handleDownload(a)} style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 0', cursor: 'pointer', fontSize: 12 }}><EmojiIcon glyph="⬇" /> Download</button>
                       <button onClick={() => handleDelete(a)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '5px 8px', cursor: 'pointer', fontSize: 12 }}>✕</button>
                     </div>
                   </div>
@@ -199,7 +200,7 @@ export default function FilesPage() {
                       <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{a.uploader_name || 'Unknown'} · {formatDateTime(a.uploaded_at)}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => handleDownload(a)} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>⬇ Download</button>
+                      <button onClick={() => handleDownload(a)} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}><EmojiIcon glyph="⬇" /> Download</button>
                       <button onClick={() => handleDelete(a)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>Delete</button>
                     </div>
                   </div>

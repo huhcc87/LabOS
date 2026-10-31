@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -367,7 +368,7 @@ SMTP_TLS=true`}</pre>
                   color: 'var(--text)',
                 }}
               >
-                <span style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>{t.icon}</span>
+                <span style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}><EmojiIcon glyph={t.icon} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{t.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -471,7 +472,7 @@ SMTP_TLS=true`}</pre>
             { icon: '🙋', title: 'Welcome Emails', desc: 'Triggered — sent when admins create new user accounts', status: 'active' },
           ].map(({ icon, title, desc, status: s }) => (
             <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span style={{ fontSize: 20 }}><EmojiIcon glyph={icon} /></span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>
@@ -600,10 +601,10 @@ function NotificationPreferencesCard() {
           <thead>
             <tr style={{ background: 'var(--surface2, rgba(0,0,0,0.04))' }}>
               <th style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Event</th>
-              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>📧 Email</th>
-              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>📱 SMS</th>
-              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>🔔 Push</th>
-              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>🛎️ In-app</th>
+              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="📧" /> Email</th>
+              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="📱" /> SMS</th>
+              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="🔔" /> Push</th>
+              <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="🛎️" /> In-app</th>
             </tr>
           </thead>
           <tbody>
@@ -614,7 +615,7 @@ function NotificationPreferencesCard() {
                 <tr key={evt} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
                   <td style={{ padding: '12px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>{meta.icon}</span>
+                      <span style={{ fontSize: 18 }}><EmojiIcon glyph={meta.icon} /></span>
                       <div>
                         <div style={{ fontWeight: 600 }}>{meta.label}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{meta.description}</div>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useEffect, useState } from 'react'
 import type { Protocol, ProtocolStep, ExecutionSession } from '../types/protocol.types'
 import { ApprovalBadge, SourceBadge, ProtocolTypeBadge } from './ProtocolBadges'
@@ -244,9 +245,9 @@ export default function ProtocolDetailDrawer({ protocol: p, onClose, onUpdatePro
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}
                 >
-                  ▶ Run Protocol
+                  <EmojiIcon glyph="▶" /> Run Protocol
                 </button>
-                <button onClick={() => handlePrint(p)} style={{ background: '#1e3a8a', border: '1px solid #3b82f6', borderRadius: 6, color: '#e2e8f0', padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>🖨️ Print</button>
+                <button onClick={() => handlePrint(p)} style={{ background: '#1e3a8a', border: '1px solid #3b82f6', borderRadius: 6, color: '#e2e8f0', padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600, flexShrink: 0 }}><EmojiIcon glyph="🖨️" /> Print</button>
                 <button onClick={onClose} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 6, color: '#94a3b8', padding: '6px 10px', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>✕</button>
               </div>
               {/* Export + QR row */}

@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { statusColor, formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 const STATUS_OPTIONS = ['available', 'in_use', 'maintenance', 'decommissioned'];
 
@@ -70,7 +71,7 @@ export default function InstrumentsPage() {
     { key: 'location', header: 'Location' },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.available;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.status}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.status}</span>;
     }},
     { key: 'next_maintenance_date', header: 'Next Maintenance', render: (r) => {
       if (!r.next_maintenance_date) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
@@ -115,7 +116,7 @@ export default function InstrumentsPage() {
         {/* Maintenance alert */}
         {maintenanceSoon.length > 0 && (
           <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 18 }}>🔧</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="🔧" /></span>
             <div style={{ color: '#92400e', fontSize: 13 }}>
               <strong>{maintenanceSoon.length} instrument{maintenanceSoon.length > 1 ? 's' : ''} due for maintenance within 14 days:</strong>{' '}
               {maintenanceSoon.map(i => i.name).join(', ')}
@@ -167,12 +168,12 @@ export default function InstrumentsPage() {
                       <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{inst.name}</div>
                       <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{inst.category}</div>
                     </div>
-                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5 }}>{m.icon} {inst.status}</span>
+                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5 }}><EmojiIcon glyph={m.icon} /> {inst.status}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
-                    <span style={{ color: 'var(--text-soft)', fontSize: 12 }}>📍 {inst.location || '—'}</span>
+                    <span style={{ color: 'var(--text-soft)', fontSize: 12 }}><EmojiIcon glyph="📍" /> {inst.location || '—'}</span>
                     <span style={{ color: urgent ? '#ef4444' : 'var(--text-soft)', fontSize: 12, fontWeight: urgent ? 700 : 400 }}>
-                      🔧 {dueDate ? `${formatDate(inst.next_maintenance_date)}${daysUntil !== null && daysUntil <= 14 ? ` (${daysUntil}d)` : ''}` : 'No date set'}
+                      <EmojiIcon glyph="🔧" /> {dueDate ? `${formatDate(inst.next_maintenance_date)}${daysUntil !== null && daysUntil <= 14 ? ` (${daysUntil}d)` : ''}` : 'No date set'}
                     </span>
                   </div>
                   {inst.notes && <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 10 }}>{inst.notes}</div>}

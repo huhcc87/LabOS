@@ -15,6 +15,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from './EmojiIcon';
 
 
 function authHeaders() {
@@ -102,7 +103,7 @@ export function ElectronicSignatureDialog({ entityType, entityId, entityTitle, c
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, borderBottom: '2px solid #e2e8f0', paddingBottom: 16 }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-            ✍️
+            <EmojiIcon glyph="✍️" />
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 17 }}>Electronic Signature</div>
@@ -173,7 +174,7 @@ export function ElectronicSignatureDialog({ entityType, entityId, entityTitle, c
             onClick={() => setShowPw(v => !v)}
             style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16 }}
           >
-            {showPw ? '🙈' : '👁'}
+            {showPw ? <><EmojiIcon glyph="🙈" /></> : <><EmojiIcon glyph="👁" /></>}
           </button>
         </div>
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 14px' }}>
@@ -244,7 +245,7 @@ export function SignaturePanel({ entityType, entityId, entityTitle, content = ''
             border: `1px solid ${(REASON_COLORS[s.reason] ?? '#6b7280')}55`,
             borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 600,
           }}>
-            ✍️ {s.signer_name.split(' ')[0]} · {s.reason}
+            <EmojiIcon glyph="✍️" /> {s.signer_name.split(' ')[0]} · {s.reason}
           </span>
         ))}
         <button
@@ -267,7 +268,7 @@ export function SignaturePanel({ entityType, entityId, entityTitle, content = ''
   return (
     <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
       <div style={{ background: '#f8fafc', padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: 700, fontSize: 14 }}>✍️ Electronic Signatures</div>
+        <div style={{ fontWeight: 700, fontSize: 14 }}><EmojiIcon glyph="✍️" /> Electronic Signatures</div>
         <button
           onClick={() => setShowDialog(true)}
           style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
@@ -293,7 +294,7 @@ export function SignaturePanel({ entityType, entityId, entityTitle, content = ''
                   background: (REASON_COLORS[s.reason] ?? '#6b7280') + '22',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  ✍️
+                  <EmojiIcon glyph="✍️" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{s.signer_name}</div>

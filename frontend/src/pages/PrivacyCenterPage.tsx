@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 const api = axios.create({ baseURL: '/api' });
 api.interceptors.request.use(cfg => {
@@ -225,15 +227,15 @@ export default function PrivacyCenterPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   const TABS = [
-    { id: 'overview',  label: '🏠 Overview',         show: true },
-    { id: 'security',  label: '🔐 Security',          show: true },
-    { id: 'onpremise', label: '🖥️ On-Premise & Data', show: true },
-    { id: 'standards', label: '📜 Standards',         show: true },
-    { id: 'consent',   label: '🔒 Consent',           show: true },
-    { id: 'rights',    label: '📋 My Rights',          show: true },
-    { id: 'password',  label: '🔑 Password',           show: true },
-    { id: 'policy',    label: '📄 Policy',             show: true },
-    { id: 'admin',     label: '⚙️ Admin',              show: isAdmin },
+    { id: 'overview',  label: "Overview",         show: true },
+    { id: 'security',  label: "Security",          show: true },
+    { id: 'onpremise', label: "On-Premise & Data", show: true },
+    { id: 'standards', label: "Standards",         show: true },
+    { id: 'consent',   label: "Consent",           show: true },
+    { id: 'rights',    label: "My Rights",          show: true },
+    { id: 'password',  label: "Password",           show: true },
+    { id: 'policy',    label: "Policy",             show: true },
+    { id: 'admin',     label: "Admin",              show: isAdmin },
   ].filter(t => t.show);
 
   return (
@@ -250,12 +252,9 @@ export default function PrivacyCenterPage() {
           background: 'rgba(99,102,241,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 32, flexShrink: 0,
-        }}>🛡️</div>
+        }}><EmojiIcon glyph="🛡️" /></div>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Privacy & Security Center</h1>
-          <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
-            Your data stays on your servers. Always. Zero vendor access, zero telemetry.
-          </p>
+          <LabBanner art="safety" title="Privacy & Security Center" subtitle="Your data stays on your servers. Always. Zero vendor access, zero telemetry." style={{ flex: 1, minWidth: 0 }} />
           {policy && (
             <span style={{
               display: 'inline-block', marginTop: 8, fontSize: 11, fontWeight: 600,
@@ -326,7 +325,7 @@ export default function PrivacyCenterPage() {
               { icon: '👥', title: 'Role-Based Access', body: '6 roles from Trainee to Superadmin. Least-privilege principle enforced throughout.', color: '#8b5cf6' },
             ].map(c => (
               <div key={c.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 14 }}>
-                <div style={{ fontSize: 24, flexShrink: 0 }}>{c.icon}</div>
+                <div style={{ fontSize: 24, flexShrink: 0 }}><EmojiIcon glyph={c.icon} /></div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: c.color, marginBottom: 4 }}>{c.title}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{c.body}</div>
@@ -340,12 +339,12 @@ export default function PrivacyCenterPage() {
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Quick Navigation</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
               {[
-                { tab: 'security', label: '🔐 Security Levels & Controls' },
-                { tab: 'onpremise', label: '🖥️ What Data Is Stored & Where' },
-                { tab: 'standards', label: '📜 Regulatory Standards Supported' },
-                { tab: 'consent', label: '🔒 Manage My Consent' },
-                { tab: 'rights', label: '📋 Exercise My Privacy Rights' },
-                { tab: 'password', label: '🔑 Change My Password' },
+                { tab: 'security', label: "Security Levels & Controls" },
+                { tab: 'onpremise', label: "What Data Is Stored & Where" },
+                { tab: 'standards', label: "Regulatory Standards Supported" },
+                { tab: 'consent', label: "Manage My Consent" },
+                { tab: 'rights', label: "Exercise My Privacy Rights" },
+                { tab: 'password', label: "Change My Password" },
               ].map(l => (
                 <button key={l.tab} onClick={() => setTab(l.tab as any)} style={{
                   padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)',
@@ -378,7 +377,7 @@ export default function PrivacyCenterPage() {
             ].map(layer => (
               <div key={layer.level} style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <span style={{ fontSize: 20 }}>{layer.icon}</span>
+                  <span style={{ fontSize: 20 }}><EmojiIcon glyph={layer.icon} /></span>
                   <span style={{ fontWeight: 700, fontSize: 13, color: layer.color }}>{layer.level}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 6 }}>
@@ -395,7 +394,7 @@ export default function PrivacyCenterPage() {
 
           {/* Password policy */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🔑 Password Policy</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}><EmojiIcon glyph="🔑" /> Password Policy</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
               {[
                 { label: 'Minimum length', value: '8 characters' },
@@ -419,7 +418,7 @@ export default function PrivacyCenterPage() {
 
           {/* Audit trail */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>📋 Audit Trail — What Is Logged</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><EmojiIcon glyph="📋" /> Audit Trail — What Is Logged</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
               {[
                 'User login / logout', 'Failed login attempts', 'Password changes',
@@ -439,15 +438,15 @@ export default function PrivacyCenterPage() {
 
           {/* Vulnerability disclosure */}
           <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>🐛 Vulnerability Disclosure</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}><EmojiIcon glyph="🐛" /> Vulnerability Disclosure</div>
             <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               Found a security issue? Email <strong>security@labos.app</strong> — we respond within 48 business hours.
               Critical patches are released within 14 days of a verified report.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>🕐 Response: 48 business hours</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>🔧 Critical patch: within 14 days</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📧 security@labos.app</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}><EmojiIcon glyph="🕐" /> Response: 48 business hours</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}><EmojiIcon glyph="🔧" /> Critical patch: within 14 days</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}><EmojiIcon glyph="📧" /> security@labos.app</span>
             </div>
           </div>
         </div>
@@ -463,13 +462,13 @@ export default function PrivacyCenterPage() {
 
           {/* Architecture diagram */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>🏗️ Data Flow Architecture</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}><EmojiIcon glyph="🏗️" /> Data Flow Architecture</div>
             <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: '20px', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'var(--text-muted)', lineHeight: 2 }}>
               <div>┌──────────────────── YOUR INSTITUTION'S NETWORK ──────────────────┐</div>
               <div>│                                                                   │</div>
-              <div>│  Browser ──HTTPS──▶ LabOS Server ──▶ Database (your server)      │</div>
+              <div>│  Browser ──HTTPS──<EmojiIcon glyph="▶" /> LabOS Server ──<EmojiIcon glyph="▶" /> Database (your server)      │</div>
               <div>│                          │                                        │</div>
-              <div>│                          └──▶ File Storage (your filesystem)      │</div>
+              <div>│                          └──<EmojiIcon glyph="▶" /> File Storage (your filesystem)      │</div>
               <div>│                                                                   │</div>
               <div>│  ✗ No data ever crosses this boundary to the vendor               │</div>
               <div>└───────────────────────────────────────────────────────────────────┘</div>
@@ -479,7 +478,7 @@ export default function PrivacyCenterPage() {
 
           {/* What is stored */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>📦 What LabOS Stores (On Your Servers)</div>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}><EmojiIcon glyph="📦" /> What LabOS Stores (On Your Servers)</div>
             {[
               { category: 'User Accounts', icon: '👤', color: '#6366f1', items: ['Name and email address', 'bcrypt password hash (not the password)', 'Role and department', 'Login timestamps', 'Session tokens (server memory only)'] },
               { category: 'Laboratory Records', icon: '🧪', color: '#22c55e', items: ['Samples, reagents, plasmids, equipment', 'Experiments and results', 'Protocols and SOPs', 'Safety incidents and reports', 'Inventory and freezer records'] },
@@ -488,7 +487,7 @@ export default function PrivacyCenterPage() {
             ].map(cat => (
               <div key={cat.category} style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                  <span>{cat.icon}</span>
+                  <span><EmojiIcon glyph={cat.icon} /></span>
                   <span style={{ fontWeight: 700, fontSize: 13, color: cat.color }}>{cat.category}</span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -502,7 +501,7 @@ export default function PrivacyCenterPage() {
 
           {/* What is NOT collected */}
           <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#f87171', marginBottom: 12 }}>🚫 What LabOS NEVER Collects or Transmits</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#f87171', marginBottom: 12 }}><EmojiIcon glyph="🚫" /> What LabOS NEVER Collects or Transmits</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
               {[
                 'Usage analytics or page views', 'Feature adoption statistics', 'Error or crash reports',
@@ -518,7 +517,7 @@ export default function PrivacyCenterPage() {
 
           {/* No DPA required */}
           <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', marginBottom: 8 }}>✅ No Data Processing Agreement Required</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', marginBottom: 8 }}><EmojiIcon glyph="✅" /> No Data Processing Agreement Required</div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
               Under GDPR, a Data Processing Agreement (DPA) is required when a vendor processes personal data on your behalf.
               Because LabOS is on-premise and the vendor <strong style={{ color: 'var(--text)' }}>never accesses, stores, or processes your data</strong>,
@@ -529,7 +528,7 @@ export default function PrivacyCenterPage() {
 
           {/* Institution responsibilities */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🏛️ Your Institution's Responsibilities</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}><EmojiIcon glyph="🏛️" /> Your Institution's Responsibilities</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 { item: 'Server security', detail: 'Patch OS, apply security updates, configure firewall' },
@@ -541,7 +540,7 @@ export default function PrivacyCenterPage() {
                 { item: 'Regulatory compliance', detail: 'HIPAA, FERPA, GDPR compliance as Data Controller is your responsibility' },
               ].map(r => (
                 <div key={r.item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ color: '#f59e0b', fontSize: 14, flexShrink: 0, marginTop: 1 }}>▶</span>
+                  <span style={{ color: '#f59e0b', fontSize: 14, flexShrink: 0, marginTop: 1 }}><EmojiIcon glyph="▶" /></span>
                   <div>
                     <span style={{ fontWeight: 600, fontSize: 13 }}>{r.item}: </span>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.detail}</span>
@@ -565,7 +564,7 @@ export default function PrivacyCenterPage() {
 
           {/* Important disclaimer */}
           <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '14px 18px' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#fbbf24', marginBottom: 6 }}>⚠️ Important Distinction</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#fbbf24', marginBottom: 6 }}><EmojiIcon glyph="⚠️" /> Important Distinction</div>
             <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
               The terms "GLP-compliant software" or "HIPAA-certified" would mean the vendor has been audited and certified. <strong style={{ color: 'var(--text)' }}>LabOS does not hold these certifications.</strong>
               Instead, LabOS is <strong style={{ color: 'var(--text)' }}>designed to support</strong> these workflows — the features you need are present.
@@ -605,7 +604,7 @@ export default function PrivacyCenterPage() {
           ].map(s => (
             <div key={s.standard} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
+                <span style={{ fontSize: 24, flexShrink: 0 }}><EmojiIcon glyph={s.icon} /></span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: s.color }}>{s.standard}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.5 }}>{s.what}</div>
@@ -708,7 +707,7 @@ export default function PrivacyCenterPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>📦 Right to Data Portability (Art. 20)</h3>
+                <h3 style={{ margin: '0 0 6px', fontSize: 15 }}><EmojiIcon glyph="📦" /> Right to Data Portability (Art. 20)</h3>
                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
                   Download a complete copy of all personal data stored about you in machine-readable JSON format.
                 </p>
@@ -722,14 +721,14 @@ export default function PrivacyCenterPage() {
                   opacity: exportLoading ? 0.7 : 1, flexShrink: 0,
                 }}
               >
-                {exportLoading ? 'Exporting…' : '⬇ Export My Data'}
+                {exportLoading ? 'Exporting…' : <><EmojiIcon glyph="⬇" />{" Export My Data"}</>}
               </button>
             </div>
           </div>
 
           {/* Erasure Request */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>🗑 Right to Erasure (Art. 17)</h3>
+            <h3 style={{ margin: '0 0 6px', fontSize: 15 }}><EmojiIcon glyph="🗑" /> Right to Erasure (Art. 17)</h3>
             <p style={{ margin: '0 0 12px', color: 'var(--text-muted)', fontSize: 13 }}>
               Request deletion of your personal data. Note: data required for legal, regulatory, or
               research integrity purposes may be retained in anonymised form per our retention policy.
@@ -781,7 +780,7 @@ export default function PrivacyCenterPage() {
                     opacity: erasureLoading ? 0.7 : 1,
                   }}
                 >
-                  {erasureLoading ? 'Submitting…' : '⚠ Request Erasure'}
+                  {erasureLoading ? 'Submitting…' : <><EmojiIcon glyph="⚠" />{" Request Erasure"}</>}
                 </button>
               </div>
             ) : (
@@ -807,7 +806,7 @@ export default function PrivacyCenterPage() {
               borderRadius: 10, padding: '14px 18px', marginBottom: 10,
               display: 'flex', gap: 12, alignItems: 'flex-start',
             }}>
-              <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: 20, flexShrink: 0 }}><EmojiIcon glyph={item.icon} /></span>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 3 }}>{item.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{item.text}</div>
@@ -892,7 +891,7 @@ export default function PrivacyCenterPage() {
             marginTop: 24, padding: 16, borderRadius: 10,
             background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
           }}>
-            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>🔒 Account Security Info</div>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}><EmojiIcon glyph="🔒" /> Account Security Info</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.8 }}>
               • Sessions expire after 2 hours of inactivity<br />
               • Account locks after 5 failed login attempts (15-minute lockout)<br />
@@ -1004,7 +1003,7 @@ function AdminPrivacyPanel() {
             background: adminView === v ? 'var(--accent)' : 'var(--surface2)',
             color: adminView === v ? '#fff' : 'var(--text-muted)',
             fontWeight: adminView === v ? 700 : 500, fontSize: 13,
-          }}>{v === 'erasure' ? '🗑 Erasure Requests' : '📊 Retention Report'}</button>
+          }}>{v === 'erasure' ? <><EmojiIcon glyph="🗑" />{" Erasure Requests"}</> : <><EmojiIcon glyph="📊" />{" Retention Report"}</>}</button>
         ))}
       </div>
 
@@ -1092,7 +1091,7 @@ function AdminPrivacyPanel() {
               marginTop: 12, padding: '12px 16px', borderRadius: 10,
               background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
             }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: '#fbbf24', marginBottom: 8 }}>⚠ Actions Required</div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: '#fbbf24', marginBottom: 8 }}><EmojiIcon glyph="⚠" /> Actions Required</div>
               {Object.entries(retention.action_required).filter(([,v]) => (v as number) > 0).map(([k, v]) => (
                 <div key={k} style={{ fontSize: 12, color: '#fbbf24', marginBottom: 3 }}>
                   • {(v as number)} {k.replace(/_/g, ' ')}

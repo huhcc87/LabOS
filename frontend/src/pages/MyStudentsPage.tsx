@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { HUBS } from '../../convex/hubs';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 interface Student {
   _id: Id<'users'>;
@@ -70,7 +71,7 @@ export default function MyStudentsPage() {
 
   return (
     <div className="page" style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>🎓 My Students</h1>
+      <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="🎓" /> My Students</h1>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 20px' }}>
         Add the people in your lab, then choose which parts of LabOS each one can use. Dashboard is always on.
       </p>

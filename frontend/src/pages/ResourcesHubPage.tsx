@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { inventoryApi, templatesApi, costsApi, aiApi } from '../lib/api';
 import { exportCSV, exportPDF } from '../lib/export';
 import { useNavigate } from '../context/NavigationContext';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 interface InventoryItem {
@@ -436,7 +438,7 @@ export default function ResourcesHubPage() {
 
   const loadingPlaceholder = (label: string) => (
     <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+      <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="⏳" /></div>
       <div style={{ fontSize: 14 }}>Loading {label}...</div>
     </div>
   );
@@ -446,12 +448,9 @@ export default function ResourcesHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Resources</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage inventory, templates, and costs</p>
-        </div>
+        <LabBanner art="inventory" title="Resources" subtitle="Manage inventory, templates, and costs" style={{ flex: 1, marginBottom: 0 }} />
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
-          ❓ How to Use
+          <EmojiIcon glyph="❓" /> How to Use
         </button>
       </div>
 
@@ -471,7 +470,7 @@ export default function ResourcesHubPage() {
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = tool.color; (e.currentTarget as HTMLButtonElement).style.color = tool.color; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
           >
-            <span>{tool.icon}</span>
+            <span><EmojiIcon glyph={tool.icon} /></span>
             <span>{tool.label}</span>
           </button>
         ))}
@@ -491,7 +490,7 @@ export default function ResourcesHubPage() {
               display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count > 0 && (
               <span style={{
@@ -517,7 +516,7 @@ export default function ResourcesHubPage() {
               { label: 'Critical', value: inventory.filter(i => i.status === 'critical').length, color: '#f87171', icon: '🚨' },
             ].map(stat => (
               <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
+                <div style={{ fontSize: 24, marginBottom: 4 }}><EmojiIcon glyph={stat.icon} /></div>
                 <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
               </div>
@@ -556,11 +555,11 @@ export default function ResourcesHubPage() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-secondary btn-sm" onClick={() =>
                 exportCSV(inventory.map(i => ({ Name: i.name, Category: i.category, Quantity: i.quantity, Unit: i.unit, Location: i.location, Supplier: i.supplier, 'Min Stock': i.minStock, Cost: i.cost, Status: i.quantity <= i.minStock ? 'Low Stock' : 'OK' })), 'inventory')
-              }>⬇ CSV</button>
+              }><EmojiIcon glyph="⬇" /> CSV</button>
               <button className="btn btn-secondary btn-sm" onClick={() =>
                 exportPDF('Inventory Report', ['Name','Category','Qty','Unit','Location','Status'],
                   inventory.map(i => [i.name, i.category, String(i.quantity), i.unit, i.location || '', i.quantity <= i.minStock ? '⚠ Low' : '✓ OK']), 'inventory')
-              }>⬇ PDF</button>
+              }><EmojiIcon glyph="⬇" /> PDF</button>
               <button className="btn btn-primary" onClick={() => setShowItemModal(true)}>+ Add Item</button>
             </div>
           </div>
@@ -568,7 +567,7 @@ export default function ResourcesHubPage() {
           {/* Inventory Table */}
           {inventory.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📦" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Inventory Items</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Add items to track your lab inventory</p>
               <button className="btn btn-primary" onClick={() => setShowItemModal(true)}>+ Add First Item</button>
@@ -623,8 +622,8 @@ export default function ResourcesHubPage() {
                       </td>
                       <td style={{ padding: 12, textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          <button className="btn btn-sm btn-secondary" onClick={() => setEditingItem(item)}>✏️ Edit</button>
-                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteItem(item)}>🗑️</button>
+                          <button className="btn btn-sm btn-secondary" onClick={() => setEditingItem(item)}><EmojiIcon glyph="✏️" /> Edit</button>
+                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteItem(item)}><EmojiIcon glyph="🗑️" /></button>
                         </div>
                       </td>
                     </tr>
@@ -646,7 +645,7 @@ export default function ResourcesHubPage() {
 
           {templates.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📄" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Templates Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Create templates for documents, protocols, and reports</p>
               <button className="btn btn-primary" onClick={() => setShowTemplateModal(true)}>+ Create First Template</button>
@@ -665,9 +664,9 @@ export default function ResourcesHubPage() {
                     Last used: {t.lastUsed} • By {t.createdBy}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => handleUseTemplate(t)}>📋 Use</button>
-                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingTemplate(t)}>✏️</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteTemplate(t)}>🗑️</button>
+                    <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => handleUseTemplate(t)}><EmojiIcon glyph="📋" /> Use</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingTemplate(t)}><EmojiIcon glyph="✏️" /></button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteTemplate(t)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -689,7 +688,7 @@ export default function ResourcesHubPage() {
               { label: 'Remaining', value: `$${budgetRemaining.toLocaleString()}`, color: budgetRemaining > 0 ? '#4ade80' : '#f87171', icon: '📊' },
             ].map(stat => (
               <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-                <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
+                <div style={{ fontSize: 24, marginBottom: 4 }}><EmojiIcon glyph={stat.icon} /></div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
               </div>
@@ -743,7 +742,7 @@ export default function ResourcesHubPage() {
 
           {expenses.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💰</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="💰" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Expenses Recorded</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Track your lab spending and expenses</p>
               <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>+ Record First Expense</button>
@@ -754,7 +753,7 @@ export default function ResourcesHubPage() {
                 <div key={exp.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                      💳
+                      <EmojiIcon glyph="💳" />
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -777,8 +776,8 @@ export default function ResourcesHubPage() {
                           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleExpenseStatus(exp, 'rejected')}>✕ Reject</button>
                         </>
                       )}
-                      <button className="btn btn-sm btn-secondary" onClick={() => setEditingExpense(exp)}>✏️</button>
-                      <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteExpense(exp)}>🗑️</button>
+                      <button className="btn btn-sm btn-secondary" onClick={() => setEditingExpense(exp)}><EmojiIcon glyph="✏️" /></button>
+                      <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteExpense(exp)}><EmojiIcon glyph="🗑️" /></button>
                     </div>
                   </div>
                 </div>
@@ -890,7 +889,7 @@ export default function ResourcesHubPage() {
                           toast.success('SDS data fetched from PubChem');
                         } catch { toast.error('Not found on PubChem'); }
                       }}
-                    >🔍 Fetch</button>
+                    ><EmojiIcon glyph="🔍" /> Fetch</button>
                   </div>
                 </div>
                 <div>
@@ -899,20 +898,20 @@ export default function ResourcesHubPage() {
                     value={(editingItem as any)?.hazard_class ?? (newItem as any).hazard_class ?? ''}
                     onChange={e => editingItem ? setEditingItem({ ...editingItem, hazard_class: e.target.value } as any) : setNewItem({ ...newItem, hazard_class: e.target.value } as any)}>
                     <option value="">None / Not Applicable</option>
-                    <option value="Flammable">🔥 Flammable</option>
-                    <option value="Corrosive">⚗️ Corrosive</option>
-                    <option value="Toxic">☠️ Toxic</option>
-                    <option value="Oxidizer">🔶 Oxidizer</option>
-                    <option value="Biohazard">☣️ Biohazard</option>
-                    <option value="Radioactive">☢️ Radioactive</option>
-                    <option value="Irritant">⚠️ Irritant</option>
-                    <option value="Cryogenic">🧊 Cryogenic</option>
+                    <option value="Flammable">Flammable</option>
+                    <option value="Corrosive">Corrosive</option>
+                    <option value="Toxic">Toxic</option>
+                    <option value="Oxidizer">Oxidizer</option>
+                    <option value="Biohazard">Biohazard</option>
+                    <option value="Radioactive">Radioactive</option>
+                    <option value="Irritant">Irritant</option>
+                    <option value="Cryogenic">Cryogenic</option>
                   </select>
                 </div>
               </div>
               {((editingItem as any)?.sds_url || (newItem as any).sds_url) && (
                 <div style={{ fontSize: 12, color: 'var(--accent)' }}>
-                  📄 SDS: <a href={(editingItem as any)?.sds_url ?? (newItem as any).sds_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>View on PubChem →</a>
+                  <EmojiIcon glyph="📄" /> SDS: <a href={(editingItem as any)?.sds_url ?? (newItem as any).sds_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>View on PubChem →</a>
                 </div>
               )}
             </div>
@@ -991,7 +990,7 @@ export default function ResourcesHubPage() {
               <button className="btn btn-primary" onClick={() => {
                 navigator.clipboard.writeText(viewingTemplate.content);
                 showToast('Template copied to clipboard!');
-              }} style={{ flex: 1 }}>📋 Copy Content</button>
+              }} style={{ flex: 1 }}><EmojiIcon glyph="📋" /> Copy Content</button>
             </div>
           </div>
         </div>
@@ -1067,7 +1066,7 @@ export default function ResourcesHubPage() {
         predLoading ? loadingPlaceholder('predictions') : (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <span style={{ fontSize: 28 }}>🔮</span>
+              <span style={{ fontSize: 28 }}><EmojiIcon glyph="🔮" /></span>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>AI Inventory Predictions</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>AI-powered reorder forecasts based on consumption history</p>
@@ -1075,7 +1074,7 @@ export default function ResourcesHubPage() {
             </div>
             {predictions.length === 0 ? (
               <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+                <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="📊" /></div>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>No predictions yet</div>
                 <div style={{ fontSize: 13 }}>Add inventory items with usage history to see AI reorder predictions</div>
               </div>
@@ -1129,7 +1128,7 @@ export default function ResourcesHubPage() {
             </div>
             <div style={{ display: 'grid', gap: 20 }}>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>📦 Inventory</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}><EmojiIcon glyph="📦" /> Inventory</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Add items with name, category, quantity, and location</li>
                   <li>Set minimum stock levels for low stock alerts</li>
@@ -1139,7 +1138,7 @@ export default function ResourcesHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>📄 Templates</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}><EmojiIcon glyph="📄" /> Templates</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Create reusable templates for documents and protocols</li>
                   <li>Choose template type (Document, Protocol, Report, etc.)</li>
@@ -1148,7 +1147,7 @@ export default function ResourcesHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>💰 Cost Tracking</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}><EmojiIcon glyph="💰" /> Cost Tracking</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Set your annual budget at the top</li>
                   <li>Record expenses with category, amount, and vendor</li>

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useEffect } from 'react'
 import type { Meeting } from '../types/meeting.types'
 import { formatMeetingDate } from '../utils/meetingUtils'
@@ -30,7 +31,7 @@ export default function MinutesEditor({ meeting, isPiOrAdmin, onSave, onPublish 
     return (
       <div>
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 20 }}>✅</span>
+          <span style={{ fontSize: 20 }}><EmojiIcon glyph="✅" /></span>
           <div>
             <div style={{ color: '#166534', fontWeight: 700, fontSize: 14 }}>Minutes Published</div>
             <div style={{ color: '#16a34a', fontSize: 12 }}>Published on {meeting.minutesPublishedAt ? new Date(meeting.minutesPublishedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'} — visible to all lab members</div>
@@ -60,7 +61,7 @@ export default function MinutesEditor({ meeting, isPiOrAdmin, onSave, onPublish 
     <div>
       {!isPiOrAdmin ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', background: '#f8fafc', borderRadius: 8 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📝</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="📝" /></div>
           <div>Minutes have not been published yet.</div>
           <div style={{ fontSize: 12, marginTop: 4 }}>They will appear here once the PI publishes them.</div>
         </div>
@@ -68,13 +69,13 @@ export default function MinutesEditor({ meeting, isPiOrAdmin, onSave, onPublish 
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, justifyContent: 'flex-end' }}>
             <button onClick={generateTemplate} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 6, color: '#475569', padding: '7px 14px', cursor: 'pointer', fontSize: 12 }}>
-              📋 Generate Template from Agenda
+              <EmojiIcon glyph="📋" /> Generate Template from Agenda
             </button>
             <button onClick={handleSave} disabled={!isDirty} style={{ background: isDirty ? '#6366f1' : '#e2e8f0', border: 'none', borderRadius: 6, color: isDirty ? '#fff' : '#94a3b8', padding: '7px 14px', cursor: isDirty ? 'pointer' : 'not-allowed', fontSize: 12 }}>
-              💾 Save Draft
+              <EmojiIcon glyph="💾" /> Save Draft
             </button>
             <button onClick={() => setConfirmPublish(true)} style={{ background: '#16a34a', border: 'none', borderRadius: 6, color: '#fff', padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-              📢 Publish to Lab
+              <EmojiIcon glyph="📢" /> Publish to Lab
             </button>
           </div>
 

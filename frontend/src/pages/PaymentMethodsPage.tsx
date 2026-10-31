@@ -3,6 +3,7 @@ import { useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import EmojiIcon from '../components/EmojiIcon';
 
 interface PaymentMethod {
   id: string;
@@ -137,7 +138,7 @@ export default function PaymentMethodsPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>💳 Payment Methods</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="💳" /> Payment Methods</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             One safe place for every card your lab uses. PCI-compliant via Stripe — LabOS never sees raw card numbers.
           </p>
@@ -160,7 +161,7 @@ export default function PaymentMethodsPage() {
       ) : (
         <div className="card" style={{ marginBottom: 20, padding: 18, background: 'rgba(234,179,8,0.08)', borderColor: 'rgba(234,179,8,0.35)' }}>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 24 }}>⚠️</div>
+            <div style={{ fontSize: 24 }}><EmojiIcon glyph="⚠️" /></div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>Stripe is not yet configured</div>
               <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55 }}>
@@ -187,7 +188,7 @@ export default function PaymentMethodsPage() {
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none', cursor: isConfigured ? 'pointer' : 'not-allowed',
                 fontSize: 13, fontWeight: 600, color: '#fff',
-                background: isConfigured ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'var(--surface2)',
+                background: isConfigured ? 'var(--accent)' : 'var(--surface2)',
               }}>
               + Add new card
             </button>
@@ -247,7 +248,7 @@ export default function PaymentMethodsPage() {
                 padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)',
                 background: i === 0 ? 'rgba(99,102,241,0.06)' : 'transparent',
               }}>
-                <span style={{ fontSize: 28 }}>{BRAND_ICONS[m.brand] || '💳'}</span>
+                <span style={{ fontSize: 28 }}>{BRAND_ICONS[m.brand] || <><EmojiIcon glyph="💳" /></>}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {m.brand.charAt(0).toUpperCase() + m.brand.slice(1)} ····{m.last4}
@@ -268,7 +269,7 @@ export default function PaymentMethodsPage() {
       </div>
 
       <p style={{ marginTop: 24, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center' }}>
-        🔒 Cards are stored at Stripe, never in LabOS. Removing a card here detaches it from Stripe immediately.
+        <EmojiIcon glyph="🔒" /> Cards are stored at Stripe, never in LabOS. Removing a card here detaches it from Stripe immediately.
         For PCI Level 1 compliance, in-app card entry uses Stripe Elements (tokenized at Stripe's servers).
       </p>
     </div>

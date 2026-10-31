@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface ProgressReport {
   id: number;
@@ -73,13 +75,12 @@ export default function ProgressReportsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Progress Reports (RPPR)</h1>
-          <p className="page-subtitle">Create and manage NIH Research Performance Progress Reports</p>
+          <LabBanner art="team" title="Progress Reports (RPPR)" subtitle="Create and manage NIH Research Performance Progress Reports" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Import Data')}>📥 Import Data</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('PDF Export')}>📤 Export PDF</button>
-          <button className="btn btn-primary" onClick={() => comingSoon('eRA Commons Submit')}>✅ Submit to eRA Commons</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Data')}><EmojiIcon glyph="📥" /> Import Data</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('PDF Export')}><EmojiIcon glyph="📤" /> Export PDF</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('eRA Commons Submit')}><EmojiIcon glyph="✅" /> Submit to eRA Commons</button>
         </div>
       </div>
 
@@ -114,7 +115,7 @@ export default function ProgressReportsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: selectedReport ? '350px 1fr' : '1fr', gap: 24 }}>
         {/* Reports List */}
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>📋 Reports Due</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}><EmojiIcon glyph="📋" /> Reports Due</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {reports.map(report => {
               const daysLeft = getDaysUntilDue(report.dueDate);
@@ -277,7 +278,7 @@ export default function ProgressReportsPage() {
                         {currentSection.wordLimit && ` / ${currentSection.wordLimit} max`}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-sm btn-secondary">✨ AI Assist</button>
+                        <button className="btn btn-sm btn-secondary"><EmojiIcon glyph="✨" /> AI Assist</button>
                         <button
                           className="btn btn-sm btn-primary"
                           onClick={() => handleMarkComplete(currentSection.key)}

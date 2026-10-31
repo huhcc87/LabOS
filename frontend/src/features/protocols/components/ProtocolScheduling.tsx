@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useMemo } from 'react'
 
 interface ScheduledRun {
@@ -411,7 +412,7 @@ export default function ProtocolScheduling({
               textAlign: 'center', padding: 60, color: 'var(--text-muted)',
               background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)',
             }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
+              <div style={{ fontSize: 36, marginBottom: 12 }}><EmojiIcon glyph="📅" /></div>
               <div style={{ fontSize: 14 }}>No scheduled runs</div>
               <div style={{ fontSize: 13, marginTop: 4 }}>
                 Click "Schedule Run" to plan a protocol execution
@@ -454,13 +455,13 @@ export default function ProtocolScheduling({
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          📅 {formatDate(run.scheduledDate)}
+                          <EmojiIcon glyph="📅" /> {formatDate(run.scheduledDate)}
                         </span>
                         <span style={{ color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          🕐 {formatTime(run.scheduledTime)}
+                          <EmojiIcon glyph="🕐" /> {formatTime(run.scheduledTime)}
                         </span>
                         <span style={{ color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          ⏱️ {formatDuration(run.estimatedDuration)}
+                          <EmojiIcon glyph="⏱️" /> {formatDuration(run.estimatedDuration)}
                         </span>
                       </div>
                     </div>

@@ -6,6 +6,8 @@ import type { Doc, Id } from '../../convex/_generated/dataModel';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 import { errText } from '../lib/errors';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 import {
   BoxDialog, ConfirmDelete, FreezerDialog, NameDialog, QuickSetupDialog, RackDialog, SampleDialog, ShelfDialog, type SampleValues,
 } from '../features/freezer/dialogs';
@@ -128,8 +130,7 @@ export default function FreezerBiobankPage() {
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Freezers</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>Freezer → shelf → rack → box → position. Add what you store, delete what you don't.</p>
+          <LabBanner art="samples" title="Freezers" subtitle="Freezer → shelf → rack → box → position. Add what you store, delete what you don't." style={{ flex: 1, minWidth: 0 }} />
         </div>
         {canBuild && (
           <button className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDialog({ kind: 'newFreezer' })}>
@@ -195,7 +196,7 @@ export default function FreezerBiobankPage() {
                 </button>
                 {canBuild && (
                   <>
-                    <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => setDialog({ kind: 'quickSetup' })} title="Add shelves, racks and boxes in one go">⚡ Quick setup</button>
+                    <button className="btn btn-sm btn-secondary" style={{ marginRight: 4 }} onClick={() => setDialog({ kind: 'quickSetup' })} title="Add shelves, racks and boxes in one go"><EmojiIcon glyph="⚡" /> Quick setup</button>
                     <button className="icon-btn" aria-label="Edit freezer" title="Edit freezer" onClick={() => setDialog({ kind: 'editFreezer' })}><Icon name="pencil" /></button>
                     <button className="icon-btn danger" aria-label="Delete freezer" title="Delete freezer" onClick={() => setDialog({ kind: 'deleteFreezer' })}><Icon name="trash" /></button>
                   </>
@@ -512,7 +513,7 @@ function Search({ token, freezers }: { token: string | undefined; freezers: { _i
           <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'matches'} onChange={() => setScope('matches')} /> Only samples matching my search</label>
           <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="radio" name="fz-scope" checked={scope === 'all'} onChange={() => setScope('all')} /> Everything in the selected freezers</label>
           <label style={{ fontSize: 13, display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={withLayout} onChange={e => setWithLayout(e.target.checked)} /> Include box layout sheet</label>
-          <button className="btn btn-primary btn-sm" onClick={download} disabled={busy || !ids.length}>{busy ? 'Preparing…' : '⬇ Download Excel'}</button>
+          <button className="btn btn-primary btn-sm" onClick={download} disabled={busy || !ids.length}>{busy ? 'Preparing…' : <><EmojiIcon glyph="⬇" />{" Download Excel"}</>}</button>
         </div>
       </div>
 

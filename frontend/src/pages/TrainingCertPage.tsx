@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type CertStatus = 'not_started' | 'in_progress' | 'completed' | 'expired' | 'expiring_soon';
@@ -161,7 +163,7 @@ export default function TrainingCertPage() {
       <div className="page" style={{ maxWidth: 700, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{selectedModule.icon} {selectedModule.title}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}><EmojiIcon glyph={selectedModule.icon} /> {selectedModule.title}</h2>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Knowledge Assessment · {selectedModule.questions.length} questions</p>
           </div>
           {!quiz.submitted && <button onClick={() => { setQuiz(null); setSelectedModule(null); }} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>Cancel</button>}
@@ -169,7 +171,7 @@ export default function TrainingCertPage() {
 
         {quiz.submitted ? (
           <div className="card" style={{ textAlign: 'center', padding: 48, borderColor: passed ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)', background: passed ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)' }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>{passed ? '🏆' : '📚'}</div>
+            <div style={{ fontSize: 64, marginBottom: 16 }}>{passed ? <><EmojiIcon glyph="🏆" /></> : <><EmojiIcon glyph="📚" /></>}</div>
             <h2 style={{ fontSize: 28, fontWeight: 700, color: passed ? '#4ade80' : '#f87171', marginBottom: 8 }}>{passed ? 'Certified!' : 'Not Passed'}</h2>
             <p style={{ fontSize: 18, color: 'var(--text-muted)', marginBottom: 16 }}>Score: {quiz.score}% (70% required)</p>
             {passed ? <p style={{ color: '#4ade80', fontSize: 14, marginBottom: 24 }}>Your certification has been recorded and is valid for {selectedModule.validityMonths} months.</p>
@@ -208,8 +210,7 @@ export default function TrainingCertPage() {
     <div className="page" style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Training & Certifications</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>Safety · Compliance · Equipment access gating · Team certification tracking</p>
+        <LabBanner art="safety" title="Training & Certifications" subtitle="Safety · Compliance · Equipment access gating · Team certification tracking" style={{ flex: 1, minWidth: 0 }} />
       </div>
 
       {/* Stats */}
@@ -221,7 +222,7 @@ export default function TrainingCertPage() {
           { label: 'Not Started', value: certs.filter(c => c.status === 'not_started').length, color: '#9ca3af', icon: '○' },
         ].map(s => (
           <div key={s.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 22 }}>{s.icon}</div>
+            <div style={{ fontSize: 22 }}><EmojiIcon glyph={s.icon} /></div>
             <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
           </div>
@@ -230,7 +231,7 @@ export default function TrainingCertPage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
-        {[{ key: 'my' as Tab, label: '🎓 My Certifications' }, { key: 'modules' as Tab, label: '📚 Training Catalog' }, { key: 'team' as Tab, label: '👥 Team Compliance' }].map(t => (
+        {[{ key: 'my' as Tab, label: "My Certifications" }, { key: 'modules' as Tab, label: "Training Catalog" }, { key: 'team' as Tab, label: "Team Compliance" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '10px 18px', fontSize: 14, fontWeight: tab === t.key ? 600 : 400, border: 'none', background: 'none', cursor: 'pointer', color: tab === t.key ? 'var(--primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t.key ? 'var(--primary)' : 'transparent'}` }}>
             {t.label}
@@ -248,7 +249,7 @@ export default function TrainingCertPage() {
             return (
               <div key={module.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap', borderColor: cert.status === 'expired' ? 'rgba(239,68,68,0.3)' : cert.status === 'expiring_soon' ? 'rgba(234,179,8,0.3)' : undefined }}>
                 <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1 }}>
-                  <span style={{ fontSize: 30, flexShrink: 0 }}>{module.icon}</span>
+                  <span style={{ fontSize: 30, flexShrink: 0 }}><EmojiIcon glyph={module.icon} /></span>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{module.title}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{module.category} · {module.duration} · Valid {module.validityMonths} months</div>
@@ -259,9 +260,9 @@ export default function TrainingCertPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: sm.bg, color: sm.color }}>{sm.icon} {sm.label}</span>
+                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: sm.bg, color: sm.color }}><EmojiIcon glyph={sm.icon} /> {sm.label}</span>
                   <button onClick={() => startQuiz(module)} style={{ padding: '6px 16px', border: 'none', borderRadius: 8, background: cert.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'var(--primary)', color: cert.status === 'completed' ? '#4ade80' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                    {cert.status === 'completed' ? '↩ Retake' : cert.status === 'in_progress' ? 'Continue' : 'Start'}
+                    {cert.status === 'completed' ? <><EmojiIcon glyph="↩" />{" Retake"}</> : cert.status === 'in_progress' ? 'Continue' : 'Start'}
                   </button>
                 </div>
               </div>
@@ -276,15 +277,15 @@ export default function TrainingCertPage() {
           {MODULES.map(module => (
             <div key={module.id} className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <span style={{ fontSize: 36 }}>{module.icon}</span>
+                <span style={{ fontSize: 36 }}><EmojiIcon glyph={module.icon} /></span>
                 <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(99,102,241,0.12)', color: '#818cf8' }}>{module.category}</span>
               </div>
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{module.title}</h3>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 12 }}>{module.description}</p>
               <div style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                <span>⏱ {module.duration}</span>
-                <span>📝 {module.questions.length} questions</span>
-                <span>✅ {module.validityMonths}mo valid</span>
+                <span><EmojiIcon glyph="⏱" /> {module.duration}</span>
+                <span><EmojiIcon glyph="📝" /> {module.questions.length} questions</span>
+                <span><EmojiIcon glyph="✅" /> {module.validityMonths}mo valid</span>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Required For</div>
@@ -310,7 +311,7 @@ export default function TrainingCertPage() {
                   <th style={{ textAlign: 'center', padding: '10px 12px', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)' }}>COMPLIANCE</th>
                   {MODULES.map(m => (
                     <th key={m.id} style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', maxWidth: 80 }} title={m.title}>
-                      {m.icon}<br />{m.title.split(' ').slice(0, 2).join(' ')}
+                      <EmojiIcon glyph={m.icon} /><br />{m.title.split(' ').slice(0, 2).join(' ')}
                     </th>
                   ))}
                 </tr>
@@ -331,7 +332,7 @@ export default function TrainingCertPage() {
                       return (
                         <td key={m.id} style={{ padding: '12px 8px', textAlign: 'center' }}>
                           <span title={sm.label} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: sm.bg, color: sm.color, fontWeight: 700, fontSize: 14 }}>
-                            {sm.icon}
+                            <EmojiIcon glyph={sm.icon} />
                           </span>
                         </td>
                       );
@@ -346,7 +347,7 @@ export default function TrainingCertPage() {
           <div style={{ display: 'flex', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
             {Object.entries(STATUS_META).map(([key, sm]) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <span style={{ width: 22, height: 22, borderRadius: 5, background: sm.bg, color: sm.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{sm.icon}</span>
+                <span style={{ width: 22, height: 22, borderRadius: 5, background: sm.bg, color: sm.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}><EmojiIcon glyph={sm.icon} /></span>
                 <span style={{ color: 'var(--text-muted)' }}>{sm.label}</span>
               </div>
             ))}

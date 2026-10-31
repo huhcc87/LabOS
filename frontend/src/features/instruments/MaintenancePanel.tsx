@@ -6,6 +6,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import { PRESETS, statusOf } from './InstrumentBooking';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -194,7 +195,7 @@ export default function MaintenancePanel() {
             {data.instruments.map((i) => <option key={i._id} value={i._id}>{i.name}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setForm({ customName: '', instrument: '', type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}>🔧 Report a problem</button>
+        <button className="btn btn-primary" onClick={() => setForm({ customName: '', instrument: '', type: 'repair', category: 'mechanical', priority: 'normal', impact: 'not_working', code: '', note: '' })}><EmojiIcon glyph="🔧" /> Report a problem</button>
       </div>
 
       {form && (
@@ -250,7 +251,7 @@ export default function MaintenancePanel() {
               <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
               {data.can_handle && open(m.status) && <button className="btn btn-primary btn-sm" onClick={() => setPlan(planning ? null : { id: m._id, p: { status: m.status === 'reported' ? 'planned' : m.status, vendor: m.vendor ?? '', expected: m.expected_date ? new Date(m.expected_date).toISOString().slice(0, 10) : '', cost: m.cost !== undefined ? String(m.cost) : '', note: '' } })}>{planning ? 'Close' : 'Update status'}</button>}
               <button className="btn btn-secondary btn-sm" onClick={() => setHistory(history === m._id ? null : m._id)}>History</button>
-              {m.can_delete && <button className="btn btn-secondary btn-sm" aria-label={`Delete report for ${m.instrument_name}`} onClick={() => { if (confirm('Delete this report?')) act(() => remove({ token: token!, id: m._id }), 'Deleted'); }}>🗑</button>}
+              {m.can_delete && <button className="btn btn-secondary btn-sm" aria-label={`Delete report for ${m.instrument_name}`} onClick={() => { if (confirm('Delete this report?')) act(() => remove({ token: token!, id: m._id }), 'Deleted'); }}><EmojiIcon glyph="🗑" /></button>}
             </div>
             {m.notes && <div style={{ marginTop: 8, fontSize: 13 }}>“{m.notes}”</div>}
             <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>

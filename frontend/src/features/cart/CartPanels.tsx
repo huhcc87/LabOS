@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { reagentCartApi } from '../../lib/api';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const box: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -10,8 +11,12 @@ export interface RequestInput {
 }
 
 /** A new reagent request with the details an approver needs: what, how much, who pays, how urgent. */
-export function RequestForm({ autoLimit, onSubmit, onCancel }: { autoLimit: number; onSubmit: (r: RequestInput) => Promise<void>; onCancel: () => void }) {
-  const [f, setF] = useState({ name: '', vendor: '', catalog: '', size: '', quantity: '1', price: '', url: '', project: '', grant: '', budget_code: '', urgency: 'normal', needed: '', notes: '' });
+export function RequestForm({ autoLimit, onSubmit, onCancel, initial }: {
+  autoLimit: number; onSubmit: (r: RequestInput) => Promise<void>; onCancel: () => void;
+  /** Starting values, e.g. from a product lookup. */
+  initial?: Partial<{ name: string; vendor: string; catalog: string; size: string; price: string; notes: string }>;
+}) {
+  const [f, setF] = useState({ name: '', vendor: '', catalog: '', size: '', quantity: '1', price: '', url: '', project: '', grant: '', budget_code: '', urgency: 'normal', needed: '', notes: '', ...initial });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -184,10 +189,10 @@ export function InvoicePanel({ onClose }: { onClose: () => void }) {
                   <span style={{ color: 'var(--text-muted)' }}>PO {money(r.ordered)} · received {money(r.received)} · invoiced {money(r.invoiced)}</span>
                   <strong style={{ color: m.color }}>{m.text}</strong>
                 </div>
-                {r.issues.map((i) => <div key={i} style={{ color: '#dc2626', fontSize: 12, marginTop: 2 }}>⚠ {i}</div>)}
+                {r.issues.map((i) => <div key={i} style={{ color: '#dc2626', fontSize: 12, marginTop: 2 }}><EmojiIcon glyph="⚠" /> {i}</div>)}
                 {r.invoices.map((i) => (
                   <div key={i.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    🧾 {i.number}{i.date ? ` · ${new Date(i.date).toLocaleDateString()}` : ''} · {money(i.amount)}{i.notes ? ` · ${i.notes}` : ''}
+                    <EmojiIcon glyph="🧾" /> {i.number}{i.date ? ` · ${new Date(i.date).toLocaleDateString()}` : ''} · {money(i.amount)}{i.notes ? ` · ${i.notes}` : ''}
                     <button className="btn btn-sm btn-secondary" aria-label={`Remove invoice ${i.number}`} onClick={() => remove(i.id)}>Remove</button>
                   </div>
                 ))}

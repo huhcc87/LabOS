@@ -3,6 +3,8 @@ import { usersAdminApi, auditApi, integrationsApi } from '../lib/api';
 import { Icon } from '../components/Icon';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
 import { AdminPasswordReset } from '../components/AdminPasswordReset';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 interface User {
@@ -97,7 +99,7 @@ function SelectOrCustom({ value, options, onChange, noneLabel }: {
         <input className="form-input" autoFocus placeholder="Type your own…" value={value}
           onChange={e => onChange(e.target.value)} style={{ flex: 1 }} />
         <button type="button" className="btn btn-sm btn-secondary" title="Back to the list"
-          onClick={() => { setTyping(false); onChange(noneLabel !== undefined ? '' : options[0]); }}>↩ List</button>
+          onClick={() => { setTyping(false); onChange(noneLabel !== undefined ? '' : options[0]); }}><EmojiIcon glyph="↩" /> List</button>
       </div>
     );
   }
@@ -418,10 +420,7 @@ export default function AdminHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Administration</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage users, settings, and system configuration</p>
-        </div>
+        <LabBanner art="admin" title="Administration" subtitle="Manage users, settings, and system configuration" style={{ flex: 1, marginBottom: 0 }} />
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
           How to use
         </button>
@@ -505,7 +504,7 @@ export default function AdminHubPage() {
 
           {users.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>👥</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="👥" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Users Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Add team members to manage access</p>
               <button className="btn btn-primary" onClick={() => setShowUserModal(true)}>+ Add First User</button>
@@ -548,7 +547,7 @@ export default function AdminHubPage() {
                       <td style={{ padding: 12 }}>
                         <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: roleColors[user.role]?.bg, color: roleColors[user.role]?.text }}>{user.role}</span>
                         {user.position && (
-                          <span style={{ marginLeft: 6, padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: 'var(--info-bg)', color: 'var(--info-text)' }}>🎓 {user.position}</span>
+                          <span style={{ marginLeft: 6, padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, background: 'var(--info-bg)', color: 'var(--info-text)' }}><EmojiIcon glyph="🎓" /> {user.position}</span>
                         )}
                       </td>
                       <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{user.department}</td>
@@ -561,7 +560,7 @@ export default function AdminHubPage() {
                           <span style={{ fontSize: 13 }}>{user.status}</span>
                         </button>
                         {user.invitePending && (
-                          <span style={{ fontSize: 11, color: 'var(--warn-text)' }} title="Hasn't opened their invite link and set a password yet">⏳ Not joined yet</span>
+                          <span style={{ fontSize: 11, color: 'var(--warn-text)' }} title="Hasn't opened their invite link and set a password yet"><EmojiIcon glyph="⏳" /> Not joined yet</span>
                         )}
                       </td>
                       <td style={{ padding: 12, textAlign: 'right' }}>
@@ -620,7 +619,7 @@ export default function AdminHubPage() {
 
           {files.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📎</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📎" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Files Uploaded</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Upload lab manuals, protocols, and documents</p>
               <button className="btn btn-primary" onClick={() => setShowFileModal(true)}>+ Upload First File</button>
@@ -630,7 +629,7 @@ export default function AdminHubPage() {
               {files.map(file => (
                 <div key={file.id} className="card" style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 40, marginBottom: 8 }}>
-                    {file.type === 'PDF' ? '📕' : file.type === 'DOC' ? '📘' : file.type === 'XLS' ? '📗' : file.type === 'PPT' ? '📙' : '📄'}
+                    {file.type === 'PDF' ? <><EmojiIcon glyph="📕" /></> : file.type === 'DOC' ? <><EmojiIcon glyph="📘" /></> : file.type === 'XLS' ? <><EmojiIcon glyph="📗" /></> : file.type === 'PPT' ? <><EmojiIcon glyph="📙" /></> : <><EmojiIcon glyph="📄" /></>}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2, wordBreak: 'break-word' }}>{file.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{file.size} • {file.type}</div>
@@ -638,8 +637,8 @@ export default function AdminHubPage() {
                     <span style={{ padding: '2px 6px', background: 'var(--surface2)', borderRadius: 4 }}>{file.category}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => handleDownloadFile(file)}>⬇️ Download</button>
-                    <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFile(file)}>🗑️</button>
+                    <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={() => handleDownloadFile(file)}><EmojiIcon glyph="⬇️" /> Download</button>
+                    <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFile(file)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -653,7 +652,7 @@ export default function AdminHubPage() {
         <div>
           {auditLogs.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📜" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Audit Logs</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Actions will be logged here automatically</p>
             </div>
@@ -662,7 +661,7 @@ export default function AdminHubPage() {
               {auditLogs.map(log => (
                 <div key={log.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {log.targetType === 'user' ? '👤' : log.targetType === 'file' ? '📄' : log.targetType === 'integration' ? '🔗' : log.targetType === 'setting' ? '⚙️' : '📜'}
+                    {log.targetType === 'user' ? <><EmojiIcon glyph="👤" /></> : log.targetType === 'file' ? <><EmojiIcon glyph="📄" /></> : log.targetType === 'integration' ? <><EmojiIcon glyph="🔗" /></> : log.targetType === 'setting' ? <><EmojiIcon glyph="⚙️" /></> : <><EmojiIcon glyph="📜" /></>}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14 }}>
@@ -686,7 +685,7 @@ export default function AdminHubPage() {
             <div key={integration.id} className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 32 }}>{integration.icon}</span>
+                  <span style={{ fontSize: 32 }}><EmojiIcon glyph={integration.icon} /></span>
                   <div>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{integration.name}</h3>
                     <span style={{ fontSize: 11, color: integration.connected ? 'var(--ok-text)' : 'var(--text-muted)' }}>
@@ -699,7 +698,7 @@ export default function AdminHubPage() {
               {integration.launchUrl && (
                 <a href={integration.launchUrl} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'inline-block', marginBottom: 12, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
-                  Open {integration.name} ↗
+                  Open {integration.name} <EmojiIcon glyph="↗" />
                 </a>
               )}
               {integration.connected && integration.lastSync && (
@@ -712,7 +711,7 @@ export default function AdminHubPage() {
                 style={{ width: '100%' }}
                 onClick={() => handleToggleIntegration(integration)}
               >
-                {integration.connected ? '🔌 Disconnect' : '🔗 Connect'}
+                {integration.connected ? <><EmojiIcon glyph="🔌" />{" Disconnect"}</> : <><EmojiIcon glyph="🔗" />{" Connect"}</>}
               </button>
             </div>
           ))}
@@ -759,10 +758,10 @@ export default function AdminHubPage() {
       {inviteLink && (
         <div style={modalStyle} onClick={() => setInviteLink(null)}>
           <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>🔗 Invite link for {inviteLink.name}</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}><EmojiIcon glyph="🔗" /> Invite link for {inviteLink.name}</h3>
             {inviteLink.emailed && (
               <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--ok-text)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
-                ✉️ Invite emailed to {inviteLink.email}. You can also copy the link below.
+                <EmojiIcon glyph="✉️" /> Invite emailed to {inviteLink.email}. You can also copy the link below.
               </div>
             )}
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
@@ -774,10 +773,10 @@ export default function AdminHubPage() {
               <button className="btn btn-primary" onClick={async () => {
                 try { await navigator.clipboard.writeText(inviteLink.url); showToast('Link copied'); }
                 catch { showToast('Copy failed — select the link and copy it', 'error'); }
-              }}>📋 Copy link</button>
+              }}><EmojiIcon glyph="📋" /> Copy link</button>
               <a className="btn btn-secondary"
                 href={`mailto:${inviteLink.email}?subject=${encodeURIComponent('Your LabOS invitation')}&body=${encodeURIComponent(`Hi ${inviteLink.name},\n\nYou've been added to LabOS. Open this link to set your password and sign in with ${inviteLink.email}:\n\n${inviteLink.url}\n\nThe link works once and expires in 7 days.`)}`}>
-                ✉️ Email it
+                <EmojiIcon glyph="✉️" /> Email it
               </a>
               <button className="btn btn-secondary" style={{ marginLeft: 'auto' }} onClick={() => setInviteLink(null)}>Done</button>
             </div>
@@ -890,7 +889,7 @@ export default function AdminHubPage() {
                 </div>
               </div>
               <div style={{ border: '2px dashed var(--border)', borderRadius: 8, padding: 32, textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📁</div>
+                <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="📁" /></div>
                 <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Drag & drop files here or click to browse</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Supported: PDF, DOC, XLS, PPT, Images</div>
               </div>
@@ -913,7 +912,7 @@ export default function AdminHubPage() {
             </div>
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>👥 Users</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="👥" /> Users</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Add team members with roles (Admin, Manager, Staff, Trainee)</li>
                   <li>Toggle user status between Active and Inactive</li>
@@ -921,14 +920,14 @@ export default function AdminHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>🔔 Notifications</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🔔" /> Notifications</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Toggle notification types on/off</li>
                   <li>Control email, stock, maintenance, and incident alerts</li>
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>📎 Files</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="📎" /> Files</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Upload lab manuals, protocols, and documents</li>
                   <li>Categorize files for easy organization</li>
@@ -936,21 +935,21 @@ export default function AdminHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>📜 Audit Log</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="📜" /> Audit Log</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>View all system actions automatically logged</li>
                   <li>Track who did what and when</li>
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>🔗 Integrations</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🔗" /> Integrations</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Connect external services (Slack, Calendar, etc.)</li>
                   <li>Click Connect/Disconnect to toggle</li>
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>⚙️ Settings</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="⚙️" /> Settings</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Configure lab name, timezone, and date format</li>
                   <li>Click "Save Settings" to apply changes</li>

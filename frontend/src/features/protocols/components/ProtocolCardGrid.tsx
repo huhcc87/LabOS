@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { Protocol } from '../types/protocol.types'
 import { ApprovalBadge, SourceBadge, ProtocolTypeBadge, DifficultyBadge } from './ProtocolBadges'
@@ -45,13 +46,13 @@ export default function ProtocolCardGrid({ protocols, onView, onDelete }: Props)
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #2a2d3e', paddingTop: 10 }}>
             <div style={{ display: 'flex', gap: 12 }}>
-              <span style={{ color: '#64748b', fontSize: 11 }}>📋 {p.steps.length} steps</span>
-              {p.publicationYear && <span style={{ color: '#64748b', fontSize: 11 }}>📅 {p.publicationYear}</span>}
+              <span style={{ color: '#64748b', fontSize: 11 }}><EmojiIcon glyph="📋" /> {p.steps.length} steps</span>
+              {p.publicationYear && <span style={{ color: '#64748b', fontSize: 11 }}><EmojiIcon glyph="📅" /> {p.publicationYear}</span>}
               <span style={{ color: '#64748b', fontSize: 11 }}>v{p.version}</span>
             </div>
             <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
               <button onClick={() => onView(p)} style={{ background: '#6366f122', border: '1px solid #6366f1', borderRadius: 4, color: '#6366f1', padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>View</button>
-              <button onClick={() => onDelete(p.id)} style={{ background: '#ef444422', border: '1px solid #ef4444', borderRadius: 4, color: '#ef4444', padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>🗑</button>
+              <button onClick={() => onDelete(p.id)} style={{ background: '#ef444422', border: '1px solid #ef4444', borderRadius: 4, color: '#ef4444', padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}><EmojiIcon glyph="🗑" /></button>
             </div>
           </div>
         </div>

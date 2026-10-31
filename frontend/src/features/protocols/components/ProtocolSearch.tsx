@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useCallback } from 'react'
 
 interface Props {
@@ -15,7 +16,7 @@ export default function ProtocolSearch({ value, onChange, resultCount }: Props) 
 
   return (
     <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
-      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
+      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 16, pointerEvents: 'none' }}><EmojiIcon glyph="🔍" /></span>
       <input
         type="text"
         value={value}

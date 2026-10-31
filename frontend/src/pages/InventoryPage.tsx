@@ -9,6 +9,7 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { usePagedApi } from '../hooks/useApi';
+import EmojiIcon from '../components/EmojiIcon';
 
 type TabType = 'dashboard' | 'inventory' | 'suppliers' | 'orders' | 'analytics' | 'storage' | 'iot' | 'compliance' | 'waste' | 'labels' | 'sds' | 'coa' | 'calculator' | 'sharing' | 'recurring';
 type ViewMode = 'table' | 'grid' | 'kanban';
@@ -1012,7 +1013,7 @@ export default function InventoryPage() {
           onClick={(e) => { e.stopPropagation(); toggleFavorite(r.id); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
         >
-          {favorites.has(r.id) ? '⭐' : '☆'}
+          {favorites.has(r.id) ? <><EmojiIcon glyph="⭐" /></> : '☆'}
         </button>
       ),
     },
@@ -1025,7 +1026,7 @@ export default function InventoryPage() {
             {r.name}
             {r.hazard_class && r.hazard_class !== 'None' && (
               <span title={GHS_HAZARDS[r.hazard_class]?.description || r.hazard_class}>
-                {GHS_HAZARDS[r.hazard_class]?.icon || '⚠️'}
+                {GHS_HAZARDS[r.hazard_class]?.icon || <><EmojiIcon glyph="⚠️" /></>}
               </span>
             )}
           </div>
@@ -1097,7 +1098,7 @@ export default function InventoryPage() {
             background: r.storage_temp === '-80C' ? '#1e40af' : r.storage_temp === '-20C' ? '#4338ca' : r.storage_temp === '4C' ? '#166534' : r.storage_temp === 'LN2' ? '#0891b2' : '#6b7280',
             color: '#fff',
           }}>
-            {r.storage_temp === '-80C' ? '🧊' : r.storage_temp === '-20C' ? '❄️' : r.storage_temp === '4C' ? '🌡️' : r.storage_temp === 'LN2' ? '🥶' : '📦'}
+            {r.storage_temp === '-80C' ? <><EmojiIcon glyph="🧊" /></> : r.storage_temp === '-20C' ? <><EmojiIcon glyph="❄️" /></> : r.storage_temp === '4C' ? <><EmojiIcon glyph="🌡️" /></> : r.storage_temp === 'LN2' ? <><EmojiIcon glyph="🥶" /></> : <><EmojiIcon glyph="📦" /></>}
             {r.storage_temp || 'RT'}
           </span>
         </div>
@@ -1127,7 +1128,7 @@ export default function InventoryPage() {
             background: isExpired ? '#fef2f2' : isUrgent ? '#fef3c7' : isSoon ? '#fefce8' : '#f0fdf4',
             color: isExpired ? '#dc2626' : isUrgent ? '#d97706' : isSoon ? '#ca8a04' : '#16a34a',
           }}>
-            {isExpired ? '⚠️ EXPIRED' : isUrgent ? `⏰ ${Math.ceil((d.getTime() - now.getTime()) / (24*60*60*1000))}d` : r.expires_on}
+            {isExpired ? <><EmojiIcon glyph="⚠️" />{" EXPIRED"}</> : isUrgent ? `⏰ ${Math.ceil((d.getTime() - now.getTime()) / (24*60*60*1000))}d` : r.expires_on}
           </div>
         );
       },
@@ -1143,7 +1144,7 @@ export default function InventoryPage() {
             title="Log Usage"
             style={{ padding: '4px 8px', borderRadius: 4, background: '#dbeafe', border: 'none', cursor: 'pointer', fontSize: 12 }}
           >
-            📝
+            <EmojiIcon glyph="📝" />
           </button>
         </div>
       ),
@@ -1180,13 +1181,13 @@ export default function InventoryPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 32 }}>🔬</span>
+              <EmojiIcon glyph="🔬" size={30} />
               <div>
                 <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>
                   LabOS Inventory & Procurement
                 </h1>
                 <p style={{ margin: '2px 0 0', fontSize: 13, opacity: 0.8 }}>
-                  AI-Powered Lab Resource Management • {total} Items Tracked
+                  Lab resources • {total} items tracked
                 </p>
               </div>
             </div>
@@ -1197,13 +1198,13 @@ export default function InventoryPage() {
               onClick={() => setScannerOpen(true)}
               style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              📷 Scan
+              <EmojiIcon glyph="📷" /> Scan
             </button>
             <button
               onClick={exportToCSV}
               style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              📥 Export
+              <EmojiIcon glyph="📥" /> Export
             </button>
             <button
               onClick={openCreate}
@@ -1236,7 +1237,7 @@ export default function InventoryPage() {
                 position: 'relative',
               }}
             >
-              <span>{t.icon}</span>
+              <span><EmojiIcon glyph={t.icon} /></span>
               {t.label}
               {t.badge && t.badge > 0 && (
                 <span style={{
@@ -1270,18 +1271,18 @@ export default function InventoryPage() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <span style={{ fontSize: 40 }}>🚨</span>
+                    <span style={{ fontSize: 40 }}><EmojiIcon glyph="🚨" /></span>
                     <div>
                       <div style={{ fontWeight: 800, fontSize: 18, color: '#991b1b' }}>Critical Attention Required</div>
                       <div style={{ display: 'flex', gap: 20, marginTop: 4 }}>
                         {stats.expiredItems.length > 0 && (
-                          <span style={{ color: '#dc2626', fontWeight: 600 }}>☠️ {stats.expiredItems.length} EXPIRED</span>
+                          <span style={{ color: '#dc2626', fontWeight: 600 }}><EmojiIcon glyph="☠️" /> {stats.expiredItems.length} EXPIRED</span>
                         )}
                         {stats.outOfStock.length > 0 && (
-                          <span style={{ color: '#dc2626', fontWeight: 600 }}>❌ {stats.outOfStock.length} out of stock</span>
+                          <span style={{ color: '#dc2626', fontWeight: 600 }}><EmojiIcon glyph="❌" /> {stats.outOfStock.length} out of stock</span>
                         )}
                         {stats.expiringIn7.length > 0 && (
-                          <span style={{ color: '#f59e0b', fontWeight: 600 }}>⏰ {stats.expiringIn7.length} expiring in 7 days</span>
+                          <span style={{ color: '#f59e0b', fontWeight: 600 }}><EmojiIcon glyph="⏰" /> {stats.expiringIn7.length} expiring in 7 days</span>
                         )}
                       </div>
                     </div>
@@ -1300,7 +1301,7 @@ export default function InventoryPage() {
                       boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
                     }}
                   >
-                    🛒 Quick Reorder All
+                    <EmojiIcon glyph="🛒" /> Quick Reorder All
                   </button>
                 </div>
               </div>
@@ -1309,7 +1310,7 @@ export default function InventoryPage() {
             {/* Smart Reorder AI Panel */}
             {smartReorderPredictions.length > 0 && (
               <div style={{
-                background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+                background: '#1e293b',
                 borderRadius: 20,
                 padding: '24px',
                 marginBottom: 24,
@@ -1324,13 +1325,13 @@ export default function InventoryPage() {
                       width: 56,
                       height: 56,
                       borderRadius: 16,
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      background: 'var(--accent)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 28,
                     }}>
-                      🤖
+                      <EmojiIcon glyph="🤖" />
                     </div>
                     <div>
                       <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>AI Smart Reorder Predictions</div>
@@ -1362,10 +1363,10 @@ export default function InventoryPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12, marginTop: 20 }}>
                       {smartReorderPredictions.slice(0, 6).map((pred) => {
                         const urgencyColors = {
-                          critical: { bg: '#dc2626', text: '#fff', badge: '🚨 CRITICAL' },
-                          high: { bg: '#f59e0b', text: '#000', badge: '⚠️ HIGH' },
-                          medium: { bg: '#3b82f6', text: '#fff', badge: '📊 MEDIUM' },
-                          low: { bg: '#6b7280', text: '#fff', badge: '📋 LOW' },
+                          critical: { bg: '#dc2626', text: '#fff', badge: "CRITICAL" },
+                          high: { bg: '#f59e0b', text: '#000', badge: "HIGH" },
+                          medium: { bg: '#3b82f6', text: '#fff', badge: "MEDIUM" },
+                          low: { bg: '#6b7280', text: '#fff', badge: "LOW" },
                         };
                         const urgencyStyle = urgencyColors[pred.urgency];
 
@@ -1430,7 +1431,7 @@ export default function InventoryPage() {
                               alignItems: 'center',
                               gap: 8,
                             }}>
-                              <span style={{ fontSize: 14 }}>🔮</span>
+                              <span style={{ fontSize: 14 }}><EmojiIcon glyph="🔮" /></span>
                               <div>
                                 <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500 }}>{pred.reason}</div>
                                 <div style={{ fontSize: 10, color: '#64748b' }}>
@@ -1500,7 +1501,7 @@ export default function InventoryPage() {
                           gap: 8,
                         }}
                       >
-                        🚨 Order Critical ({smartReorderPredictions.filter(p => p.urgency === 'critical' || p.urgency === 'high').length})
+                        <EmojiIcon glyph="🚨" /> Order Critical ({smartReorderPredictions.filter(p => p.urgency === 'critical' || p.urgency === 'high').length})
                       </button>
                       <button
                         onClick={() => {
@@ -1526,7 +1527,7 @@ export default function InventoryPage() {
                           gap: 8,
                         }}
                       >
-                        📦 Order All Recommendations
+                        <EmojiIcon glyph="📦" /> Order All Recommendations
                       </button>
                       {smartReorderPredictions.length > 6 && (
                         <button
@@ -1571,7 +1572,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 36, fontWeight: 800, color: s.color }}>{s.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
                     </div>
-                    <span style={{ fontSize: 32, opacity: 0.8 }}>{s.icon}</span>
+                    <span style={{ fontSize: 32, opacity: 0.8 }}><EmojiIcon glyph={s.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -1583,7 +1584,7 @@ export default function InventoryPage() {
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    ⏰ Expiration Dashboard
+                    <EmojiIcon glyph="⏰" /> Expiration Dashboard
                   </h3>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
@@ -1627,7 +1628,7 @@ export default function InventoryPage() {
                       onMouseOver={(e) => period.items.length > 0 && (e.currentTarget.style.transform = 'translateX(4px)')}
                       onMouseOut={(e) => (e.currentTarget.style.transform = 'translateX(0)')}
                     >
-                      <span style={{ fontSize: 24 }}>{period.icon}</span>
+                      <span style={{ fontSize: 24 }}><EmojiIcon glyph={period.icon} /></span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: period.color, fontSize: 14 }}>{period.label}</div>
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
@@ -1668,7 +1669,7 @@ export default function InventoryPage() {
                     justifyContent: 'space-between',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 20 }}>💡</span>
+                      <span style={{ fontSize: 20 }}><EmojiIcon glyph="💡" /></span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>
                         {stats.expiredItems.length + stats.expiringIn7.length} items need immediate attention
                       </span>
@@ -1686,7 +1687,7 @@ export default function InventoryPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      🛒 Reorder Replacements
+                      <EmojiIcon glyph="🛒" /> Reorder Replacements
                     </button>
                   </div>
                 )}
@@ -1695,7 +1696,7 @@ export default function InventoryPage() {
               {/* Storage Temperature Distribution */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  🌡️ Storage Distribution
+                  <EmojiIcon glyph="🌡️" /> Storage Distribution
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[
@@ -1709,7 +1710,7 @@ export default function InventoryPage() {
                     const percent = stats.total > 0 ? (count / stats.total) * 100 : 0;
                     return (
                       <div key={s.temp} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 20 }}>{s.icon}</span>
+                        <span style={{ fontSize: 20 }}><EmojiIcon glyph={s.icon} /></span>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                             <span style={{ fontSize: 13, fontWeight: 600 }}>{s.label}</span>
@@ -1728,11 +1729,11 @@ export default function InventoryPage() {
               {/* Hazardous Materials */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  ☣️ Hazardous Materials ({stats.hazardous.length})
+                  <EmojiIcon glyph="☣️" /> Hazardous Materials ({stats.hazardous.length})
                 </h3>
                 {stats.hazardous.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                    <span style={{ fontSize: 32 }}>✅</span>
+                    <span style={{ fontSize: 32 }}><EmojiIcon glyph="✅" /></span>
                     <div style={{ marginTop: 8 }}>No hazardous materials tracked</div>
                   </div>
                 ) : (
@@ -1755,7 +1756,7 @@ export default function InventoryPage() {
                           border: `2px solid ${GHS_HAZARDS[hazard]?.color || '#6b7280'}`,
                         }}
                       >
-                        <span style={{ fontSize: 24 }}>{GHS_HAZARDS[hazard]?.icon || '⚠️'}</span>
+                        <span style={{ fontSize: 24 }}>{GHS_HAZARDS[hazard]?.icon || <><EmojiIcon glyph="⚠️" /></>}</span>
                         <div>
                           <div style={{ fontWeight: 700, color: GHS_HAZARDS[hazard]?.color || '#6b7280' }}>{hazard}</div>
                           <div style={{ fontSize: 11, color: '#64748b' }}>{count} items</div>
@@ -1769,11 +1770,11 @@ export default function InventoryPage() {
               {/* Recent Orders */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  📋 Recent Orders
+                  <EmojiIcon glyph="📋" /> Recent Orders
                 </h3>
                 {orders.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                    <span style={{ fontSize: 32 }}>📦</span>
+                    <span style={{ fontSize: 32 }}><EmojiIcon glyph="📦" /></span>
                     <div style={{ marginTop: 8 }}>No orders yet</div>
                   </div>
                 ) : (
@@ -1810,7 +1811,7 @@ export default function InventoryPage() {
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 {/* Search */}
                 <div style={{ flex: 1, minWidth: 250, position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}>🔍</span>
+                  <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}><EmojiIcon glyph="🔍" /></span>
                   <input
                     style={{
                       width: '100%',
@@ -1833,10 +1834,10 @@ export default function InventoryPage() {
                   style={{ padding: '12px 16px', borderRadius: 12, border: '2px solid #e2e8f0', fontSize: 13, fontWeight: 500, background: stockFilter !== 'all' ? '#eef2ff' : '#fff' }}
                 >
                   <option value="all">All Stock</option>
-                  <option value="low">🔴 Low Stock</option>
-                  <option value="out">❌ Out of Stock</option>
-                  <option value="expiring">⏰ Expiring Soon</option>
-                  <option value="favorites">⭐ Favorites</option>
+                  <option value="low">Low Stock</option>
+                  <option value="out">Out of Stock</option>
+                  <option value="expiring">Expiring Soon</option>
+                  <option value="favorites">Favorites</option>
                 </select>
 
                 <select
@@ -1845,11 +1846,11 @@ export default function InventoryPage() {
                   style={{ padding: '12px 16px', borderRadius: 12, border: '2px solid #e2e8f0', fontSize: 13, fontWeight: 500, background: tempFilter !== 'all' ? '#e0f2fe' : '#fff' }}
                 >
                   <option value="all">All Temps</option>
-                  <option value="-80C">🧊 -80°C</option>
-                  <option value="-20C">❄️ -20°C</option>
-                  <option value="4C">🌡️ 4°C</option>
-                  <option value="RT">📦 RT</option>
-                  <option value="LN2">🥶 LN2</option>
+                  <option value="-80C">-80°C</option>
+                  <option value="-20C">-20°C</option>
+                  <option value="4C">4°C</option>
+                  <option value="RT">RT</option>
+                  <option value="LN2">LN2</option>
                 </select>
 
                 <select
@@ -1858,7 +1859,7 @@ export default function InventoryPage() {
                   style={{ padding: '12px 16px', borderRadius: 12, border: '2px solid #e2e8f0', fontSize: 13, fontWeight: 500, background: hazardFilter !== 'all' ? '#fef3c7' : '#fff' }}
                 >
                   <option value="all">All Hazards</option>
-                  <option value="hazardous">☣️ Hazardous Only</option>
+                  <option value="hazardous">Hazardous Only</option>
                   {Object.keys(GHS_HAZARDS).map(h => (
                     <option key={h} value={h}>{GHS_HAZARDS[h].icon} {h}</option>
                   ))}
@@ -1891,7 +1892,7 @@ export default function InventoryPage() {
                         boxShadow: viewMode === mode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                       }}
                     >
-                      {mode === 'table' ? '📋' : '🔲'}
+                      {mode === 'table' ? <><EmojiIcon glyph="📋" /></> : <><EmojiIcon glyph="🔲" /></>}
                     </button>
                   ))}
                 </div>
@@ -1928,7 +1929,7 @@ export default function InventoryPage() {
                       fontSize: 12,
                     }}
                   >
-                    💾 Save Filter
+                    <EmojiIcon glyph="💾" /> Save Filter
                   </button>
                 )}
               </div>
@@ -1943,7 +1944,7 @@ export default function InventoryPage() {
                   borderTop: '1px solid #e2e8f0',
                   alignItems: 'center',
                 }}>
-                  <span style={{ fontSize: 14 }}>💾</span>
+                  <span style={{ fontSize: 14 }}><EmojiIcon glyph="💾" /></span>
                   <input
                     style={{
                       flex: 1,
@@ -2056,10 +2057,10 @@ export default function InventoryPage() {
                     Clear
                   </button>
                   <button style={{ padding: '6px 12px', borderRadius: 6, background: '#dbeafe', border: 'none', cursor: 'pointer', fontSize: 12 }}>
-                    📤 Export Selected
+                    <EmojiIcon glyph="📤" /> Export Selected
                   </button>
                   <button style={{ padding: '6px 12px', borderRadius: 6, background: '#dcfce7', border: 'none', cursor: 'pointer', fontSize: 12 }}>
-                    🛒 Add to Order
+                    <EmojiIcon glyph="🛒" /> Add to Order
                   </button>
                 </div>
               )}
@@ -2120,7 +2121,7 @@ export default function InventoryPage() {
                             color: '#fff',
                             fontSize: 18,
                           }}>
-                            {item.storage_temp === '-80C' ? '🧊' : item.storage_temp === '-20C' ? '❄️' : item.storage_temp === '4C' ? '🌡️' : '📦'}
+                            {item.storage_temp === '-80C' ? <><EmojiIcon glyph="🧊" /></> : item.storage_temp === '-20C' ? <><EmojiIcon glyph="❄️" /></> : item.storage_temp === '4C' ? <><EmojiIcon glyph="🌡️" /></> : <><EmojiIcon glyph="📦" /></>}
                           </span>
                           <div>
                             <div style={{ fontWeight: 700, fontSize: 15 }}>{item.name}</div>
@@ -2131,7 +2132,7 @@ export default function InventoryPage() {
                           onClick={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}
                         >
-                          {favorites.has(item.id) ? '⭐' : '☆'}
+                          {favorites.has(item.id) ? <><EmojiIcon glyph="⭐" /></> : '☆'}
                         </button>
                       </div>
 
@@ -2167,12 +2168,12 @@ export default function InventoryPage() {
                         )}
                         {isExpiring && (
                           <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fef3c7', color: '#d97706' }}>
-                            ⏰ Expiring
+                            <EmojiIcon glyph="⏰" /> Expiring
                           </span>
                         )}
                         {item.storage_location && (
                           <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 10, background: '#f1f5f9', color: '#64748b' }}>
-                            📍 {item.storage_location}
+                            <EmojiIcon glyph="📍" /> {item.storage_location}
                           </span>
                         )}
                       </div>
@@ -2190,7 +2191,7 @@ export default function InventoryPage() {
         {activeTab === 'storage' && (
           <div>
             <div style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>🗺️ Lab Storage Map</h2>
+              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}><EmojiIcon glyph="🗺️" /> Lab Storage Map</h2>
               <p style={{ margin: 0, color: '#64748b' }}>Visual overview of storage locations and their contents</p>
             </div>
 
@@ -2223,7 +2224,7 @@ export default function InventoryPage() {
                         color: '#fff',
                         fontSize: 24,
                       }}>
-                        {loc.icon}
+                        <EmojiIcon glyph={loc.icon} />
                       </span>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 16 }}>{loc.name}</div>
@@ -2280,14 +2281,14 @@ export default function InventoryPage() {
           <>
             {/* AI Search */}
             <div style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'var(--accent)',
               borderRadius: 20,
               padding: '32px',
               marginBottom: 24,
               color: '#fff',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                <span style={{ fontSize: 48 }}>🤖</span>
+                <span style={{ fontSize: 48 }}><EmojiIcon glyph="🤖" /></span>
                 <div>
                   <div style={{ fontSize: 24, fontWeight: 800 }}>AI Supplier Intelligence</div>
                   <div style={{ fontSize: 14, opacity: 0.9 }}>Describe your needs in natural language and let AI find the perfect suppliers</div>
@@ -2322,13 +2323,13 @@ export default function InventoryPage() {
                     fontSize: 16,
                   }}
                 >
-                  {aiLoading ? '🔍 Searching...' : '✨ Find Suppliers'}
+                  {aiLoading ? <><EmojiIcon glyph="🔍" />{" Searching..."}</> : <><EmojiIcon glyph="✨" />{" Find Suppliers"}</>}
                 </button>
               </div>
 
               {aiRecommendations.length > 0 && (
                 <div style={{ marginTop: 24 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>🎯 Top Recommendations</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}><EmojiIcon glyph="🎯" /> Top Recommendations</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                     {aiRecommendations.slice(0, 6).map((rec) => (
                       <div
@@ -2349,7 +2350,7 @@ export default function InventoryPage() {
                         </div>
                         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>{rec.match_reason}</div>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          {rec.is_preferred && <span style={{ background: '#dcfce7', color: '#166534', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}>⭐ Preferred</span>}
+                          {rec.is_preferred && <span style={{ background: '#dcfce7', color: '#166534', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}><EmojiIcon glyph="⭐" /> Preferred</span>}
                           <span style={{ background: '#dbeafe', color: '#1e40af', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}>{rec.budget_tier}</span>
                         </div>
                       </div>
@@ -2371,7 +2372,7 @@ export default function InventoryPage() {
                   <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.value}</div>
-                      <span style={{ fontSize: 28 }}>{s.icon}</span>
+                      <span style={{ fontSize: 28 }}><EmojiIcon glyph={s.icon} /></span>
                     </div>
                     <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{s.label}</div>
                   </div>
@@ -2454,7 +2455,7 @@ export default function InventoryPage() {
                   <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.value}</div>
-                      <span style={{ fontSize: 28 }}>{s.icon}</span>
+                      <span style={{ fontSize: 28 }}><EmojiIcon glyph={s.icon} /></span>
                     </div>
                     <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{s.label}</div>
                   </div>
@@ -2475,7 +2476,7 @@ export default function InventoryPage() {
             <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
               {orders.length === 0 ? (
                 <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>
-                  <span style={{ fontSize: 64 }}>📋</span>
+                  <span style={{ fontSize: 64 }}><EmojiIcon glyph="📋" /></span>
                   <div style={{ fontSize: 18, fontWeight: 700, marginTop: 16 }}>No purchase orders yet</div>
                   <div style={{ fontSize: 14, marginTop: 4 }}>Create your first order to track procurement</div>
                 </div>
@@ -2516,7 +2517,7 @@ export default function InventoryPage() {
                           )}
                           {(o.status === 'ordered' || o.status === 'shipped') && (
                             <button onClick={() => receiveOrder(o.id)} style={{ padding: '6px 14px', borderRadius: 8, background: '#0ea5e9', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
-                              📦 Receive
+                              <EmojiIcon glyph="📦" /> Receive
                             </button>
                           )}
                         </td>
@@ -2570,7 +2571,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
                     </div>
-                    <span style={{ fontSize: 28, opacity: 0.8 }}>{s.icon}</span>
+                    <span style={{ fontSize: 28, opacity: 0.8 }}><EmojiIcon glyph={s.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -2589,12 +2590,12 @@ export default function InventoryPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  background: 'var(--accent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 24,
-                }}>📊</span>
+                }}><EmojiIcon glyph="📊" /></span>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 800 }}>Consumption Forecast</div>
                   <div style={{ fontSize: 13, opacity: 0.7 }}>AI-predicted usage patterns for next 30 days</div>
@@ -2666,7 +2667,7 @@ export default function InventoryPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
             {/* Category Distribution */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>📊 Inventory by Category</h3>
+              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="📊" /> Inventory by Category</h3>
               {Object.entries(stats.byCategory).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
                 const percent = (count / stats.total) * 100;
                 return (
@@ -2685,7 +2686,7 @@ export default function InventoryPage() {
 
             {/* Supplier Categories */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>🏢 Suppliers by Category</h3>
+              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="🏢" /> Suppliers by Category</h3>
               {supplierStats.by_category?.slice(0, 6).map((c: any) => (
                 <div key={c.name} style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -2701,7 +2702,7 @@ export default function InventoryPage() {
 
             {/* Stock Health */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>💚 Stock Health</h3>
+              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="💚" /> Stock Health</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                 {[
                   { label: 'Healthy', value: stats.healthyStock, color: '#22c55e', icon: '✅' },
@@ -2710,7 +2711,7 @@ export default function InventoryPage() {
                   { label: 'Expiring', value: stats.expiringIn30.length + stats.expiringIn7.length, color: '#f97316', icon: '⏰' },
                 ].map(s => (
                   <div key={s.label} style={{ background: '#f8fafc', borderRadius: 12, padding: '20px', textAlign: 'center' }}>
-                    <span style={{ fontSize: 32 }}>{s.icon}</span>
+                    <span style={{ fontSize: 32 }}><EmojiIcon glyph={s.icon} /></span>
                     <div style={{ fontSize: 36, fontWeight: 800, color: s.color, marginTop: 8 }}>{s.value}</div>
                     <div style={{ fontSize: 12, color: '#64748b' }}>{s.label}</div>
                   </div>
@@ -2720,7 +2721,7 @@ export default function InventoryPage() {
 
             {/* Budget Tiers */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>💰 Budget Tiers</h3>
+              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="💰" /> Budget Tiers</h3>
               {supplierStats.by_budget_tier?.map((t: any) => {
                 const colors: Record<string, string> = { 'Premium': '#8b5cf6', 'Mid-market': '#0ea5e9', 'Economy': '#22c55e' };
                 return (
@@ -2758,7 +2759,7 @@ export default function InventoryPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 28,
-                  }}>📡</span>
+                  }}><EmojiIcon glyph="📡" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>IoT Equipment Monitoring</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -2810,7 +2811,7 @@ export default function InventoryPage() {
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span style={{ fontSize: 24 }}>
-                            {device.type === 'freezer' ? '🧊' : device.type === 'fridge' ? '🌡️' : device.type === 'incubator' ? '🔬' : device.type === 'ln2' ? '🥶' : '🏠'}
+                            {device.type === 'freezer' ? <><EmojiIcon glyph="🧊" /></> : device.type === 'fridge' ? <><EmojiIcon glyph="🌡️" /></> : device.type === 'incubator' ? <><EmojiIcon glyph="🔬" /></> : device.type === 'ln2' ? <><EmojiIcon glyph="🥶" /></> : <><EmojiIcon glyph="🏠" /></>}
                           </span>
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{device.name}</span>
                         </div>
@@ -2825,7 +2826,7 @@ export default function InventoryPage() {
                         color: colors.text,
                         textTransform: 'uppercase',
                       }}>
-                        {device.status === 'normal' ? '✓ Normal' : device.status === 'warning' ? '⚠️ Warning' : device.status === 'critical' ? '🚨 Critical' : '⚫ Offline'}
+                        {device.status === 'normal' ? '✓ Normal' : device.status === 'warning' ? <><EmojiIcon glyph="⚠️" />{" Warning"}</> : device.status === 'critical' ? <><EmojiIcon glyph="🚨" />{" Critical"}</> : <><EmojiIcon glyph="⚫" />{" Offline"}</>}
                       </span>
                     </div>
 
@@ -2889,7 +2890,7 @@ export default function InventoryPage() {
                       <div style={{ background: '#fef2f2', borderRadius: 8, padding: '10px 12px' }}>
                         {device.alerts.map((alert, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#991b1b' }}>
-                            <span>⚠️</span>
+                            <span><EmojiIcon glyph="⚠️" /></span>
                             <span>{alert.message}</span>
                           </div>
                         ))}
@@ -2899,13 +2900,13 @@ export default function InventoryPage() {
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                       <button style={{ flex: 1, padding: '8px', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                        📊 Full History
+                        <EmojiIcon glyph="📊" /> Full History
                       </button>
                       <button style={{ flex: 1, padding: '8px', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                        🔔 Set Alert
+                        <EmojiIcon glyph="🔔" /> Set Alert
                       </button>
                       <button style={{ flex: 1, padding: '8px', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                        ⚙️ Settings
+                        <EmojiIcon glyph="⚙️" /> Settings
                       </button>
                     </div>
                   </div>
@@ -2928,7 +2929,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>♻️</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="♻️" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Waste Tracking & Disposal</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -2968,7 +2969,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{s.label}</div>
                     </div>
-                    <span style={{ fontSize: 28 }}>{s.icon}</span>
+                    <span style={{ fontSize: 28 }}><EmojiIcon glyph={s.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -3008,7 +3009,7 @@ export default function InventoryPage() {
                           background: GHS_HAZARDS[w.hazardClass]?.color ? `${GHS_HAZARDS[w.hazardClass].color}20` : '#f1f5f9',
                           color: GHS_HAZARDS[w.hazardClass]?.color || '#64748b',
                         }}>
-                          {GHS_HAZARDS[w.hazardClass]?.icon || '⚠️'} {w.hazardClass}
+                          {GHS_HAZARDS[w.hazardClass]?.icon || <><EmojiIcon glyph="⚠️" /></>} {w.hazardClass}
                         </span>
                       </td>
                       <td style={{ padding: '14px 20px', fontWeight: 600 }}>{w.quantity} {w.unit}</td>
@@ -3056,7 +3057,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>🏷️</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="🏷️" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Label Printing Center</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -3093,7 +3094,7 @@ export default function InventoryPage() {
                         textAlign: 'left',
                       }}
                     >
-                      <span style={{ fontSize: 24 }}>{t.icon}</span>
+                      <span style={{ fontSize: 24 }}><EmojiIcon glyph={t.icon} /></span>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 14 }}>{t.name}</div>
                         <div style={{ fontSize: 11, color: '#64748b' }}>{t.desc}</div>
@@ -3108,19 +3109,19 @@ export default function InventoryPage() {
                     onClick={() => setLabelItems(stats.lowStock)}
                     style={{ padding: '12px', borderRadius: 8, background: '#fef3c7', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
                   >
-                    🔴 Print Low Stock Labels ({stats.lowStock.length})
+                    <EmojiIcon glyph="🔴" /> Print Low Stock Labels ({stats.lowStock.length})
                   </button>
                   <button
                     onClick={() => setLabelItems(stats.expiringIn30)}
                     style={{ padding: '12px', borderRadius: 8, background: '#fee2e2', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
                   >
-                    ⏰ Print Expiring Labels ({stats.expiringIn30.length})
+                    <EmojiIcon glyph="⏰" /> Print Expiring Labels ({stats.expiringIn30.length})
                   </button>
                   <button
                     onClick={() => setLabelItems(stats.hazardous)}
                     style={{ padding: '12px', borderRadius: 8, background: '#fef3c7', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
                   >
-                    ☣️ Print Hazard Labels ({stats.hazardous.length})
+                    <EmojiIcon glyph="☣️" /> Print Hazard Labels ({stats.hazardous.length})
                   </button>
                 </div>
               </div>
@@ -3146,7 +3147,7 @@ export default function InventoryPage() {
                         }}
                         style={{ padding: '8px 20px', borderRadius: 8, background: '#7c3aed', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
                       >
-                        🖨️ Print Labels
+                        <EmojiIcon glyph="🖨️" /> Print Labels
                       </button>
                     </div>
                   )}
@@ -3154,7 +3155,7 @@ export default function InventoryPage() {
 
                 {labelItems.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
-                    <span style={{ fontSize: 64 }}>🏷️</span>
+                    <span style={{ fontSize: 64 }}><EmojiIcon glyph="🏷️" /></span>
                     <div style={{ fontSize: 16, fontWeight: 600, marginTop: 16 }}>No items selected</div>
                     <div style={{ fontSize: 13, marginTop: 4 }}>Use quick print buttons or select items from inventory</div>
                   </div>
@@ -3211,7 +3212,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>📜</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="📜" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Safety Data Sheet Library</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -3252,7 +3253,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: stat.color }}>{stat.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
                     </div>
-                    <span style={{ fontSize: 28 }}>{stat.icon}</span>
+                    <span style={{ fontSize: 28 }}><EmojiIcon glyph={stat.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -3276,10 +3277,10 @@ export default function InventoryPage() {
               />
               <select style={{ padding: '14px 18px', borderRadius: 12, border: '2px solid #e2e8f0', background: '#fff', fontSize: 14 }}>
                 <option value="">All Hazard Classes</option>
-                <option value="Flammable">🔥 Flammable</option>
-                <option value="Corrosive">⚗️ Corrosive</option>
-                <option value="Toxic">☠️ Toxic</option>
-                <option value="Oxidizer">⭕ Oxidizer</option>
+                <option value="Flammable">Flammable</option>
+                <option value="Corrosive">Corrosive</option>
+                <option value="Toxic">Toxic</option>
+                <option value="Oxidizer">Oxidizer</option>
               </select>
             </div>
 
@@ -3324,9 +3325,9 @@ export default function InventoryPage() {
                                    sds.hazardClass === 'Corrosive' ? '#ea580c' :
                                    sds.hazardClass === 'Toxic' ? '#7c3aed' : '#16a34a',
                           }}>
-                            {sds.hazardClass === 'Flammable' ? '🔥' :
-                             sds.hazardClass === 'Corrosive' ? '⚗️' :
-                             sds.hazardClass === 'Toxic' ? '☠️' : '⚠️'} {sds.hazardClass}
+                            {sds.hazardClass === 'Flammable' ? <><EmojiIcon glyph="🔥" /></> :
+                             sds.hazardClass === 'Corrosive' ? <><EmojiIcon glyph="⚗️" /></> :
+                             sds.hazardClass === 'Toxic' ? <><EmojiIcon glyph="☠️" /></> : <><EmojiIcon glyph="⚠️" /></>} {sds.hazardClass}
                           </span>
                         </td>
                         <td style={{ padding: '16px 20px' }}>
@@ -3345,13 +3346,13 @@ export default function InventoryPage() {
                         <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
-                              👁️ View
+                              <EmojiIcon glyph="👁️" /> View
                             </button>
                             <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
-                              ⬇️ Download
+                              <EmojiIcon glyph="⬇️" /> Download
                             </button>
                             <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
-                              🔗 Link
+                              <EmojiIcon glyph="🔗" /> Link
                             </button>
                           </div>
                         </td>
@@ -3376,7 +3377,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>📄</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="📄" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Certificate of Analysis (COA)</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -3417,7 +3418,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: stat.color }}>{stat.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
                     </div>
-                    <span style={{ fontSize: 28 }}>{stat.icon}</span>
+                    <span style={{ fontSize: 28 }}><EmojiIcon glyph={stat.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -3450,7 +3451,7 @@ export default function InventoryPage() {
                                coa.status === 'expiring' ? '#92400e' : '#dc2626',
                       }}>
                         {coa.status === 'valid' ? '✓ VALID' :
-                         coa.status === 'expiring' ? '⚠️ EXPIRING SOON' : '✗ EXPIRED'}
+                         coa.status === 'expiring' ? <><EmojiIcon glyph="⚠️" />{" EXPIRING SOON"}</> : '✗ EXPIRED'}
                       </span>
                     </div>
                     <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#64748b', background: '#f1f5f9', padding: '4px 8px', borderRadius: 4 }}>
@@ -3476,14 +3477,14 @@ export default function InventoryPage() {
 
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                      👁️ View COA
+                      <EmojiIcon glyph="👁️" /> View COA
                     </button>
                     <button style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                      ⬇️ Download
+                      <EmojiIcon glyph="⬇️" /> Download
                     </button>
                     {coa.status !== 'valid' && (
                       <button style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#0891b2', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                        🔄 Request New
+                        <EmojiIcon glyph="🔄" /> Request New
                       </button>
                     )}
                   </div>
@@ -3500,7 +3501,7 @@ export default function InventoryPage() {
               border: '2px solid #fecaca',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                <span style={{ fontSize: 32 }}>🚨</span>
+                <span style={{ fontSize: 32 }}><EmojiIcon glyph="🚨" /></span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#991b1b' }}>Lot/Batch Recall System</h3>
                   <p style={{ margin: '4px 0 0', color: '#dc2626', fontSize: 13 }}>Track which experiments and samples used specific lots for FDA recall compliance</p>
@@ -3529,7 +3530,7 @@ export default function InventoryPage() {
                   fontSize: 14,
                   cursor: 'pointer',
                 }}>
-                  🔍 Trace Lot Usage
+                  <EmojiIcon glyph="🔍" /> Trace Lot Usage
                 </button>
               </div>
             </div>
@@ -3548,7 +3549,7 @@ export default function InventoryPage() {
               color: '#fff',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 48 }}>🧮</span>
+                <span style={{ fontSize: 48 }}><EmojiIcon glyph="🧮" /></span>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Protocol & Experiment Calculator</h2>
                   <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -3562,7 +3563,7 @@ export default function InventoryPage() {
               {/* Protocol Material Calculator */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>📋</span> Protocol Material Calculator
+                  <span><EmojiIcon glyph="📋" /></span> Protocol Material Calculator
                 </h3>
 
                 <div style={{ marginBottom: 16 }}>
@@ -3640,7 +3641,7 @@ export default function InventoryPage() {
                           background: mat.sufficient ? '#dcfce7' : '#fee2e2',
                           color: mat.sufficient ? '#166534' : '#dc2626',
                         }}>
-                          {mat.sufficient ? '✓ OK' : '⚠️ LOW'}
+                          {mat.sufficient ? '✓ OK' : <><EmojiIcon glyph="⚠️" />{" LOW"}</>}
                         </span>
                       </div>
                     ))}
@@ -3663,7 +3664,7 @@ export default function InventoryPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      🛒 Auto-Reorder Insufficient Items
+                      <EmojiIcon glyph="🛒" /> Auto-Reorder Insufficient Items
                     </button>
                   </div>
                 )}
@@ -3672,7 +3673,7 @@ export default function InventoryPage() {
               {/* Experiment Cost Calculator */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>💰</span> Experiment Cost Calculator
+                  <span><EmojiIcon glyph="💰" /></span> Experiment Cost Calculator
                 </h3>
 
                 <div style={{ marginBottom: 16 }}>
@@ -3713,7 +3714,7 @@ export default function InventoryPage() {
                     marginBottom: 20,
                   }}
                 >
-                  🔍 Calculate Cost from Protocol
+                  <EmojiIcon glyph="🔍" /> Calculate Cost from Protocol
                 </button>
 
                 {experimentCost && (
@@ -3759,7 +3760,7 @@ export default function InventoryPage() {
             {/* AI Substitution Finder */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: 24 }}>
               <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🤖</span> AI Substitution Finder
+                <span><EmojiIcon glyph="🤖" /></span> AI Substitution Finder
               </h3>
               <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
                 Find alternative products when items are unavailable or too expensive. AI analyzes specifications and suggests compatible substitutes.
@@ -3799,7 +3800,7 @@ export default function InventoryPage() {
                     opacity: !substitutionItem || substitutionLoading ? 0.5 : 1,
                   }}
                 >
-                  {substitutionLoading ? '⏳ Searching...' : '🔍 Find Alternatives'}
+                  {substitutionLoading ? <><EmojiIcon glyph="⏳" />{" Searching..."}</> : <><EmojiIcon glyph="🔍" />{" Find Alternatives"}</>}
                 </button>
               </div>
 
@@ -3872,7 +3873,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>🤝</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="🤝" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Material Sharing Hub</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -3912,7 +3913,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: stat.color }}>{stat.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
                     </div>
-                    <span style={{ fontSize: 28 }}>{stat.icon}</span>
+                    <span style={{ fontSize: 28 }}><EmojiIcon glyph={stat.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -3920,7 +3921,7 @@ export default function InventoryPage() {
 
             {/* Available Materials from Other Labs */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 24 }}>
-              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>📥 Available from Other Labs</h3>
+              <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="📥" /> Available from Other Labs</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
                 {sharedMaterials.filter(s => s.status === 'available' && s.fromLab !== 'Your Lab').map((item) => (
                   <div key={item.id} style={{
@@ -3945,7 +3946,7 @@ export default function InventoryPage() {
                       fontWeight: 700,
                       cursor: 'pointer',
                     }}>
-                      📨 Request This Item
+                      <EmojiIcon glyph="📨" /> Request This Item
                     </button>
                   </div>
                 ))}
@@ -3956,10 +3957,10 @@ export default function InventoryPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               {/* Incoming Requests */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>📬 Incoming Requests</h3>
+                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="📬" /> Incoming Requests</h3>
                 {sharedMaterials.filter(s => s.status === 'requested' && s.fromLab === 'Your Lab').length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-                    <span style={{ fontSize: 48, display: 'block', marginBottom: 12 }}>📭</span>
+                    <span style={{ fontSize: 48, display: 'block', marginBottom: 12 }}><EmojiIcon glyph="📭" /></span>
                     No pending requests
                   </div>
                 ) : (
@@ -3990,7 +3991,7 @@ export default function InventoryPage() {
 
               {/* Your Shared Items */}
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>📤 Your Shared Items</h3>
+                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}><EmojiIcon glyph="📤" /> Your Shared Items</h3>
                 {sharedMaterials.filter(s => s.fromLab === 'Your Lab').map((item) => (
                   <div key={item.id} style={{
                     padding: '16px',
@@ -4035,7 +4036,7 @@ export default function InventoryPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>🔄</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="🔄" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Recurring Order Templates</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -4075,7 +4076,7 @@ export default function InventoryPage() {
                       <div style={{ fontSize: 32, fontWeight: 800, color: stat.color }}>{stat.value}</div>
                       <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
                     </div>
-                    <span style={{ fontSize: 28 }}>{stat.icon}</span>
+                    <span style={{ fontSize: 28 }}><EmojiIcon glyph={stat.icon} /></span>
                   </div>
                 </div>
               ))}
@@ -4197,7 +4198,7 @@ export default function InventoryPage() {
               color: '#fff',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 48 }}>📋</span>
+                <span style={{ fontSize: 48 }}><EmojiIcon glyph="📋" /></span>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Regulatory Compliance Center</h2>
                   <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: 14 }}>
@@ -4237,7 +4238,7 @@ export default function InventoryPage() {
                         background: c.status === 'compliant' ? '#dcfce7' : '#fef3c7',
                         color: c.status === 'compliant' ? '#166534' : '#92400e',
                       }}>
-                        {c.status === 'compliant' ? '✓ COMPLIANT' : '⚠️ REVIEW NEEDED'}
+                        {c.status === 'compliant' ? '✓ COMPLIANT' : <><EmojiIcon glyph="⚠️" />{" REVIEW NEEDED"}</>}
                       </span>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -4262,7 +4263,7 @@ export default function InventoryPage() {
             {/* Compliance Checklist */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>📝 Compliance Checklist</h3>
+                <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}><EmojiIcon glyph="📝" /> Compliance Checklist</h3>
                 {[
                   { item: 'All inventory items have lot numbers', status: true },
                   { item: 'Expiration dates tracked for perishables', status: true },
@@ -4274,7 +4275,7 @@ export default function InventoryPage() {
                   { item: 'Equipment calibration up to date', status: true },
                 ].map((c, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontSize: 18 }}>{c.status ? '✅' : '⚠️'}</span>
+                    <span style={{ fontSize: 18 }}>{c.status ? <><EmojiIcon glyph="✅" /></> : <><EmojiIcon glyph="⚠️" /></>}</span>
                     <span style={{ flex: 1, fontSize: 14, color: c.status ? '#1e293b' : '#f59e0b' }}>{c.item}</span>
                     {!c.status && (
                       <button style={{ padding: '4px 12px', borderRadius: 6, background: '#fef3c7', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#92400e' }}>
@@ -4286,7 +4287,7 @@ export default function InventoryPage() {
               </div>
 
               <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>📄 Required Documents</h3>
+                <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}><EmojiIcon glyph="📄" /> Required Documents</h3>
                 {[
                   { doc: 'Chemical Inventory List', status: 'current', updated: '2024-04-01' },
                   { doc: 'Safety Data Sheets (SDS)', status: 'incomplete', updated: '2024-03-15' },
@@ -4296,7 +4297,7 @@ export default function InventoryPage() {
                   { doc: 'Standard Operating Procedures', status: 'current', updated: '2024-03-10' },
                 ].map((d, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontSize: 18 }}>📄</span>
+                    <span style={{ fontSize: 18 }}><EmojiIcon glyph="📄" /></span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{d.doc}</div>
                       <div style={{ fontSize: 11, color: '#64748b' }}>Updated: {d.updated}</div>
@@ -4328,10 +4329,10 @@ export default function InventoryPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button style={{ padding: '10px 16px', borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    📥 Export Audit Log
+                    <EmojiIcon glyph="📥" /> Export Audit Log
                   </button>
                   <button style={{ padding: '10px 16px', borderRadius: 10, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🔍 Advanced Search
+                    <EmojiIcon glyph="🔍" /> Advanced Search
                   </button>
                 </div>
               </div>
@@ -4345,7 +4346,7 @@ export default function InventoryPage() {
                   { label: 'Users Active', value: new Set(auditEntries.map(e => e.user)).size, icon: '👥', color: '#3b82f6' },
                 ].map((stat, i) => (
                   <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 28 }}>{stat.icon}</div>
+                    <div style={{ fontSize: 28 }}><EmojiIcon glyph={stat.icon} /></div>
                     <div style={{ fontSize: 24, fontWeight: 800, color: stat.color, marginTop: 4 }}>{stat.value}</div>
                     <div style={{ fontSize: 12, color: '#64748b' }}>{stat.label}</div>
                   </div>
@@ -4439,7 +4440,7 @@ export default function InventoryPage() {
 
               {/* Electronic Signature Notice */}
               <div style={{ marginTop: 20, padding: '16px', background: '#f0fdf4', borderRadius: 12, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 24 }}>🔐</span>
+                <span style={{ fontSize: 24 }}><EmojiIcon glyph="🔐" /></span>
                 <div>
                   <div style={{ fontWeight: 700, color: '#166534', fontSize: 14 }}>21 CFR Part 11 Compliant Electronic Signatures</div>
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: '#15803d', lineHeight: 1.5 }}>
@@ -4497,7 +4498,7 @@ export default function InventoryPage() {
                   animation: `slideIn 0.2s ease-out ${i * 0.05}s both`,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{item.icon}</span>
+                <span style={{ fontSize: 20 }}><EmojiIcon glyph={item.icon} /></span>
                 <span style={{ fontWeight: 600, fontSize: 14, color: item.color }}>{item.label}</span>
               </button>
             ))}
@@ -4511,7 +4512,7 @@ export default function InventoryPage() {
             width: 60,
             height: 60,
             borderRadius: '50%',
-            background: mobileActionsOpen ? '#ef4444' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            background: mobileActionsOpen ? '#ef4444' : 'var(--accent)',
             border: 'none',
             cursor: 'pointer',
             boxShadow: '0 6px 24px rgba(99,102,241,0.4)',
@@ -4524,7 +4525,7 @@ export default function InventoryPage() {
             transform: mobileActionsOpen ? 'rotate(45deg)' : 'rotate(0)',
           }}
         >
-          {mobileActionsOpen ? '✕' : '⚡'}
+          {mobileActionsOpen ? '✕' : <><EmojiIcon glyph="⚡" /></>}
         </button>
       </div>
 
@@ -4560,7 +4561,7 @@ export default function InventoryPage() {
               {customCategory ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input className="form-input" {...register('category', { required: true })} placeholder="Enter custom category..." style={{ flex: 1 }} />
-                  <button type="button" onClick={() => setCustomCategory(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>📋 Back to list</button>
+                  <button type="button" onClick={() => setCustomCategory(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📋" /> Back to list</button>
                 </div>
               ) : (
                 <select
@@ -4574,9 +4575,9 @@ export default function InventoryPage() {
                   }}
                 >
                   {INVENTORY_CATEGORIES.map(c => (
-                    <option key={c.value} value={c.value}>{c.icon} {c.label}</option>
+                    <option key={c.value} value={c.value}><EmojiIcon glyph={c.icon} /> {c.label}</option>
                   ))}
-                  <option value="__custom__">✏️ Add manually...</option>
+                  <option value="__custom__">Add manually...</option>
                 </select>
               )}
             </div>
@@ -4587,7 +4588,7 @@ export default function InventoryPage() {
               <select className="form-select" {...register('supplier_id')}>
                 <option value="">-- Select Supplier --</option>
                 {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.company} {s.is_preferred ? '⭐' : ''}</option>
+                  <option key={s.id} value={s.id}>{s.company} {s.is_preferred ? <><EmojiIcon glyph="⭐" /></> : ''}</option>
                 ))}
               </select>
             </div>
@@ -4609,7 +4610,7 @@ export default function InventoryPage() {
               <label className="form-label">Barcode</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input className="form-input" {...register('barcode')} style={{ flex: 1 }} />
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setScannerOpen(true)}>📷</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setScannerOpen(true)}><EmojiIcon glyph="📷" /></button>
               </div>
             </div>
             <div className="form-group">
@@ -4627,7 +4628,7 @@ export default function InventoryPage() {
               {customUnit ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input className="form-input" {...register('unit')} placeholder="Enter custom unit..." style={{ flex: 1 }} />
-                  <button type="button" onClick={() => setCustomUnit(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>📋 Back</button>
+                  <button type="button" onClick={() => setCustomUnit(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📋" /> Back</button>
                 </div>
               ) : (
                 <select
@@ -4663,7 +4664,7 @@ export default function InventoryPage() {
                       ))
                     );
                   })()}
-                  <option value="__custom__">✏️ Add manually...</option>
+                  <option value="__custom__">Add manually...</option>
                 </select>
               )}
             </div>
@@ -4682,7 +4683,7 @@ export default function InventoryPage() {
               {customTemp ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input className="form-input" {...register('storage_temp')} placeholder="e.g., -30°C, 37°C" style={{ flex: 1 }} />
-                  <button type="button" onClick={() => setCustomTemp(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>📋 Back</button>
+                  <button type="button" onClick={() => setCustomTemp(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📋" /> Back</button>
                 </div>
               ) : (
                 <select
@@ -4696,12 +4697,12 @@ export default function InventoryPage() {
                   }}
                 >
                   <option value="">-- Select Temperature --</option>
-                  <option value="RT">📦 Room Temperature (15-25°C)</option>
-                  <option value="4C">🌡️ Refrigerated (2-8°C)</option>
-                  <option value="-20C">❄️ Frozen (-20°C)</option>
-                  <option value="-80C">🧊 Ultra-Low (-80°C)</option>
-                  <option value="LN2">🥶 Liquid Nitrogen (-196°C)</option>
-                  <option value="__custom__">✏️ Add manually...</option>
+                  <option value="RT">Room Temperature (15-25°C)</option>
+                  <option value="4C">Refrigerated (2-8°C)</option>
+                  <option value="-20C">Frozen (-20°C)</option>
+                  <option value="-80C">Ultra-Low (-80°C)</option>
+                  <option value="LN2">Liquid Nitrogen (-196°C)</option>
+                  <option value="__custom__">Add manually...</option>
                 </select>
               )}
             </div>
@@ -4710,7 +4711,7 @@ export default function InventoryPage() {
               {customHazard ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input className="form-input" {...register('hazard_class')} placeholder="Enter hazard class..." style={{ flex: 1 }} />
-                  <button type="button" onClick={() => setCustomHazard(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>📋 Back</button>
+                  <button type="button" onClick={() => setCustomHazard(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📋" /> Back</button>
                 </div>
               ) : (
                 <select
@@ -4723,11 +4724,11 @@ export default function InventoryPage() {
                     }
                   }}
                 >
-                  <option value="">⚪ None / Not Hazardous</option>
+                  <option value="">None / Not Hazardous</option>
                   {Object.entries(GHS_HAZARDS).map(([key, val]) => (
-                    <option key={key} value={key}>{val.icon} {key} - {val.description}</option>
+                    <option key={key} value={key}><EmojiIcon glyph={val.icon} /> {key} - {val.description}</option>
                   ))}
-                  <option value="__custom__">✏️ Add manually...</option>
+                  <option value="__custom__">Add manually...</option>
                 </select>
               )}
             </div>
@@ -4738,7 +4739,7 @@ export default function InventoryPage() {
               {customLocation ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input className="form-input" {...register('storage_location')} placeholder="e.g., Room 201, Cabinet B3" style={{ flex: 1 }} />
-                  <button type="button" onClick={() => setCustomLocation(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>📋 Back</button>
+                  <button type="button" onClick={() => setCustomLocation(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📋" /> Back</button>
                 </div>
               ) : (
                 <select
@@ -4753,33 +4754,33 @@ export default function InventoryPage() {
                 >
                   <option value="">-- Select Location --</option>
                   <optgroup label="Ultra-Low Temperature (-80°C)">
-                    <option value="freezer-80-1">🧊 -80°C Freezer 1</option>
-                    <option value="freezer-80-2">🧊 -80°C Freezer 2</option>
+                    <option value="freezer-80-1">-80°C Freezer 1</option>
+                    <option value="freezer-80-2">-80°C Freezer 2</option>
                   </optgroup>
                   <optgroup label="Frozen (-20°C)">
-                    <option value="freezer-20-1">❄️ -20°C Freezer 1</option>
-                    <option value="freezer-20-2">❄️ -20°C Freezer 2</option>
+                    <option value="freezer-20-1">-20°C Freezer 1</option>
+                    <option value="freezer-20-2">-20°C Freezer 2</option>
                   </optgroup>
                   <optgroup label="Refrigerated (4°C)">
-                    <option value="fridge-1">🌡️ Refrigerator 1</option>
-                    <option value="fridge-2">🌡️ Refrigerator 2</option>
+                    <option value="fridge-1">Refrigerator 1</option>
+                    <option value="fridge-2">Refrigerator 2</option>
                   </optgroup>
                   <optgroup label="Room Temperature">
-                    <option value="shelf-rt-1">📦 RT Shelf A</option>
-                    <option value="shelf-rt-2">📦 RT Shelf B</option>
-                    <option value="chemical-cabinet">🧪 Chemical Cabinet</option>
-                    <option value="flammable-cabinet">🔥 Flammable Cabinet</option>
+                    <option value="shelf-rt-1">RT Shelf A</option>
+                    <option value="shelf-rt-2">RT Shelf B</option>
+                    <option value="chemical-cabinet">Chemical Cabinet</option>
+                    <option value="flammable-cabinet">Flammable Cabinet</option>
                   </optgroup>
                   <optgroup label="Cryogenic">
-                    <option value="ln2-tank">🥶 LN2 Tank</option>
+                    <option value="ln2-tank">LN2 Tank</option>
                   </optgroup>
                   <optgroup label="Other">
-                    <option value="bench-1">🔬 Lab Bench 1</option>
-                    <option value="bench-2">🔬 Lab Bench 2</option>
-                    <option value="desiccator">💨 Desiccator</option>
-                    <option value="dark-storage">🌑 Dark Storage</option>
+                    <option value="bench-1">Lab Bench 1</option>
+                    <option value="bench-2">Lab Bench 2</option>
+                    <option value="desiccator">Desiccator</option>
+                    <option value="dark-storage">Dark Storage</option>
                   </optgroup>
-                  <option value="__custom__">✏️ Add manually...</option>
+                  <option value="__custom__">Add manually...</option>
                 </select>
               )}
             </div>
@@ -4843,10 +4844,10 @@ export default function InventoryPage() {
       </Modal>
 
       {/* Quick Reorder Modal */}
-      <Modal isOpen={quickReorderOpen} onClose={() => setQuickReorderOpen(false)} title="🛒 Quick Reorder" size="lg">
+      <Modal isOpen={quickReorderOpen} onClose={() => setQuickReorderOpen(false)} title="Quick Reorder" size="lg">
         <div style={{ padding: '20px' }}>
           <div style={{ background: '#fef3c7', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
-            <div style={{ fontWeight: 700, color: '#92400e' }}>⚠️ {orderItems.length} items need reordering</div>
+            <div style={{ fontWeight: 700, color: '#92400e' }}><EmojiIcon glyph="⚠️" /> {orderItems.length} items need reordering</div>
           </div>
 
           <div className="form-group" style={{ marginBottom: 20 }}>
@@ -4858,7 +4859,7 @@ export default function InventoryPage() {
             >
               <option value="">-- Choose supplier --</option>
               {suppliers.filter(s => s.is_preferred).map(s => (
-                <option key={s.id} value={s.id}>⭐ {s.company} (Preferred)</option>
+                <option key={s.id} value={s.id}> {s.company} (Preferred)</option>
               ))}
               {suppliers.filter(s => !s.is_preferred).map(s => (
                 <option key={s.id} value={s.id}>{s.company}</option>
@@ -4907,7 +4908,7 @@ export default function InventoryPage() {
               onClick={createPurchaseOrder}
               disabled={saving || !selectedSupplierForOrder || orderItems.length === 0}
             >
-              {saving ? 'Creating...' : '🛒 Create Order'}
+              {saving ? 'Creating...' : <><EmojiIcon glyph="🛒" />{" Create Order"}</>}
             </button>
           </div>
         </div>
@@ -4925,7 +4926,7 @@ export default function InventoryPage() {
             >
               <option value="">-- Choose supplier --</option>
               {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.company} {s.is_preferred ? '⭐' : ''}</option>
+                <option key={s.id} value={s.id}>{s.company} {s.is_preferred ? <><EmojiIcon glyph="⭐" /></> : ''}</option>
               ))}
             </select>
           </div>
@@ -5010,7 +5011,7 @@ export default function InventoryPage() {
           <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
               {viewingSupplier.is_preferred && (
-                <span style={{ background: '#22c55e', color: '#fff', padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}>⭐ Preferred Vendor</span>
+                <span style={{ background: '#22c55e', color: '#fff', padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}><EmojiIcon glyph="⭐" /> Preferred Vendor</span>
               )}
               <span style={{ background: '#f1f5f9', padding: '6px 16px', borderRadius: 20, fontSize: 13 }}>{viewingSupplier.budget_tier}</span>
               <span style={{ background: '#f1f5f9', padding: '6px 16px', borderRadius: 20, fontSize: 13 }}>{viewingSupplier.procurement_priority} Priority</span>
@@ -5083,7 +5084,7 @@ export default function InventoryPage() {
                   fontSize: 14,
                 }}
               >
-                🔗 Visit Website
+                <EmojiIcon glyph="🔗" /> Visit Website
               </a>
             )}
           </div>

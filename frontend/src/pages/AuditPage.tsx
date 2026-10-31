@@ -5,6 +5,7 @@ import { Table, Pagination } from '../components/Table';
 import type { Column } from '../components/Table';
 import { formatDateTime } from '../lib/utils';
 import { useState } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -140,14 +141,14 @@ export default function AuditPage() {
         <div style={{ marginTop: 28, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>🔗 Tamper-Evident Chain Verification</h3>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}><EmojiIcon glyph="🔗" /> Tamper-Evident Chain Verification</h3>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                 Each audit entry is SHA-256 hashed and linked to the previous entry. Verify integrity of the full chain.
               </p>
             </div>
             <button onClick={verifyChain} disabled={verifying}
               style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, opacity: verifying ? 0.6 : 1 }}>
-              {verifying ? '⟳ Verifying…' : '🔍 Verify Chain'}
+              {verifying ? '⟳ Verifying…' : <><EmojiIcon glyph="🔍" />{" Verify Chain"}</>}
             </button>
           </div>
 
@@ -158,7 +159,7 @@ export default function AuditPage() {
               border: `1px solid ${chainResult.valid ? '#22c55e44' : '#ef444444'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 20 }}>{chainResult.valid ? '✅' : '⚠️'}</span>
+                <span style={{ fontSize: 20 }}>{chainResult.valid ? <><EmojiIcon glyph="✅" /></> : <><EmojiIcon glyph="⚠️" /></>}</span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: chainResult.valid ? '#22c55e' : '#ef4444' }}>
                   {chainResult.valid ? 'Chain Intact' : 'Tampering Detected'}
                 </span>

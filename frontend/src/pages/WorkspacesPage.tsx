@@ -9,6 +9,7 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 const STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'archived'];
 
@@ -67,7 +68,7 @@ export default function WorkspacesPage() {
     { key: 'milestone', header: 'Milestone', render: (r) => r.milestone ? <span style={{ color: 'var(--text-soft)', fontSize: 12 }}>{r.milestone}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span> },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.active;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.status.replace('_', ' ')}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.status.replace('_', ' ')}</span>;
     }},
   ];
 
@@ -138,16 +139,16 @@ export default function WorkspacesPage() {
                       <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{ws.name}</div>
                       <div style={{ color: fieldColor, fontSize: 12, fontWeight: 600 }}>{ws.field}</div>
                     </div>
-                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{m.icon} {ws.status.replace('_', ' ')}</span>
+                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}><EmojiIcon glyph={m.icon} /> {ws.status.replace('_', ' ')}</span>
                   </div>
                   {ws.milestone && (
                     <div style={{ background: 'var(--surface2)', borderRadius: 6, padding: '6px 10px', marginBottom: 8, fontSize: 12, color: 'var(--text-soft)' }}>
-                      🎯 <strong>Milestone:</strong> {ws.milestone}
+                      <EmojiIcon glyph="🎯" /> <strong>Milestone:</strong> {ws.milestone}
                     </div>
                   )}
                   {ws.description && <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8, lineHeight: 1.5 }}>{ws.description.slice(0, 80)}{ws.description.length > 80 ? '…' : ''}</div>}
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: canEdit ? 10 : 0 }}>
-                    👤 {ws.lead_name || 'No lead assigned'}
+                    <EmojiIcon glyph="👤" /> {ws.lead_name || 'No lead assigned'}
                   </div>
                   {canEdit && (
                     <div style={{ display: 'flex', gap: 6 }}>

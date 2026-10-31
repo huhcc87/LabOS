@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { procurementApi, reagentCartApi } from '../lib/api';
 import { API_BASE_URL } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 type Tab =
   | 'approvals' | 'budgets' | 'hazards' | 'group-buy'
@@ -28,7 +29,7 @@ export default function ProcurementHubPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>🏛 Procurement Hub</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}><EmojiIcon glyph="🏛" /> Procurement Hub</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
           Approvals, budgets, hazards, RFQs, group-buy, lab-to-lab borrow, and barcode receive — all linked to the Reagent Cart.
         </p>
@@ -47,7 +48,7 @@ export default function ProcurementHubPage() {
               color: tab === t.id ? 'var(--text)' : 'var(--text-muted)',
               boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             }}>
-            {t.icon} {t.label}
+            <EmojiIcon glyph={t.icon} /> {t.label}
           </button>
         ))}
       </div>
@@ -358,7 +359,7 @@ function GroupBuyTab() {
           background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.25)',
           display: 'flex', alignItems: 'center', gap: 14,
         }}>
-          <span style={{ fontSize: 28 }}>🤝</span>
+          <span style={{ fontSize: 28 }}><EmojiIcon glyph="🤝" /></span>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700 }}>{o.name}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -413,7 +414,7 @@ function RFQTab() {
           </div>
           <button onClick={() => requestQuote(i.id)}
             style={{ padding: '6px 14px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>
-            📄 Request quote
+            <EmojiIcon glyph="📄" /> Request quote
           </button>
         </div>
       ))}
@@ -446,7 +447,7 @@ function BorrowTab() {
         </div>
       ) : requests.map(r => (
         <div key={r.id} style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center' }}>
-          <span style={{ fontSize: 22 }}>🔁</span>
+          <span style={{ fontSize: 22 }}><EmojiIcon glyph="🔁" /></span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600 }}>
               {r.requested_quantity || 'Quantity TBD'} of inventory #{r.inventory_item_id ?? '?'}
@@ -488,7 +489,7 @@ function ReceiveTab() {
 
   return (
     <div className="card">
-      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>📦 Receive on arrival</h3>
+      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}><EmojiIcon glyph="📦" /> Receive on arrival</h3>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px' }}>
         Scan the catalog # / barcode on the delivery box. LabOS marks the matching ordered item as received and updates inventory.
       </p>
@@ -561,7 +562,7 @@ function OCRTab() {
 
   return (
     <div className="card">
-      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>📸 OCR invoice import</h3>
+      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}><EmojiIcon glyph="📸" /> OCR invoice import</h3>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px' }}>
         Drop a PDF or photo of a vendor invoice or quote. LabOS will extract line items so you can review and add them to your cart.
       </p>
@@ -609,7 +610,7 @@ function WebhooksTab() {
 
   return (
     <div className="card">
-      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>🔔 Slack / Teams notifications</h3>
+      <h3 style={{ margin: '0 0 6px', fontSize: 15 }}><EmojiIcon glyph="🔔" /> Slack / Teams notifications</h3>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px' }}>
         Send approvals, large orders, hazard alerts, and IoT critical events to your team's chat channel.
       </p>

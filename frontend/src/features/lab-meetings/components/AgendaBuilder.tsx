@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { Meeting, AgendaItem } from '../types/meeting.types'
 import { AgendaStatusBadge } from './MeetingBadges'
@@ -107,7 +108,7 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
                 {catLabel[item.category]}
               </span>
               <AgendaStatusBadge status={item.status} />
-              <span style={{ color: '#94a3b8', fontSize: 11 }}>⏱ {item.durationMinutes} min</span>
+              <span style={{ color: '#94a3b8', fontSize: 11 }}><EmojiIcon glyph="⏱" /> {item.durationMinutes} min</span>
             </div>
             <div style={{ color: '#1e293b', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
               {item.order > 0 && <span style={{ color: '#94a3b8', marginRight: 4 }}>{item.order}.</span>}
@@ -115,16 +116,16 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
             </div>
             {item.description && <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>{item.description}</div>}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <span style={{ color: '#475569', fontSize: 12 }}>👤 {item.presenter} <span style={{ color: '#94a3b8' }}>({item.presenterRole})</span></span>
+              <span style={{ color: '#475569', fontSize: 12 }}><EmojiIcon glyph="👤" /> {item.presenter} <span style={{ color: '#94a3b8' }}>({item.presenterRole})</span></span>
               <span style={{ color: '#94a3b8', fontSize: 11 }}>Submitted by {item.submittedBy}</span>
-              {item.slideLink && <a href={item.slideLink} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#6366f1', fontSize: 11 }}>🔗 Slides</a>}
+              {item.slideLink && <a href={item.slideLink} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#6366f1', fontSize: 11 }}><EmojiIcon glyph="🔗" /> Slides</a>}
             </div>
-            {item.piNotes && <div style={{ marginTop: 6, padding: '6px 10px', background: '#fef3c7', borderRadius: 6, color: '#92400e', fontSize: 12 }}>💬 PI: {item.piNotes}</div>}
+            {item.piNotes && <div style={{ marginTop: 6, padding: '6px 10px', background: '#fef3c7', borderRadius: 6, color: '#92400e', fontSize: 12 }}><EmojiIcon glyph="💬" /> PI: {item.piNotes}</div>}
           </div>
           {canChange(item) && (onEdit || onDelete) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
               {onEdit && <button onClick={() => startEdit(item)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#475569', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>✎ Edit</button>}
-              {onDelete && <button onClick={() => { if (window.confirm(`Remove "${item.title}" from the agenda?`)) onDelete(item.id) }} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>🗑</button>}
+              {onDelete && <button onClick={() => { if (window.confirm(`Remove "${item.title}" from the agenda?`)) onDelete(item.id) }} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}><EmojiIcon glyph="🗑" /></button>}
             </div>
           )}
           {isPiOrAdmin && item.status === 'pending_approval' && (
@@ -160,14 +161,14 @@ export default function AgendaBuilder({ meeting, isPiOrAdmin, onApprove, onRejec
         <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${Math.min((totalMins / scheduledMins) * 100, 100)}%`, background: totalMins > scheduledMins ? '#ef4444' : '#6366f1', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
-        {totalMins > scheduledMins && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>⚠ Agenda exceeds meeting duration by {totalMins - scheduledMins} min</div>}
+        {totalMins > scheduledMins && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}><EmojiIcon glyph="⚠" /> Agenda exceeds meeting duration by {totalMins - scheduledMins} min</div>}
       </div>
 
       {/* Pending approval (PI sees first) */}
       {pending.length > 0 && isPiOrAdmin && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ color: '#92400e', fontSize: 12, fontWeight: 700, marginBottom: 8, padding: '6px 10px', background: '#fef3c7', borderRadius: 6 }}>
-            ⏳ {pending.length} item{pending.length > 1 ? 's' : ''} awaiting your approval
+            <EmojiIcon glyph="⏳" /> {pending.length} item{pending.length > 1 ? 's' : ''} awaiting your approval
           </div>
           {pending.map((item, i) => renderRow(item, i))}
         </div>

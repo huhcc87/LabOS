@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { useMeetings } from '../hooks/useMeetings'
@@ -259,7 +260,7 @@ export default function LabMeetingsPage() {
     return (
       <div style={{ padding: 0, minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📅" /></div>
           <div style={{ color: '#64748b', fontSize: 15 }}>Loading meetings...</div>
         </div>
       </div>
@@ -286,17 +287,17 @@ export default function LabMeetingsPage() {
             )}
             {overdueActions > 0 && (
               <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 700 }}>
-                ⚠ {overdueActions} overdue
+                <EmojiIcon glyph="⚠" /> {overdueActions} overdue
               </span>
             )}
             {isPiOrAdmin && pendingAgenda > 0 && (
               <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 600 }}>
-                📋 {pendingAgenda} agenda pending
+                <EmojiIcon glyph="📋" /> {pendingAgenda} agenda pending
               </span>
             )}
             {isPiOrAdmin && pendingReports > 0 && (
               <span style={{ background: '#f5f3ff', color: '#7c3aed', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 600 }}>
-                📊 {pendingReports} report{pendingReports > 1 ? 's' : ''} to review
+                <EmojiIcon glyph="📊" /> {pendingReports} report{pendingReports > 1 ? 's' : ''} to review
               </span>
             )}
             {/* Start Instant Video Call Button */}
@@ -311,7 +312,7 @@ export default function LabMeetingsPage() {
                 boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
               }}
             >
-              🎥 {joiningCall ? 'Starting...' : 'Start Video Call'}
+              <EmojiIcon glyph="🎥" /> {joiningCall ? 'Starting...' : 'Start Video Call'}
             </button>
             {isPiOrAdmin && (
               <button onClick={() => setShowCreate(true)} style={{ background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '9px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
@@ -351,7 +352,7 @@ export default function LabMeetingsPage() {
               color: tab === t.key ? '#fff' : '#64748b', padding: '9px 12px', cursor: 'pointer', fontSize: 12,
               fontWeight: tab === t.key ? 700 : 400, transition: 'all 0.15s', position: 'relative',
             }}>
-              {t.icon} {t.label}
+              <EmojiIcon glyph={t.icon} /> {t.label}
               {t.count !== undefined && t.count > 0 && (
                 <span style={{ marginLeft: 5, background: tab === t.key ? 'rgba(255,255,255,0.3)' : (t.alert ? '#ef4444' : '#e2e8f0'), color: tab === t.key ? '#fff' : (t.alert ? '#fff' : '#64748b'), fontSize: 11, padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
                   {t.count}
@@ -371,7 +372,7 @@ export default function LabMeetingsPage() {
               <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value as any); store.setFilters({ ...store.filters, type: e.target.value as any }) }}
                 style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#475569', padding: '8px 12px', fontSize: 13 }}>
                 <option value="">All types</option>
-                {MEETING_TYPES.map(t => <option key={t} value={t}>{getMeetingTypeIcon(t)} {getMeetingTypeLabel(t)}</option>)}
+                {MEETING_TYPES.map(t => <option key={t} value={t}>{getMeetingTypeLabel(t)}</option>)}
               </select>
             </div>
 
@@ -386,7 +387,7 @@ export default function LabMeetingsPage() {
                     background: active ? getMeetingTypeColor(t) : '#fff', border: `1px solid ${getMeetingTypeColor(t)}44`,
                     borderRadius: 20, color: active ? '#fff' : getMeetingTypeColor(t), padding: '4px 12px', cursor: 'pointer', fontSize: 12,
                   }}>
-                    {getMeetingTypeIcon(t)} {getMeetingTypeLabel(t)} ({count})
+                    <EmojiIcon glyph={getMeetingTypeIcon(t)} /> {getMeetingTypeLabel(t)} ({count})
                   </button>
                 )
               })}
@@ -394,7 +395,7 @@ export default function LabMeetingsPage() {
 
             {store.filteredUpcoming.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8', background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>📅</div>
+                <div style={{ fontSize: 40, marginBottom: 10 }}><EmojiIcon glyph="📅" /></div>
                 <div style={{ fontSize: 15, color: '#64748b' }}>No upcoming meetings</div>
                 {isPiOrAdmin && <button onClick={() => setShowCreate(true)} style={{ marginTop: 12, background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '8px 18px', cursor: 'pointer', fontSize: 13 }}>Schedule First Meeting</button>}
               </div>
@@ -517,7 +518,7 @@ export default function LabMeetingsPage() {
                       justifyContent: 'center',
                       fontSize: 24,
                     }}>
-                      {template.icon}
+                      <EmojiIcon glyph={template.icon} />
                     </span>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>{template.name}</div>
@@ -586,7 +587,7 @@ export default function LabMeetingsPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>📚</span>
+                  <span style={{ fontSize: 48 }}><EmojiIcon glyph="📚" /></span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Lab Knowledge Base</h2>
                     <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: 14 }}>
@@ -729,7 +730,7 @@ export default function LabMeetingsPage() {
                         fontWeight: 700,
                         background: poll.status === 'active' ? '#dcfce7' : '#f1f5f9',
                         color: poll.status === 'active' ? '#166534' : '#64748b',
-                      }}>{poll.status === 'active' ? '🟢 Active' : 'Closed'}</span>
+                      }}>{poll.status === 'active' ? <><EmojiIcon glyph="🟢" />{" Active"}</> : 'Closed'}</span>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -773,7 +774,7 @@ export default function LabMeetingsPage() {
                             fontSize: 13,
                           }}
                         >
-                          🗳️ Cast Vote
+                          <EmojiIcon glyph="🗳️" /> Cast Vote
                         </button>
                         {isPiOrAdmin && (
                           <button
@@ -944,7 +945,7 @@ export default function LabMeetingsPage() {
             background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24,
             width: 'min(400px, 90vw)', zIndex: 301, boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
           }}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 12 }}><EmojiIcon glyph="🗑️" /></div>
             <h3 style={{ color: '#1e293b', fontSize: 16, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>Delete Meeting?</h3>
             <p style={{ color: '#64748b', fontSize: 13, textAlign: 'center', margin: '0 0 20px' }}>
               Are you sure you want to delete "<strong>{confirmDelete.title}</strong>"? This action cannot be undone.

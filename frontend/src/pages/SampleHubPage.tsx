@@ -9,6 +9,8 @@ import { useLabSamples, localDate, type LabSample } from '../lib/useLabSamples';
 import { useLabSampleEvents, type SampleEvent } from '../lib/useLabSampleEvents';
 import { errText } from '../lib/errors';
 import { SelectOrCustom } from '../components/SelectOrCustom';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 type Sample = LabSample;
@@ -819,15 +821,7 @@ export default function SampleHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Sample Management</h1>
-            <span style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white', padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-              {samples.length} Samples
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Track and manage laboratory samples with full chain of custody</p>
-        </div>
+        <LabBanner art="samples" title="Sample Management" subtitle="Track and manage laboratory samples with full chain of custody" style={{ flex: 1, marginBottom: 0 }} />
       </div>
 
       {/* Stats */}
@@ -840,7 +834,7 @@ export default function SampleHubPage() {
           { label: 'Quarantine', value: samples.filter(s => s.status === 'quarantine').length, color: '#f87171', icon: '⚠️' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
+            <div style={{ fontSize: 24, marginBottom: 4 }}><EmojiIcon glyph={stat.icon} /></div>
             <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
           </div>
@@ -856,7 +850,7 @@ export default function SampleHubPage() {
           <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {quarantine.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderLeft: '4px solid #ef4444', borderRadius: 8 }}>
-                <span>🚫</span>
+                <span><EmojiIcon glyph="🚫" /></span>
                 <span style={{ color: '#f87171', fontWeight: 600, fontSize: 13 }}>{quarantine.length} sample{quarantine.length > 1 ? 's' : ''} in quarantine</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{quarantine.map(s => s.sampleId).join(', ')}</span>
                 <button onClick={() => setStatusFilter('quarantine')} style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Filter →</button>
@@ -881,7 +875,7 @@ export default function SampleHubPage() {
               flexShrink: 0, whiteSpace: 'nowrap',
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count !== undefined && (
               <span style={{
@@ -894,7 +888,7 @@ export default function SampleHubPage() {
             )}
           </button>
         ))}
-        <button onClick={() => exportToCSV()} style={{ marginLeft: 'auto', flexShrink: 0, whiteSpace: 'nowrap', padding: '12px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1 }}><span>📄</span><span>Export CSV</span></button>
+        <button onClick={() => exportToCSV()} style={{ marginLeft: 'auto', flexShrink: 0, whiteSpace: 'nowrap', padding: '12px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1 }}><span><EmojiIcon glyph="📄" /></span><span>Export CSV</span></button>
       </div>
 
       {/* Samples Tab */}
@@ -905,7 +899,7 @@ export default function SampleHubPage() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="🔍 Search samples..."
+                placeholder="Search samples..."
                 className="form-input"
                 style={{ width: 200 }}
                 value={searchQuery}
@@ -937,12 +931,12 @@ export default function SampleHubPage() {
               <button className="btn btn-secondary btn-sm" onClick={() => {
                 const visibleSamples = filteredSamples ?? samples;
                 exportCSV(visibleSamples.map((s: any) => ({ Barcode: s.barcode, Name: s.name || '', Type: s.sample_type, Status: s.status, Location: s.storage_location || '', 'Received On': s.received_on || '', Notes: s.notes || '' })), 'samples');
-              }}>⬇ CSV</button>
+              }}><EmojiIcon glyph="⬇" /> CSV</button>
               <button className="btn btn-secondary btn-sm" onClick={() => {
                 const visibleSamples = filteredSamples ?? samples;
                 exportPDF('Sample Registry', ['Barcode','Name','Type','Status','Location','Received On'],
                   visibleSamples.map((s: any) => [s.barcode, s.name || '', s.sample_type, s.status, s.storage_location || '', s.received_on || '']), 'samples');
-              }}>⬇ PDF</button>
+              }}><EmojiIcon glyph="⬇" /> PDF</button>
               <button className="btn btn-primary" onClick={() => setShowSampleModal(true)}>+ New Sample</button>
             </div>
           </div>
@@ -973,7 +967,7 @@ export default function SampleHubPage() {
                     addSamplesToLabelQueue(selectedSamplesList);
                     setActiveTab('labels');
                   }}>
-                  🖨️ Print ({selectedSamples.size})
+                  <EmojiIcon glyph="🖨️" /> Print ({selectedSamples.size})
                 </button>
                 <select
                   className="form-select"
@@ -1034,18 +1028,18 @@ export default function SampleHubPage() {
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{s.date}</td>
                     <td style={{ padding: 12, textAlign: 'right' }}>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 6, fontSize: 12 }} onClick={() => { setViewSample(s); setEditMode(false); }}>
-                        👁️ View
+                        <EmojiIcon glyph="👁️" /> View
                       </button>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 6, fontSize: 12 }} onClick={() => { setViewSample(s); setEditMode(true); }}>
-                        ✏️ Edit
+                        <EmojiIcon glyph="✏️" /> Edit
                       </button>
                       <button className="btn btn-sm" style={{ marginRight: 6, fontSize: 12, background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: 'none' }}
                         onClick={() => { addSamplesToLabelQueue([s]); setActiveTab('labels'); }}>
-                        🖨️ Print
+                        <EmojiIcon glyph="🖨️" /> Print
                       </button>
                       <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', fontSize: 12 }}
                         onClick={() => handleDeleteSample(s)}>
-                        🗑️ Delete
+                        <EmojiIcon glyph="🗑️" /> Delete
                       </button>
                     </td>
                   </tr>
@@ -1055,13 +1049,13 @@ export default function SampleHubPage() {
                     <td colSpan={9} style={{ padding: 40, textAlign: 'center' }}>
                       {samples.length === 0 ? (
                         <div>
-                          <div style={{ fontSize: 32, marginBottom: 8 }}>🧪</div>
+                          <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="🧪" /></div>
                           <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>No samples yet</div>
                           <button className="btn btn-primary btn-sm" onClick={() => setShowSampleModal(true)}>+ Add First Sample</button>
                         </div>
                       ) : (
                         <div>
-                          <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+                          <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="🔍" /></div>
                           <div style={{ color: 'var(--text-muted)', marginBottom: 8 }}>No samples match your filters</div>
                           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
                             {samples.length} sample{samples.length !== 1 ? 's' : ''} total, but hidden by current filters
@@ -1090,7 +1084,7 @@ export default function SampleHubPage() {
           {/* Search & Filter Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input type="text" placeholder="🔍 Search events..." className="form-input" style={{ width: 200 }}
+              <input type="text" placeholder="Search events..." className="form-input" style={{ width: 200 }}
                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               <select className="form-select" style={{ width: 150 }} value={eventFilter} onChange={e => setEventFilter(e.target.value)}>
                 <option value="all">All Events</option>
@@ -1102,7 +1096,7 @@ export default function SampleHubPage() {
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={exportEventsToCSV}>📥 Export</button>
+              <button className="btn btn-secondary" onClick={exportEventsToCSV}><EmojiIcon glyph="📥" /> Export</button>
               <button className="btn btn-primary" onClick={() => setShowEventModal(true)}>+ Log Event</button>
             </div>
           </div>
@@ -1161,7 +1155,7 @@ export default function SampleHubPage() {
                     <td style={{ padding: 12, fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{e.sampleId}</td>
                     <td style={{ padding: 12 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 16 }}>{EVENT_ICONS[e.event] || '📝'}</span>
+                        <span style={{ fontSize: 16 }}>{EVENT_ICONS[e.event] || <><EmojiIcon glyph="📝" /></>}</span>
                         <span style={{ fontSize: 13, fontWeight: 500 }}>{e.event}</span>
                       </span>
                     </td>
@@ -1170,14 +1164,14 @@ export default function SampleHubPage() {
                     <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.details || '-'}</td>
                     <td style={{ padding: 12, textAlign: 'right' }}>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 6, fontSize: 12 }} onClick={() => { setViewEvent(e); setEditEventMode(false); }}>
-                        👁️ View
+                        <EmojiIcon glyph="👁️" /> View
                       </button>
                       <button className="btn btn-sm btn-secondary" style={{ marginRight: 6, fontSize: 12 }} onClick={() => { setViewEvent(e); setEditEventMode(true); }}>
-                        ✏️ Edit
+                        <EmojiIcon glyph="✏️" /> Edit
                       </button>
                       <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', fontSize: 12 }}
                         onClick={() => handleDeleteEvent(e)}>
-                        🗑️ Delete
+                        <EmojiIcon glyph="🗑️" /> Delete
                       </button>
                     </td>
                   </tr>
@@ -1256,7 +1250,7 @@ export default function SampleHubPage() {
             {/* Label Queue - Empty State */}
             {labelQueue.length === 0 && (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--surface2)', borderRadius: 10, marginBottom: 20 }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🏷️</div>
+                <div style={{ fontSize: 48, marginBottom: 12 }}><EmojiIcon glyph="🏷️" /></div>
                 <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No Labels in Queue</h4>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
                   Add samples from the list or create custom labels
@@ -1340,8 +1334,8 @@ export default function SampleHubPage() {
                               className="form-input" style={{ width: 50, height: 28, textAlign: 'center', fontSize: 13 }} />
                           </td>
                           <td style={{ padding: 10, textAlign: 'center' }}>
-                            <button onClick={() => setEditingLabel(label)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginRight: 4 }} title="Edit">✏️</button>
-                            <button onClick={() => removeLabelFromQueue(label.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Remove">🗑️</button>
+                            <button onClick={() => setEditingLabel(label)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginRight: 4 }} title="Edit"><EmojiIcon glyph="✏️" /></button>
+                            <button onClick={() => removeLabelFromQueue(label.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Remove"><EmojiIcon glyph="🗑️" /></button>
                           </td>
                         </tr>
                       ))}
@@ -1364,7 +1358,7 @@ export default function SampleHubPage() {
                       background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                       border: 'none'
                     }}>
-                    🖨️ Print Labels
+                    <EmojiIcon glyph="🖨️" /> Print Labels
                   </button>
                 </div>
               </>
@@ -1377,7 +1371,7 @@ export default function SampleHubPage() {
       {activeTab === 'import' && (
         <div>
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>📤</div>
+            <div style={{ fontSize: 64, marginBottom: 16 }}><EmojiIcon glyph="📤" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Batch Import Samples</h3>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>Upload CSV file to import multiple samples at once</p>
 
@@ -1397,7 +1391,7 @@ export default function SampleHubPage() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{isDragging ? '📥' : '📁'}</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>{isDragging ? <><EmojiIcon glyph="📥" /></> : <><EmojiIcon glyph="📁" /></>}</div>
               <div style={{ fontSize: 14, fontWeight: 500, color: isDragging ? '#22c55e' : 'var(--text)' }}>
                 {isDragging ? 'Drop file here' : 'Drag & drop files here'}
               </div>
@@ -1422,7 +1416,7 @@ export default function SampleHubPage() {
                 a.download = 'sample_import_template.csv';
                 a.click();
                 showToast('Template downloaded', 'success');
-              }}>📥 Download Template</button>
+              }}><EmojiIcon glyph="📥" /> Download Template</button>
             </div>
           </div>
 
@@ -1465,7 +1459,7 @@ export default function SampleHubPage() {
               { label: 'Active Users', value: [...new Set(events.map(e => e.user))].length, icon: '👥', color: '#8b5cf6' },
             ].map(stat => (
               <div key={stat.label} className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>{stat.icon}</div>
+                <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph={stat.icon} /></div>
                 <div style={{ fontSize: 32, fontWeight: 700, color: stat.color }}>{stat.value}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{stat.label}</div>
               </div>
@@ -1616,7 +1610,7 @@ export default function SampleHubPage() {
                     border: '1px solid var(--border)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 20 }}>{EVENT_ICONS[e.event] || '📝'}</span>
+                      <span style={{ fontSize: 20 }}>{EVENT_ICONS[e.event] || <><EmojiIcon glyph="📝" /></>}</span>
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{e.sampleId}</span>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{e.event}</div>
@@ -1797,7 +1791,7 @@ export default function SampleHubPage() {
           <div style={{ ...modalContentStyle, width: 500 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 32 }}>{EVENT_ICONS[viewEvent.event] || '📝'}</span>
+                <span style={{ fontSize: 32 }}>{EVENT_ICONS[viewEvent.event] || <><EmojiIcon glyph="📝" /></>}</span>
                 <div>
                   <h3 style={{ fontSize: 18, fontWeight: 700 }}>{viewEvent.event}</h3>
                   <span style={{ fontSize: 13, color: 'var(--accent)' }}>{viewEvent.sampleId}</span>
@@ -1978,7 +1972,7 @@ export default function SampleHubPage() {
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-secondary" onClick={() => setShowLabelPreviewModal(false)} style={{ flex: 1 }}>Cancel</button>
-              <button className="btn btn-primary" onClick={printLabels} style={{ flex: 1 }}>🖨️ Print Labels</button>
+              <button className="btn btn-primary" onClick={printLabels} style={{ flex: 1 }}><EmojiIcon glyph="🖨️" /> Print Labels</button>
             </div>
           </div>
         </div>
@@ -1988,7 +1982,7 @@ export default function SampleHubPage() {
       {bulkDeleteConfirm && (
         <div style={modalStyle} onClick={() => setBulkDeleteConfirm(false)}>
           <div style={{ ...modalContentStyle, width: 400, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="⚠️" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Delete {selectedSamples.size} Samples?</h3>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>This action cannot be undone.</p>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -2003,7 +1997,7 @@ export default function SampleHubPage() {
       {bulkEventDeleteConfirm && (
         <div style={modalStyle} onClick={() => setBulkEventDeleteConfirm(false)}>
           <div style={{ ...modalContentStyle, width: 400, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="⚠️" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Delete {selectedEvents.size} Events?</h3>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>This will remove the selected chain of custody records.</p>
             <div style={{ display: 'flex', gap: 12 }}>

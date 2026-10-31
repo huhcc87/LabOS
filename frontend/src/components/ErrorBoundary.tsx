@@ -1,5 +1,6 @@
 import React from 'react';
 import { reportError } from '../lib/errorTracker';
+import EmojiIcon from './EmojiIcon';
 
 interface State {
   hasError: boolean;
@@ -55,7 +56,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             border: '1px solid var(--border, #e2e8f0)', borderRadius: 12, padding: 32,
             boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
           }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="⚠️" /></div>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h2>
             <p style={{ fontSize: 14, color: 'var(--text-muted, #64748b)', marginBottom: 20, lineHeight: 1.6 }}>
               The app hit an unexpected error. Your data is safe — try reloading the page, or click below to recover.

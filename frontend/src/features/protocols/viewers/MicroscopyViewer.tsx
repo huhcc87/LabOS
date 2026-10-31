@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 
 const SAMPLE_SLIDES = [
@@ -39,13 +40,13 @@ export default function MicroscopyViewer() {
           </select>
         </div>
         <button style={{ padding: '7px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-          🔁 Rotate
+          <EmojiIcon glyph="🔁" /> Rotate
         </button>
         <button style={{ padding: '7px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-          📐 Measure
+          <EmojiIcon glyph="📐" /> Measure
         </button>
         <button style={{ padding: '7px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', cursor: 'pointer', fontSize: 12 }}>
-          📸 Screenshot
+          <EmojiIcon glyph="📸" /> Screenshot
         </button>
       </div>
 
@@ -63,7 +64,7 @@ export default function MicroscopyViewer() {
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
 
-        <div style={{ fontSize: 52 }}>🔭</div>
+        <div style={{ fontSize: 52 }}><EmojiIcon glyph="🔭" /></div>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>OpenSeadragon Microscopy Viewer</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 420 }}>
           Zoomable whole-slide image viewer for pathology and fluorescence microscopy.

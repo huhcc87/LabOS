@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { suppliersApi, inventoryApi } from '../lib/api';
 import { EmptyState } from '../components/EmptyState';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface VendorItem {
@@ -136,12 +138,11 @@ export default function VendorIntelligencePage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Vendor Intelligence</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>AI price comparison · PO management · Vendor scoring · Grant linkage</p>
+          <LabBanner art="inventory" title="Vendor Intelligence" subtitle="AI price comparison · PO management · Vendor scoring · Grant linkage" style={{ flex: 1, minWidth: 0 }} />
         </div>
         {cart.length > 0 && (
           <button onClick={() => setShowCart(!showCart)} style={{ padding: '8px 18px', border: 'none', borderRadius: 10, background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-            🛒 Cart ({cart.length} items) — ${cartTotal.toFixed(2)}
+            <EmojiIcon glyph="🛒" /> Cart ({cart.length} items) — ${cartTotal.toFixed(2)}
           </button>
         )}
       </div>
@@ -187,7 +188,7 @@ export default function VendorIntelligencePage() {
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
-        {[{ key: 'compare' as Tab, label: '📊 Price Comparison' }, { key: 'orders' as Tab, label: '📦 Purchase Orders' }, { key: 'vendors' as Tab, label: '⭐ Vendor Scores' }].map(t => (
+        {[{ key: 'compare' as Tab, label: "Price Comparison" }, { key: 'orders' as Tab, label: "Purchase Orders" }, { key: 'vendors' as Tab, label: "Vendor Scores" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '10px 18px', fontSize: 14, fontWeight: tab === t.key ? 600 : 400, border: 'none', background: 'none', cursor: 'pointer', color: tab === t.key ? 'var(--primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t.key ? 'var(--primary)' : 'transparent'}` }}>
             {t.label}
@@ -276,7 +277,7 @@ export default function VendorIntelligencePage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                         <span style={{ fontWeight: 700, fontSize: 15 }}>{po.id}</span>
                         <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sm.bg, color: sm.color }}>{sm.label}</span>
-                        {po.grantCode && <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(99,102,241,0.12)', color: '#818cf8' }}>📝 {po.grantCode}</span>}
+                        {po.grantCode && <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(99,102,241,0.12)', color: '#818cf8' }}><EmojiIcon glyph="📝" /> {po.grantCode}</span>}
                       </div>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Vendor: {po.vendor} · Created: {po.createdDate}{po.eta ? ` · ETA: ${po.eta}` : ''}</div>
                     </div>
@@ -291,7 +292,7 @@ export default function VendorIntelligencePage() {
                     {po.status === 'pending_approval' && (
                       <button style={{ padding: '5px 12px', fontSize: 12, border: 'none', borderRadius: 6, background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Approve PO</button>
                     )}
-                    <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>⬇ Download PO</button>
+                    <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><EmojiIcon glyph="⬇" /> Download PO</button>
                     <button style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>Track Delivery</button>
                   </div>
                 </div>
@@ -321,7 +322,7 @@ export default function VendorIntelligencePage() {
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: 28, fontWeight: 700, color: overall >= 90 ? '#4ade80' : overall >= 75 ? '#fbbf24' : '#f87171' }}>{overall}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Overall</div>
-                      {rank === 0 && <div style={{ fontSize: 10, color: '#fbbf24', fontWeight: 700 }}>🥇 TOP</div>}
+                      {rank === 0 && <div style={{ fontSize: 10, color: '#fbbf24', fontWeight: 700 }}><EmojiIcon glyph="🥇" /> TOP</div>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

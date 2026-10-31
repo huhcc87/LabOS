@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 
 function authHeaders() {
@@ -335,7 +337,7 @@ function SecurityEventsPanel({ isAdmin }: { isAdmin: boolean }) {
           borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 14,
           color: alert.level === 'critical' ? '#b91c1c' : '#92400e',
         }}>
-          {alert.level === 'critical' ? '🔴' : '⚠️'} {alert.message}
+          {alert.level === 'critical' ? <><EmojiIcon glyph="🔴" /></> : <><EmojiIcon glyph="⚠️" /></>} {alert.message}
         </div>
       ))}
 
@@ -496,10 +498,7 @@ export default function SecurityDashboardPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700 }}>Security Dashboard</h1>
-      <p style={{ margin: '0 0 24px', color: '#64748b', fontSize: 15 }}>
-        Manage MFA, active sessions, security clearance levels, and monitor security events.
-      </p>
+      <LabBanner art="safety" title="Security Dashboard" subtitle="Manage MFA, active sessions, security clearance levels, and monitor security events." style={{ flex: 1, minWidth: 0 }} />
 
       {/* Tab Bar */}
       <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
@@ -547,7 +546,7 @@ export default function SecurityDashboardPage() {
 
           <div style={{ ...styles.card, background: mfaEnabled ? '#f0fdf4' : '#fffbeb', borderColor: mfaEnabled ? '#86efac' : '#fcd34d' }}>
             <h3 style={{ margin: '0 0 8px', color: mfaEnabled ? '#15803d' : '#92400e', fontSize: 15 }}>
-              {mfaEnabled ? '✅ Account is protected with MFA' : '⚠️ MFA is not enabled'}
+              {mfaEnabled ? <><EmojiIcon glyph="✅" />{" Account is protected with MFA"}</> : <><EmojiIcon glyph="⚠️" />{" MFA is not enabled"}</>}
             </h3>
             <p style={{ margin: '0 0 12px', fontSize: 14, color: '#64748b' }}>
               {mfaEnabled

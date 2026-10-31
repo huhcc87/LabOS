@@ -40,6 +40,9 @@ const EquipmentMaintenancePage = lazy(() => import('./pages/EquipmentMaintenance
 const LabelsPage              = lazy(() => import('./pages/LabelsPage'));
 const AILabManagerPage       = lazy(() => import('./pages/AILabManagerPage'));
 const ReagentCartPage        = lazy(() => import('./pages/ReagentCartPage'));
+const RequestsPage           = lazy(() => import('./pages/RequestsPage'));
+const ChemicalSearchPage     = lazy(() => import('./pages/ChemicalSearchPage'));
+const ShopPage               = lazy(() => import('./pages/ShopPage'));
 const ReceivingPage          = lazy(() => import('./pages/ReceivingPage'));
 const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
@@ -218,6 +221,9 @@ function AppInner() {
       case 'barcode-scanner': case 'barcode-labels': case 'label-designer': return <LabelsPage />; // all merged into Sample Hub > Labels
       case 'ai-manager': return <AILabManagerPage />;
       case 'reagent-cart': return <ReagentCartPage />;
+      case 'requests': return <RequestsPage />;
+      case 'chemical-search': return <ChemicalSearchPage />;
+      case 'shop': return <ShopPage />;
       case 'receiving': return <ReceivingPage />;
       case 'payment-methods': return <PaymentMethodsPage />;
       case 'procurement-hub': return <ProcurementHubPage />;

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { grantsApi, fundingApi, swarmFeedbackApi } from '../lib/api';
 import type { SwarmExportOptions } from '../lib/exportDocx';
 import { readDocumentText, isSupportedDocument, UnsupportedDocumentError } from '../lib/readDocumentText';
+import EmojiIcon from '../components/EmojiIcon';
 
 // Per-paper text budget sent to the swarm (keeps the prompt within model limits).
 const MAX_CHARS_PER_FILE = 8000;
@@ -9,18 +10,18 @@ const MAX_CHARS_PER_FILE = 8000;
 // ─── Disease / Condition list ─────────────────────────────────────────────────
 
 const DISEASES: { group: string; items: string[] }[] = [
-  { group: '🔴 Cancer — CNS / Brain', items: ['Glioblastoma (GBM)', 'Diffuse Intrinsic Pontine Glioma (DIPG)', 'Glioma (Low-Grade)', 'Meningioma', 'Medulloblastoma', 'Ependymoma', 'Primary CNS Lymphoma', 'Brain Metastases'] },
-  { group: '🔴 Cancer — Hematologic', items: ['Acute Myeloid Leukemia (AML)', 'Acute Lymphoblastic Leukemia (ALL)', 'Chronic Myeloid Leukemia (CML)', 'Chronic Lymphocytic Leukemia (CLL)', 'Multiple Myeloma', 'Hodgkin Lymphoma', 'Diffuse Large B-Cell Lymphoma (DLBCL)', 'Follicular Lymphoma', 'T-Cell Lymphoma', 'Myelodysplastic Syndrome (MDS)', 'Myeloproliferative Neoplasms'] },
-  { group: '🔴 Cancer — Solid Tumors', items: ['Breast Cancer (HR+)', 'Breast Cancer (HER2+)', 'Triple-Negative Breast Cancer (TNBC)', 'Non-Small Cell Lung Cancer (NSCLC)', 'Small Cell Lung Cancer (SCLC)', 'Colorectal Cancer', 'Pancreatic Ductal Adenocarcinoma', 'Hepatocellular Carcinoma', 'Cholangiocarcinoma', 'Gastric / Gastroesophageal Cancer', 'Esophageal Cancer', 'Ovarian Cancer', 'Cervical Cancer', 'Endometrial Cancer', 'Prostate Cancer', 'Bladder Cancer', 'Renal Cell Carcinoma', 'Thyroid Cancer', 'Head & Neck Squamous Cell Carcinoma', 'Melanoma', 'Merkel Cell Carcinoma', 'Sarcoma (Soft Tissue)', 'Osteosarcoma', 'Ewing Sarcoma', 'Neuroblastoma', 'Wilms Tumor', 'Retinoblastoma', 'Mesothelioma', 'Adrenocortical Carcinoma', 'Pheochromocytoma / Paraganglioma'] },
-  { group: '🧠 Neurological & Psychiatric', items: ["Alzheimer's Disease", "Parkinson's Disease", 'Amyotrophic Lateral Sclerosis (ALS)', 'Multiple Sclerosis', "Huntington's Disease", 'Frontotemporal Dementia (FTD)', 'Lewy Body Dementia', 'Traumatic Brain Injury (TBI)', 'Spinal Cord Injury', 'Epilepsy', 'Stroke / Ischemic Stroke', 'Neuropathic Pain', 'Migraine', 'Major Depressive Disorder', 'Bipolar Disorder', 'Schizophrenia', 'Post-Traumatic Stress Disorder (PTSD)', 'Autism Spectrum Disorder (ASD)', 'Attention-Deficit/Hyperactivity Disorder (ADHD)', 'Anxiety Disorders'] },
-  { group: '❤️ Cardiovascular', items: ['Heart Failure (HFrEF)', 'Heart Failure (HFpEF)', 'Coronary Artery Disease', 'Myocardial Infarction', 'Atrial Fibrillation', 'Hypertension', 'Pulmonary Arterial Hypertension', 'Aortic Stenosis', 'Dilated Cardiomyopathy', 'Hypertrophic Cardiomyopathy', 'Peripheral Artery Disease', 'Venous Thromboembolism (VTE)'] },
-  { group: '🔵 Metabolic & Endocrine', items: ['Type 1 Diabetes', 'Type 2 Diabetes', 'Obesity', 'NASH / NAFLD', 'Metabolic Syndrome', 'Hypothyroidism / Hyperthyroidism', "Cushing's Disease", 'Acromegaly', 'Polycystic Ovary Syndrome (PCOS)', 'Osteoporosis'] },
-  { group: '🦠 Infectious Disease', items: ['HIV/AIDS', 'Tuberculosis (TB)', 'Malaria', 'COVID-19 / SARS-CoV-2', 'Influenza', 'Hepatitis B', 'Hepatitis C', 'Clostridioides difficile Infection', 'Sepsis', 'Antimicrobial Resistance (AMR)', 'Dengue Fever', 'Ebola', 'Zika Virus', 'Leishmaniasis', 'Chagas Disease'] },
-  { group: '🟠 Autoimmune & Inflammatory', items: ['Rheumatoid Arthritis', 'Systemic Lupus Erythematosus (SLE)', "Crohn's Disease", 'Ulcerative Colitis', 'Psoriasis / Psoriatic Arthritis', 'Ankylosing Spondylitis', "Sjögren's Syndrome", 'Systemic Sclerosis / Scleroderma', 'Vasculitis', 'Celiac Disease'] },
-  { group: '🫁 Pulmonary & Respiratory', items: ['Chronic Obstructive Pulmonary Disease (COPD)', 'Asthma', 'Idiopathic Pulmonary Fibrosis (IPF)', 'Sarcoidosis', 'Cystic Fibrosis', 'Pulmonary Embolism', 'Obstructive Sleep Apnea', 'Interstitial Lung Disease (ILD)'] },
-  { group: '🧬 Rare & Genetic Diseases', items: ['Sickle Cell Disease', 'Hemophilia A / B', 'Duchenne Muscular Dystrophy', 'Spinal Muscular Atrophy (SMA)', 'Phenylketonuria (PKU)', "Gaucher's Disease", "Fabry's Disease", 'Marfan Syndrome', 'Neurofibromatosis', 'Tuberous Sclerosis', 'Fragile X Syndrome', "Tay-Sachs Disease", "Wilson's Disease", 'Hereditary Transthyretin Amyloidosis (hATTR)'] },
-  { group: '🩺 Renal & Urological', items: ['Chronic Kidney Disease (CKD)', 'Acute Kidney Injury (AKI)', 'IgA Nephropathy', 'Focal Segmental Glomerulosclerosis (FSGS)', 'Lupus Nephritis', 'Diabetic Nephropathy', 'Polycystic Kidney Disease (PKD)'] },
-  { group: '🟢 Musculoskeletal & Bone', items: ['Osteoarthritis', 'Osteoporosis', 'Gout', 'Fibromyalgia', 'Bone Metastases'] },
+  { group: "Cancer — CNS / Brain", items: ['Glioblastoma (GBM)', 'Diffuse Intrinsic Pontine Glioma (DIPG)', 'Glioma (Low-Grade)', 'Meningioma', 'Medulloblastoma', 'Ependymoma', 'Primary CNS Lymphoma', 'Brain Metastases'] },
+  { group: "Cancer — Hematologic", items: ['Acute Myeloid Leukemia (AML)', 'Acute Lymphoblastic Leukemia (ALL)', 'Chronic Myeloid Leukemia (CML)', 'Chronic Lymphocytic Leukemia (CLL)', 'Multiple Myeloma', 'Hodgkin Lymphoma', 'Diffuse Large B-Cell Lymphoma (DLBCL)', 'Follicular Lymphoma', 'T-Cell Lymphoma', 'Myelodysplastic Syndrome (MDS)', 'Myeloproliferative Neoplasms'] },
+  { group: "Cancer — Solid Tumors", items: ['Breast Cancer (HR+)', 'Breast Cancer (HER2+)', 'Triple-Negative Breast Cancer (TNBC)', 'Non-Small Cell Lung Cancer (NSCLC)', 'Small Cell Lung Cancer (SCLC)', 'Colorectal Cancer', 'Pancreatic Ductal Adenocarcinoma', 'Hepatocellular Carcinoma', 'Cholangiocarcinoma', 'Gastric / Gastroesophageal Cancer', 'Esophageal Cancer', 'Ovarian Cancer', 'Cervical Cancer', 'Endometrial Cancer', 'Prostate Cancer', 'Bladder Cancer', 'Renal Cell Carcinoma', 'Thyroid Cancer', 'Head & Neck Squamous Cell Carcinoma', 'Melanoma', 'Merkel Cell Carcinoma', 'Sarcoma (Soft Tissue)', 'Osteosarcoma', 'Ewing Sarcoma', 'Neuroblastoma', 'Wilms Tumor', 'Retinoblastoma', 'Mesothelioma', 'Adrenocortical Carcinoma', 'Pheochromocytoma / Paraganglioma'] },
+  { group: "Neurological & Psychiatric", items: ["Alzheimer's Disease", "Parkinson's Disease", 'Amyotrophic Lateral Sclerosis (ALS)', 'Multiple Sclerosis', "Huntington's Disease", 'Frontotemporal Dementia (FTD)', 'Lewy Body Dementia', 'Traumatic Brain Injury (TBI)', 'Spinal Cord Injury', 'Epilepsy', 'Stroke / Ischemic Stroke', 'Neuropathic Pain', 'Migraine', 'Major Depressive Disorder', 'Bipolar Disorder', 'Schizophrenia', 'Post-Traumatic Stress Disorder (PTSD)', 'Autism Spectrum Disorder (ASD)', 'Attention-Deficit/Hyperactivity Disorder (ADHD)', 'Anxiety Disorders'] },
+  { group: "Cardiovascular", items: ['Heart Failure (HFrEF)', 'Heart Failure (HFpEF)', 'Coronary Artery Disease', 'Myocardial Infarction', 'Atrial Fibrillation', 'Hypertension', 'Pulmonary Arterial Hypertension', 'Aortic Stenosis', 'Dilated Cardiomyopathy', 'Hypertrophic Cardiomyopathy', 'Peripheral Artery Disease', 'Venous Thromboembolism (VTE)'] },
+  { group: "Metabolic & Endocrine", items: ['Type 1 Diabetes', 'Type 2 Diabetes', 'Obesity', 'NASH / NAFLD', 'Metabolic Syndrome', 'Hypothyroidism / Hyperthyroidism', "Cushing's Disease", 'Acromegaly', 'Polycystic Ovary Syndrome (PCOS)', 'Osteoporosis'] },
+  { group: "Infectious Disease", items: ['HIV/AIDS', 'Tuberculosis (TB)', 'Malaria', 'COVID-19 / SARS-CoV-2', 'Influenza', 'Hepatitis B', 'Hepatitis C', 'Clostridioides difficile Infection', 'Sepsis', 'Antimicrobial Resistance (AMR)', 'Dengue Fever', 'Ebola', 'Zika Virus', 'Leishmaniasis', 'Chagas Disease'] },
+  { group: "Autoimmune & Inflammatory", items: ['Rheumatoid Arthritis', 'Systemic Lupus Erythematosus (SLE)', "Crohn's Disease", 'Ulcerative Colitis', 'Psoriasis / Psoriatic Arthritis', 'Ankylosing Spondylitis', "Sjögren's Syndrome", 'Systemic Sclerosis / Scleroderma', 'Vasculitis', 'Celiac Disease'] },
+  { group: "Pulmonary & Respiratory", items: ['Chronic Obstructive Pulmonary Disease (COPD)', 'Asthma', 'Idiopathic Pulmonary Fibrosis (IPF)', 'Sarcoidosis', 'Cystic Fibrosis', 'Pulmonary Embolism', 'Obstructive Sleep Apnea', 'Interstitial Lung Disease (ILD)'] },
+  { group: "Rare & Genetic Diseases", items: ['Sickle Cell Disease', 'Hemophilia A / B', 'Duchenne Muscular Dystrophy', 'Spinal Muscular Atrophy (SMA)', 'Phenylketonuria (PKU)', "Gaucher's Disease", "Fabry's Disease", 'Marfan Syndrome', 'Neurofibromatosis', 'Tuberous Sclerosis', 'Fragile X Syndrome', "Tay-Sachs Disease", "Wilson's Disease", 'Hereditary Transthyretin Amyloidosis (hATTR)'] },
+  { group: "Renal & Urological", items: ['Chronic Kidney Disease (CKD)', 'Acute Kidney Injury (AKI)', 'IgA Nephropathy', 'Focal Segmental Glomerulosclerosis (FSGS)', 'Lupus Nephritis', 'Diabetic Nephropathy', 'Polycystic Kidney Disease (PKD)'] },
+  { group: "Musculoskeletal & Bone", items: ['Osteoarthritis', 'Osteoporosis', 'Gout', 'Fibromyalgia', 'Bone Metastases'] },
 ];
 
 // ─── Grant type list ──────────────────────────────────────────────────────────
@@ -139,11 +140,11 @@ const FUNDING_STATUS_META: Record<GapFunding['status'], { label: string; color: 
 // ─── AI model options ─────────────────────────────────────────────────────────
 
 const SWARM_MODELS: { id: string; label: string; desc: string }[] = [
-  { id: 'auto', label: '⚡ Auto (best available)', desc: 'Tries Claude Sonnet → GPT-4o → DeepSeek' },
-  { id: 'claude-sonnet', label: '🟣 Claude Sonnet 5.5', desc: 'Deepest reasoning & synthesis' },
-  { id: 'claude-haiku', label: '🟢 Claude Haiku 5.5', desc: 'Fast & economical' },
-  { id: 'gpt-4o', label: '🔵 GPT-4o', desc: 'OpenAI flagship multimodal' },
-  { id: 'deepseek', label: '🔶 DeepSeek V3', desc: 'Strong open-weight reasoning' },
+  { id: 'auto', label: "Auto (best available)", desc: 'Tries Claude Sonnet → GPT-4o → DeepSeek' },
+  { id: 'claude-sonnet', label: "Claude Sonnet 5.5", desc: 'Deepest reasoning & synthesis' },
+  { id: 'claude-haiku', label: "Claude Haiku 5.5", desc: 'Fast & economical' },
+  { id: 'gpt-4o', label: "GPT-4o", desc: 'OpenAI flagship multimodal' },
+  { id: 'deepseek', label: "DeepSeek V3", desc: 'Strong open-weight reasoning' },
 ];
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
@@ -184,7 +185,7 @@ function NoveltyBadge({ score }: { score: number }) {
   const label = score >= 9 ? 'High Novelty' : score >= 7 ? 'Novel' : 'Incremental';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: `${color}20`, color, border: `1px solid ${color}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-      ⭐ {score}/10 · {label} (AI estimate)
+      <EmojiIcon glyph="⭐" /> {score}/10 · {label} (AI estimate)
     </span>
   );
 }
@@ -248,11 +249,11 @@ function FundingVisualization({ funding }: { funding: FundingResult }) {
 
       {/* Agency funding volume */}
       <div className="card">
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: 'var(--text)' }}>🏛️ Funded Awards by Agency (topic-wide)</div>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: 'var(--text)' }}><EmojiIcon glyph="🏛️" /> Funded Awards by Agency (topic-wide)</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {funding.agencies.map(a => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ width: 130, fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>{a.label}{!a.available && ' ⚠️'}</span>
+              <span style={{ width: 130, fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>{a.label}{!a.available && <>{" "}<EmojiIcon glyph="⚠️" /></>}</span>
               <div style={{ flex: 1, background: 'var(--surface2, #f1f5f9)', borderRadius: 6, height: 22, overflow: 'hidden', position: 'relative' }}>
                 <div style={{ width: `${a.available ? Math.max(2, (a.total / maxAgency) * 100) : 0}%`, height: '100%', background: AGENCY_COLORS[a.id] || '#6366f1', borderRadius: 6, transition: 'width 0.4s' }} />
                 <span style={{ position: 'absolute', right: 8, top: 0, lineHeight: '22px', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
@@ -266,9 +267,9 @@ function FundingVisualization({ funding }: { funding: FundingResult }) {
 
       {/* Per-gap funding status */}
       <div className="card">
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--text)' }}>🎯 Gap Funding Status</div>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--text)' }}><EmojiIcon glyph="🎯" /> Gap Funding Status</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
-          Fewer existing awards = more white-space for a fundable proposal. 🟢 unfunded ·  🟡 underfunded · 🔴 crowded.
+          Fewer existing awards = more white-space for a fundable proposal. <EmojiIcon glyph="🟢" /> unfunded ·  <EmojiIcon glyph="🟡" /> underfunded · <EmojiIcon glyph="🔴" /> crowded.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {funding.gap_analysis.map((g, i) => {
@@ -276,7 +277,7 @@ function FundingVisualization({ funding }: { funding: FundingResult }) {
             return (
               <div key={i} style={{ padding: '12px 14px', background: meta.bg, border: `1px solid ${meta.color}33`, borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 13 }}>{meta.icon}</span>
+                  <span style={{ fontSize: 13 }}><EmojiIcon glyph={meta.icon} /></span>
                   <span style={{ flex: 1, fontSize: 13, lineHeight: 1.5, color: 'var(--text)' }}>{g.gap}</span>
                   <span style={{ flexShrink: 0, background: meta.color, color: '#fff', borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 800 }}>{meta.label}</span>
                 </div>
@@ -583,20 +584,20 @@ function LibraryBrowse({
         background: open ? 'var(--accent)' : 'var(--surface)', color: open ? 'white' : 'var(--text)',
         fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
       }}>
-        📚 Libraries
+        <EmojiIcon glyph="📚" /> Libraries
         {libraries.length > 0 && <span style={{ background: open ? 'rgba(255,255,255,0.25)' : 'var(--accent)', color: 'white', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{libraries.length}</span>}
       </button>
 
       {open && (
         <div style={{ position: 'absolute', right: 0, top: 38, zIndex: 300, width: 420, maxHeight: 560, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>📚 My Article Libraries</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}><EmojiIcon glyph="📚" /> My Article Libraries</span>
             <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>×</button>
           </div>
 
           {libraries.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-              No libraries yet.<br />Select articles and click <strong>"💾 Save to Library"</strong> to create one.
+              No libraries yet.<br />Select articles and click <strong>"<EmojiIcon glyph="💾" /> Save to Library"</strong> to create one.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -611,8 +612,8 @@ function LibraryBrowse({
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      <button onClick={() => { onAddAllToSwarm(lib.articles); setOpen(false); }} style={{ padding: '4px 12px', background: 'linear-gradient(135deg,#6366f1,#0071bc)', color: 'white', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        🧬 Swarm All ({lib.articles.length})
+                      <button onClick={() => { onAddAllToSwarm(lib.articles); setOpen(false); }} style={{ padding: '4px 12px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <EmojiIcon glyph="🧬" /> Swarm All ({lib.articles.length})
                       </button>
                       <button onClick={() => { onLoad(lib.articles); setOpen(false); }} style={{ padding: '4px 10px', background: `${lib.color}20`, color: lib.color, border: `1px solid ${lib.color}40`, borderRadius: 6, fontWeight: 600, fontSize: 11, cursor: 'pointer' }}>
                         ↑ Load
@@ -623,7 +624,7 @@ function LibraryBrowse({
                           <button onClick={() => setConfirmDelete(null)} style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)' }}>✕</button>
                         </>
                       ) : (
-                        <button onClick={() => setConfirmDelete(lib.id)} style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)' }}>🗑</button>
+                        <button onClick={() => setConfirmDelete(lib.id)} style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)' }}><EmojiIcon glyph="🗑" /></button>
                       )}
                     </div>
                   </div>
@@ -631,7 +632,7 @@ function LibraryBrowse({
                     <div style={{ maxHeight: 130, overflowY: 'auto', padding: '4px 8px 8px' }}>
                       {lib.articles.map(art => (
                         <div key={art.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', fontSize: 11, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {art.title}</span>
+                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><EmojiIcon glyph="📄" /> {art.title}</span>
                           <button onClick={() => onRemoveArticle(lib.id, art.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: 0, flexShrink: 0 }}>×</button>
                         </div>
                       ))}
@@ -684,7 +685,7 @@ function SaveToLibraryPicker({
         color: open ? 'white' : '#818cf8', border: '1px solid rgba(99,102,241,0.35)',
         borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
       }}>
-        💾 Save to Library
+        <EmojiIcon glyph="💾" /> Save to Library
       </button>
 
       {open && (
@@ -928,7 +929,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
     <div className="card" style={{ marginBottom: 20, padding: 20 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <span style={{ fontSize: 22 }}>🔎</span>
+        <span style={{ fontSize: 22 }}><EmojiIcon glyph="🔎" /></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Literature Finder</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Search PubMed · Europe PMC · Preprints · Semantic Scholar — select and send to AI Swarm</div>
@@ -950,7 +951,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
             background: mode === m ? 'var(--accent)' : 'var(--surface2)',
             color: mode === m ? 'white' : 'var(--text-muted)',
           }}>
-            {m === 'topic' ? '🔤 Topic / Keywords' : m === 'pmid' ? '🆔 PubMed ID' : '🔗 DOI'}
+            {m === 'topic' ? <><EmojiIcon glyph="🔤" />{" Topic / Keywords"}</> : m === 'pmid' ? <><EmojiIcon glyph="🆔" />{" PubMed ID"}</> : <><EmojiIcon glyph="🔗" />{" DOI"}</>}
           </button>
         ))}
       </div>
@@ -960,11 +961,11 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
         <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginRight: 2 }}>SOURCES:</span>
           {([
-            ['all', '🌐 All Sources'],
-            ['pubmed', '📕 PubMed'],
-            ['europepmc', '📗 Europe PMC'],
-            ['preprints', '📄 Preprints (bioRxiv/medRxiv)'],
-            ['semantic', '🧠 Semantic Scholar'],
+            ['all', 'All Sources'],
+            ['pubmed', 'PubMed'],
+            ['europepmc', 'Europe PMC'],
+            ['preprints', 'Preprints (bioRxiv/medRxiv)'],
+            ['semantic', 'Semantic Scholar'],
           ] as const).map(([s, label]) => (
             <button key={s} onClick={() => setSource(s)} style={{
               padding: '4px 11px', borderRadius: 20, border: '1px solid', cursor: 'pointer', fontSize: 11, fontWeight: 600,
@@ -982,22 +983,22 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
           placeholder={mode === 'topic' ? 'Keywords, or paste a PubMed/Europe PMC/DOI link…' : mode === 'pmid' ? 'e.g. 38234567, 38123456 (comma-separated)' : 'e.g. 10.1038/s41586-024-07018-7'}
           style={{ flex: 1, padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
         <button onClick={doSearch} disabled={searching || !query.trim()} style={{ padding: '9px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', opacity: searching || !query.trim() ? 0.6 : 1 }}>
-          {searching ? (searchProgress ? `⏳ ${searchProgress}` : '⏳ Searching…') : '🔍 Search'}
+          {searching ? (searchProgress ? `⏳ ${searchProgress}` : <><EmojiIcon glyph="⏳" />{" Searching…"}</>) : <><EmojiIcon glyph="🔍" />{" Search"}</>}
         </button>
       </div>
 
       {mode === 'topic' && /^https?:\/\//i.test(query.trim()) && (
         <div style={{ padding: '7px 14px', background: 'rgba(34,197,94,0.1)', borderRadius: 8, color: '#4ade80', fontSize: 12, marginBottom: 12 }}>
-          🔗 Link detected — extracting the search term &amp; filters from the URL.
+          <EmojiIcon glyph="🔗" /> Link detected — extracting the search term &amp; filters from the URL.
         </div>
       )}
 
-      {searchErr && <div style={{ padding: '8px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, color: '#f87171', fontSize: 13, marginBottom: 12 }}>⚠️ {searchErr}</div>}
+      {searchErr && <div style={{ padding: '8px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, color: '#f87171', fontSize: 13, marginBottom: 12 }}><EmojiIcon glyph="⚠️" /> {searchErr}</div>}
 
       {/* Auto-suggested topic */}
       {suggestedTopic && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '9px 14px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 600 }}>✨ Auto-detected topic:</span>
+          <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 600 }}><EmojiIcon glyph="✨" /> Auto-detected topic:</span>
           <span style={{ fontSize: 12, color: 'var(--text)', fontStyle: 'italic', flex: 1 }}>{suggestedTopic}</span>
           <button onClick={() => document.dispatchEvent(new CustomEvent('labos:set-topic', { detail: suggestedTopic }))}
             style={{ padding: '4px 12px', background: '#6366f1', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 11, cursor: 'pointer' }}>
@@ -1019,18 +1020,18 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
 
           {selCount > 0 && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              <button onClick={handleAddToSwarm} disabled={fetchingAbstracts} style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #6366f1, #0071bc)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                {fetchingAbstracts ? '⏳ Loading…' : `🧬 Add ${selCount} to AI Swarm`}
+              <button onClick={handleAddToSwarm} disabled={fetchingAbstracts} style={{ padding: '6px 14px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                {fetchingAbstracts ? <><EmojiIcon glyph="⏳" />{" Loading…"}</> : `🧬 Add ${selCount} to AI Swarm`}
               </button>
 
               {/* ── Save to Library picker ── */}
               <SaveToLibraryPicker libraries={libraries} selectedCount={selCount} onSave={saveToLibrary} onCreateAndSave={createAndSave} />
 
               <button onClick={downloadSelected} disabled={fetchingAbstracts} style={{ padding: '6px 14px', background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                ⬇ Download ({selCount})
+                <EmojiIcon glyph="⬇" /> Download ({selCount})
               </button>
               <button onClick={downloadIds} style={{ padding: '6px 14px', background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                📋 Export IDs
+                <EmojiIcon glyph="📋" /> Export IDs
               </button>
             </div>
           )}
@@ -1056,9 +1057,9 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
                     {article.title}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {article.authors && <span>👤 {article.authors}</span>}
-                    {article.journal && <span>📰 {article.journal}</span>}
-                    {article.year && <span>📅 {article.year}</span>}
+                    {article.authors && <span><EmojiIcon glyph="👤" /> {article.authors}</span>}
+                    {article.journal && <span><EmojiIcon glyph="📰" /> {article.journal}</span>}
+                    {article.year && <span><EmojiIcon glyph="📅" /> {article.year}</span>}
                     {article.pmid && <span style={{ color: '#60a5fa' }}>PMID: {article.pmid}</span>}
                     {article.doi && <span style={{ color: '#a78bfa' }}>DOI: {article.doi}</span>}
                   </div>
@@ -1067,15 +1068,15 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
                   <button onClick={() => expanded === article.id ? setExpanded(null) : loadAbstractFor(article)} style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 11, color: 'var(--text-muted)' }}>
                     {expanded === article.id ? '▲ Hide' : '▼ Abstract'}
                   </button>
-                  <a href={article.url} target="_blank" rel="noreferrer" style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>↗</a>
-                  <button onClick={() => downloadSingle(article)} title="Download abstract" style={{ padding: '4px 8px', background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>⬇</button>
+                  <a href={article.url} target="_blank" rel="noreferrer" style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center' }}><EmojiIcon glyph="↗" /></a>
+                  <button onClick={() => downloadSingle(article)} title="Download abstract" style={{ padding: '4px 8px', background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}><EmojiIcon glyph="⬇" /></button>
                 </div>
               </div>
               {expanded === article.id && (
                 <div style={{ padding: '0 14px 14px', borderTop: '1px solid var(--border)', paddingTop: 10 }}>
                   {article.abstract
                     ? <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0 }}>{article.abstract}</p>
-                    : <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>{fetchingAbstracts ? '⏳ Fetching abstract…' : 'Abstract not available.'}</span>}
+                    : <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>{fetchingAbstracts ? <><EmojiIcon glyph="⏳" />{" Fetching abstract…"}</> : 'Abstract not available.'}</span>}
                 </div>
               )}
             </div>
@@ -1113,7 +1114,7 @@ function QueueDisplay({ files, onRemove, onClear }: { files: LitFile[]; onRemove
         </span>
         {large && (
           <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>
-            ⚡ Large library — content auto-trimmed for AI context
+            <EmojiIcon glyph="⚡" /> Large library — content auto-trimmed for AI context
           </span>
         )}
         <button onClick={onClear} style={{ marginLeft: 'auto', padding: '2px 8px', background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>
@@ -1125,7 +1126,7 @@ function QueueDisplay({ files, onRemove, onClear }: { files: LitFile[]; onRemove
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: expanded ? 340 : 'none', overflowY: expanded ? 'auto' : 'visible' }}>
         {shown.map(f => (
           <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--surface)', borderRadius: 7, border: '1px solid var(--border)', fontSize: 12 }}>
-            <span style={{ fontSize: 13 }}>📄</span>
+            <span style={{ fontSize: 13 }}><EmojiIcon glyph="📄" /></span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{f.filename}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: 10, flexShrink: 0 }}>{f.size}</span>
             <button onClick={() => onRemove(f.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>×</button>
@@ -1143,7 +1144,7 @@ function QueueDisplay({ files, onRemove, onClear }: { files: LitFile[]; onRemove
       {/* Download */}
       <button onClick={() => downloadText(files.map(f => `${'='.repeat(60)}\n${f.filename}\n${'='.repeat(60)}\n${f.content}\n`).join('\n'), `all_${files.length}_articles.txt`)}
         style={{ padding: '5px 12px', background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
-        ⬇ Download all {files.length} queued papers
+        <EmojiIcon glyph="⬇" /> Download all {files.length} queued papers
       </button>
     </div>
   );
@@ -1274,7 +1275,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <span style={{ fontSize: 28 }}>🧬</span>
+          <span style={{ fontSize: 28 }}><EmojiIcon glyph="🧬" /></span>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: 'var(--text)' }}>Research AI Swarm</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>Search 4 repositories → multi-model AI synthesises gaps → novel hypotheses → grant-ready content</p>
@@ -1284,7 +1285,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             const label = result.model_label || (isAI ? result.source : 'No AI');
             return (
               <span style={{ marginLeft: 'auto', background: isAI ? 'rgba(99,102,241,0.15)' : 'rgba(34,197,94,0.12)', color: isAI ? '#818cf8' : '#4ade80', border: `1px solid ${isAI ? '#6366f140' : '#22c55e40'}`, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
-                {isAI ? `⚡ ${label} Powered` : '⚠️ No AI — extracted text only'}
+                {isAI ? `⚡ ${label} Powered` : <><EmojiIcon glyph="⚠️" />{" No AI — extracted text only"}</>}
               </span>
             );
           })()}
@@ -1310,7 +1311,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 onDrop={e => { e.preventDefault(); setDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
                 onClick={() => fileRef.current?.click()}
                 style={{ border: `2px dashed ${dragging ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 12, padding: 20, textAlign: 'center', cursor: 'pointer', background: dragging ? 'rgba(99,102,241,0.05)' : 'var(--surface)', transition: 'all 0.2s', marginBottom: 10 }}>
-                <div style={{ fontSize: 28, marginBottom: 6 }}>📄</div>
+                <div style={{ fontSize: 28, marginBottom: 6 }}><EmojiIcon glyph="📄" /></div>
                 <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 14, color: 'var(--text)' }}>Drop files here</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>PDF, TXT, MD — up to 20 papers</div>
                 <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" style={{ display: 'none' }} onChange={e => { if (e.target.files) addFiles(Array.from(e.target.files)); }} />
@@ -1388,7 +1389,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 </div>
                 {prefStats.total_rated > 0 && (
                   <div style={{ fontSize: 10, color: '#818cf8', marginTop: 6 }}>
-                    🧠 Learning active — {prefStats.total_rated} hypothesis rating{prefStats.total_rated !== 1 ? 's' : ''} (avg {prefStats.avg_rating}★) feeding the next run.
+                    <EmojiIcon glyph="🧠" /> Learning active — {prefStats.total_rated} hypothesis rating{prefStats.total_rated !== 1 ? 's' : ''} (avg {prefStats.avg_rating}★) feeding the next run.
                   </div>
                 )}
               </div>
@@ -1403,12 +1404,12 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
         </>
       )}
 
-      {error && <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#f87171', marginBottom: 16, fontSize: 13, whiteSpace: 'pre-line' }}>⚠️ {error}</div>}
+      {error && <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#f87171', marginBottom: 16, fontSize: 13, whiteSpace: 'pre-line' }}><EmojiIcon glyph="⚠️" /> {error}</div>}
 
       {!running && !result && (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
-          <button onClick={runPipeline} style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #6366f1, #0071bc)', color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(99,102,241,0.35)' }}>
-            🚀 Launch AI Swarm
+          <button onClick={runPipeline} style={{ padding: '14px 32px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(99,102,241,0.35)' }}>
+            <EmojiIcon glyph="🚀" /> Launch AI Swarm
           </button>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             <span style={{ color: totalSources > 20 ? '#f59e0b' : 'var(--text-muted)', fontWeight: totalSources > 20 ? 700 : 400 }}>
@@ -1441,7 +1442,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   {done ? <span style={{ width: 28, height: 28, background: '#22c55e20', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✓</span>
                     : active ? <div style={{ width: 28, height: 28, border: '3px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
                     : <span style={{ width: 28, height: 28, background: 'var(--surface2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--text-muted)' }}>{i + 1}</span>}
-                  <span style={{ fontSize: 18 }}>{stage.icon}</span>
+                  <span style={{ fontSize: 18 }}><EmojiIcon glyph={stage.icon} /></span>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14, color: done ? '#4ade80' : active ? '#818cf8' : 'var(--text-muted)' }}>{stage.label}</div>
                     {active && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stage.desc}</div>}
@@ -1462,7 +1463,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             <div style={{ display: 'flex', gap: 6 }}>
               {(['overview', 'hypotheses', 'funding', 'aims', 'grant'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveResultTab(tab)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: activeResultTab === tab ? 'var(--accent)' : 'var(--surface)', color: activeResultTab === tab ? 'white' : 'var(--text)' }}>
-                  {tab === 'overview' ? '📊 Overview' : tab === 'hypotheses' ? '🧬 Hypotheses' : tab === 'funding' ? `💰 Funding${funding ? ` (${funding.summary.unfunded}🟢)` : ''}` : tab === 'aims' ? '🎯 Aims' : '✍️ Grant Sections'}
+                  {tab === 'overview' ? <><EmojiIcon glyph="📊" />{" Overview"}</> : tab === 'hypotheses' ? <><EmojiIcon glyph="🧬" />{" Hypotheses"}</> : tab === 'funding' ? `💰 Funding${funding ? ` (${funding.summary.unfunded}🟢)` : ''}` : tab === 'aims' ? <><EmojiIcon glyph="🎯" />{" Aims"}</> : <><EmojiIcon glyph="✍️" />{" Grant Sections"}</>}
                 </button>
               ))}
             </div>
@@ -1484,31 +1485,31 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   await exportSwarmDocx(opts);
                 }}
                 style={{ padding: '8px 14px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                ⬇ Word (.docx)
+                <EmojiIcon glyph="⬇" /> Word (.docx)
               </button>
               <button onClick={() => downloadText([`RESEARCH AI SWARM — ${topic}\n${'='.repeat(60)}`, `\nFIELD OVERVIEW:\n${result.field_overview}`, `\nRESEARCH GAPS:\n${result.research_gaps.map((g, i) => `${i + 1}. ${g}`).join('\n')}`, `\nNOVEL HYPOTHESES:\n${result.novel_hypotheses.map((h, i) => `${i + 1}. [Score: ${h.novelty_score}/10]\n${h.hypothesis}\nRationale: ${h.rationale}`).join('\n\n')}`, `\nSPECIFIC AIMS:\n${result.specific_aims.map((a, i) => `Aim ${i + 1}: ${a}`).join('\n\n')}`, `\nGRANT SECTIONS:\n${Object.entries(result.grant_sections).map(([k, v]) => `--- ${k.toUpperCase()} ---\n${v}`).join('\n\n')}`].join('\n'), `research_synthesis_${topic.slice(0, 30).replace(/\s+/g, '_')}.txt`)}
                 style={{ padding: '8px 14px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                ⬇ Text (.txt)
+                <EmojiIcon glyph="⬇" /> Text (.txt)
               </button>
               <button onClick={() => downloadText(buildAtomicNotes(result, funding, topic, disease, grantType), `atomic_notes_${topic.slice(0, 30).replace(/\s+/g, '_')}.md`)}
                 title="Export Zettelkasten-style linked atomic notes (Obsidian/Logseq-ready)"
                 style={{ padding: '8px 14px', border: '1px solid rgba(236,72,153,0.35)', borderRadius: 8, background: 'rgba(236,72,153,0.1)', color: '#f472b6', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                🗂️ Atomic Notes (.md)
+                <EmojiIcon glyph="🗂️" /> Atomic Notes (.md)
               </button>
               <button onClick={() => { setResult(null); setFunding(null); setCurrentStage(-1); }} style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>↺ New Analysis</button>
-              <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #0071bc, #1a4480)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>📝 Send to Grant Composer</button>
+              <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #0071bc, #1a4480)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}><EmojiIcon glyph="📝" /> Send to Grant Composer</button>
             </div>
           </div>
 
           {activeResultTab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="card" style={{ gridColumn: '1 / -1' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>🌍 Field Overview <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{result.paper_summaries.length} papers analysed</span></div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}><EmojiIcon glyph="🌍" /> Field Overview <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{result.paper_summaries.length} papers analysed</span></div>
                 <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, margin: 0 }}>{result.field_overview}</p>
               </div>
               <div className="card">
                 <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
-                  🕳️ Research Gaps <span style={{ marginLeft: 'auto', background: 'rgba(239,68,68,0.15)', color: '#f87171', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{result.research_gaps.length}</span>
+                  <EmojiIcon glyph="🕳️" /> Research Gaps <span style={{ marginLeft: 'auto', background: 'rgba(239,68,68,0.15)', color: '#f87171', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{result.research_gaps.length}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {result.research_gaps.map((gap, i) => (
@@ -1520,12 +1521,12 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 </div>
               </div>
               <div className="card">
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, color: 'var(--text)' }}>🌐 Latest Field Intelligence</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, color: 'var(--text)' }}><EmojiIcon glyph="🌐" /> Latest Field Intelligence</div>
                 <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>{result.web_context}</p>
               </div>
               <div className="card" style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>📚 Paper Summaries ({result.paper_summaries.length})</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}><EmojiIcon glyph="📚" /> Paper Summaries ({result.paper_summaries.length})</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => {
                       const lines = result.paper_summaries.map((p, i) => {
@@ -1534,7 +1535,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                       });
                       downloadText(`# PMIDs / DOIs from synthesis\n` + lines.join('\n'), `synthesis_ids_${Date.now()}.tsv`);
                     }} style={{ padding: '5px 12px', background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
-                      📋 Export IDs
+                      <EmojiIcon glyph="📋" /> Export IDs
                     </button>
                     <button onClick={() => {
                       const txt = result.paper_summaries.map((p, i) => {
@@ -1551,7 +1552,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                       }).join('\n');
                       downloadText(txt, `paper_summaries_${Date.now()}.txt`);
                     }} style={{ padding: '5px 12px', background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
-                      ⬇ Download All
+                      <EmojiIcon glyph="⬇" /> Download All
                     </button>
                   </div>
                 </div>
@@ -1559,7 +1560,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   {result.paper_summaries.map((p, i) => (
                     <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                       <button onClick={() => setExpandedPaper(expandedPaper === i ? null : i)} style={{ width: '100%', padding: '12px 16px', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
-                        <span>📄</span>
+                        <span><EmojiIcon glyph="📄" /></span>
                         <span style={{ fontWeight: 600, fontSize: 13, flex: 1, color: 'var(--text)' }}>{p.filename}</span>
                         {p.identifier && <span style={{ fontSize: 11, fontWeight: 700, color: '#818cf8', background: 'rgba(99,102,241,0.12)', borderRadius: 6, padding: '2px 8px', whiteSpace: 'nowrap' }}>{p.identifier}</span>}
                         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{expandedPaper === i ? '▲' : '▼'}</span>
@@ -1569,9 +1570,9 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                           {/* Cohort chips: N, race/ethnicity, country */}
                           {(p.sample_size || p.race_ethnicity || p.country) && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                              {p.sample_size && <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '3px 9px' }}>👥 {p.sample_size}</span>}
-                              {p.race_ethnicity && <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6, padding: '3px 9px' }}>🧬 {p.race_ethnicity}</span>}
-                              {p.country && <span style={{ fontSize: 11, fontWeight: 600, color: '#38bdf8', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 6, padding: '3px 9px' }}>🌍 {p.country}</span>}
+                              {p.sample_size && <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '3px 9px' }}><EmojiIcon glyph="👥" /> {p.sample_size}</span>}
+                              {p.race_ethnicity && <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6, padding: '3px 9px' }}><EmojiIcon glyph="🧬" /> {p.race_ethnicity}</span>}
+                              {p.country && <span style={{ fontSize: 11, fontWeight: 600, color: '#38bdf8', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 6, padding: '3px 9px' }}><EmojiIcon glyph="🌍" /> {p.country}</span>}
                             </div>
                           )}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1596,12 +1597,12 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           {activeResultTab === 'hypotheses' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ padding: '12px 16px', background: 'rgba(99,102,241,0.08)', borderRadius: 10, border: '1px solid rgba(99,102,241,0.2)', fontSize: 13, color: 'var(--text-muted)' }}>
-                🧬 <strong>AI-Generated Novel Hypotheses</strong> — Ranked by novelty score. Each addresses identified research gaps and is directly testable.
+                <EmojiIcon glyph="🧬" /> <strong>AI-Generated Novel Hypotheses</strong> — Ranked by novelty score. Each addresses identified research gaps and is directly testable.
               </div>
               {result.novel_hypotheses.map((h, i) => (
                 <div key={i} className="card" style={{ border: `1px solid ${h.novelty_score >= 9 ? 'rgba(34,197,94,0.25)' : 'rgba(99,102,241,0.2)'}` }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-                    <span style={{ fontSize: 28, flexShrink: 0 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                    <span style={{ fontSize: 28, flexShrink: 0 }}>{i === 0 ? <><EmojiIcon glyph="🥇" /></> : i === 1 ? <><EmojiIcon glyph="🥈" /></> : <><EmojiIcon glyph="🥉" /></>}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-muted)' }}>HYPOTHESIS {i + 1}</span>
@@ -1626,7 +1627,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                         </div>
                       ))}
                       <div style={{ padding: 12, background: 'linear-gradient(135deg, rgba(0,113,188,0.1), rgba(99,102,241,0.1))', borderRadius: 8, border: '1px solid rgba(0,113,188,0.2)' }}>
-                        <div style={{ fontWeight: 700, fontSize: 11, color: '#60a5fa', marginBottom: 6 }}>💡 USE THIS HYPOTHESIS</div>
+                        <div style={{ fontWeight: 700, fontSize: 11, color: '#60a5fa', marginBottom: 6 }}><EmojiIcon glyph="💡" /> USE THIS HYPOTHESIS</div>
                         <button onClick={() => onSendToGrant({ specific_aims: `Central Hypothesis:\n${h.hypothesis}` }, topic)} style={{ padding: '6px 14px', background: '#0071bc', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>→ Send to Grant Composer</button>
                       </div>
                     </div>
@@ -1639,7 +1640,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           {activeResultTab === 'funding' && (
             <div>
               <div style={{ padding: '12px 16px', background: 'rgba(34,197,94,0.07)', borderRadius: 10, border: '1px solid rgba(34,197,94,0.2)', fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                💰 <strong>Funding Gap Intelligence</strong> — each AI-detected gap is cross-checked against live grant-agency databases. Gaps with few or zero existing awards are genuine <strong>unfunded white-space</strong> — your strongest case for a new proposal.
+                <EmojiIcon glyph="💰" /> <strong>Funding Gap Intelligence</strong> — each AI-detected gap is cross-checked against live grant-agency databases. Gaps with few or zero existing awards are genuine <strong>unfunded white-space</strong> — your strongest case for a new proposal.
               </div>
               {funding ? (
                 <FundingVisualization funding={funding} />
@@ -1656,18 +1657,18 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           {activeResultTab === 'aims' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="card" style={{ gridColumn: '1 / -1' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, color: 'var(--text)' }}>🎯 Specific Aims (NIH-Style)</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, color: 'var(--text)' }}><EmojiIcon glyph="🎯" /> Specific Aims (NIH-Style)</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {result.specific_aims.map((aim, i) => (
                     <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 16px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                      <div style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #0071bc, #6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{i + 1}</div>
+                      <div style={{ width: 36, height: 36, background: 'var(--accent)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{i + 1}</div>
                       <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)' }}>{aim}</div>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="card">
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: 'var(--text)' }}>📋 Research Objectives</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: 'var(--text)' }}><EmojiIcon glyph="📋" /> Research Objectives</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {result.objectives.map((obj, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', background: 'rgba(0,113,188,0.06)', borderRadius: 8, border: '1px solid rgba(0,113,188,0.15)' }}>
@@ -1678,7 +1679,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                 </div>
               </div>
               <div className="card">
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: 'var(--text)' }}>📊 Summary</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: 'var(--text)' }}><EmojiIcon glyph="📊" /> Summary</div>
                 {[['Papers Analysed', result.paper_summaries.length, '#6366f1'], ['Gaps Identified', result.research_gaps.length, '#f87171'], ['Novel Hypotheses', result.novel_hypotheses.length, '#22c55e'], ['Specific Aims', result.specific_aims.length, '#0071bc'], ['Objectives', result.objectives.length, '#f59e0b']].map(([label, value, color]) => (
                   <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</span>
@@ -1692,18 +1693,18 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
           {activeResultTab === 'grant' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ padding: '12px 16px', background: 'rgba(0,113,188,0.08)', borderRadius: 10, border: '1px solid rgba(0,113,188,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>✍️ AI-drafted grant sections — send directly to Grant Composer</span>
-                <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 18px', background: '#0071bc', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>📝 Send All to Grant Composer</button>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}><EmojiIcon glyph="✍️" /> AI-drafted grant sections — send directly to Grant Composer</span>
+                <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 18px', background: '#0071bc', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}><EmojiIcon glyph="📝" /> Send All to Grant Composer</button>
               </div>
               {Object.entries(result.grant_sections).map(([key, content]) => (
                 <div key={key} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
-                      {key === 'specific_aims' ? '📋 Specific Aims' : key === 'significance' ? '📈 Significance' : key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {key === 'specific_aims' ? <><EmojiIcon glyph="📋" />{" Specific Aims"}</> : key === 'significance' ? <><EmojiIcon glyph="📈" />{" Significance"}</> : key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => navigator.clipboard?.writeText(content as string)} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}>📋 Copy</button>
-                      <button onClick={() => downloadText(content as string, `${key}.txt`)} style={{ padding: '4px 10px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 11 }}>⬇ .txt</button>
+                      <button onClick={() => navigator.clipboard?.writeText(content as string)} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}><EmojiIcon glyph="📋" /> Copy</button>
+                      <button onClick={() => downloadText(content as string, `${key}.txt`)} style={{ padding: '4px 10px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 11 }}><EmojiIcon glyph="⬇" /> .txt</button>
                     </div>
                   </div>
                   <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, maxHeight: 400, overflowY: 'auto' }}>{content}</pre>

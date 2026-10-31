@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { workspacesApi, meetingsApi, feedbackApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 interface Workspace {
@@ -302,12 +304,9 @@ export default function CollaborationHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Collaboration</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Team workspaces, meetings, and activity</p>
-        </div>
+        <LabBanner art="team" title="Collaboration" subtitle="Team workspaces, meetings, and activity" style={{ flex: 1, marginBottom: 0 }} />
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
-          ❓ How to Use
+          <EmojiIcon glyph="❓" /> How to Use
         </button>
       </div>
 
@@ -320,7 +319,7 @@ export default function CollaborationHubPage() {
           { label: 'Activities', value: activities.length, icon: '📈', color: '#f472b6' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
+            <div style={{ fontSize: 24, marginBottom: 4 }}><EmojiIcon glyph={stat.icon} /></div>
             <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
           </div>
@@ -341,7 +340,7 @@ export default function CollaborationHubPage() {
               display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count > 0 && (
               <span style={{
@@ -363,7 +362,7 @@ export default function CollaborationHubPage() {
 
           {workspaces.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🏗</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🏗" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Workspaces Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Create a workspace to organize your team's projects</p>
               <button className="btn btn-primary" onClick={() => setShowWorkspaceModal(true)}>+ Create First Workspace</button>
@@ -386,8 +385,8 @@ export default function CollaborationHubPage() {
                     {ws.members.length} member{ws.members.length !== 1 ? 's' : ''} • {ws.projects} project{ws.projects !== 1 ? 's' : ''}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setEditingWorkspace(ws)}>✏️ Edit</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteWorkspace(ws)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setEditingWorkspace(ws)}><EmojiIcon glyph="✏️" /> Edit</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteWorkspace(ws)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -405,7 +404,7 @@ export default function CollaborationHubPage() {
 
           {meetings.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🗣</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🗣" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Meetings Scheduled</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Schedule a meeting to collaborate with your team</p>
               <button className="btn btn-primary" onClick={() => setShowMeetingModal(true)}>+ Schedule First Meeting</button>
@@ -425,27 +424,27 @@ export default function CollaborationHubPage() {
                         <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 500, background: statusColors[m.status]?.bg, color: statusColors[m.status]?.text }}>
                           {m.status}
                         </span>
-                        {m.recurring && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>🔄 Recurring</span>}
+                        {m.recurring && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}><EmojiIcon glyph="🔄" /> Recurring</span>}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                         {m.time} • {m.duration} • {m.location || 'No location'}
                       </div>
                       {m.attendees.length > 0 && (
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                          👥 {m.attendees.join(', ')}
+                          <EmojiIcon glyph="👥" /> {m.attendees.join(', ')}
                         </div>
                       )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     {m.status === 'scheduled' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => handleMeetingStatusChange(m, 'in-progress')}>▶️ Start</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleMeetingStatusChange(m, 'in-progress')}><EmojiIcon glyph="▶️" /> Start</button>
                     )}
                     {m.status === 'in-progress' && (
                       <button className="btn btn-sm" style={{ background: '#22c55e', color: 'white', border: 'none' }} onClick={() => handleMeetingStatusChange(m, 'completed')}>✓ End</button>
                     )}
-                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingMeeting(m)}>✏️ Edit</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteMeeting(m)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingMeeting(m)}><EmojiIcon glyph="✏️" /> Edit</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteMeeting(m)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -463,7 +462,7 @@ export default function CollaborationHubPage() {
 
           {feedbacks.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="💬" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Feedback Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Share your thoughts, suggestions, or report issues</p>
               <button className="btn btn-primary" onClick={() => setShowFeedbackModal(true)}>+ Submit First Feedback</button>
@@ -495,8 +494,8 @@ export default function CollaborationHubPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-sm btn-secondary" onClick={() => setViewingFeedback(f)}>👁️ View</button>
-                      <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFeedback(f)}>🗑️</button>
+                      <button className="btn btn-sm btn-secondary" onClick={() => setViewingFeedback(f)}><EmojiIcon glyph="👁️" /> View</button>
+                      <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteFeedback(f)}><EmojiIcon glyph="🗑️" /></button>
                     </div>
                   </div>
                 );
@@ -511,7 +510,7 @@ export default function CollaborationHubPage() {
         <div>
           {activities.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📈</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📈" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Activity Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Activities will appear here as you use the collaboration features</p>
             </div>
@@ -731,7 +730,7 @@ export default function CollaborationHubPage() {
                         color: newFeedback.type === type.id ? 'white' : 'var(--text)',
                         border: 'none', fontSize: 12, fontWeight: 500
                       }}>
-                      <div style={{ fontSize: 20, marginBottom: 4 }}>{type.icon}</div>
+                      <div style={{ fontSize: 20, marginBottom: 4 }}><EmojiIcon glyph={type.icon} /></div>
                       {type.label}
                     </button>
                   ))}
@@ -814,7 +813,7 @@ export default function CollaborationHubPage() {
             </div>
             <div style={{ display: 'grid', gap: 20 }}>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>🏗 Workspaces</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🏗" /> Workspaces</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Create workspaces to organize teams and projects</li>
                   <li>Click <strong>+ New Workspace</strong> to create one</li>
@@ -823,7 +822,7 @@ export default function CollaborationHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>🗣 Meetings</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🗣" /> Meetings</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Schedule meetings with your team</li>
                   <li>Set date, time, duration, and location</li>
@@ -833,7 +832,7 @@ export default function CollaborationHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>💬 Feedback</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="💬" /> Feedback</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Submit suggestions, report issues, or share praise</li>
                   <li>Choose feedback type: Suggestion, Issue, Praise, or Question</li>
@@ -842,7 +841,7 @@ export default function CollaborationHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>📈 Activity</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="📈" /> Activity</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>View all collaboration activities in one place</li>
                   <li>Track who created, updated, or deleted items</li>

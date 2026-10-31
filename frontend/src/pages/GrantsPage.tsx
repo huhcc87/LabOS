@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Grant {
   id: number;
@@ -51,8 +53,7 @@ export default function GrantsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Grant Writing & Management</h1>
-          <p className="page-subtitle">Compose, track, and manage your research grants</p>
+          <LabBanner art="team" title="Grant Writing & Management" subtitle="Compose, track, and manage your research grants" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button className="btn btn-primary" onClick={() => setShowNewGrant(true)}>
           + New Grant Proposal
@@ -98,7 +99,7 @@ export default function GrantsPage() {
           alignItems: 'center',
           gap: 12,
         }}>
-          <span style={{ fontSize: 24 }}>⏰</span>
+          <span style={{ fontSize: 24 }}><EmojiIcon glyph="⏰" /></span>
           <div>
             <div style={{ fontWeight: 600, color: '#fbbf24', marginBottom: 4 }}>Upcoming Deadlines</div>
             <div style={{ fontSize: 13, color: 'var(--text-soft)' }}>
@@ -157,9 +158,9 @@ export default function GrantsPage() {
               </h3>
 
               <div style={{ fontSize: 13, color: 'var(--text-soft)', marginBottom: 12 }}>
-                <div style={{ marginBottom: 4 }}>👤 {grant.pi}</div>
-                <div style={{ marginBottom: 4 }}>🏛️ {grant.fundingAgency}</div>
-                <div>💵 ${grant.amount.toLocaleString()}</div>
+                <div style={{ marginBottom: 4 }}><EmojiIcon glyph="👤" /> {grant.pi}</div>
+                <div style={{ marginBottom: 4 }}><EmojiIcon glyph="🏛️" /> {grant.fundingAgency}</div>
+                <div><EmojiIcon glyph="💵" /> ${grant.amount.toLocaleString()}</div>
               </div>
 
               {/* Progress Bar */}
@@ -190,7 +191,7 @@ export default function GrantsPage() {
         </div>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: '60px 40px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📝</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📝" /></div>
           <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Grant Proposals Yet</h3>
           <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24, maxWidth: 400, margin: '0 auto 24px' }}>
             Start your first grant proposal to track your submissions, deadlines, and funding progress.
@@ -206,16 +207,16 @@ export default function GrantsPage() {
         <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Quick Actions</h3>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={() => comingSoon('Browse NIH FOAs')}>
-            📋 Browse NIH FOAs
+            <EmojiIcon glyph="📋" /> Browse NIH FOAs
           </button>
           <button className="btn btn-secondary" onClick={() => comingSoon('Funding Analytics')}>
-            📊 Funding Analytics
+            <EmojiIcon glyph="📊" /> Funding Analytics
           </button>
           <button className="btn btn-secondary" onClick={() => comingSoon('Reference Library')}>
-            📚 Reference Library
+            <EmojiIcon glyph="📚" /> Reference Library
           </button>
           <button className="btn btn-secondary" onClick={() => comingSoon('Collaborator Network')}>
-            👥 Collaborator Network
+            <EmojiIcon glyph="👥" /> Collaborator Network
           </button>
         </div>
       </div>

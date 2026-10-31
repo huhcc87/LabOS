@@ -7,6 +7,7 @@ import { errText } from '../../lib/errors';
 import { PROTOCOL_CATEGORIES } from './data/categories';
 import { templateDraft } from './services/protocolAiService';
 import type { Protocol } from './types/protocol.types';
+import EmojiIcon from '../../components/EmojiIcon';
 
 interface ExternalProtocol {
   id: string; title: string; source: string; sourceColor: string; sourceUrl: string;
@@ -114,7 +115,7 @@ export default function ExternalLibrary() {
             <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
               <input
                 type="text"
-                placeholder="🔍 Search protocols, sources, categories..."
+                placeholder="Search protocols, sources, categories..."
                 className="form-input"
                 style={{ flex: 1, minWidth: 220 }}
                 value={libSearch}
@@ -140,9 +141,9 @@ export default function ExternalLibrary() {
                   </div>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>{ep.description}</p>
                   <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
-                    <span>⏱ {ep.duration}</span>
-                    <span>📊 {ep.difficulty}</span>
-                    <span>📝 {ep.steps.length} steps</span>
+                    <span><EmojiIcon glyph="⏱" /> {ep.duration}</span>
+                    <span><EmojiIcon glyph="📊" /> {ep.difficulty}</span>
+                    <span><EmojiIcon glyph="📝" /> {ep.steps.length} steps</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
                     <button
@@ -150,11 +151,11 @@ export default function ExternalLibrary() {
                       style={{ flex: 1 }}
                       onClick={() => setViewLibProtocol(ep)}
                     >
-                      👁 View Steps
+                      <EmojiIcon glyph="👁" /> View Steps
                     </button>
                     <a href={ep.sourceUrl} target="_blank" rel="noopener noreferrer"
                       style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textDecoration: 'none', border: '1px solid var(--border)' }}>
-                      🔗 Source
+                      <EmojiIcon glyph="🔗" /> Source
                     </a>
                     <button
                       className="btn btn-sm btn-primary"
@@ -186,9 +187,9 @@ export default function ExternalLibrary() {
                 <span style={{ padding: '3px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: viewLibProtocol.sourceColor + '22', color: viewLibProtocol.sourceColor, marginBottom: 8, display: 'inline-block' }}>{viewLibProtocol.source}</span>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '4px 0' }}>{viewLibProtocol.title}</h2>
                 <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-                  <span>📂 {viewLibProtocol.category}</span>
-                  <span>⏱ {viewLibProtocol.duration}</span>
-                  <span>📊 {viewLibProtocol.difficulty}</span>
+                  <span><EmojiIcon glyph="📂" /> {viewLibProtocol.category}</span>
+                  <span><EmojiIcon glyph="⏱" /> {viewLibProtocol.duration}</span>
+                  <span><EmojiIcon glyph="📊" /> {viewLibProtocol.difficulty}</span>
                 </div>
               </div>
               <button onClick={() => setViewLibProtocol(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
@@ -206,7 +207,7 @@ export default function ExternalLibrary() {
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <a href={viewLibProtocol.sourceUrl} target="_blank" rel="noopener noreferrer"
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, background: 'var(--surface2)', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, textDecoration: 'none', border: '1px solid var(--border)' }}>
-                🔗 Open Full Source
+                <EmojiIcon glyph="🔗" /> Open Full Source
               </a>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => importLibProtocol(viewLibProtocol)}>
                 ↓ Import to My Protocols

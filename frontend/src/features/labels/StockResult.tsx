@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from '../../context/NavigationContext';
 import { errText } from '../../lib/errors';
 import { LOT_PREFIX, printLabels } from '../../lib/labelPrint';
+import EmojiIcon from '../../components/EmojiIcon';
 
 type Lot = Doc<'inventory_lots'> & { item_name: string };
 export type StockHits = {
@@ -69,7 +70,7 @@ export function StockResult({ code, hits, onChanged }: { code: string; hits: Sto
             <label htmlFor={`use-${lot._id}`} style={{ fontSize: 13 }}>Use</label>
             <input id={`use-${lot._id}`} className="form-input" style={{ width: 90 }} type="number" min={1} value={used[lot._id] ?? '1'} onChange={(e) => setUsed({ ...used, [lot._id]: e.target.value })} />
             <button className="btn btn-primary btn-sm" onClick={() => use(lot)} disabled={lot.quantity_remaining <= 0}>Take from stock</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => printLot(lot)}>🖨️ Print lot label</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => printLot(lot)}><EmojiIcon glyph="🖨️" /> Print lot label</button>
           </div>
         </div>
       ))}
@@ -77,7 +78,7 @@ export function StockResult({ code, hits, onChanged }: { code: string; hits: Sto
         <div key={item._id} className="card" style={{ padding: 16, marginBottom: 12 }}>
           <div style={{ fontWeight: 700 }}>{item.name} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>· in stock {item.quantity}{item.unit ? ` ${item.unit}` : ''}</span></div>
           <div style={{ fontSize: 14, color: 'var(--text-muted)', margin: '4px 0 10px' }}>{[item.catalog_number && `#${item.catalog_number}`, item.location, item.expiry_date && `soonest expiry ${day(item.expiry_date)}`].filter(Boolean).join(' · ')}</div>
-          <button className="btn btn-secondary btn-sm" onClick={() => printItem(item)}>🖨️ Print item label</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => printItem(item)}><EmojiIcon glyph="🖨️" /> Print item label</button>
         </div>
       ))}
       {hits.orders.map((o) => (

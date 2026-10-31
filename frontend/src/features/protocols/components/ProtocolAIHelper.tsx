@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { Protocol } from '../types/protocol.types'
 
@@ -59,7 +60,7 @@ export default function ProtocolAIHelper({ protocol, onInsert }: Props) {
                 cursor: 'pointer', textAlign: 'left', fontSize: 12,
               }}
             >
-              <div style={{ fontSize: 16, marginBottom: 2 }}>{action.icon}</div>
+              <div style={{ fontSize: 16, marginBottom: 2 }}><EmojiIcon glyph={action.icon} /></div>
               <div style={{ fontWeight: 600 }}>{action.label}</div>
             </button>
           ))}
@@ -95,7 +96,7 @@ export default function ProtocolAIHelper({ protocol, onInsert }: Props) {
           cursor: loading ? 'default' : 'pointer', fontSize: 14, fontWeight: 600,
         }}
       >
-        {loading ? '🤖 Generating...' : `🤖 Run: ${selectedAction.label}`}
+        {loading ? <><EmojiIcon glyph="🤖" />{" Generating..."}</> : `🤖 Run: ${selectedAction.label}`}
       </button>
 
       {/* Result */}
@@ -123,7 +124,7 @@ export default function ProtocolAIHelper({ protocol, onInsert }: Props) {
 
       {/* API key notice */}
       <div style={{ padding: '10px 14px', background: 'var(--surface2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-        <span>ℹ️</span>
+        <span><EmojiIcon glyph="ℹ️" /></span>
         <span>Live AI features require an OpenAI API key. Configure in <strong>Settings → Integrations → AI Settings</strong>. All protocol data stays within your lab instance.</span>
       </div>
     </div>

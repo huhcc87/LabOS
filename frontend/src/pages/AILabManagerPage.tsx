@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
 import {
   tasksApi, inventoryApi, samplesApi, iotApi, notebookApi,
   dashboardApi, instrumentsApi,
@@ -102,7 +103,7 @@ export default function AILabManagerPage() {
         id: 'reagent-expiring', severity: 'warning', category: 'Reagents', icon: '⚗️',
         title: `${expiringReagents.length} reagent${expiringReagents.length > 1 ? 's' : ''} expiring in 30 days`,
         detail: expiringReagents.slice(0, 3).map(r => `${r.name || r.item || 'Item'} (${(r.expiry_date || r.expiration_date || '').slice(0, 10)})`).join(', '),
-        action: { label: '🛒 Smart reorder', page: 'reagent-cart' },
+        action: { label: "Smart reorder", page: 'reagent-cart' },
         count: expiringReagents.length,
       });
     }
@@ -115,7 +116,7 @@ export default function AILabManagerPage() {
         id: 'reagent-expired', severity: 'critical', category: 'Reagents', icon: '🚫',
         title: `${expiredReagents.length} expired item${expiredReagents.length > 1 ? 's' : ''} in inventory`,
         detail: expiredReagents.slice(0, 3).map(r => r.name || r.item || 'Item').join(', ') + ' · click below to auto-add replacement to cart',
-        action: { label: '🛒 Smart reorder', page: 'reagent-cart' },
+        action: { label: "Smart reorder", page: 'reagent-cart' },
         count: expiredReagents.length,
       });
     }
@@ -131,7 +132,7 @@ export default function AILabManagerPage() {
         id: 'inventory-low', severity: 'warning', category: 'Inventory', icon: '📦',
         title: `${lowStock.length} item${lowStock.length > 1 ? 's' : ''} below reorder level`,
         detail: lowStock.slice(0, 3).map(i => `${i.name || i.item} (qty ${i.quantity ?? i.stock ?? 0})`).join(', '),
-        action: { label: '🛒 Smart reorder', page: 'reagent-cart' },
+        action: { label: "Smart reorder", page: 'reagent-cart' },
         count: lowStock.length,
       });
     }
@@ -273,7 +274,7 @@ export default function AILabManagerPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            🤖 AI Lab Manager
+            <EmojiIcon glyph="🤖" /> AI Lab Manager
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             Autonomous monitoring across tasks, reagents, inventory, sensors, equipment, and notebook entries
@@ -294,10 +295,10 @@ export default function AILabManagerPage() {
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 22, color: '#fff',
-            }}>🤖</div>
+            }}><EmojiIcon glyph="🤖" /></div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                 LabOS AI Manager — Daily briefing
@@ -373,7 +374,7 @@ export default function AILabManagerPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading ? (
           <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="🔍" /></div>
             Scanning lab subsystems…
           </div>
         ) : items.length === 0 ? (
@@ -393,7 +394,7 @@ export default function AILabManagerPage() {
                   background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 }}>
-                  {item.icon}
+                  <EmojiIcon glyph={item.icon} />
                 </div>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -426,7 +427,7 @@ export default function AILabManagerPage() {
 
       {/* Footer note */}
       <div style={{ marginTop: 24, padding: 14, background: 'rgba(99,102,241,0.05)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-        💡 <strong>How this works:</strong> the AI Lab Manager polls every subsystem on this page load
+        <EmojiIcon glyph="💡" /> <strong>How this works:</strong> the AI Lab Manager polls every subsystem on this page load
         (tasks, inventory, reagents, IoT sensors, equipment, ELN) and ranks issues by severity.
         Enable Autopilot to receive the same briefing via your <a href="#" onClick={e => { e.preventDefault(); goToPage('email-settings'); }} style={{ color: 'var(--accent, #6366f1)', textDecoration: 'underline' }}>configured notification channels</a>.
         Real-time mode pages you only for critical alerts (sensor breaches, expired reagents in active experiments).

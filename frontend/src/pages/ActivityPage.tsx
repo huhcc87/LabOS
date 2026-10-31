@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { activityApi } from '../lib/api';
 import toast from 'react-hot-toast';
 import { Pagination } from '../components/Table';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface ActivityEvent {
   id: number;
@@ -100,8 +102,7 @@ export default function ActivityPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Activity Timeline</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Recent activity across the lab</p>
+          <LabBanner art="team" title="Activity Timeline" subtitle="Recent activity across the lab" style={{ flex: 1, minWidth: 0 }} />
         </div>
       </div>
 
@@ -220,7 +221,7 @@ export default function ActivityPage() {
                           fontWeight: 700,
                           zIndex: 1,
                         }}>
-                          {config.icon}
+                          <EmojiIcon glyph={config.icon} />
                         </div>
 
                         {/* Event card */}
@@ -283,7 +284,7 @@ export default function ActivityPage() {
 
         {!loading && activities.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📈</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📈" /></div>
             <p>No activities found</p>
           </div>
         )}
