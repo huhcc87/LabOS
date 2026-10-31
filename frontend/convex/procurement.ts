@@ -2,6 +2,7 @@ import { query, mutation } from "./tenant";
 import { v } from "convex/values";
 import { hubGuard } from "./authHelper";
 import { committedFor } from "./cartBudgets";
+import { logProcurement } from "./procurementAudit";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -119,7 +120,7 @@ export const createBudget = mutation({
   },
   handler: async (ctx, { token, name, amount, period, department }) => {
     const caller = await requireRole(ctx, token, "manager");
-    return ctx.db.insert("procurement_budgets", {
+    const id = await ctx.db.insert("procurement_budgets", {
       name,
       amount,
       spent: 0,
@@ -128,14 +129,18 @@ export const createBudget = mutation({
       created_by: caller._id,
       created_at: Date.now(),
     });
+    await logProcurement(ctx, caller._id, "budget_create", id, { name, amount, period });
+    return id;
   },
 });
 
 export const deleteBudget = mutation({
   args: { token: v.optional(v.string()), id: v.id("procurement_budgets") },
   handler: async (ctx, { token, id }) => {
-    await requireRole(ctx, token, "manager");
+    const caller = await requireRole(ctx, token, "manager");
+    const budget = await ctx.db.get(id);
     await ctx.db.delete(id);
+    await logProcurement(ctx, caller._id, "budget_delete", id, { name: budget?.name, amount: budget?.amount });
     return { success: true };
   },
 });

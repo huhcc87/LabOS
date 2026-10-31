@@ -4,6 +4,7 @@ import { hubGuard, hasRole } from "./authHelper";
 import type { Doc, Id } from "./_generated/dataModel";
 import { lineTotal, overBudget, committedFor } from "./cartBudgets";
 import { matchPo } from "./invoiceMatch";
+import { logProcurement } from "./procurementAudit";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -115,7 +116,7 @@ export const create = mutation({
     // A request that would exceed a grant/project/budget limit always waits for a manager.
     const over = overBudget(await ctx.db.query("procurement_budgets").collect(), await ctx.db.query("reagent_cart").collect(), fields);
     const auto = !over.length && limit > 0 && fields.unit_price !== undefined && lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }) <= limit;
-    return await ctx.db.insert("reagent_cart", {
+    const id = await ctx.db.insert("reagent_cart", {
       ...fields,
       name: fields.name.trim(),
       user_id: userId,
@@ -124,6 +125,11 @@ export const create = mutation({
       ...(over.length ? { decision_note: `Needs a manager: over budget (${over.map((o) => o.name).join(", ")})` } : {}),
       created_at: Date.now(),
     });
+    await logProcurement(ctx, userId, "request", id, {
+      item: fields.name.trim(), quantity: fields.quantity, total: lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }),
+      status: auto ? "approved" : "pending", ...(auto ? { auto_approved_under: limit } : {}), ...(over.length ? { over_budget: over.map((o) => o.name) } : {}),
+    });
+    return id;
   },
 });
 
@@ -179,6 +185,7 @@ export const remove = mutation({
     if (!item) throw new ConvexError("Request not found.");
     if (item.user_id !== userId && !hasRole(me.role, "manager")) throw new ConvexError("You can only remove your own requests.");
     if (["ordered", "received"].includes(item.status)) throw new ConvexError("Ordered requests are kept as a record. Cancel it instead.");
+    await logProcurement(ctx, userId, "cancel", id, { item: item.name, status_was: item.status });
     await ctx.db.delete(id);
     return id;
   },
@@ -216,6 +223,9 @@ export const decide = mutation({
         decision_note: note?.trim() || undefined,
       });
       if (decision === "approve") rows = rows.map((r) => (r._id === id ? { ...r, status: "approved" } : r)); // counts for the next one
+      await logProcurement(ctx, manager._id, decision, id, {
+        item: item.name, total: lineTotal(item), ...(note?.trim() ? { note: note.trim() } : {}), ...(override ? { budget_override: true } : {}),
+      });
       changed++;
     }
     return { changed, blocked };
@@ -228,7 +238,7 @@ export const decide = mutation({
 export const placeOrder = mutation({
   args: { token: v.optional(v.string()), ids: v.array(v.id("reagent_cart")) },
   handler: async (ctx, { token, ids }) => {
-    await requireRole(ctx, token, "manager");
+    const orderer = await requireRole(ctx, token, "manager");
     const now = Date.now();
     const stamp = new Date(now).toISOString().slice(0, 10).replace(/-/g, "");
     const rows: Doc<"reagent_cart">[] = [];
@@ -246,6 +256,7 @@ export const placeOrder = mutation({
     for (const [supplier, group] of bySupplier) {
       const po = `PO-${stamp}-${String(++n).padStart(2, "0")}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
       for (const r of group) await ctx.db.patch(r._id, { status: "ordered", po_number: po, ordered_at: now });
+      await logProcurement(ctx, orderer._id, "order", po, { supplier, items: group.map((r) => r.name), total: group.reduce((s, r) => s + lineTotal(r), 0) });
       orders.push({ po_number: po, supplier, total: group.reduce((s, r) => s + lineTotal(r), 0), ids: group.map((r) => r._id as Id<"reagent_cart">) });
     }
     return { ordered: rows.length, skipped: ids.length - rows.length, orders };
