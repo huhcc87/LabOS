@@ -1880,8 +1880,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/ProcurementHubPage.tsx": {
-    "mtime": 1793456564.5785992,
-    "ast_hash": "b05b4540610f6a2d4e0f18b47b441ae3",
+    "mtime": 1793460480.1795466,
+    "ast_hash": "861229171ea6a902c9c2a7442614e344",
     "semantic_hash": ""
   },
   "frontend/src/pages/ProgressReportsPage.tsx": {
@@ -3212,6 +3212,16 @@
   "frontend/tests/unit/requestFlags.test.ts": {
     "mtime": 1793460057.7981124,
     "ast_hash": "8e906298682de41eab9c42c0a070f81c",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/cart/budgetForecast.ts": {
+    "mtime": 1793460444.8341632,
+    "ast_hash": "c395e501c98ceb1dcf53a1914c6fe96a",
+    "semantic_hash": ""
+  },
+  "frontend/tests/unit/budgetForecast.test.ts": {
+    "mtime": 1793460446.175743,
+    "ast_hash": "bca180af1b0d4d13a2e2afbd0e01c6d4",
     "semantic_hash": ""
   }
 }
