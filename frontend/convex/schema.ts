@@ -874,7 +874,7 @@ export default defineSchema({
     status: v.string(),
     received_quantity: v.optional(v.number()),
     received_at: v.optional(v.number()),
-    // Request details (Quartzy-style): what it is for, who pays, how urgent
+    // Request details (vendor, purpose, who pays, urgency): what it is for, who pays, how urgent
     size: v.optional(v.string()),
     cas: v.optional(v.string()),
     project: v.optional(v.string()),
@@ -1002,8 +1002,8 @@ export default defineSchema({
     .index("by_requester", ["requester_id"]),
 
   // ── Video Rooms ─────────────────────────────────────────────────────
-  // Quartzy exports kept as exported (items, instances, orders, requests), each with its original id and columns.
-  quartzy_records: defineTable({
+  // exports kept as exported (items, instances, orders, requests), each with its original id and columns.
+  stock_import_records: defineTable({
     lab_id: v.optional(v.id("labs")),
     kind: v.string(), // item | instance | order | request
     external_id: v.string(),

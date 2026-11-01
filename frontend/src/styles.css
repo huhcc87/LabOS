@@ -82,7 +82,7 @@
   background: var(--bg);
 }
 
-/* ── Light theme — calm, clinical (Quartzy-inspired: light gray, deep teal actions, slate text) ── */
+/* ── Light theme — calm, clinical (light gray, deep teal actions, slate text) ── */
 [data-theme="light"] {
   /* Primary colors */
   --primary-dark: #003f56;
@@ -3026,7 +3026,7 @@ a:hover { text-decoration: underline; }
   }
 }
 
-/* ── App loading state (Quartzy-style: light gray, small teal spinner) ── */
+/* ── App loading state (light gray, small teal spinner) ── */
 .app-loading {
   height: 100vh;
   display: flex;

@@ -1,17 +1,17 @@
-// Validates the parsers against the lab's real Quartzy exports. Skipped when the files are not on this machine
-// (they are institutional records and are never committed). Set QUARTZY_DIR to the folder holding them.
+// Validates the parsers against the lab's real exports. Skipped when the files are not on this machine
+// (they are institutional records and are never committed). Set IMPORT_DIR to the folder holding them.
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
-import { parseInventorySheet, parseOrders, parseRequests, importReport } from "../../src/features/quartzy/parse";
+import { parseInventorySheet, parseOrders, parseRequests, importReport } from "../../src/features/stockimport/parse";
 
-const dir = process.env.QUARTZY_DIR ?? `${process.env.HOME}/Downloads`;
+const dir = process.env.IMPORT_DIR ?? `${process.env.HOME}/Downloads`;
 const book = `${dir}/Nekhai_Lab_Inventory_Nov_1_2026.xlsx`;
 const orders = `${dir}/New Folder With Items 2/Orders (Nov 1, 2026) (1).csv`;
 const requests = `${dir}/Nekhai_Lab's Order Requests (Nov 1, 2026).csv`;
 const csv = (f: string) => { const w = XLSX.read(readFileSync(f, "utf8"), { type: "string", raw: false }); return XLSX.utils.sheet_to_json<Record<string, unknown>>(w.Sheets[w.SheetNames[0]], { defval: "", raw: false }); };
 
-describe.skipIf(!existsSync(book))("local Quartzy exports", () => {
+describe.skipIf(!existsSync(book))("local exports", () => {
   it("workbook gives 3,988 items and 3,054 instances", () => {
     const wb = XLSX.readFile(book);
     const recs = wb.SheetNames.filter((n) => n !== "Instructions").flatMap((n) => parseInventorySheet(n, XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: "" })));

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
-import { quartzyApi } from '../lib/api';
-import { parseInventorySheet, parseOrders, parseRequests, importReport, type QRecord } from '../features/quartzy/parse';
+import { stockImportApi } from '../lib/api';
+import { parseInventorySheet, parseOrders, parseRequests, importReport, type ImportRecord } from '../features/stockimport/parse';
 import { csvCell, downloadText } from '../features/cart/cartExport';
 
 const BATCH = 250;
 const KINDS = ['', 'item', 'instance', 'order', 'request'] as const;
-type Loaded = { source: string; records: QRecord[] };
+type Loaded = { source: string; records: ImportRecord[] };
 
-/** Reads one Quartzy export in the browser. Files never leave this machine except into the lab's own database on import. */
+/** Reads one export file in the browser. Files never leave this machine except into the lab's own database on import. */
 async function readFile(file: File): Promise<Loaded> {
   const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
   if (/\.xlsx?$/i.test(file.name)) {
@@ -21,7 +21,7 @@ async function readFile(file: File): Promise<Loaded> {
   return { source: file.name, records: headers.includes('Order #') ? parseOrders(rows) : parseRequests(rows) };
 }
 
-export default function QuartzyTab() {
+export default function StockImportTab() {
   const [loaded, setLoaded] = useState<Loaded[]>([]);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<any>(null);
@@ -32,13 +32,13 @@ export default function QuartzyTab() {
 
   const refresh = useCallback(async () => {
     try {
-      setSummary(await quartzyApi.summary());
-      setRecon(await quartzyApi.reconcile());
+      setSummary(await stockImportApi.summary());
+      setRecon(await stockImportApi.reconcile());
     } catch { /* not signed in or no access */ }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
-    const t = setTimeout(() => { quartzyApi.search({ text, kind: kind || undefined, limit: 100 }).then(setRows).catch(() => setRows([])); }, 250);
+    const t = setTimeout(() => { stockImportApi.search({ text, kind: kind || undefined, limit: 100 }).then(setRows).catch(() => setRows([])); }, 250);
     return () => clearTimeout(t);
   }, [text, kind, summary?.total]);
 
@@ -51,7 +51,7 @@ export default function QuartzyTab() {
     try {
       let added = 0, updated = 0;
       for (const f of loaded) for (let i = 0; i < f.records.length; i += BATCH) {
-        const r = await quartzyApi.importBatch(f.source, f.records.slice(i, i + BATCH));
+        const r = await stockImportApi.importBatch(f.source, f.records.slice(i, i + BATCH));
         added += r.added; updated += r.updated;
       }
       toast.success(`Imported: ${added} new, ${updated} updated`);
@@ -70,11 +70,11 @@ export default function QuartzyTab() {
   return (
     <div>
       <div style={box}>
-        <h3 style={{ margin: '0 0 6px' }}>Import Quartzy exports</h3>
+        <h3 style={{ margin: '0 0 6px' }}>Import lab exports</h3>
         <p style={{ margin: '0 0 10px', color: '#64748b', fontSize: 13 }}>
-          Choose the inventory workbook (.xlsx) and the Orders / Order Requests CSVs. Files are read in your browser; rows keep their Quartzy ids. Re-importing updates rows in place.
+          Choose the inventory workbook (.xlsx) and the Orders / Order Requests CSVs. Files are read in your browser; rows keep their original ids. Re-importing updates rows in place.
         </p>
-        <input type="file" multiple accept=".xlsx,.xls,.csv" onChange={(e) => pick(e.target.files)} aria-label="Quartzy export files" />
+        <input type="file" multiple accept=".xlsx,.xls,.csv" onChange={(e) => pick(e.target.files)} aria-label="Inventory export files" />
         {loaded.map((f) => {
           const r = importReport(f.records);
           return (
@@ -88,7 +88,7 @@ export default function QuartzyTab() {
 
       {summary && (
         <div style={box}>
-          <h3 style={{ margin: '0 0 6px' }}>In LabOS now: {summary.total.toLocaleString()} Quartzy rows</h3>
+          <h3 style={{ margin: '0 0 6px' }}>In LabOS now: {summary.total.toLocaleString()} imported rows</h3>
           <div style={{ fontSize: 13 }}>{counts(summary.byKind)}</div>
           <div style={{ fontSize: 13, color: '#64748b' }}>By file: {counts(summary.bySource)} · Missing name: {summary.missingName} · Missing catalog #: {summary.missingCatalog}</div>
           <div style={{ fontSize: 13, marginTop: 6 }}>Requests — Ordered: {reconCount('Ordered')} · Received: {reconCount('Received')} · Stock available: {reconCount('Stock available')}</div>
@@ -97,11 +97,11 @@ export default function QuartzyTab() {
 
       <div style={box}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search items, instances, orders, requests (name, vendor, catalog #, id)" aria-label="Search Quartzy records" style={{ flex: 1, minWidth: 220, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }} />
+          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search items, instances, orders, requests (name, vendor, catalog #, id)" aria-label="Search imported records" style={{ flex: 1, minWidth: 220, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }} />
           <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Record type" style={{ padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }}>
             {KINDS.map((k) => <option key={k} value={k}>{k || 'All types'}</option>)}
           </select>
-          <button onClick={() => exportRows('quartzy-search.csv', rows)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}>Export CSV</button>
+          <button onClick={() => exportRows('import-search.csv', rows)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}>Export CSV</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>

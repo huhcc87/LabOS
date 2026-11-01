@@ -5,7 +5,7 @@ import { exportCSV, exportPDF } from '../lib/export';
 import { useNavigate } from '../context/NavigationContext';
 import EmojiIcon from '../components/EmojiIcon';
 import LabBanner from '../components/LabBanner';
-import QuartzyTab from '../components/QuartzyTab';
+import StockImportTab from '../components/StockImportTab';
 
 // Types
 interface InventoryItem {
@@ -103,7 +103,7 @@ function mapExpense(raw: any): Expense {
 
 export default function ResourcesHubPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'quartzy' | 'templates' | 'costs' | 'predictions'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'import' | 'templates' | 'costs' | 'predictions'>('inventory');
   const [predictions, setPredictions] = useState<any[]>([]);
   const [predLoading, setPredLoading] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -423,7 +423,7 @@ export default function ResourcesHubPage() {
 
   const tabs = [
     { key: 'inventory', label: 'Inventory', icon: '📦', count: inventory.length },
-    { key: 'quartzy', label: 'Quartzy', icon: '📥', count: 0 },
+    { key: 'import', label: 'Import', icon: '📥', count: 0 },
     { key: 'templates', label: 'Templates', icon: '📄', count: templates.length },
     { key: 'costs', label: 'Cost Tracking', icon: '💰', count: expenses.length },
     { key: 'predictions', label: 'AI Predictions', icon: '🔮', count: 0 },
@@ -505,7 +505,7 @@ export default function ResourcesHubPage() {
         ))}
       </div>
 
-      {activeTab === 'quartzy' && <QuartzyTab />}
+      {activeTab === 'import' && <StockImportTab />}
 
       {/* Inventory Tab */}
       {activeTab === 'inventory' && (

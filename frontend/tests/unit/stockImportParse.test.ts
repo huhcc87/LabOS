@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { parseInventorySheet, parseOrders, parseRequests, importReport } from "../../src/features/quartzy/parse";
+import { parseInventorySheet, parseOrders, parseRequests, importReport } from "../../src/features/stockimport/parse";
 
-describe("quartzy parsers", () => {
-  it("keeps items and instances separate by Quartzy id", () => {
+describe("stockimport parsers", () => {
+  it("keeps items and instances separate by the source system id", () => {
     const rows = [
       { "Row Type": "Item", "Serial Number": "AR1", "Item Name *": "Anti-X", Vendor: "Abcam", "Catalog #": "ab1", Archived: "N" },
       { "Row Type": "Instance", "Serial Number": "AR1", "Instance ID": "u-1", "Item Name *": "Anti-X", Vendor: "Abcam", "Catalog #": "ab1", Archived: "N" },

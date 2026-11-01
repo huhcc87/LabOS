@@ -1,7 +1,7 @@
-/** Turns Quartzy exports (inventory workbook sheets, Orders CSV, Order Requests CSV) into rows for convex/quartzy.ts. Nothing is merged by name. */
-export type QKind = "item" | "instance" | "order" | "request";
-export interface QRecord {
-  kind: QKind; external_id: string; category?: string; name: string; vendor?: string; catalog?: string;
+/** Turns exports (inventory workbook sheets, Orders CSV, Order Requests CSV) into rows for convex/stockImport.ts. Nothing is merged by name. */
+export type ImportKind = "item" | "instance" | "order" | "request";
+export interface ImportRecord {
+  kind: ImportKind; external_id: string; category?: string; name: string; vendor?: string; catalog?: string;
   status?: string; date?: number; amount?: number; data: string;
 }
 type Row = Record<string, unknown>;
@@ -16,8 +16,8 @@ const clean = (r: Row): Row => Object.fromEntries(Object.entries(r).map(([k, v])
 const pack = (r: Row) => JSON.stringify(Object.fromEntries(Object.entries(r).filter(([, v]) => s(v) !== "")));
 
 /** One workbook sheet. Item rows are keyed by Serial Number, Instance rows by their Instance ID. */
-export function parseInventorySheet(category: string, rows: Row[]): QRecord[] {
-  const out: QRecord[] = [];
+export function parseInventorySheet(category: string, rows: Row[]): ImportRecord[] {
+  const out: ImportRecord[] = [];
   for (const raw of rows) {
     const r = clean(raw);
     const type = s(r["Row Type"]).toLowerCase();
@@ -33,7 +33,7 @@ export function parseInventorySheet(category: string, rows: Row[]): QRecord[] {
   return out;
 }
 
-export function parseOrders(rows: Row[]): QRecord[] {
+export function parseOrders(rows: Row[]): ImportRecord[] {
   return rows.map(clean).filter((r) => s(r["Order #"])).map((r) => ({
     kind: "order" as const, external_id: s(r["Order #"]), name: `Order ${s(r["Order #"])}`, vendor: opt(r["Vendor"]),
     catalog: undefined, status: "ordered", date: ts(r["Date Ordered"]), amount: num(r["Order Total"]), data: pack(r),
@@ -41,7 +41,7 @@ export function parseOrders(rows: Row[]): QRecord[] {
 }
 
 /** Requests have no id column, so the key is name + vendor + catalog + date requested. */
-export function parseRequests(rows: Row[]): QRecord[] {
+export function parseRequests(rows: Row[]): ImportRecord[] {
   return rows.map(clean).filter((r) => s(r["Item Name"])).map((r) => ({
     kind: "request" as const, external_id: [s(r["Item Name"]), s(r["Vendor"]), s(r["Catalog #"]), s(r["Date Requested"])].join("|"),
     category: opt(r["Type"]), name: s(r["Item Name"]), vendor: opt(r["Vendor"]), catalog: opt(r["Catalog #"]),
@@ -50,8 +50,8 @@ export function parseRequests(rows: Row[]): QRecord[] {
 }
 
 /** Import report for a parsed file: counts per kind and category, rows missing required fields, repeated ids. */
-export function importReport(records: QRecord[]) {
-  const count = (f: (r: QRecord) => string) => records.reduce<Record<string, number>>((m, r) => { const k = f(r); m[k] = (m[k] ?? 0) + 1; return m; }, {});
+export function importReport(records: ImportRecord[]) {
+  const count = (f: (r: ImportRecord) => string) => records.reduce<Record<string, number>>((m, r) => { const k = f(r); m[k] = (m[k] ?? 0) + 1; return m; }, {});
   const seen = new Set<string>(); const duplicateIds: string[] = [];
   for (const r of records) { const k = `${r.kind}|${r.external_id}`; if (seen.has(k)) duplicateIds.push(k); seen.add(k); }
   return {
