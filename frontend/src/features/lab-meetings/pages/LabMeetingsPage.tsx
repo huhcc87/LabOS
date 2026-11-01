@@ -111,7 +111,6 @@ export default function LabMeetingsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null)
   const [showAgendaFormForNext, setShowAgendaFormForNext] = useState(false)
-  const [showProgressFormForNext, setShowProgressFormForNext] = useState(false)
   const [typeFilter, setTypeFilter] = useState<MeetingType | ''>('')
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | ''>('')
   const [search, setSearch] = useState('')
