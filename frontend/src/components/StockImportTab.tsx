@@ -1,11 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
-import { stockImportApi } from '../lib/api';
+import { stockImportApi, reagentCartApi } from '../lib/api';
 import { parseInventorySheet, parseOrders, parseRequests, importReport, type ImportRecord } from '../features/stockimport/parse';
 import { csvCell, downloadText } from '../features/cart/cartExport';
+import { VENDOR_SEARCHES, vendorSearchUrl } from '../data/vendorSearch';
 
 const BATCH = 250;
+const REASONS = ['out of stock', 'below minimum', 'expired', 'expires soon'];
+
+/** Link to the product: the exported URL when it is http(s), else the vendor's own search page for the catalog number, else nothing. */
+export function productLink(r: { vendor?: string; catalog?: string; name?: string; data?: string; url?: string }): string | undefined {
+  let url = r.url ?? '';
+  if (!url && r.data) { try { url = String(JSON.parse(r.data).URL ?? ''); } catch { /* data not JSON */ } }
+  if (/^https?:\/\//i.test(url.trim())) return url.trim();
+  const v = (r.vendor ?? '').toLowerCase();
+  const hit = v && VENDOR_SEARCHES.find((s) => s.name.toLowerCase().split(/[\s(]/)[0] === v.split(/[\s,.]/)[0]);
+  const term = r.catalog || r.name;
+  return hit && term ? vendorSearchUrl(hit, term) : undefined;
+}
 const KINDS = ['', 'item', 'instance', 'order', 'request'] as const;
 type Loaded = { source: string; records: ImportRecord[] };
 
@@ -29,13 +42,22 @@ export default function StockImportTab() {
   const [recon, setRecon] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [kind, setKind] = useState('');
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertFilter, setAlertFilter] = useState('');
 
   const refresh = useCallback(async () => {
     try {
       setSummary(await stockImportApi.summary());
       setRecon(await stockImportApi.reconcile());
+      setAlerts(await stockImportApi.alerts());
     } catch { /* not signed in or no access */ }
   }, []);
+  const reorder = async (r: { name: string; vendor?: string; catalog?: string; data?: string; url?: string }) => {
+    try {
+      await reagentCartApi.create({ name: r.name, quantity: 1, vendor: r.vendor, catalog: r.catalog, url: productLink(r), notes: 'Reorder from imported inventory' });
+      toast.success(`Added "${r.name}" to Requests`);
+    } catch (e: any) { toast.error(e?.data ?? e?.message ?? 'Could not create the request'); }
+  };
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
     const t = setTimeout(() => { stockImportApi.search({ text, kind: kind || undefined, limit: 100 }).then(setRows).catch(() => setRows([])); }, 250);
@@ -58,8 +80,23 @@ export default function StockImportTab() {
       setLoaded([]); await refresh();
     } catch (e: any) { toast.error(e?.data ?? e?.message ?? 'Import failed'); } finally { setBusy(false); }
   };
-  const exportRows = (name: string, list: any[]) => {
-    const head = ['kind', 'external_id', 'category', 'name', 'vendor', 'catalog', 'status', 'amount'];
+  const removeSource = async (source: string) => {
+    if (!window.confirm(`Remove all rows imported from "${source}"? Re-import the file to bring them back.`)) return;
+    try { const r = await stockImportApi.clearSource(source); toast.success(`Removed ${r.deleted} rows`); await refresh(); }
+    catch (e: any) { toast.error(e?.data ?? e?.message ?? 'Only an admin can remove imported rows'); }
+  };
+  const alertShown =alertFilter ? alerts.filter((a) => a.reason === alertFilter) : alerts;
+  const linkBtn: React.CSSProperties = { padding: '2px 8px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: 12, marginRight: 4, color: '#334155', textDecoration: 'none' };
+  const actions = (r: any) => {
+    const link = productLink(r);
+    return (
+      <>
+        {link && <a href={link} target="_blank" rel="noopener noreferrer" style={linkBtn}>Vendor page</a>}
+        <button onClick={() => reorder(r)} style={linkBtn}>Reorder</button>
+      </>
+    );
+  };
+  const exportRows = (name: string, list: any[], head = ['kind', 'external_id', 'category', 'name', 'vendor', 'catalog', 'status', 'amount']) => {
     downloadText(name, [head.join(','), ...list.map((r) => head.map((h) => csvCell(r[h])).join(','))].join('\n'));
   };
 
@@ -91,7 +128,43 @@ export default function StockImportTab() {
           <h3 style={{ margin: '0 0 6px' }}>In LabOS now: {summary.total.toLocaleString()} imported rows</h3>
           <div style={{ fontSize: 13 }}>{counts(summary.byKind)}</div>
           <div style={{ fontSize: 13, color: '#64748b' }}>By file: {counts(summary.bySource)} · Missing name: {summary.missingName} · Missing catalog #: {summary.missingCatalog}</div>
+          <div style={{ fontSize: 12, marginTop: 6 }}>
+            {Object.keys(summary.bySource).map((s) => <button key={s} onClick={() => removeSource(s)} style={{ ...linkBtn, color: '#b91c1c' }}>Remove {s}</button>)}
+          </div>
           <div style={{ fontSize: 13, marginTop: 6 }}>Requests — Ordered: {reconCount('Ordered')} · Received: {reconCount('Received')} · Stock available: {reconCount('Stock available')}</div>
+        </div>
+      )}
+
+      {summary && (
+        <div style={box}>
+          <h3 style={{ margin: '0 0 6px' }}>Stock alerts: {alerts.length.toLocaleString()}</h3>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>
+            Active instances that are out of stock, under their minimum, expired or expiring within 90 days. Minimum only counts where the export has one set.
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            {['', ...REASONS].map((x) => (
+              <button key={x} onClick={() => setAlertFilter(x)} aria-pressed={alertFilter === x} style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid #cbd5e1', background: alertFilter === x ? '#6366f1' : '#fff', color: alertFilter === x ? '#fff' : '#334155', cursor: 'pointer', fontSize: 12 }}>
+                {x || 'All'} ({(x ? alerts.filter((a) => a.reason === x) : alerts).length})
+              </button>
+            ))}
+            <button onClick={() => exportRows('stock-alerts.csv', alertShown, ['reason', 'name', 'vendor', 'catalog', 'category', 'location', 'amount', 'min'])} style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: 12 }}>Export CSV</button>
+          </div>
+          <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+              <thead><tr style={{ textAlign: 'left', color: '#64748b' }}>{['Alert', 'Name', 'Vendor', 'Catalog #', 'Location', 'Amount', ''].map((h) => <th key={h} style={{ padding: 6 }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {alertShown.slice(0, 200).map((a) => (
+                  <tr key={a.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: 6 }}>{a.reason}{a.date ? ` (${new Date(a.date).toLocaleDateString()})` : ''}</td><td style={{ padding: 6 }}>{a.name}</td><td style={{ padding: 6 }}>{a.vendor}</td>
+                    <td style={{ padding: 6 }}>{a.catalog}</td><td style={{ padding: 6 }}>{a.location}</td><td style={{ padding: 6 }}>{a.amount ?? ''}{a.min !== undefined ? ` / min ${a.min}` : ''}</td>
+                    <td style={{ padding: 6, whiteSpace: 'nowrap' }}>{actions(a)}</td>
+                  </tr>
+                ))}
+                {alertShown.length === 0 && <tr><td colSpan={7} style={{ padding: 12, color: '#64748b' }}>No alerts.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          {alertShown.length > 200 && <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>Showing 200 of {alertShown.length.toLocaleString()}. Export CSV for the full list.</div>}
         </div>
       )}
 
@@ -105,16 +178,17 @@ export default function StockImportTab() {
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-            <thead><tr style={{ textAlign: 'left', color: '#64748b' }}>{['Type', 'Name', 'Vendor', 'Catalog #', 'Category', 'Status', 'Id'].map((h) => <th key={h} style={{ padding: 6 }}>{h}</th>)}</tr></thead>
+            <thead><tr style={{ textAlign: 'left', color: '#64748b' }}>{['Type', 'Name', 'Vendor', 'Catalog #', 'Category', 'Status', 'Id', ''].map((h) => <th key={h} style={{ padding: 6 }}>{h}</th>)}</tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id} style={{ borderTop: '1px solid #f1f5f9' }}>
                   <td style={{ padding: 6 }}>{r.kind}</td><td style={{ padding: 6 }}>{r.name}</td><td style={{ padding: 6 }}>{r.vendor}</td>
                   <td style={{ padding: 6 }}>{r.catalog}</td><td style={{ padding: 6 }}>{r.category}</td><td style={{ padding: 6 }}>{r.status}</td>
                   <td style={{ padding: 6, fontFamily: 'monospace', fontSize: 11 }}>{String(r.external_id).slice(0, 24)}</td>
+                  <td style={{ padding: 6, whiteSpace: 'nowrap' }}>{r.kind === 'order' ? null : actions(r)}</td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 12, color: '#64748b' }}>No records. Import an export above.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 12, color: '#64748b' }}>No records. Import an export above.</td></tr>}
             </tbody>
           </table>
         </div>

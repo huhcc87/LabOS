@@ -68,6 +68,7 @@ import type * as security from "../security.js";
 import type * as seedProdAdmin from "../seedProdAdmin.js";
 import type * as settings from "../settings.js";
 import type * as sops from "../sops.js";
+import type * as stockAlerts from "../stockAlerts.js";
 import type * as stockImport from "../stockImport.js";
 import type * as stripe from "../stripe.js";
 import type * as suppliers from "../suppliers.js";
@@ -149,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   seedProdAdmin: typeof seedProdAdmin;
   settings: typeof settings;
   sops: typeof sops;
+  stockAlerts: typeof stockAlerts;
   stockImport: typeof stockImport;
   stripe: typeof stripe;
   suppliers: typeof suppliers;

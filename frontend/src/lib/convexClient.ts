@@ -1353,4 +1353,6 @@ export const stockImportApi = {
   search: (p: { text?: string; kind?: string; category?: string; limit?: number }) => client.query(api.stockImport.search, { token: getToken(), ...p }),
   summary: () => client.query(api.stockImport.summary, { token: getToken() }),
   reconcile: () => client.query(api.stockImport.reconcile, { token: getToken() }),
+  alerts: () => client.query(api.stockImport.alerts, { token: getToken() }),
+  clearSource: (source: string) => client.mutation(api.stockImport.clearSource, { token: getToken(), source }),
 };

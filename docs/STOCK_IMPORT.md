@@ -11,6 +11,11 @@ Brings the lab's inventory, orders and request exports into LabOS: **Resources â
 - Search across items, instances, orders and requests (name, vendor, catalog #, id), filter by type, export results to CSV.
 - Reconciliation of requests: **Ordered** (not in stock, not received), **Received**, **Stock available** (an item/instance with the same vendor + catalog # exists).
 - Source-level counts (rows per file and type) on the same tab.
+- **Stock alerts** over active instances: out of stock (amount 0), below minimum (only where "Min to Stock" is set), expired, expiring within 90 days. Filter by reason, export CSV.
+  - In the lab's current workbook "Min to Stock" is empty on every row and only one instance has an expiration date, so today the alerts are mostly "out of stock". They fill in as those columns get used.
+- **Vendor page** button per row: the exported product URL when it is http(s), otherwise the vendor's own search page for the catalog # (for the vendors in `src/data/vendorSearch.ts`).
+- **Reorder** button per row: creates a normal request in Requests (pending, goes through the usual approval and budget checks).
+- **Remove** button per imported file (admin only): deletes that file's rows; re-import brings them back.
 
 ## Run it on macOS
 ```bash

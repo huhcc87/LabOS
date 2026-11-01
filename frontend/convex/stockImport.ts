@@ -7,6 +7,7 @@
 import { query, mutation } from "./tenant";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
+import { stockAlerts } from "./stockAlerts";
 
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -84,6 +85,16 @@ export const reconcile = query({
       id: r._id, name: r.name, vendor: r.vendor, catalog: r.catalog, status: r.status ?? "", amount: r.amount,
       state: stock.has(`${norm(r.vendor)}|${norm(r.catalog)}`) ? "Stock available" : /received/i.test(r.status ?? "") ? "Received" : "Ordered",
     }));
+  },
+});
+
+/** Instances that are out of stock, below their minimum, expired or about to expire. */
+export const alerts = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    const rows = await ctx.db.query("stock_import_records").collect();
+    return stockAlerts(rows, Date.now());
   },
 });
 
