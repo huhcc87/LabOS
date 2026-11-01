@@ -29,7 +29,9 @@ export async function requireAuth(
   // A manager, PI or admin whose lab requires two-factor can't use anything until they set it up
   // (security.ts, which the setup screen uses, reads the session itself).
   const user = await ctx.db.get(session.user_id);
-  if (user && (await mustSetUp2fa(ctx, user))) throw new ConvexError("Two-factor sign-in is required. Set it up to continue.");
+  // A deactivated account stops working at once, even with a session that has not expired yet.
+  if (!user || user.is_active === false) throw new ConvexError("Unauthorized");
+  if (await mustSetUp2fa(ctx, user)) throw new ConvexError("Two-factor sign-in is required. Set it up to continue.");
   return session.user_id;
 }
 

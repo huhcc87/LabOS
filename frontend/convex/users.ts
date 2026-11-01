@@ -1,8 +1,14 @@
 import { query, mutation } from "./tenant";
+import type { Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { requireAuth, requireRole, hasRole, sanitizeUser } from "./authHelper";
 import { issueInvite, NO_PASSWORD } from "./invites";
 import { sha256Hex } from "./cryptoSecrets";
+
+/** Signs a person out everywhere: a deactivated account must not keep working until its session expires. */
+async function revokeSessions(ctx: { db: any }, userId: Id<"users">) {
+  for (const s of await ctx.db.query("sessions").withIndex("by_user", (q: any) => q.eq("user_id", userId)).collect()) await ctx.db.delete(s._id);
+}
 
 export const getMe = query({
   args: { token: v.optional(v.string()) },
@@ -158,7 +164,6 @@ export const update = mutation({
     phone: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     is_active: v.optional(v.boolean()),
-    totp_enabled: v.optional(v.boolean()),
     failed_login_attempts: v.optional(v.number()),
     locked_until: v.optional(v.number()),
     data_classification_clearance: v.optional(v.string()),
@@ -168,12 +173,20 @@ export const update = mutation({
     if (args.role && !hasRole(caller.role, args.role)) {
       throw new ConvexError("Forbidden: cannot grant a role higher than your own");
     }
+    // You cannot change someone who outranks you (an admin must not be able to demote or lock out a superadmin).
+    const target = await ctx.db.get(args.id);
+    if (!target) throw new ConvexError("User not found");
+    if (!hasRole(caller.role, target.role)) throw new ConvexError("Forbidden: cannot change a user with a higher role than yours");
+    if (args.id === caller._id && (args.is_active === false || (args.role && args.role !== target.role))) {
+      throw new ConvexError("You cannot deactivate yourself or change your own role");
+    }
     const { id, token: _, ...fields } = args;
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
     }
     await ctx.db.patch(id, patch);
+    if (args.is_active === false) await revokeSessions(ctx, id);
     return await ctx.db.get(id);
   },
 });
@@ -181,11 +194,16 @@ export const update = mutation({
 export const remove = mutation({
   args: { token: v.optional(v.string()), id: v.id("users") },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.token, "admin");
+    const caller = await requireRole(ctx, args.token, "admin");
+    const target = await ctx.db.get(args.id);
+    if (!target) throw new ConvexError("User not found");
+    if (args.id === caller._id) throw new ConvexError("You cannot deactivate yourself");
+    if (!hasRole(caller.role, target.role)) throw new ConvexError("Forbidden: cannot deactivate a user with a higher role than yours");
     await ctx.db.patch(args.id, {
       is_active: false,
       updated_at: Date.now(),
     });
+    await revokeSessions(ctx, args.id);
     return { success: true };
   },
 });
