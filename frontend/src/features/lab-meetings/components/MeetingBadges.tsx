@@ -18,7 +18,7 @@ export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
   const labels: Record<MeetingStatus, string> = { scheduled: 'Scheduled', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled' }
   const icons: Record<MeetingStatus, string> = { scheduled: '📅', in_progress: '▶', completed: '✓', cancelled: '✕' }
   const color = getStatusColor(status)
-  return <span style={badge(labels[status], color)}>{icons[status]} {labels[status]}</span>
+  return <span style={badge(labels[status], color)}><EmojiIcon glyph={icons[status]} /> {labels[status]}</span>
 }
 
 export function ActionStatusBadge({ status }: { status: ActionItemStatus }) {
@@ -44,5 +44,5 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
   const labels: Record<AttendanceStatus, string> = { present: 'Present', absent: 'Absent', remote: 'Remote', excused: 'Excused' }
   const icons: Record<AttendanceStatus, string> = { present: '✓', absent: '✕', remote: '💻', excused: '~' }
   const color = getStatusColor(status)
-  return <span style={badge(labels[status], color)}>{icons[status]} {labels[status]}</span>
+  return <span style={badge(labels[status], color)}><EmojiIcon glyph={icons[status]} /> {labels[status]}</span>
 }

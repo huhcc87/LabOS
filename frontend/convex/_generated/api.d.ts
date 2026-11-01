@@ -29,6 +29,7 @@ import type * as funding from "../funding.js";
 import type * as grants from "../grants.js";
 import type * as http from "../http.js";
 import type * as hubs from "../hubs.js";
+import type * as huddle from "../huddle.js";
 import type * as incidents from "../incidents.js";
 import type * as instrumentBooking from "../instrumentBooking.js";
 import type * as instruments from "../instruments.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   grants: typeof grants;
   http: typeof http;
   hubs: typeof hubs;
+  huddle: typeof huddle;
   incidents: typeof incidents;
   instrumentBooking: typeof instrumentBooking;
   instruments: typeof instruments;

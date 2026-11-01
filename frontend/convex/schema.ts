@@ -998,6 +998,40 @@ export default defineSchema({
     .index("by_requester", ["requester_id"]),
 
   // ── Video Rooms ─────────────────────────────────────────────────────
+  // LabHuddle polls: one row per poll, one row per person's vote (so nobody can vote twice).
+  meeting_polls: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    question: v.string(),
+    options: v.array(v.string()),
+    status: v.string(), // "open" | "closed"
+    meeting_id: v.optional(v.id("meetings")),
+    created_by: v.id("users"),
+    created_by_name: v.optional(v.string()),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]),
+
+  poll_votes: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    poll_id: v.id("meeting_polls"),
+    user_id: v.id("users"),
+    option_index: v.number(),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_poll", ["poll_id"]),
+
+  // LabHuddle knowledge base: short write-ups captured from meetings.
+  knowledge_articles: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    title: v.string(),
+    category: v.string(),
+    content: v.string(),
+    tags: v.optional(v.string()), // comma separated
+    meeting_id: v.optional(v.id("meetings")),
+    created_by: v.id("users"),
+    created_by_name: v.optional(v.string()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_lab", ["lab_id"]),
+
   video_rooms: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),

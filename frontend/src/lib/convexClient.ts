@@ -1032,6 +1032,23 @@ export const biosketchApi = {
   },
 };
 
+/** LabHuddle polls and knowledge base. */
+export const huddleApi = {
+  listPolls: async () => ({ data: ((await client.query(api.huddle.listPolls, { token: getToken() })) ?? []).map(adapt) }),
+  createPoll: async (question: string, options: string[], meetingId?: IdLike) =>
+    ({ data: await client.mutation(api.huddle.createPoll, { token: getToken(), question, options, ...(meetingId ? { meeting_id: toStr(meetingId) as any } : {}) }) }),
+  vote: async (pollId: IdLike, optionIndex: number) => { await client.mutation(api.huddle.vote, { token: getToken(), poll_id: toStr(pollId) as any, option_index: optionIndex }); },
+  setPollStatus: async (pollId: IdLike, status: 'open' | 'closed') => { await client.mutation(api.huddle.setPollStatus, { token: getToken(), poll_id: toStr(pollId) as any, status }); },
+  deletePoll: async (pollId: IdLike) => { await client.mutation(api.huddle.deletePoll, { token: getToken(), poll_id: toStr(pollId) as any }); },
+  listArticles: async () => ({ data: ((await client.query(api.huddle.listArticles, { token: getToken() })) ?? []).map(adapt) }),
+  saveArticle: async (a: { id?: IdLike; title: string; category: string; content: string; tags: string; meeting_id?: IdLike }) => {
+    const { id, meeting_id, ...rest } = a;
+    if (id) await client.mutation(api.huddle.updateArticle, { token: getToken(), id: toStr(id) as any, ...rest });
+    else await client.mutation(api.huddle.createArticle, { token: getToken(), ...rest, ...(meeting_id ? { meeting_id: toStr(meeting_id) as any } : {}) });
+  },
+  deleteArticle: async (id: IdLike) => { await client.mutation(api.huddle.deleteArticle, { token: getToken(), id: toStr(id) as any }); },
+};
+
 export const videoApi = {
   createRoom: async (meetingId?: IdLike) => {
     const token = getToken();
