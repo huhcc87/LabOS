@@ -110,7 +110,7 @@ export default function LabMembersPage() {
       setInviteForm({ email: '', lab_role: 'member', notes: '' });
       loadMembers(selectedLabId);
     } catch (e: any) {
-      alert(e?.response?.data?.detail || 'Failed to invite');
+      alert(e?.response?.data?.detail || e?.data || e?.message || 'Failed to invite');
     }
   };
 

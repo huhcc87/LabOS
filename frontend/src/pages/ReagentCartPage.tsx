@@ -611,6 +611,7 @@ function ItemDetailRow({
 
   const requestBorrow = async (lender: any) => {
     await procurementApi.createBorrow({
+      item_name: lender.name || item.name,
       inventory_item_id: lender.id,
       cart_item_id: item.id,
       requested_quantity: String(item.quantity),

@@ -210,7 +210,19 @@ export const suppliersApi = {
   },
   createOrder: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.suppliers.createOrder, { token, ...data });
+    // The backend keeps supplier, total, currency, notes and items (as text). Everything else goes into the notes.
+    const items = typeof data.items === 'string' ? data.items : data.items ? JSON.stringify(data.items) : data.items_json;
+    const total = Number(data.total_amount ?? data.total);
+    const notes = [
+      data.po_number && `PO ${data.po_number}`, data.urgency && `Urgency: ${data.urgency}`, data.project_code && `Project: ${data.project_code}`,
+      data.expected_delivery && `Expected delivery: ${data.expected_delivery}`, data.notes,
+    ].filter(Boolean).join(' · ');
+    const result = await client.mutation(api.suppliers.createOrder, {
+      token, currency: data.currency ?? 'USD',
+      ...(data.supplier_id ? { supplier_id: toStr(data.supplier_id) as any } : {}),
+      ...(Number.isFinite(total) ? { total_amount: total } : {}),
+      ...(notes ? { notes } : {}), ...(items ? { items } : {}),
+    });
     return { data: result };
   },
   updateOrder: async (id: IdLike, data: any) => {
@@ -524,7 +536,10 @@ export const auditApi = {
 
 export const grantsApi = {
   aiDraft: async (data: any) => {
-    const result = await client.action(api.grants.aiDraft, { ...data, token: getToken() });
+    // The backend has no "disease" field; it goes in with the context so the draft still knows the area.
+    const { disease, context, ...rest } = data ?? {};
+    const ctxText = [disease ? `Disease area: ${disease}` : '', context].filter(Boolean).join('\n');
+    const result = await client.action(api.grants.aiDraft, { ...rest, ...(ctxText ? { context: ctxText } : {}), token: getToken() });
     return { data: result };
   },
   researchSynthesis: async (data: any) => {
@@ -841,6 +856,8 @@ export const labMembersApi = {
   },
   invite: async (data: any) => {
     const token = getToken();
+    // The backend adds an existing account by id. Looking an account up by email would have to reach across labs, which is not allowed here.
+    if (!data?.user_id) throw new Error('Inviting by email is not available yet. Ask the person to sign up first, then add them.');
     const result = await client.mutation(api.labMembers.invite, { token, ...data });
     return { data: result };
   },
@@ -1106,11 +1123,24 @@ export const procurementApi = {
   listRules: async () => {
     const token = getToken();
     const result = await client.query(api.procurement.listRules, { token });
-    return { data: (result ?? []).map(adapt) };
+    // Back to what the page shows: an amount limit, a hazardous flag, and the role that must approve.
+    return { data: (result ?? []).map((r: any) => ({
+      ...adapt(r),
+      over_amount: r.condition_field === 'amount' ? Number(r.condition_value) : null,
+      hazardous: r.condition_field === 'hazardous',
+      role_required: String(r.action).startsWith('require_role:') ? String(r.action).slice('require_role:'.length) : r.action,
+    })) };
   },
   createRule: async (data: any) => {
     const token = getToken();
-    await client.mutation(api.procurement.createRule, { token, ...data });
+    // The page has one form (amount limit and/or hazardous, plus the approving role); the backend stores one condition per rule.
+    const action = `require_role:${data.role_required ?? 'staff'}`;
+    const conditions = [
+      ...(data.over_amount ? [{ condition_field: 'amount', condition_op: '>', condition_value: String(data.over_amount) }] : []),
+      ...(data.hazardous ? [{ condition_field: 'hazardous', condition_op: '=', condition_value: 'true' }] : []),
+    ];
+    if (!conditions.length) conditions.push({ condition_field: 'always', condition_op: '=', condition_value: 'true' });
+    for (const c of conditions) await client.mutation(api.procurement.createRule, { token, name: data.name, action, ...c });
     return { data: null };
   },
   deleteRule: async (id: IdLike) => {
@@ -1180,7 +1210,11 @@ export const procurementApi = {
   },
   createBorrow: async (data: any) => {
     const token = getToken();
-    await client.mutation(api.procurement.createBorrow, { token, ...data });
+    const notes = data.purpose ?? data.notes;
+    await client.mutation(api.procurement.createBorrow, {
+      token, item_name: String(data.item_name ?? data.name ?? 'Item'), quantity: Number(data.requested_quantity ?? data.quantity) || 1,
+      ...(data.unit ? { unit: data.unit } : {}), ...(notes ? { notes } : {}),
+    });
     return { data: null };
   },
   respondBorrow: async (id: IdLike, approve: boolean) => {
