@@ -1,5 +1,5 @@
-const CACHE_NAME = 'labos-v7';
-const OFFLINE_CACHE = 'labos-offline-v7';
+const CACHE_NAME = 'labos-v8';
+const OFFLINE_CACHE = 'labos-offline-v8';
 // ponytail: no longer precaching '/' / '/index.html' here — the navigate
 // handler below fetches + caches the shell itself on every successful load,
 // so a frozen install-time copy never wins over what's actually live.
@@ -100,7 +100,10 @@ self.addEventListener('fetch', (event) => {
       caches.match(request).then((cached) => {
         if (cached) return cached;
         return fetch(request).catch(() => Response.error()).then((response) => {
-          if (response.ok && response.type !== 'error') {
+          // A file that no longer exists comes back from the host as the SPA shell (200, text/html).
+          // Never store that under a script/style/font/image address, or it is served from cache forever.
+          const isHtml = (response.headers.get('content-type') || '').includes('text/html');
+          if (response.ok && response.type !== 'error' && !isHtml) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }

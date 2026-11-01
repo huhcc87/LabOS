@@ -27,13 +27,14 @@ function Check({ children }: { children: ReactNode }) {
 }
 
 /** If the check itself fails (for example the server is a version behind), the app carries on without it. */
-class Isolate extends Component<{ children: ReactNode }, { failed: boolean }> {
+export class Isolate extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? null : this.props.children; }
+  // Render the app itself, not nothing: the app is what sits inside the failed check.
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
 /** Wrap the signed-in app. The server still refuses requests from someone who must set up two-factor. */
 export function TwoFactorGate({ children }: { children: ReactNode }) {
-  return <Isolate><Check>{children}</Check></Isolate>;
+  return <Isolate fallback={children}><Check>{children}</Check></Isolate>;
 }
