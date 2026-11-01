@@ -172,6 +172,9 @@ export const update = mutation({
       patch.approved_at = undefined;
     }
     await ctx.db.patch(id, patch);
+    // Record what changed (old to new) so a price or quantity edit can't pass unnoticed.
+    const changes = Object.fromEntries(Object.entries(patch).filter(([k, val]) => (item as any)[k] !== val).map(([k, val]) => [k, { from: (item as any)[k] ?? null, to: val ?? null }]));
+    if (Object.keys(changes).length) await logProcurement(ctx, userId, patch.status === "cancelled" ? "cancel" : "update", id, { item: item.name, changes });
     return id;
   },
 });

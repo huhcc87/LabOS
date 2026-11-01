@@ -5,7 +5,7 @@
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
-export type ProcurementAction = "request" | "approve" | "reject" | "order" | "cancel" | "budget_create" | "budget_delete";
+export type ProcurementAction = "request" | "approve" | "reject" | "order" | "update" | "cancel" | "budget_create" | "budget_delete";
 
 export async function logProcurement(
   ctx: Pick<MutationCtx, "db">,

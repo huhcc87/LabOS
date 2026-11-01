@@ -16,6 +16,13 @@ const ACTION_META: Record<string, { color: string; bg: string }> = {
   create: { color: '#16a34a', bg: '#dcfce7' },
   update: { color: '#6366f1', bg: '#e0e7ff' },
   delete: { color: '#ef4444', bg: '#fee2e2' },
+  // Purchasing events
+  request: { color: '#0369a1', bg: '#e0f2fe' },
+  approve: { color: '#16a34a', bg: '#dcfce7' },
+  reject: { color: '#ef4444', bg: '#fee2e2' },
+  order: { color: '#6366f1', bg: '#e0e7ff' },  cancel: { color: '#b45309', bg: '#fef3c7' },
+  budget_create: { color: '#16a34a', bg: '#dcfce7' },
+  budget_delete: { color: '#ef4444', bg: '#fee2e2' },
 };
 
 export default function AuditPage() {

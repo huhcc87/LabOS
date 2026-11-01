@@ -516,7 +516,9 @@ export const auditApi = {
     const args: any = { token, page, per_page: perPage };
     if (extra?.entity_type) args.entity_type = extra.entity_type;
     const result = await client.query(api.audit.list, args);
-    return { data: { items: (result?.items ?? []).map(adapt), total: result?.total ?? 0, page: result?.page ?? 1, per_page: result?.per_page ?? perPage, pages: result?.total_pages ?? 1 } };
+    // The page reads changes_json and timestamp; the backend stores details and created_at.
+    const toRow = (r: any) => ({ ...adapt(r), changes_json: r.details ?? '', timestamp: new Date(r.created_at).toISOString() });
+    return { data: { items: (result?.items ?? []).map(toRow), total: result?.total ?? 0, page: result?.page ?? 1, per_page: result?.per_page ?? perPage, pages: result?.total_pages ?? 1 } };
   },
 };
 

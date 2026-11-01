@@ -39,7 +39,13 @@ export const list = query({
     const perPage = per_page ?? 50;
     const pageNum = page ?? 1;
     const startIdx = (pageNum - 1) * perPage;
-    const items = logs.slice(startIdx, startIdx + perPage);
+    // Name the person on each entry (the page shows who, not an id).
+    const who = new Map<string, string>();
+    const items = [];
+    for (const l of logs.slice(startIdx, startIdx + perPage)) {
+      if (l.user_id && !who.has(l.user_id)) { const u = (await ctx.db.get(l.user_id)) as { email?: string; full_name?: string } | null; who.set(l.user_id, u?.email ?? u?.full_name ?? ""); }
+      items.push({ ...l, user_email: l.user_id ? who.get(l.user_id) ?? "" : "system" });
+    }
     const total = logs.length;
     const totalPages = Math.ceil(total / perPage);
 
