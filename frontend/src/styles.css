@@ -3182,3 +3182,12 @@ button:disabled { cursor: not-allowed; }
 /* Vendor Directory: category list beside the vendors, stacked on phones */
 .vendor-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 720px) { .vendor-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Research AI result page: one Export menu */
+.export-menu { position: relative; }
+.export-menu > summary { list-style: none; cursor: pointer; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text); user-select: none; }
+.export-menu > summary::-webkit-details-marker { display: none; }
+.export-menu > summary::after { content: " \25BE"; }
+.export-menu > div { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+.export-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--text); cursor: pointer; }
+.export-item:hover, .export-item:focus-visible { background: var(--surface2); }

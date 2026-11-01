@@ -33,3 +33,31 @@ export async function callOllama(
     return null; // Ollama not running or too slow: callers fall back to the next provider
   }
 }
+
+/**
+ * One request that must come back as a JSON object. Uses Ollama's own chat endpoint so the context window can be
+ * raised (the default 4096 tokens is shared by the prompt and the answer) and JSON mode keeps the output well formed.
+ */
+export async function callOllamaJson(system: string, user: string, maxTokens = 4096, timeoutMs = 280_000, numCtx = 12_288): Promise<string | null> {
+  const model = process.env.OLLAMA_MODEL;
+  if (!model) return null;
+  const base = (process.env.OLLAMA_URL ?? "http://127.0.0.1:11434").replace(/\/+$/, "");
+  try {
+    const res = await fetch(`${base}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model, stream: false, format: "json",
+        options: { num_ctx: numCtx, num_predict: maxTokens, temperature: 0.4 },
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = data.message?.content;
+    return typeof text === "string" && text.trim() ? text : null;
+  } catch {
+    return null; // Ollama not running or too slow: the caller falls back
+  }
+}

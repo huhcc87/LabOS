@@ -1,6 +1,6 @@
 import { action } from "./_generated/server";
 import { query, mutation } from "./tenant";
-import { callOllama } from "./ollama";
+import { callOllama, callOllamaJson } from "./ollama";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
 import { internal } from "./_generated/api";
@@ -508,7 +508,7 @@ async function runProvider(
   else if (key === "claude-haiku") raw = await callAnthropic("claude-haiku-5-5", system, user);
   else if (key === "gpt-4o") raw = await callOpenAI(system, user);
   else if (key === "deepseek") raw = await callDeepSeek(system, user);
-  else if (key === "ollama") raw = await callOllama([{ role: "user", content: user }], system, 4096, 280_000);
+  else if (key === "ollama") raw = await callOllamaJson(system, user);
   return raw ? { raw, source: key } : null;
 }
 
@@ -721,7 +721,7 @@ export const researchSynthesis = action({
       return user;
     };
     const user = buildUser(30, 6000);
-    const userForLocal = buildUser(6, 1500);
+    const userForLocal = buildUser(8, 2500);
 
     // Provider order: honor explicit choice first, then fall back across all available.
     let order: string[];

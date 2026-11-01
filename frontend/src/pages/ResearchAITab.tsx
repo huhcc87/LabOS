@@ -3,6 +3,7 @@ import { grantsApi, fundingApi, swarmFeedbackApi } from '../lib/api';
 import type { SwarmExportOptions } from '../lib/exportDocx';
 import { readDocumentText, isSupportedDocument, UnsupportedDocumentError } from '../lib/readDocumentText';
 import EmojiIcon from '../components/EmojiIcon';
+import { detectSearchKind } from '../features/research/searchKind';
 
 // Per-paper text budget sent to the swarm (keeps the prompt within model limits).
 const MAX_CHARS_PER_FILE = 8000;
@@ -733,10 +734,10 @@ function SaveToLibraryPicker({
 
 // ─── Literature Finder Panel ─────────────────────────────────────────────────
 
-function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]) => void }) {
-  const [mode, setMode] = useState<'topic' | 'pmid' | 'doi'>('topic');
+function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[], searchedTopic?: string) => void }) {
   const [source, setSource] = useState<'pubmed' | 'europepmc' | 'preprints' | 'semantic' | 'all'>('all');
   const [query, setQuery] = useState('');
+  const mode = detectSearchKind(query);
   const [searching, setSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState('');
   const [results, setResults] = useState<Article[]>([]);
@@ -838,10 +839,10 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
         articles = Array.from(byKey.values());
         if (!articles.length) { setSearchErr('No results found. Try different keywords or another source.'); return; }
       } else if (mode === 'pmid') {
-        const ids = query.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+        const ids = query.split(/[\s,;]+/).map(s => s.trim().replace(/^pmid:?/i, '')).filter(Boolean);
         articles = await pubmedSummary(ids);
       } else {
-        const dois = query.split(/[\s,\n]+/).map(s => s.trim()).filter(Boolean);
+        const dois = query.split(/[\s,;\n]+/).map(s => s.trim().replace(/^doi:?/i, '')).filter(Boolean);
         articles = (await Promise.all(dois.map(fetchByDOI))).filter(Boolean) as Article[];
       }
       setResults(articles);
@@ -874,7 +875,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
 
   const handleAddToSwarm = async () => {
     let sel = await loadSelectedAbstracts(selectedArticles);
-    onAddToSwarm(sel);
+    onAddToSwarm(sel, mode === 'topic' && !/^https?:\/\//i.test(query.trim()) ? query.trim() : undefined);
   };
 
   const downloadSelected = async () => {
@@ -943,45 +944,21 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
         />
       </div>
 
-      {/* Mode tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-        {(['topic', 'pmid', 'doi'] as const).map(m => (
-          <button key={m} onClick={() => { setMode(m); setQuery(''); setResults([]); setSuggestedTopic(''); }} style={{
-            padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: mode === m ? 'var(--accent)' : 'var(--surface2)',
-            color: mode === m ? 'white' : 'var(--text-muted)',
-          }}>
-            {m === 'topic' ? <><EmojiIcon glyph="🔤" />{" Topic / Keywords"}</> : m === 'pmid' ? <><EmojiIcon glyph="🆔" />{" PubMed ID"}</> : <><EmojiIcon glyph="🔗" />{" DOI"}</>}
-          </button>
-        ))}
-      </div>
-
-      {/* Source selector (topic mode only) */}
-      {mode === 'topic' && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginRight: 2 }}>SOURCES:</span>
-          {([
-            ['all', 'All Sources'],
-            ['pubmed', 'PubMed'],
-            ['europepmc', 'Europe PMC'],
-            ['preprints', 'Preprints (bioRxiv/medRxiv)'],
-            ['semantic', 'Semantic Scholar'],
-          ] as const).map(([s, label]) => (
-            <button key={s} onClick={() => setSource(s)} style={{
-              padding: '4px 11px', borderRadius: 20, border: '1px solid', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-              borderColor: source === s ? 'var(--accent)' : 'var(--border)',
-              background: source === s ? 'rgba(99,102,241,0.12)' : 'transparent',
-              color: source === s ? '#818cf8' : 'var(--text-muted)',
-            }}>{label}</button>
-          ))}
-        </div>
-      )}
-
       {/* Search input */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()}
-          placeholder={mode === 'topic' ? 'Keywords, or paste a PubMed/Europe PMC/DOI link…' : mode === 'pmid' ? 'e.g. 38234567, 38123456 (comma-separated)' : 'e.g. 10.1038/s41586-024-07018-7'}
+          placeholder="Topic, PubMed IDs, DOIs, or paste a search link…"
           style={{ flex: 1, padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }} />
+        {mode === 'topic' && (
+          <select value={source} onChange={e => setSource(e.target.value as typeof source)} aria-label="Where to search"
+            style={{ padding: '9px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}>
+            <option value="all">All sources</option>
+            <option value="pubmed">PubMed</option>
+            <option value="europepmc">Europe PMC</option>
+            <option value="preprints">Preprints (bioRxiv/medRxiv)</option>
+            <option value="semantic">Semantic Scholar</option>
+          </select>
+        )}
         <button onClick={doSearch} disabled={searching || !query.trim()} style={{ padding: '9px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', opacity: searching || !query.trim() ? 0.6 : 1 }}>
           {searching ? (searchProgress ? `⏳ ${searchProgress}` : <><EmojiIcon glyph="⏳" />{" Searching…"}</>) : <><EmojiIcon glyph="🔍" />{" Search"}</>}
         </button>
@@ -1021,7 +998,7 @@ function LiteratureFinder({ onAddToSwarm }: { onAddToSwarm: (articles: Article[]
           {selCount > 0 && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
               <button onClick={handleAddToSwarm} disabled={fetchingAbstracts} style={{ padding: '6px 14px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                {fetchingAbstracts ? <><EmojiIcon glyph="⏳" />{" Loading…"}</> : `🧬 Add ${selCount} to AI Swarm`}
+                {fetchingAbstracts ? <><EmojiIcon glyph="⏳" />{" Loading…"}</> : <><EmojiIcon glyph="🧬" />{` Add ${selCount} to AI Swarm`}</>}
               </button>
 
               {/* ── Save to Library picker ── */}
@@ -1164,6 +1141,15 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
   const [grantType, setGrantType] = useState('NIH R01 (Standard Research Project)');
   const [model, setModel] = useState('auto');
   const [extraContext, setExtraContext] = useState('');
+  // Which AI the backend can use right now (null while loading).
+  const [ai, setAi] = useState<Record<string, string | boolean | null> | null>(null);
+  useEffect(() => { grantsApi.aiProviders().then(r => setAi(r.data)).catch(() => setAi({})); }, []);
+  const modelChoices = [
+    SWARM_MODELS[0],
+    ...SWARM_MODELS.slice(1).filter(m => ai?.[m.id]),
+    ...(ai?.ollama ? [{ id: 'ollama', label: `Local model (${ai.ollama})`, desc: 'Runs on this computer; nothing leaves it. Slower, and a little less polished.' }] : []),
+  ];
+  const aiReady = modelChoices.length > 1;
   const [dragging, setDragging] = useState(false);
 
   const [running, setRunning] = useState(false);
@@ -1224,11 +1210,11 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
     setError(problems.join('\n'));
   }, []);
 
-  const handleAddFromSearch = (articles: Article[]) => {
+  const handleAddFromSearch = (articles: Article[], searchedTopic?: string) => {
     if (!articles.length) return;
     const newFiles = articles.map(articleToFile);
     setFiles(prev => { const ex = new Set(prev.map(f => f.id)); return [...prev, ...newFiles.filter(f => !ex.has(f.id))].slice(0, 100); });
-    if (!topic && articles.length > 0) setTopic(autoGenerateTopic(articles));
+    if (!topic && articles.length > 0) setTopic(searchedTopic || autoGenerateTopic(articles));
   };
 
   const runPipeline = async () => {
@@ -1294,92 +1280,86 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
 
       {!running && !result && (
         <>
+          {/* Step 1: papers */}
+          <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px', color: 'var(--text)' }}>1. Find papers <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></h3>
           <LiteratureFinder onAddToSwarm={handleAddFromSearch} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>ALSO ADD MANUALLY</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-            {/* Upload zone */}
-            <div>
+          <details style={{ marginBottom: 16 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Add your own papers: upload files or paste text</summary>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginTop: 10 }}>
               <div className="card"
                 onDragOver={e => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={e => { e.preventDefault(); setDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
                 onClick={() => fileRef.current?.click()}
-                style={{ border: `2px dashed ${dragging ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 12, padding: 20, textAlign: 'center', cursor: 'pointer', background: dragging ? 'rgba(99,102,241,0.05)' : 'var(--surface)', transition: 'all 0.2s', marginBottom: 10 }}>
+                role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click(); }}
+                style={{ border: `2px dashed ${dragging ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 12, padding: 20, textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}><EmojiIcon glyph="📄" /></div>
-                <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 14, color: 'var(--text)' }}>Drop files here</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>PDF, TXT, MD — up to 20 papers</div>
+                <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 14, color: 'var(--text)' }}>Drop files here, or click to choose</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>PDF, TXT, MD (up to 20 papers)</div>
                 <input ref={fileRef} type="file" multiple accept=".pdf,.txt,.md" style={{ display: 'none' }} onChange={e => { if (e.target.files) addFiles(Array.from(e.target.files)); }} />
               </div>
-              {files.length > 0 && (
-                <QueueDisplay files={files} onRemove={id => setFiles(p => p.filter(x => x.id !== id))} onClear={() => setFiles([])} />
-              )}
+              <div>
+                <label htmlFor="swarm-paste" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>OR PASTE TEXT / ABSTRACTS</label>
+                <textarea id="swarm-paste" value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Paste full text or abstracts from several papers…"
+                  style={{ width: '100%', minHeight: 100, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
+              </div>
             </div>
+          </details>
 
-            {/* Settings */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>OR PASTE TEXT / ABSTRACTS</label>
-                <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Paste full text or abstracts from multiple papers here…"
-                  style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
-              </div>
+          {files.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <QueueDisplay files={files} onRemove={id => setFiles(p => p.filter(x => x.id !== id))} onClear={() => setFiles([])} />
+            </div>
+          )}
 
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>RESEARCH TOPIC *</label>
-                <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. CAR-T therapy in GBM"
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${topic ? 'rgba(99,102,241,0.4)' : 'var(--border)'}`, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
-                {topic && <div style={{ fontSize: 10, color: '#818cf8', marginTop: 3 }}>✓ Auto-filled — edit as needed</div>}
-              </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>DISEASE / CONDITION</label>
-                <select value={disease} onChange={e => setDisease(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: disease ? 'var(--text)' : 'var(--text-muted)', fontSize: 13, boxSizing: 'border-box' }}>
-                  <option value="">Select disease / condition…</option>
-                  {DISEASES.map(({ group, items }) => (
-                    <optgroup key={group} label={group}>
-                      {items.map(item => <option key={item} value={item}>{item}</option>)}
-                    </optgroup>
-                  ))}
-                  <optgroup label="── Other">
-                    <option value="Other (specify in topic)">Other (specify in topic)</option>
+          {/* Step 2: project */}
+          <h3 style={{ fontSize: 14, fontWeight: 700, margin: '8px 0', color: 'var(--text)' }}>2. Your project</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div>
+              <label htmlFor="swarm-topic" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>RESEARCH TOPIC *</label>
+              <input id="swarm-topic" value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. CAR-T therapy in GBM" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+              {topic && <div style={{ fontSize: 10, color: '#818cf8', marginTop: 3 }}>Filled in from your search; edit as needed</div>}
+            </div>
+            <div>
+              <label htmlFor="swarm-disease" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>DISEASE / CONDITION</label>
+              <input id="swarm-disease" list="swarm-disease-list" value={disease} onChange={e => setDisease(e.target.value)} placeholder="Start typing, e.g. Glioblastoma" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+              <datalist id="swarm-disease-list">{DISEASES.flatMap(g => g.items).map(item => <option key={item} value={item} />)}</datalist>
+            </div>
+            <div>
+              <label htmlFor="swarm-grant" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>GRANT TYPE</label>
+              <select id="swarm-grant" value={grantType} onChange={e => setGrantType(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
+                {GRANT_TYPES.map(({ group, items }) => (
+                  <optgroup key={group} label={group}>
+                    {items.map(item => <option key={item} value={item}>{item}</option>)}
                   </optgroup>
-                </select>
-              </div>
+                ))}
+              </select>
+            </div>
+          </div>
 
+          {/* Settings most people never change */}
+          <details style={{ marginBottom: 16 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              Options <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({modelChoices.find(m => m.id === model)?.label ?? 'Auto'} · {agencies.length} funding agenc{agencies.length === 1 ? 'y' : 'ies'})</span>
+            </summary>
+            <div style={{ display: 'grid', gap: 12, marginTop: 10, maxWidth: 640 }}>
+              {modelChoices.length > 1 && (
+                <div>
+                  <label htmlFor="swarm-model" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>AI MODEL</label>
+                  <select id="swarm-model" value={model} onChange={e => setModel(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
+                    {modelChoices.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                  </select>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{modelChoices.find(m => m.id === model)?.desc}</div>
+                </div>
+              )}
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>GRANT TYPE</label>
-                <select value={grantType} onChange={e => setGrantType(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
-                  {GRANT_TYPES.map(({ group, items }) => (
-                    <optgroup key={group} label={group}>
-                      {items.map(item => <option key={item} value={item}>{item}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>AI MODEL</label>
-                <select value={model} onChange={e => setModel(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
-                  {SWARM_MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                </select>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{SWARM_MODELS.find(m => m.id === model)?.desc}</div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>FUNDING AGENCIES TO CHECK (unfunded-gap analysis)</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>FUNDING AGENCIES TO CHECK FOR UNFUNDED GAPS</label>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {FUNDING_AGENCIES.map(a => {
                     const on = agencies.includes(a.id);
                     return (
-                      <button key={a.id} type="button" onClick={() => setAgencies(p => on ? p.filter(x => x !== a.id) : [...p, a.id])}
+                      <button key={a.id} type="button" aria-pressed={on} onClick={() => setAgencies(p => on ? p.filter(x => x !== a.id) : [...p, a.id])}
                         style={{ padding: '5px 11px', borderRadius: 20, border: '1px solid', cursor: 'pointer', fontSize: 11, fontWeight: 600,
                           borderColor: on ? 'var(--accent)' : 'var(--border)', background: on ? 'rgba(99,102,241,0.12)' : 'transparent', color: on ? '#818cf8' : 'var(--text-muted)' }}>
                         {on ? '✓ ' : ''}{a.label}
@@ -1387,24 +1367,31 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                     );
                   })}
                 </div>
-                {prefStats.total_rated > 0 && (
-                  <div style={{ fontSize: 10, color: '#818cf8', marginTop: 6 }}>
-                    <EmojiIcon glyph="🧠" /> Learning active — {prefStats.total_rated} hypothesis rating{prefStats.total_rated !== 1 ? 's' : ''} (avg {prefStats.avg_rating}★) feeding the next run.
-                  </div>
-                )}
               </div>
-
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>EXTRA CONTEXT</label>
-                <input value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Lab expertise, preliminary data, PI background…"
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+                <label htmlFor="swarm-extra" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>EXTRA CONTEXT</label>
+                <input id="swarm-extra" value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="Lab expertise, preliminary data, PI background…" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
               </div>
+              {prefStats.total_rated > 0 && (
+                <div style={{ fontSize: 11, color: '#818cf8' }}>
+                  <EmojiIcon glyph="🧠" /> Learning from {prefStats.total_rated} hypothesis rating{prefStats.total_rated !== 1 ? 's' : ''} (average {prefStats.avg_rating} stars) in the next run.
+                </div>
+              )}
             </div>
-          </div>
+          </details>
         </>
       )}
 
       {error && <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#f87171', marginBottom: 16, fontSize: 13, whiteSpace: 'pre-line' }}><EmojiIcon glyph="⚠️" /> {error}</div>}
+
+      {!running && !result && ai && (
+        <div role="status" style={{ padding: '8px 14px', borderRadius: 8, marginBottom: 12, fontSize: 12,
+          background: aiReady ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.12)', color: aiReady ? '#16a34a' : '#b45309' }}>
+          {aiReady
+            ? <>AI ready: {modelChoices.slice(1).map(m => m.label).join(', ')}.{!Object.entries(ai).some(([k, v]) => k !== 'ollama' && v) && ' A local model takes a minute or two for a full run.'}</>
+            : <>No AI is set up yet, so the swarm can only summarise the text of your papers. It will not write gaps, hypotheses or aims. To turn it on, start Ollama and run <code>./run-local.sh</code>, or add an Anthropic, OpenAI or DeepSeek key to the database.</>}
+        </div>
+      )}
 
       {!running && !result && (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
@@ -1415,7 +1402,6 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             <span style={{ color: totalSources > 20 ? '#f59e0b' : 'var(--text-muted)', fontWeight: totalSources > 20 ? 700 : 400 }}>
               {totalSources > 0 ? `${totalSources} paper${totalSources !== 1 ? 's' : ''} ready` : 'Field-knowledge mode (no papers)'}
             </span>
-            {' · '}8-stage swarm · {SWARM_MODELS.find(m => m.id === model)?.label.replace(/^[^ ]+ /, '') || 'Auto'} · {agencies.length} funding agenc{agencies.length === 1 ? 'y' : 'ies'}
             {totalSources > 20 && <span style={{ color: '#f59e0b' }}> · adaptive batching enabled</span>}
             {disease && <> · <span style={{ color: '#f59e0b' }}>{disease}</span></>}
             {grantType && <> · <span style={{ color: '#818cf8' }}>{grantType}</span></>}
@@ -1463,13 +1449,15 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             <div style={{ display: 'flex', gap: 6 }}>
               {(['overview', 'hypotheses', 'funding', 'aims', 'grant'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveResultTab(tab)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: activeResultTab === tab ? 'var(--accent)' : 'var(--surface)', color: activeResultTab === tab ? 'white' : 'var(--text)' }}>
-                  {tab === 'overview' ? <><EmojiIcon glyph="📊" />{" Overview"}</> : tab === 'hypotheses' ? <><EmojiIcon glyph="🧬" />{" Hypotheses"}</> : tab === 'funding' ? `💰 Funding${funding ? ` (${funding.summary.unfunded}🟢)` : ''}` : tab === 'aims' ? <><EmojiIcon glyph="🎯" />{" Aims"}</> : <><EmojiIcon glyph="✍️" />{" Grant Sections"}</>}
+                  {tab === 'overview' ? <><EmojiIcon glyph="📊" />{" Overview"}</> : tab === 'hypotheses' ? <><EmojiIcon glyph="🧬" />{" Hypotheses"}</> : tab === 'funding' ? <><EmojiIcon glyph="💰" />{` Funding${funding ? ` (${funding.summary.unfunded} unfunded)` : ''}`}</> : tab === 'aims' ? <><EmojiIcon glyph="🎯" />{" Aims"}</> : <><EmojiIcon glyph="✍️" />{" Grant Sections"}</>}
                 </button>
               ))}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={async () => {
+              <details className="export-menu">
+                <summary>Export</summary>
+                <div role="menu">
+                  <button type="button" role="menuitem" onClick={async () => {
                   const opts: SwarmExportOptions = {
                     topic, grantType, disease,
                     fieldOverview: result.field_overview,
@@ -1483,19 +1471,35 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
                   };
                   const { exportSwarmDocx } = await import('../lib/exportDocx');
                   await exportSwarmDocx(opts);
-                }}
-                style={{ padding: '8px 14px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                <EmojiIcon glyph="⬇" /> Word (.docx)
-              </button>
-              <button onClick={() => downloadText([`RESEARCH AI SWARM — ${topic}\n${'='.repeat(60)}`, `\nFIELD OVERVIEW:\n${result.field_overview}`, `\nRESEARCH GAPS:\n${result.research_gaps.map((g, i) => `${i + 1}. ${g}`).join('\n')}`, `\nNOVEL HYPOTHESES:\n${result.novel_hypotheses.map((h, i) => `${i + 1}. [Score: ${h.novelty_score}/10]\n${h.hypothesis}\nRationale: ${h.rationale}`).join('\n\n')}`, `\nSPECIFIC AIMS:\n${result.specific_aims.map((a, i) => `Aim ${i + 1}: ${a}`).join('\n\n')}`, `\nGRANT SECTIONS:\n${Object.entries(result.grant_sections).map(([k, v]) => `--- ${k.toUpperCase()} ---\n${v}`).join('\n\n')}`].join('\n'), `research_synthesis_${topic.slice(0, 30).replace(/\s+/g, '_')}.txt`)}
-                style={{ padding: '8px 14px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                <EmojiIcon glyph="⬇" /> Text (.txt)
-              </button>
-              <button onClick={() => downloadText(buildAtomicNotes(result, funding, topic, disease, grantType), `atomic_notes_${topic.slice(0, 30).replace(/\s+/g, '_')}.md`)}
-                title="Export Zettelkasten-style linked atomic notes (Obsidian/Logseq-ready)"
-                style={{ padding: '8px 14px', border: '1px solid rgba(236,72,153,0.35)', borderRadius: 8, background: 'rgba(236,72,153,0.1)', color: '#f472b6', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                <EmojiIcon glyph="🗂️" /> Atomic Notes (.md)
-              </button>
+                }} className="export-item">Word report (.docx)</button>
+                  <button type="button" role="menuitem" onClick={() => downloadText([`RESEARCH AI SWARM — ${topic}\n${'='.repeat(60)}`, `\nFIELD OVERVIEW:\n${result.field_overview}`, `\nRESEARCH GAPS:\n${result.research_gaps.map((g, i) => `${i + 1}. ${g}`).join('\n')}`, `\nNOVEL HYPOTHESES:\n${result.novel_hypotheses.map((h, i) => `${i + 1}. [Score: ${h.novelty_score}/10]\n${h.hypothesis}\nRationale: ${h.rationale}`).join('\n\n')}`, `\nSPECIFIC AIMS:\n${result.specific_aims.map((a, i) => `Aim ${i + 1}: ${a}`).join('\n\n')}`, `\nGRANT SECTIONS:\n${Object.entries(result.grant_sections).map(([k, v]) => `--- ${k.toUpperCase()} ---\n${v}`).join('\n\n')}`].join('\n'), `research_synthesis_${topic.slice(0, 30).replace(/\s+/g, '_')}.txt`)} className="export-item">Text report (.txt)</button>
+                  <button type="button" role="menuitem" onClick={() => downloadText(buildAtomicNotes(result, funding, topic, disease, grantType), `atomic_notes_${topic.slice(0, 30).replace(/\s+/g, '_')}.md`)} className="export-item">Atomic notes (.md, Obsidian-ready)</button>
+                  <button type="button" role="menuitem" onClick={() => {
+                      const lines = result.paper_summaries.map((p, i) => {
+                        const id = p.identifier || '';
+                        return [id, p.filename].filter(Boolean).join('\t');
+                      });
+                      downloadText(`# PMIDs / DOIs from synthesis\n` + lines.join('\n'), `synthesis_ids_${Date.now()}.tsv`);
+                    }} className="export-item">Paper IDs (.tsv)</button>
+                  <button type="button" role="menuitem" onClick={() => {
+                      const txt = result.paper_summaries.map((p, i) => {
+                        return `${'='.repeat(70)}\n${i + 1}. ${p.filename}\n` +
+                          (p.identifier ? `Identifier: ${p.identifier}\n` : '') +
+                          `Sample Size: ${p.sample_size || 'Not reported'}\n` +
+                          `Race/Ethnicity: ${p.race_ethnicity || 'Not reported'}\n` +
+                          `Country: ${p.country || 'Not reported'}\n` +
+                          `Methodology: ${p.methodology}\n` +
+                          (p.results ? `Results: ${p.results}\n` : '') +
+                          `Key Findings: ${p.key_findings}\n` +
+                          `Conclusion: ${p.main_conclusion}\n` +
+                          `Relevance: ${p.relevance}\n`;
+                      }).join('\n');
+                      downloadText(txt, `paper_summaries_${Date.now()}.txt`);
+                    }} className="export-item">Paper summaries (.txt)</button>
+                </div>
+              </details>
+              
+              
               <button onClick={() => { setResult(null); setFunding(null); setCurrentStage(-1); }} style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>↺ New Analysis</button>
               <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #0071bc, #1a4480)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}><EmojiIcon glyph="📝" /> Send to Grant Composer</button>
             </div>
@@ -1527,34 +1531,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
               <div className="card" style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}><EmojiIcon glyph="📚" /> Paper Summaries ({result.paper_summaries.length})</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => {
-                      const lines = result.paper_summaries.map((p, i) => {
-                        const id = p.identifier || '';
-                        return [id, p.filename].filter(Boolean).join('\t');
-                      });
-                      downloadText(`# PMIDs / DOIs from synthesis\n` + lines.join('\n'), `synthesis_ids_${Date.now()}.tsv`);
-                    }} style={{ padding: '5px 12px', background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
-                      <EmojiIcon glyph="📋" /> Export IDs
-                    </button>
-                    <button onClick={() => {
-                      const txt = result.paper_summaries.map((p, i) => {
-                        return `${'='.repeat(70)}\n${i + 1}. ${p.filename}\n` +
-                          (p.identifier ? `Identifier: ${p.identifier}\n` : '') +
-                          `Sample Size: ${p.sample_size || 'Not reported'}\n` +
-                          `Race/Ethnicity: ${p.race_ethnicity || 'Not reported'}\n` +
-                          `Country: ${p.country || 'Not reported'}\n` +
-                          `Methodology: ${p.methodology}\n` +
-                          (p.results ? `Results: ${p.results}\n` : '') +
-                          `Key Findings: ${p.key_findings}\n` +
-                          `Conclusion: ${p.main_conclusion}\n` +
-                          `Relevance: ${p.relevance}\n`;
-                      }).join('\n');
-                      downloadText(txt, `paper_summaries_${Date.now()}.txt`);
-                    }} style={{ padding: '5px 12px', background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
-                      <EmojiIcon glyph="⬇" /> Download All
-                    </button>
-                  </div>
+                  
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {result.paper_summaries.map((p, i) => (
@@ -1692,10 +1669,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
 
           {activeResultTab === 'grant' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: '12px 16px', background: 'rgba(0,113,188,0.08)', borderRadius: 10, border: '1px solid rgba(0,113,188,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}><EmojiIcon glyph="✍️" /> AI-drafted grant sections — send directly to Grant Composer</span>
-                <button onClick={() => onSendToGrant(result.grant_sections, topic)} style={{ padding: '8px 18px', background: '#0071bc', color: 'white', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}><EmojiIcon glyph="📝" /> Send All to Grant Composer</button>
-              </div>
+              
               {Object.entries(result.grant_sections).map(([key, content]) => (
                 <div key={key} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

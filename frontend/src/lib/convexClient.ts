@@ -542,6 +542,11 @@ export const grantsApi = {
     const result = await client.action(api.grants.aiDraft, { ...rest, ...(ctxText ? { context: ctxText } : {}), token: getToken() });
     return { data: result };
   },
+  /** Which AI the research swarm can use right now: hosted keys that are set, and the local Ollama model if any. */
+  aiProviders: async () => {
+    const result = await client.query(api.grants.aiProviders, { token: getToken() });
+    return { data: result as Record<string, string | boolean | null> };
+  },
   researchSynthesis: async (data: any) => {
     // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek; extracted-text-only fallback).
     const result = await client.action(api.grants.researchSynthesis, {
