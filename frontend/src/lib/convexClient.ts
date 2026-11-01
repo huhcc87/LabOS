@@ -606,11 +606,11 @@ export const swarmFeedbackApi = {
 
 export const grantVersionsApi = {
   listAll: async () => {
-    const result = await client.query(api.grants.listVersions, { grant_id: "" });
+    const result = await client.query(api.grants.listVersions, { token: getToken(), grant_id: "" });
     return { data: (result ?? []).map(adapt) };
   },
   listByGrant: async (grantId: string) => {
-    const result = await client.query(api.grants.listVersions, { grant_id: grantId });
+    const result = await client.query(api.grants.listVersions, { token: getToken(), grant_id: grantId });
     return { data: (result ?? []).map(adapt) };
   },
   create: async (data: any) => {
@@ -627,16 +627,29 @@ export const grantVersionsApi = {
 
 export const grantSubmissionsApi = {
   list: async (page = 1, perPage = 20, extra?: Record<string, string>) => {
-    const result = await client.query(api.grants.listSubmissions, {
+    const result = await client.query(api.grants.listSubmissions, { token: getToken(),
       status: extra?.status,
       paginationOpts: { numItems: 200, cursor: null },
     });
-    const items = result?.page ?? [];
+    // The page reads submitted_at and total_amount; the backend stores submission_date and amount_requested.
+    const items = (result?.page ?? []).map((r: any) => ({
+      ...r,
+      submitted_at: r.submission_date ? new Date(r.submission_date).toISOString().slice(0, 10) : '',
+      total_amount: r.amount_requested ?? 0,
+    }));
     return paginated(items, page, perPage);
   },
   create: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.grants.createSubmission, { token, ...data });
+    const when = data.submitted_at ? Date.parse(data.submitted_at) : NaN;
+    const num = (x: unknown) => (x === null || x === undefined || x === '' || !Number.isFinite(Number(x)) ? undefined : Number(x));
+    const text = (x: unknown) => (typeof x === 'string' && x.trim() ? x.trim() : undefined);
+    const body = {
+      title: data.title, status: data.status ?? 'submitted',
+      agency: text(data.agency), grant_type: text(data.grant_type), grant_number: text(data.grant_number), institute: text(data.institute), notes: text(data.notes),
+      submission_date: Number.isFinite(when) ? when : undefined, amount_requested: num(data.total_amount), score: num(data.score), percentile: num(data.percentile),
+    };
+    const result = await client.mutation(api.grants.createSubmission, { token, ...Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)) } as any);
     return { data: result };
   },
   update: async (id: IdLike, data: any) => {
@@ -650,14 +663,14 @@ export const grantSubmissionsApi = {
     return { data: { success: true } };
   },
   analytics: async () => {
-    const result = await client.query(api.grants.analytics, {});
+    const result = await client.query(api.grants.analytics, { token: getToken() });
     return { data: result };
   },
 };
 
 export const dashboardApi = {
   summary: async () => {
-    const result = await client.query(api.dashboard.summary, {});
+    const result = await client.query(api.dashboard.summary, { token: getToken() });
     return { data: result };
   },
 };
@@ -711,7 +724,7 @@ export const samplesApi = {
     return paginated(items, page, perPage);
   },
   createEvent: async (data: any) => {
-    const result = await client.mutation(api.samples.createEvent, data);
+    const result = await client.mutation(api.samples.createEvent, { token: getToken(), ...data });
     return { data: result };
   },
   updateEvent: async (id: IdLike, data: any) => {
@@ -719,7 +732,7 @@ export const samplesApi = {
     return { data: { id } };
   },
   deleteEvent: async (id: IdLike) => {
-    await client.mutation(api.samples.deleteEvent, { id: toStr(id) as any });
+    await client.mutation(api.samples.deleteEvent, { token: getToken(), id: toStr(id) as any });
     return { data: { success: true } };
   },
 };
@@ -763,7 +776,7 @@ export const instrumentsApi = {
   },
   deleteBooking: async (id: IdLike) => {
     const token = getToken();
-    await client.mutation(api.instruments.cancelBooking, { id: id as any });
+    await client.mutation(api.instruments.cancelBooking, { token: getToken(), id: id as any });
     return { data: { success: true } };
   },
 };
@@ -828,7 +841,7 @@ export const costsApi = {
     api.costs.get
   ),
   summary: async () => {
-    const result = await client.query(api.costs.summary, {});
+    const result = await client.query(api.costs.summary, { token: getToken() });
     return { data: result };
   },
   approve: async (id: IdLike) => {
@@ -846,7 +859,7 @@ export const costsApi = {
 
 export const labMembersApi = {
   listForLab: async (labId: IdLike) => {
-    const result = await client.query(api.labMembers.listForLab, { lab_id: labId as any });
+    const result = await client.query(api.labMembers.listForLab, { token: getToken(), lab_id: labId as any });
     return { data: (result ?? []).map(adapt) };
   },
   listMy: async () => {
@@ -890,7 +903,7 @@ export const labMembersApi = {
   canIManage: async (labId: IdLike) => {
     try {
       const token = getToken();
-      const memberships = await client.query(api.labMembers.listForLab, { lab_id: toStr(labId) as any });
+      const memberships = await client.query(api.labMembers.listForLab, { token: getToken(), lab_id: toStr(labId) as any });
       const me = await client.query(api.users.getMe, { token });
       const myMembership = (memberships ?? []).find((m: any) => m.user_id === (me as any)?._id);
       const role = myMembership?.lab_role ?? "";
@@ -922,7 +935,7 @@ export const integrationsApi = {
   ...crudApi(api.integrations.list, api.integrations.create, api.integrations.update, api.integrations.remove),
   test: async (id: IdLike) => {
     // Test connection by verifying the integration exists
-    const result = await client.query(api.integrations.list, {});
+    const result = await client.query(api.integrations.list, { token: getToken() });
     const found = (result as any[])?.find?.((i: any) => i._id === toStr(id));
     return { data: { success: !!found, status: found ? "connected" : "not_found" } };
   },
@@ -992,7 +1005,7 @@ export const filesApi = {
     return { data: (result ?? []).map(adapt) };
   },
   download: async (attachmentId: IdLike) => {
-    const result = await client.query(api.files.get, { id: toStr(attachmentId) as any });
+    const result = await client.query(api.files.get, { token: getToken(), id: toStr(attachmentId) as any });
     if (result?.url) {
       const resp = await fetch(result.url);
       return { data: await resp.blob() };
@@ -1275,7 +1288,7 @@ export const procurementApi = {
 export const protocolsPrintApi = {
   getPrintView: async (id: IdLike) => {
     try {
-      const result = await client.query(api.protocols.get, { id: toStr(id) as any });
+      const result = await client.query(api.protocols.get, { token: getToken(), id: toStr(id) as any });
       if (!result) return { data: "<p>Protocol not found</p>" };
       const p = result as any;
       const html = `
@@ -1316,7 +1329,7 @@ export const protocolAiApi = {
 
 export const orgApi = {
   list: async () => {
-    const result = await client.query(api.org.listOrgs, {});
+    const result = await client.query(api.org.listOrgs, { token: getToken() });
     return { data: (result ?? []).map(adapt) };
   },
 };

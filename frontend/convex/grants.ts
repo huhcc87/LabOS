@@ -104,6 +104,10 @@ export const createSubmission = mutation({
     amount_requested: v.optional(v.number()),
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
+    grant_number: v.optional(v.string()),
+    institute: v.optional(v.string()),
+    score: v.optional(v.number()),
+    percentile: v.optional(v.number()),
   },
   handler: async (ctx, { token, ...args }) => {
     const userId = await requireAuth(ctx, token);
@@ -130,6 +134,10 @@ export const updateSubmission = mutation({
     amount_requested: v.optional(v.number()),
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
+    grant_number: v.optional(v.string()),
+    institute: v.optional(v.string()),
+    score: v.optional(v.number()),
+    percentile: v.optional(v.number()),
   },
   handler: async (ctx, { token, id, ...fields }) => {
     await requireAuth(ctx, token);
