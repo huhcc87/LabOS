@@ -15,6 +15,7 @@ Brings the lab's inventory, orders and request exports into LabOS: **Resources â
   - In the lab's current workbook "Min to Stock" is empty on every row and only one instance has an expiration date, so today the alerts are mostly "out of stock". They fill in as those columns get used.
 - **Vendor page** button per row: the exported product URL when it is http(s), otherwise the vendor's own search page for the catalog # (for the vendors in `src/data/vendorSearch.ts`).
 - **Reorder** button per row: creates a normal request in Requests (pending, goes through the usual approval and budget checks).
+- **Row details**: click a name to expand every stored column. The category's own columns (everything after "CAS Number" in the sheet: Clone and Isotype for antibodies, Backbone-type fields for plasmids, and so on) are listed first.
 - **Remove** button per imported file (admin only): deletes that file's rows; re-import brings them back.
 
 ## Run it on macOS
@@ -42,5 +43,4 @@ The local-exports test expects 3,988 items, 3,054 instances, order 1022716 (Addg
 
 ## Not built
 - Live sync or a investigation of the original system: needs your signed-in session and explicit go-ahead; read-only.
-- Category-specific column views (all original columns are stored in `data`; the table shows the common ones).
 - Excel export (CSV only).

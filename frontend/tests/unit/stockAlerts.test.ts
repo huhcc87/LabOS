@@ -1,6 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { stockAlerts, type AlertRow } from "../../convex/stockAlerts";
-import { productLink } from "../../src/components/StockImportTab";
+import { productLink, detailFields } from "../../src/components/StockImportTab";
+
+describe("detailFields", () => {
+  it("puts the columns after CAS Number first as category details and hides bookkeeping columns", () => {
+    const data = JSON.stringify({ Archived: "N", "Item Name *": "Anti-GFP", "CAS Number": "-", Clone: "9F9", Isotype: "IgG1" });
+    const d = detailFields(data);
+    expect(d.specific).toEqual([["Clone", "9F9"], ["Isotype", "IgG1"]]);
+    expect(d.common.map(([k]) => k)).toEqual(["Item Name *", "CAS Number"]);
+  });
+  it("copes with missing or broken data", () => {
+    expect(detailFields(undefined)).toEqual({ common: [], specific: [] });
+    expect(detailFields("{oops")).toEqual({ common: [], specific: [] });
+  });
+});
 
 const NOW = Date.parse("2026-11-01");
 const DAY = 86_400_000;

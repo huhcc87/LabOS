@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { stockImportApi, reagentCartApi } from '../lib/api';
@@ -7,6 +7,16 @@ import { csvCell, downloadText } from '../features/cart/cartExport';
 import { VENDOR_SEARCHES, vendorSearchUrl } from '../data/vendorSearch';
 
 const BATCH = 250;
+const HIDDEN = new Set(['Delete? (Y/N)', 'Archived', 'Row Type']);
+
+/** Splits a stored row into the common columns and the category's own columns (the ones after "CAS Number" in the sheet). */
+export function detailFields(data?: string): { common: [string, string][]; specific: [string, string][] } {
+  let obj: Record<string, unknown> = {};
+  try { obj = JSON.parse(data ?? '{}'); } catch { /* data not JSON */ }
+  const all = Object.entries(obj).filter(([k]) => !HIDDEN.has(k)).map(([k, v]) => [k, String(v)] as [string, string]);
+  const cut = all.findIndex(([k]) => k === 'CAS Number');
+  return cut < 0 ? { common: all, specific: [] } : { common: all.slice(0, cut + 1), specific: all.slice(cut + 1) };
+}
 const REASONS = ['out of stock', 'below minimum', 'expired', 'expires soon'];
 
 /** Link to the product: the exported URL when it is http(s), else the vendor's own search page for the catalog number, else nothing. */
@@ -44,6 +54,7 @@ export default function StockImportTab() {
   const [kind, setKind] = useState('');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [alertFilter, setAlertFilter] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -79,6 +90,23 @@ export default function StockImportTab() {
       toast.success(`Imported: ${added} new, ${updated} updated`);
       setLoaded([]); await refresh();
     } catch (e: any) { toast.error(e?.data ?? e?.message ?? 'Import failed'); } finally { setBusy(false); }
+  };
+  const detail = (r: any) => {
+    const { common, specific } = detailFields(r.data);
+    const grid = (list: [string, string][]) => (
+      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '4px 16px', margin: 0, fontSize: 12 }}>
+        {list.map(([k, v]) => (
+          <div key={k}><dt style={{ color: '#64748b' }}>{k}</dt><dd style={{ margin: 0, wordBreak: 'break-word' }}>{/^https?:\/\//i.test(v) ? <a href={v} target="_blank" rel="noopener noreferrer">{v}</a> : v}</dd></div>
+        ))}
+      </dl>
+    );
+    return (
+      <div>
+        {specific.length > 0 && <><div style={{ fontWeight: 600, fontSize: 12, margin: '4px 0' }}>{r.category} details</div>{grid(specific)}</>}
+        <div style={{ fontWeight: 600, fontSize: 12, margin: '8px 0 4px' }}>All other columns</div>
+        {grid(common)}
+      </div>
+    );
   };
   const removeSource = async (source: string) => {
     if (!window.confirm(`Remove all rows imported from "${source}"? Re-import the file to bring them back.`)) return;
@@ -180,14 +208,16 @@ export default function StockImportTab() {
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
             <thead><tr style={{ textAlign: 'left', color: '#64748b' }}>{['Type', 'Name', 'Vendor', 'Catalog #', 'Category', 'Status', 'Id', ''].map((h) => <th key={h} style={{ padding: 6 }}>{h}</th>)}</tr></thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r._id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: 6 }}>{r.kind}</td><td style={{ padding: 6 }}>{r.name}</td><td style={{ padding: 6 }}>{r.vendor}</td>
+              {rows.map((r) => (<Fragment key={r._id}>
+                <tr style={{ borderTop: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: 6 }}>{r.kind}</td>
+                  <td style={{ padding: 6 }}><button onClick={() => setOpen(open === r._id ? null : r._id)} aria-expanded={open === r._id} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#4338ca', textAlign: 'left', font: 'inherit' }}>{open === r._id ? '▾' : '▸'} {r.name}</button></td><td style={{ padding: 6 }}>{r.vendor}</td>
                   <td style={{ padding: 6 }}>{r.catalog}</td><td style={{ padding: 6 }}>{r.category}</td><td style={{ padding: 6 }}>{r.status}</td>
                   <td style={{ padding: 6, fontFamily: 'monospace', fontSize: 11 }}>{String(r.external_id).slice(0, 24)}</td>
                   <td style={{ padding: 6, whiteSpace: 'nowrap' }}>{r.kind === 'order' ? null : actions(r)}</td>
                 </tr>
-              ))}
+                {open === r._id && <tr><td colSpan={8} style={{ padding: '4px 6px 12px', background: '#f8fafc' }}>{detail(r)}</td></tr>}
+              </Fragment>))}
               {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 12, color: '#64748b' }}>No records. Import an export above.</td></tr>}
             </tbody>
           </table>
