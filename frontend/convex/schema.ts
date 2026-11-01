@@ -1002,6 +1002,25 @@ export default defineSchema({
     .index("by_requester", ["requester_id"]),
 
   // ── Video Rooms ─────────────────────────────────────────────────────
+  // Quartzy exports kept as exported (items, instances, orders, requests), each with its original id and columns.
+  quartzy_records: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    kind: v.string(), // item | instance | order | request
+    external_id: v.string(),
+    category: v.optional(v.string()),
+    name: v.string(),
+    vendor: v.optional(v.string()),
+    catalog: v.optional(v.string()),
+    status: v.optional(v.string()),
+    date: v.optional(v.number()),
+    amount: v.optional(v.number()),
+    data: v.string(), // every original column as JSON
+    source: v.string(), // the file it came from
+    search_text: v.string(),
+    imported_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_key", ["kind", "external_id"])
+    .searchIndex("by_text", { searchField: "search_text", filterFields: ["kind", "category"] }),
+
   // LabHuddle polls: one row per poll, one row per person's vote (so nobody can vote twice).
   meeting_polls: defineTable({
     lab_id: v.optional(v.id("labs")),

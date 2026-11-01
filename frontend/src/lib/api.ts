@@ -40,6 +40,7 @@ export {
   biosketchApi,
   videoApi,
   huddleApi,
+  quartzyApi,
   paymentsApi,
   procurementApi,
   protocolsPrintApi,

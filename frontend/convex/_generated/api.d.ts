@@ -58,6 +58,7 @@ import type * as protocolAi from "../protocolAi.js";
 import type * as protocolLibrary from "../protocolLibrary.js";
 import type * as protocolRules from "../protocolRules.js";
 import type * as protocols from "../protocols.js";
+import type * as quartzy from "../quartzy.js";
 import type * as reagentCart from "../reagentCart.js";
 import type * as receiving from "../receiving.js";
 import type * as reports from "../reports.js";
@@ -138,6 +139,7 @@ declare const fullApi: ApiFromModules<{
   protocolLibrary: typeof protocolLibrary;
   protocolRules: typeof protocolRules;
   protocols: typeof protocols;
+  quartzy: typeof quartzy;
   reagentCart: typeof reagentCart;
   receiving: typeof receiving;
   reports: typeof reports;

@@ -1347,3 +1347,10 @@ export const orgApi = {
 };
 
 export { client as convexClient };
+
+export const quartzyApi = {
+  importBatch: (source: string, records: any[]) => client.mutation(api.quartzy.importBatch, { token: getToken(), source, records }),
+  search: (p: { text?: string; kind?: string; category?: string; limit?: number }) => client.query(api.quartzy.search, { token: getToken(), ...p }),
+  summary: () => client.query(api.quartzy.summary, { token: getToken() }),
+  reconcile: () => client.query(api.quartzy.reconcile, { token: getToken() }),
+};
