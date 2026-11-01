@@ -9,10 +9,12 @@ const { requireAuth, requireRole } = hubGuard("Grant Hub");
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
 
+/** The versions of one grant, newest first; with no grant named, every version in the lab. */
 export const listVersions = query({
-  args: { token: v.optional(v.string()), grant_id: v.string() },
+  args: { token: v.optional(v.string()), grant_id: v.optional(v.string()) },
   handler: async (ctx, { token, grant_id }) => {
     await requireAuth(ctx, token);
+    if (!grant_id) return await ctx.db.query("grant_versions").order("desc").collect();
     return await ctx.db
       .query("grant_versions")
       .withIndex("by_grant", (q) => q.eq("grant_id", grant_id))

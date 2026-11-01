@@ -95,6 +95,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'NIH & NSF grant management',
     items: [
       { key: 'grants', label: 'Grants Overview', icon: '📝', minRole: 'trainee' },
+      { key: 'version-history', label: 'Version History', icon: '📜', minRole: 'trainee' },
     ]
   },
   {

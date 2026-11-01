@@ -604,18 +604,30 @@ export const swarmFeedbackApi = {
   },
 };
 
+/** A stored version row back to the shape the Version History page reads. */
+const versionRow = (r: any) => {
+  let snap: any = {};
+  try { snap = JSON.parse(r.content); } catch { snap = { content: { [r.section]: r.content } }; } // rows saved one section at a time
+  return { ...adapt(r), grant_title: r.title, version_label: snap.version_label || '', notes: snap.notes || '', changes: snap.changes || [], content: snap.content || {}, created_by: '' };
+};
+
 export const grantVersionsApi = {
   listAll: async () => {
-    const result = await client.query(api.grants.listVersions, { token: getToken(), grant_id: "" });
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.grants.listVersions, { token: getToken() });
+    return { data: (result ?? []).map(versionRow) };
   },
   listByGrant: async (grantId: string) => {
     const result = await client.query(api.grants.listVersions, { token: getToken(), grant_id: grantId });
-    return { data: (result ?? []).map(adapt) };
+    return { data: (result ?? []).map(versionRow) };
   },
   create: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.grants.createVersion, { token, ...data });
+    // A snapshot of the whole grant is one stored row; its label, notes, changes and sections ride along as JSON.
+    const existing = await client.query(api.grants.listVersions, { token, grant_id: data.grant_id });
+    const result = await client.mutation(api.grants.createVersion, {
+      token, grant_id: data.grant_id, title: data.grant_title || data.grant_id, section: 'snapshot', version: (existing?.length ?? 0) + 1,
+      content: JSON.stringify({ version_label: data.version_label ?? '', notes: data.notes ?? '', changes: data.changes ?? [], content: data.content ?? {} }),
+    });
     return { data: result };
   },
   delete: async (id: IdLike) => {
