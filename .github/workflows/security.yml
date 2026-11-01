@@ -47,5 +47,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+      # TEMPORARY: non-blocking until Dependency graph is enabled in the repo settings
+      # (settings/security_analysis). Then delete the `continue-on-error` line below to block again.
       - uses: actions/dependency-review-action@v4
+        continue-on-error: true
         with: { fail-on-severity: critical }
