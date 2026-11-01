@@ -13,6 +13,7 @@ export async function callOllama(
   messages: { role: string; content: string }[],
   system: string,
   maxTokens = 1024,
+  timeoutMs = 110_000,
 ): Promise<string | null> {
   const model = process.env.OLLAMA_MODEL;
   if (!model) return null;
@@ -22,7 +23,7 @@ export async function callOllama(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model, max_tokens: maxTokens, stream: false, messages: [{ role: "system", content: system }, ...messages] }),
-      signal: AbortSignal.timeout(110_000), // a local model can be slow; Convex actions allow ~10 minutes, users won't wait that long
+      signal: AbortSignal.timeout(timeoutMs), // a local model can be slow; Convex actions allow ~10 minutes, users won't wait that long
     });
     if (!res.ok) return null;
     const data = await res.json();
