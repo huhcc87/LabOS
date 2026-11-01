@@ -615,8 +615,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.d.ts": {
-    "mtime": 1793454391.3121703,
-    "ast_hash": "93ac0cf65b7dc0203a7de213aef21ed4",
+    "mtime": 1793538599.2194936,
+    "ast_hash": "fb1db68ddbe11883db97fb68683e8d26",
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.js": {
@@ -655,8 +655,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/audit.ts": {
-    "mtime": 1793451757.1823947,
-    "ast_hash": "f3ec45b280474c27e0410d80aa497891",
+    "mtime": 1793534669.9743576,
+    "ast_hash": "ed559abd8269a27804d6483b9ea7614e",
     "semantic_hash": ""
   },
   "frontend/convex/auth.config.ts": {
@@ -715,8 +715,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/grants.ts": {
-    "mtime": 1793454391.3162518,
-    "ast_hash": "c11054421c3c1611edc2057c7341c586",
+    "mtime": 1793540214.4357502,
+    "ast_hash": "4c4387ce563caee5919046975e9ccedd",
     "semantic_hash": ""
   },
   "frontend/convex/incidents.ts": {
@@ -760,8 +760,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/meetings.ts": {
-    "mtime": 1793455655.7190177,
-    "ast_hash": "12694ed649a1c4a9156238760b426d5e",
+    "mtime": 1793538479.7146344,
+    "ast_hash": "e630fe72e7b4513601031b57e1ac0499",
     "semantic_hash": ""
   },
   "frontend/convex/notifications.ts": {
@@ -780,8 +780,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/procurement.ts": {
-    "mtime": 1793455655.7204149,
-    "ast_hash": "3fe57a77c843ad75d08d49685ca17f67",
+    "mtime": 1793460758.4395654,
+    "ast_hash": "ea7a20f3cbc33c634c37816b5877f077",
     "semantic_hash": ""
   },
   "frontend/convex/protocols.ts": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/reagentCart.ts": {
-    "mtime": 1793454391.3206878,
-    "ast_hash": "ac84f6d60e7ff6b1c1060362801daffd",
+    "mtime": 1793534737.8385005,
+    "ast_hash": "dc58c4518063cb3c64e3c32fac5bd3aa",
     "semantic_hash": ""
   },
   "frontend/convex/samples.ts": {
@@ -805,8 +805,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/schema.ts": {
-    "mtime": 1793454391.3216612,
-    "ast_hash": "8ec2c3050eb085d02f787a014fc3d06d",
+    "mtime": 1793539677.6158278,
+    "ast_hash": "3e0d6d33c1df99176c2f8d34203f5f0c",
     "semantic_hash": ""
   },
   "frontend/convex/search.ts": {
@@ -1015,8 +1015,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/Layout.tsx": {
-    "mtime": 1793459593.065049,
-    "ast_hash": "7d15c64249b48420ee183efd2fa94342",
+    "mtime": 1793540317.822344,
+    "ast_hash": "9c32f3308e4210144661f99e13ff5fc2",
     "semantic_hash": ""
   },
   "frontend/src/components/MarkdownRenderer.tsx": {
@@ -1155,8 +1155,8 @@
     "semantic_hash": ""
   },
   "frontend/src/features/lab-meetings/components/MeetingBadges.tsx": {
-    "mtime": 1793456684.3640635,
-    "ast_hash": "65f5d73c8eff128db2bc5d9bf4af2b1d",
+    "mtime": 1793538930.0071063,
+    "ast_hash": "3021e0be9a94c4f23672932829e14319",
     "semantic_hash": ""
   },
   "frontend/src/features/lab-meetings/components/MeetingCard.tsx": {
@@ -1195,8 +1195,8 @@
     "semantic_hash": ""
   },
   "frontend/src/features/lab-meetings/pages/LabMeetingsPage.tsx": {
-    "mtime": 1793456662.0670571,
-    "ast_hash": "e65eea2bc06ed55eefcc9fa6dc938b73",
+    "mtime": 1793539264.9194121,
+    "ast_hash": "06aaf3285e2b7ca9c8e8f3de8b216c51",
     "semantic_hash": ""
   },
   "frontend/src/features/lab-meetings/types/meeting.types.ts": {
@@ -1545,8 +1545,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/api.ts": {
-    "mtime": 1793451757.1839476,
-    "ast_hash": "0bafb97c1a2763c95ff42cfcd96f08df",
+    "mtime": 1793538637.7486897,
+    "ast_hash": "846129df15613a945f4ea63de73e79d4",
     "semantic_hash": ""
   },
   "frontend/src/lib/comingSoon.ts": {
@@ -1560,8 +1560,8 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/convexClient.ts": {
-    "mtime": 1793455702.1517575,
-    "ast_hash": "50b2ea6fda2ae4893e5e126b9a5c4440",
+    "mtime": 1793540214.43809,
+    "ast_hash": "c37e46246e85d3aad55f1423a4719d76",
     "semantic_hash": ""
   },
   "frontend/src/lib/errorTracker.ts": {
@@ -1635,8 +1635,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/AuditPage.tsx": {
-    "mtime": 1793456564.586084,
-    "ast_hash": "a55db96ffca60660f33940607763217c",
+    "mtime": 1793534784.7086322,
+    "ast_hash": "a6de6191d525cdb9293e2096a97a1827",
     "semantic_hash": ""
   },
   "frontend/src/pages/BatchImportPage.tsx": {
@@ -1835,8 +1835,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LabMembersPage.tsx": {
-    "mtime": 1793456564.5752873,
-    "ast_hash": "9479ff868c7aac76a95bd20d8b3dff3d",
+    "mtime": 1793535215.989387,
+    "ast_hash": "60494604cc77a53e16c8944f43d78ad5",
     "semantic_hash": ""
   },
   "frontend/src/pages/LabNotebookPage.tsx": {
@@ -1895,8 +1895,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/ReagentCartPage.tsx": {
-    "mtime": 1793458752.1052763,
-    "ast_hash": "01b219c13a498bfb81e10b6fcffb9af3",
+    "mtime": 1793535154.9723227,
+    "ast_hash": "49017cd022a375d5459eb7cd2a0f2b50",
     "semantic_hash": ""
   },
   "frontend/src/pages/ReagentHubPage.tsx": {
@@ -1920,8 +1920,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/ResearchAITab.tsx": {
-    "mtime": 1793456662.0593908,
-    "ast_hash": "fab54014da624d4ea3ef2f82fff47a58",
+    "mtime": 1793538255.5868049,
+    "ast_hash": "d071e3b16a30c6599945511bea006704",
     "semantic_hash": ""
   },
   "frontend/src/pages/ResourcesHubPage.tsx": {
@@ -2640,8 +2640,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/tenantTables.ts": {
-    "mtime": 1793454391.3239055,
-    "ast_hash": "f0ef5fa47ce5e3c6555669efefd59078",
+    "mtime": 1793538610.5928068,
+    "ast_hash": "0be88006e24698e5fb396f1d5aa1f71b",
     "semantic_hash": ""
   },
   "frontend/src/components/SelectOrCustom.tsx": {
@@ -3020,8 +3020,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/ollama.ts": {
-    "mtime": 1793454391.3189626,
-    "ast_hash": "e0e9a189e19865c653138409eb75dcfa",
+    "mtime": 1793537905.4630556,
+    "ast_hash": "39e256230d8218af29694a46bb5b1033",
     "semantic_hash": ""
   },
   "frontend/convex/protocolAi.ts": {
@@ -3222,6 +3222,36 @@
   "frontend/tests/unit/budgetForecast.test.ts": {
     "mtime": 1793460446.175743,
     "ast_hash": "bca180af1b0d4d13a2e2afbd0e01c6d4",
+    "semantic_hash": ""
+  },
+  "frontend/convex/huddle.ts": {
+    "mtime": 1793538598.1845443,
+    "ast_hash": "2d13124fcdae9aa8f8afc101e629e5d7",
+    "semantic_hash": ""
+  },
+  "frontend/convex/procurementAudit.ts": {
+    "mtime": 1793534739.1893342,
+    "ast_hash": "7d480bef7957ab0ec7f8084f16f50d3b",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/lab-meetings/components/KnowledgeTab.tsx": {
+    "mtime": 1793538696.9235911,
+    "ast_hash": "ae4d076e895d8e6b4baecaf4b96e3a03",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/lab-meetings/components/PollsTab.tsx": {
+    "mtime": 1793538695.577839,
+    "ast_hash": "365503899afdf32905a66db27dd3e6f2",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/research/searchKind.ts": {
+    "mtime": 1793537253.6182427,
+    "ast_hash": "93c851a8b9d8c01e2b691bebfbbc14cd",
+    "semantic_hash": ""
+  },
+  "frontend/tests/unit/searchKind.test.ts": {
+    "mtime": 1793537215.8531225,
+    "ast_hash": "baa2d50a5ea9c5354b790b5f91c8fd85",
     "semantic_hash": ""
   }
 }
