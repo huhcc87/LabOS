@@ -25,6 +25,7 @@ jobs:
     steps:
       - name: Skip when CONVEX_DEPLOY_KEY is not set
         if: env.CONVEX_DEPLOY_KEY == ''
+        working-directory: .   # runs before checkout, when frontend/ does not exist yet
         run: echo "::warning::CONVEX_DEPLOY_KEY is not set, so Convex was NOT deployed. The website may call functions the server does not have yet. Deploy by hand with npx convex deploy."
       - uses: actions/checkout@v4
         if: env.CONVEX_DEPLOY_KEY != ''
