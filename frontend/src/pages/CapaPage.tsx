@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ export default function CapaPage() {
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       <button onClick={e => { e.stopPropagation(); deleteCapa(c.id); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 16 }} title="Delete">🗑</button>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 16 }} title="Delete"><EmojiIcon glyph="🗑" /></button>
                     </td>
                   </tr>
                 ))}

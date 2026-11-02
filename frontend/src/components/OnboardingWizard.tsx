@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from '../context/NavigationContext';
+import EmojiIcon from './EmojiIcon';
 
 const STEPS = [
   {
@@ -16,7 +17,7 @@ const STEPS = [
           { icon: '🛡️', label: 'Safety & Compliance', desc: '21 CFR Part 11, GLP, ISO 17025 built-in' },
         ].map(item => (
           <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10 }}>
-            <span style={{ fontSize: 22 }}>{item.icon}</span>
+            <span style={{ fontSize: 22 }}><EmojiIcon glyph={item.icon} /></span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>{item.label}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.desc}</div>
@@ -34,7 +35,7 @@ const STEPS = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, padding: '14px 16px' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 6 }}>💡 Pro tip</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 6 }}><EmojiIcon glyph="💡" /> Pro tip</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>You can bulk import your existing Excel/CSV inventory from the Resources Hub. Or add items one by one using the "+" button.</div>
         </div>
         {[
@@ -61,7 +62,7 @@ const STEPS = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 10, padding: '14px 16px' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', marginBottom: 6 }}>🧬 Biorepository ready</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', marginBottom: 6 }}><EmojiIcon glyph="🧬" /> Biorepository ready</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>LabOS generates unique barcodes for every sample. Each sample has a full audit trail — who created it, stored it, processed it.</div>
         </div>
         {['Register samples in Sample Hub', 'Assign storage locations and barcodes', 'Log processing events (aliquot, freeze, ship)', 'Search and filter by type, status, or date'].map((s, i) => (
@@ -111,12 +112,12 @@ const STEPS = [
         {[
           { icon: '📓', text: 'Open Lab Notebook and log your first experiment', page: 'lab-notebook' },
           { icon: '📋', text: 'Create a protocol and try execution mode', page: 'protocols' },
-          { icon: '📝', text: 'Draft a grant section with AI assistance', page: 'grants' },
+          { icon: '📝', text: 'Draft a grant section', page: 'grants' },
           { icon: '🏪', text: 'Browse 70+ biomedical suppliers in the directory', page: 'suppliers' },
-          { icon: '🗺️', text: 'Map your lab storage in the Storage Map', page: 'storage-map' },
+          { icon: '🗺️', text: 'Map your lab storage in Freezer / Biobank', page: 'freezer-biobank' },
         ].map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10 }}>
-            <span style={{ fontSize: 20 }}>{item.icon}</span>
+            <span style={{ fontSize: 20 }}><EmojiIcon glyph={item.icon} /></span>
             <span style={{ flex: 1, fontSize: 13 }}>{item.text}</span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>→</span>
           </div>
@@ -165,7 +166,7 @@ export function OnboardingWizard({ onClose }: { onClose: () => void }) {
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>{current.icon}</div>
+            <div style={{ fontSize: 52, marginBottom: 12 }}><EmojiIcon glyph={current.icon} /></div>
             <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{current.title}</h2>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>{current.subtitle}</p>
           </div>

@@ -15,7 +15,8 @@ export const list = query({
       v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })
     ),
   },
-  handler: async (ctx, { search, author_id, paginationOpts }) => {
+  handler: async (ctx, { token, search, author_id, paginationOpts }) => {
+    await requireAuth(ctx, token);
     const numItems = paginationOpts?.numItems ?? 50;
 
     let docs;
@@ -60,8 +61,9 @@ export const list = query({
 // ── Get ───────────────────────────────────────────────────────────────────────
 
 export const get = query({
-  args: { id: v.id("lab_notebook") },
-  handler: async (ctx, { id }) => {
+  args: { token: v.optional(v.string()), id: v.id("lab_notebook") },
+  handler: async (ctx, { token, id }) => {
+    await requireAuth(ctx, token);
     return await ctx.db.get(id);
   },
 });

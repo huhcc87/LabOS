@@ -1,5 +1,6 @@
 import { action } from "./_generated/server";
 import { query, mutation } from "./tenant";
+import { callOllama, callOllamaJson } from "./ollama";
 import { v, ConvexError } from "convex/values";
 import { hubGuard } from "./authHelper";
 import { internal } from "./_generated/api";
@@ -8,10 +9,12 @@ const { requireAuth, requireRole } = hubGuard("Grant Hub");
 
 // ── Grant Versions ────────────────────────────────────────────────────────────
 
+/** The versions of one grant, newest first; with no grant named, every version in the lab. */
 export const listVersions = query({
-  args: { token: v.optional(v.string()), grant_id: v.string() },
+  args: { token: v.optional(v.string()), grant_id: v.optional(v.string()) },
   handler: async (ctx, { token, grant_id }) => {
     await requireAuth(ctx, token);
+    if (!grant_id) return await ctx.db.query("grant_versions").order("desc").collect();
     return await ctx.db
       .query("grant_versions")
       .withIndex("by_grant", (q) => q.eq("grant_id", grant_id))
@@ -103,6 +106,10 @@ export const createSubmission = mutation({
     amount_requested: v.optional(v.number()),
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
+    grant_number: v.optional(v.string()),
+    institute: v.optional(v.string()),
+    score: v.optional(v.number()),
+    percentile: v.optional(v.number()),
   },
   handler: async (ctx, { token, ...args }) => {
     const userId = await requireAuth(ctx, token);
@@ -129,6 +136,10 @@ export const updateSubmission = mutation({
     amount_requested: v.optional(v.number()),
     outcome: v.optional(v.string()),
     notes: v.optional(v.string()),
+    grant_number: v.optional(v.string()),
+    institute: v.optional(v.string()),
+    score: v.optional(v.number()),
+    percentile: v.optional(v.number()),
   },
   handler: async (ctx, { token, id, ...fields }) => {
     await requireAuth(ctx, token);
@@ -243,7 +254,11 @@ export const aiDraft = action({
       .filter(Boolean)
       .join("\n");
 
-    // Try Anthropic first
+    // Local Ollama first when a model is configured
+    const localDraft = await callOllama([{ role: "user", content: userContent }], systemPrompt, 2048);
+    if (localDraft) return { content: localDraft, source: "ollama" };
+
+    // Try Anthropic
     if (process.env.ANTHROPIC_API_KEY) {
       try {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -382,13 +397,14 @@ function generateFallbackGrantContent(
 // sections. Tries multiple LLM providers in a configurable order, then falls
 // back to a structured template so the UI never receives an empty result.
 
-type SwarmModel = "claude-sonnet" | "claude-haiku" | "gpt-4o" | "deepseek" | "auto";
+type SwarmModel = "claude-sonnet" | "claude-haiku" | "gpt-4o" | "deepseek" | "ollama" | "auto";
 
 const MODEL_LABELS: Record<string, string> = {
   "claude-sonnet": "Claude Sonnet 5.5",
   "claude-haiku": "Claude Haiku 5.5",
   "gpt-4o": "GPT-4o",
   "deepseek": "DeepSeek V3",
+  "ollama": "Local model (Ollama)",
   "template": "No AI — extracted text only",
 };
 
@@ -502,6 +518,7 @@ async function runProvider(
   else if (key === "claude-haiku") raw = await callAnthropic("claude-haiku-5-5", system, user);
   else if (key === "gpt-4o") raw = await callOpenAI(system, user);
   else if (key === "deepseek") raw = await callDeepSeek(system, user);
+  else if (key === "ollama") raw = await callOllamaJson(system, user);
   return raw ? { raw, source: key } : null;
 }
 
@@ -608,6 +625,21 @@ function buildSynthesisFallback(
   };
 }
 
+/** Which AI the swarm can use right now, so the page can say so before anyone presses Launch. */
+export const aiProviders = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
+    return {
+      "claude-sonnet": !!process.env.ANTHROPIC_API_KEY,
+      "claude-haiku": !!process.env.ANTHROPIC_API_KEY,
+      "gpt-4o": !!process.env.OPENAI_API_KEY,
+      "deepseek": !!process.env.DEEPSEEK_API_KEY,
+      "ollama": process.env.OLLAMA_MODEL ?? null,
+    };
+  },
+});
+
 export const researchSynthesis = action({
   args: {
     token: v.optional(v.string()),
@@ -645,68 +677,74 @@ export const researchSynthesis = action({
       "novel, testable, fundable research directions. You ALWAYS respond with a single valid JSON " +
       "object and nothing else — no prose, no markdown fences.";
 
+    // A small local model has a short memory, so it reads fewer, shorter papers than a hosted model.
+    const buildUser = (maxPapers: number, maxChars: number) => {
     const corpus = texts
-      .slice(0, 30)
-      .map((t, i) => `[Paper ${i + 1}: ${t.filename}]\n${(t.content || "").slice(0, 6000)}`)
-      .join("\n\n");
+        .slice(0, maxPapers)
+        .map((t, i) => `[Paper ${i + 1}: ${t.filename}]\n${(t.content || "").slice(0, maxChars)}`)
+        .join("\n\n");
 
-    const feedbackBlock =
-      feedback && (feedback.liked.length || feedback.disliked.length)
-        ? `\nLEARNED INVESTIGATOR PREFERENCES (from prior hypothesis ratings — weight these heavily):\n` +
-          (feedback.liked.length
-            ? `HIGHLY RATED (generate hypotheses in this style/direction):\n- ${feedback.liked.join("\n- ")}\n`
-            : "") +
-          (feedback.disliked.length
-            ? `LOW RATED (avoid this style/direction):\n- ${feedback.disliked.join("\n- ")}\n`
-            : "")
-        : "";
+      const feedbackBlock =
+        feedback && (feedback.liked.length || feedback.disliked.length)
+          ? `\nLEARNED INVESTIGATOR PREFERENCES (from prior hypothesis ratings — weight these heavily):\n` +
+            (feedback.liked.length
+              ? `HIGHLY RATED (generate hypotheses in this style/direction):\n- ${feedback.liked.join("\n- ")}\n`
+              : "") +
+            (feedback.disliked.length
+              ? `LOW RATED (avoid this style/direction):\n- ${feedback.disliked.join("\n- ")}\n`
+              : "")
+          : "";
 
-    const literatureBlock = texts.length
-      ? `\nINGESTED LITERATURE (${texts.length} sources):\n${corpus}\n\n` +
-        `TASK: Synthesize the literature and return a JSON object with EXACTLY these keys:\n`
-      : `\nNO PAPERS WERE SUPPLIED. Draw on your own up-to-date expert knowledge of this field ` +
-        `to map the state of the art, identify genuine open gaps, and generate novel directions. ` +
-        `Leave "paper_summaries" as an empty array.\n\n` +
-        `TASK: Synthesize the field and return a JSON object with EXACTLY these keys:\n`;
+      const literatureBlock = texts.length
+        ? `\nINGESTED LITERATURE (${texts.length} sources):\n${corpus}\n\n` +
+          `TASK: Synthesize the literature and return a JSON object with EXACTLY these keys:\n`
+        : `\nNO PAPERS WERE SUPPLIED. Draw on your own up-to-date expert knowledge of this field ` +
+          `to map the state of the art, identify genuine open gaps, and generate novel directions. ` +
+          `Leave "paper_summaries" as an empty array.\n\n` +
+          `TASK: Synthesize the field and return a JSON object with EXACTLY these keys:\n`;
 
-    const user =
-      `RESEARCH TOPIC: ${topic}\n` +
-      `DISEASE / CONDITION: ${dz || "(not specified)"}\n` +
-      `TARGET GRANT MECHANISM: ${gt}\n` +
-      (extra_context ? `INVESTIGATOR CONTEXT: ${extra_context}\n` : "") +
-      feedbackBlock +
-      literatureBlock +
-      `{\n` +
-      `  "paper_summaries": [{"filename","identifier","key_findings","methodology","results","main_conclusion","sample_size","race_ethnicity","country","relevance"}],\n` +
-      `     // For each paper: "identifier" = its PMID or DOI exactly as given in the source text. ` +
-      `"results" = a brief statement of the quantitative findings. ` +
-      `"sample_size" = the cohort size as "N=<number>" (or "Not reported"). ` +
-      `"race_ethnicity" = the cohort race/ethnicity composition (or "Not reported"). ` +
-      `"country" = the study country/setting (or "Not reported"). ` +
-      `NEVER invent these values — if a field is not stated in the paper text, write "Not reported".\n` +
-      `  "field_overview": "3-5 sentence state-of-the-field synthesis",\n` +
-      `  "research_gaps": ["specific, addressable gaps"],\n` +
-      `  "web_context": "what the broader field is converging on",\n` +
-      `  "novel_hypotheses": [{"hypothesis","rationale","novelty_score (1-10 integer)","supporting_evidence","testability"}],\n` +
-      `  "specific_aims": ["NIH-style aim statements"],\n` +
-      `  "objectives": ["concrete measurable objectives"],\n` +
-      `  "grant_sections": {"Specific Aims": "full drafted text", "Significance": "full drafted text", "Innovation": "full drafted text"}\n` +
-      `}\n` +
-      `Generate 3-5 novel_hypotheses ranked by novelty. Be specific to ${dz || topic}. ` +
-      `Tailor grant_sections to ${gt} conventions.`;
+      const user =
+        `RESEARCH TOPIC: ${topic}\n` +
+        `DISEASE / CONDITION: ${dz || "(not specified)"}\n` +
+        `TARGET GRANT MECHANISM: ${gt}\n` +
+        (extra_context ? `INVESTIGATOR CONTEXT: ${extra_context}\n` : "") +
+        feedbackBlock +
+        literatureBlock +
+        `{\n` +
+        `  "paper_summaries": [{"filename","identifier","key_findings","methodology","results","main_conclusion","sample_size","race_ethnicity","country","relevance"}],\n` +
+        `     // For each paper: "identifier" = its PMID or DOI exactly as given in the source text. ` +
+        `"results" = a brief statement of the quantitative findings. ` +
+        `"sample_size" = the cohort size as "N=<number>" (or "Not reported"). ` +
+        `"race_ethnicity" = the cohort race/ethnicity composition (or "Not reported"). ` +
+        `"country" = the study country/setting (or "Not reported"). ` +
+        `NEVER invent these values — if a field is not stated in the paper text, write "Not reported".\n` +
+        `  "field_overview": "3-5 sentence state-of-the-field synthesis",\n` +
+        `  "research_gaps": ["specific, addressable gaps"],\n` +
+        `  "web_context": "what the broader field is converging on",\n` +
+        `  "novel_hypotheses": [{"hypothesis","rationale","novelty_score (1-10 integer)","supporting_evidence","testability"}],\n` +
+        `  "specific_aims": ["NIH-style aim statements"],\n` +
+        `  "objectives": ["concrete measurable objectives"],\n` +
+        `  "grant_sections": {"Specific Aims": "full drafted text", "Significance": "full drafted text", "Innovation": "full drafted text"}\n` +
+        `}\n` +
+        `Generate 3-5 novel_hypotheses ranked by novelty. Be specific to ${dz || topic}. ` +
+        `Tailor grant_sections to ${gt} conventions.`;
+      return user;
+    };
+    const user = buildUser(30, 6000);
+    const userForLocal = buildUser(8, 2500);
 
     // Provider order: honor explicit choice first, then fall back across all available.
     let order: string[];
     if (chosen === "auto") {
-      order = ["claude-sonnet", "gpt-4o", "deepseek", "claude-haiku"];
+      order = ["claude-sonnet", "gpt-4o", "deepseek", "claude-haiku", "ollama"];
     } else {
-      order = [chosen, "claude-sonnet", "gpt-4o", "deepseek", "claude-haiku"].filter(
+      order = [chosen, "claude-sonnet", "gpt-4o", "deepseek", "claude-haiku", "ollama"].filter(
         (v, i, a) => a.indexOf(v) === i
       );
     }
 
     for (const key of order) {
-      const res = await runProvider(key, system, user);
+      const res = await runProvider(key, system, key === "ollama" ? userForLocal : user);
       if (!res) continue;
       const parsed = extractJson(res.raw);
       if (parsed && (parsed.novel_hypotheses || parsed.specific_aims || parsed.field_overview)) {

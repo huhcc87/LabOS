@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import EmojiIcon from './EmojiIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -156,7 +157,7 @@ export function ExperimentResultsPanel({ results, onChange, readOnly = false }: 
     <div style={{ border: '1px solid var(--border, #e2e8f0)', borderRadius: 10, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ background: 'var(--surface-raised, #f8fafc)', borderBottom: '1px solid var(--border, #e2e8f0)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 14, fontWeight: 700, flex: 1 }}>📊 Quantitative Data</span>
+        <span style={{ fontSize: 14, fontWeight: 700, flex: 1 }}><EmojiIcon glyph="📊" /> Quantitative Data</span>
         {results.length > 0 && (
           <div style={{ display: 'flex', gap: 4 }}>
             {(['bar', 'line'] as ChartType[]).map(ct => (

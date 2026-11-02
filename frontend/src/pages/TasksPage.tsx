@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -256,7 +257,7 @@ export default function TasksPage() {
         <div>
           <div style={{ fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
             {/* Feature 1: priority badge inline */}
-            {(() => { const pm = PRIORITY_META[parsePriority(r.priority)]; return <span title={pm.label}>{pm.icon}</span>; })()}
+            {(() => { const pm = PRIORITY_META[parsePriority(r.priority)]; return <span title={pm.label}><EmojiIcon glyph={pm.icon} /></span>; })()}
             {r.title}
           </div>
           {r.description && <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>{r.description.slice(0, 60)}{r.description.length > 60 ? '…' : ''}</div>}
@@ -268,7 +269,7 @@ export default function TasksPage() {
     {
       key: 'status', header: 'Status', render: (r) => {
         const m = STATUS_META[r.status] || STATUS_META.pending;
-        return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>{m.icon} {m.label}</span>;
+        return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {m.label}</span>;
       },
     },
     // Feature 1: priority column
@@ -318,7 +319,7 @@ export default function TasksPage() {
               onClick={() => setMyTasksOnly(p => !p)}
               style={{ background: myTasksOnly ? 'var(--accent)' : 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, color: myTasksOnly ? '#fff' : 'var(--text-muted)', padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: myTasksOnly ? 700 : 400 }}
             >
-              👤 My Tasks {myTasksOnly && `(${myTasks.length})`}
+              <EmojiIcon glyph="👤" /> My Tasks {myTasksOnly && `(${myTasks.length})`}
             </button>
             {/* View toggle */}
             <div style={{ display: 'flex', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
@@ -342,7 +343,7 @@ export default function TasksPage() {
         {/* Overdue alert */}
         {overdue.length > 0 && (
           <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', marginBottom: 16, color: '#991b1b', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span>⚠</span><strong>{overdue.length} overdue:</strong> {overdue.slice(0, 3).map(t => t.title).join(', ')}{overdue.length > 3 ? ` +${overdue.length - 3} more` : ''}
+            <span><EmojiIcon glyph="⚠" /></span><strong>{overdue.length} overdue:</strong> {overdue.slice(0, 3).map(t => t.title).join(', ')}{overdue.length > 3 ? ` +${overdue.length - 3} more` : ''}
           </div>
         )}
 
@@ -370,7 +371,7 @@ export default function TasksPage() {
             return (
               <button key={p} onClick={() => setPriorityFilter(active ? '' : p)}
                 style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer', fontWeight: 600, border: `1px solid ${pm.color}`, background: active ? pm.color : 'transparent', color: active ? '#fff' : pm.color, transition: 'all 0.15s' }}>
-                {pm.icon} {pm.label}
+                <EmojiIcon glyph={pm.icon} /> {pm.label}
               </button>
             );
           })}
@@ -395,7 +396,7 @@ export default function TasksPage() {
             </button>
             <button onClick={bulkDelete} disabled={bulkSaving}
               style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
-              🗑 Delete
+              <EmojiIcon glyph="🗑" /> Delete
             </button>
             <button onClick={() => setSelected(new Set())}
               style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 12 }}>
@@ -420,7 +421,7 @@ export default function TasksPage() {
               return (
                 <div key={s} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>{m.icon} {m.label}</span>
+                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {m.label}</span>
                     <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 'auto' }}>{lane.length}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -434,10 +435,10 @@ export default function TasksPage() {
                           {/* Title + priority */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
                             <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{t.title}</div>
-                            <span style={{ fontSize: 10, color: pm.color, fontWeight: 700, whiteSpace: 'nowrap' }}>{pm.icon} {pm.label}</span>
+                            <span style={{ fontSize: 10, color: pm.color, fontWeight: 700, whiteSpace: 'nowrap' }}><EmojiIcon glyph={pm.icon} /> {pm.label}</span>
                           </div>
-                          {t.assignee_name && <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>👤 {t.assignee_name}</div>}
-                          <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>📅 {formatDate(t.due_date)}</div>
+                          {t.assignee_name && <div style={{ color: 'var(--text-muted)', fontSize: 11 }}><EmojiIcon glyph="👤" /> {t.assignee_name}</div>}
+                          <div style={{ color: 'var(--text-muted)', fontSize: 11 }}><EmojiIcon glyph="📅" /> {formatDate(t.due_date)}</div>
 
                           {/* Feature 3: due date progress bar */}
                           {bar && (
@@ -518,7 +519,7 @@ export default function TasksPage() {
                 return (
                   <label key={p} style={{ flex: 1, textAlign: 'center', padding: '8px', borderRadius: 8, border: `2px solid ${active ? pm.color : 'var(--border)'}`, background: active ? pm.bg : 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: active ? pm.color : 'var(--text-muted)' }}>
                     <input type="radio" value={p} {...register('priority')} style={{ display: 'none' }} />
-                    {pm.icon} {pm.label}
+                    <EmojiIcon glyph={pm.icon} /> {pm.label}
                   </label>
                 );
               })}

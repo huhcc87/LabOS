@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { API_BASE_URL as API } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -399,7 +400,7 @@ export default function CustomReportBuilderPage() {
           </label>
           <button onClick={exportPDF}
             style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            🖨 Print / PDF
+            <EmojiIcon glyph="🖨" /> Print / PDF
           </button>
         </div>
 

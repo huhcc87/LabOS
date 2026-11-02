@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 const MODULE_OPTIONS = ['general', 'protocols', 'instruments', 'samples', 'inventory', 'training', 'dashboard', 'other'];
 const STATUS_OPTIONS = ['new', 'under_review', 'resolved', 'closed'];
@@ -76,13 +77,13 @@ export default function FeedbackPage() {
     { key: 'subject', header: 'Subject', render: (r) => <span style={{ fontWeight: 600, color: 'var(--text)' }}>{r.subject}</span> },
     { key: 'module', header: 'Module', render: (r) => (
       <span style={{ background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 11, padding: '2px 8px', borderRadius: 4, color: 'var(--text-soft)' }}>
-        {MODULE_ICONS[r.module] || '❓'} {r.module}
+        {MODULE_ICONS[r.module] || <><EmojiIcon glyph="❓" /></>} {r.module}
       </span>
     )},
     { key: 'submitter_name', header: 'By', render: (r) => <span style={{ color: 'var(--text-muted)' }}>{r.submitter_name || '—'}</span> },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.new;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.status.replace('_', ' ')}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.status.replace('_', ' ')}</span>;
     }},
     { key: 'created_at', header: 'Date', render: (r) => formatDate(r.created_at) },
   ];
@@ -104,7 +105,7 @@ export default function FeedbackPage() {
         {/* New feedback alert */}
         {newCount > 0 && canManage && (
           <div style={{ background: '#e0e7ff', border: '1px solid #a5b4fc', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 18 }}>🆕</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="🆕" /></span>
             <div style={{ color: '#3730a3', fontSize: 13 }}>
               <strong>{newCount} new feedback item{newCount > 1 ? 's' : ''} awaiting review</strong>
             </div>

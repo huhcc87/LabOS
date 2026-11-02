@@ -39,6 +39,8 @@ export {
   aiApi,
   biosketchApi,
   videoApi,
+  huddleApi,
+  stockImportApi,
   paymentsApi,
   procurementApi,
   protocolsPrintApi,

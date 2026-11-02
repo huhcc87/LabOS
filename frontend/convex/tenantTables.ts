@@ -11,8 +11,9 @@ export const LAB_TABLES = [
   "freezer_racks", "freezer_boxes", "freezer_slots", "report_configs", "label_events", "sample_labels",
   "grant_versions", "grant_submissions", "biosketches", "settings", "reagent_cart", "capa", "consent_records",
   "activity", "integrations", "procurement_rules", "procurement_budgets", "restricted_chemicals", "borrow_requests",
-  "video_rooms", "video_chat_messages", "payment_methods", "payment_orders", "alt_prices", "sds_records",
-  "recurrence_rules", "ai_chat_history", "hypothesis_ratings",
+  "video_rooms", "video_chat_messages", "meeting_polls", "poll_votes", "stock_import_records", "knowledge_articles", "payment_methods", "payment_orders", "alt_prices", "sds_records",
+  "recurrence_rules", "ai_chat_history", "hypothesis_ratings", "inventory_lots", "erasure_requests", "cart_invoices",
+  "experiments", "experiment_results", "experiment_files", "experiment_events", "protocol_library",
 ] as const;
 
 export type LabTable = (typeof LAB_TABLES)[number];

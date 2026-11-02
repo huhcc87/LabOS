@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Personnel {
   id: number;
@@ -88,13 +90,12 @@ export default function BudgetCalculatorPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Budget Calculator</h1>
-          <p className="page-subtitle">Calculate grant budgets with salary, fringe, and F&A rates</p>
+          <LabBanner art="lab" title="Budget Calculator" subtitle="Calculate grant budgets with salary, fringe, and F&A rates" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Import Template')}>📥 Import Template</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Export to Excel')}>📊 Export to Excel</button>
-          <button className="btn btn-primary" onClick={() => comingSoon('Save Budget')}>💾 Save Budget</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Template')}><EmojiIcon glyph="📥" /> Import Template</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export to Excel')}><EmojiIcon glyph="📊" /> Export to Excel</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('Save Budget')}><EmojiIcon glyph="💾" /> Save Budget</button>
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export default function BudgetCalculatorPage() {
         <div>
           {/* Configuration */}
           <div className="card" style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>⚙️ Budget Configuration</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}><EmojiIcon glyph="⚙️" /> Budget Configuration</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6 }}>Direct Cost Limit</label>
@@ -179,7 +180,7 @@ export default function BudgetCalculatorPage() {
           {/* Personnel */}
           <div className="card" style={{ marginBottom: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>👥 Personnel</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600 }}><EmojiIcon glyph="👥" /> Personnel</h3>
               <button className="btn btn-sm btn-primary" onClick={addPersonnel}>+ Add Person</button>
             </div>
             <div className="table-wrapper">
@@ -267,7 +268,7 @@ export default function BudgetCalculatorPage() {
                           ${Math.round(cost.total).toLocaleString()}
                         </td>
                         <td>
-                          <button className="btn-icon" onClick={() => removePersonnel(p.id)}>🗑️</button>
+                          <button className="btn-icon" onClick={() => removePersonnel(p.id)}><EmojiIcon glyph="🗑️" /></button>
                         </td>
                       </tr>
                     );
@@ -286,7 +287,7 @@ export default function BudgetCalculatorPage() {
 
           {/* Other Costs */}
           <div className="card">
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>📦 Other Direct Costs</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}><EmojiIcon glyph="📦" /> Other Direct Costs</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Supplies & Materials</label>
@@ -346,7 +347,7 @@ export default function BudgetCalculatorPage() {
         {/* Summary Sidebar */}
         <div>
           <div className="card" style={{ position: 'sticky', top: 20 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>📊 Budget Summary</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}><EmojiIcon glyph="📊" /> Budget Summary</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>

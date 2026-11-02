@@ -17,6 +17,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     let q = ctx.db.query("incidents").order("desc");
 
     if (args.severity) {
@@ -43,8 +44,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("incidents") },
+  args: { token: v.optional(v.string()), id: v.id("incidents") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });

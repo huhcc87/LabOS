@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useEffect, useState } from 'react'
 import type { Meeting, AgendaItem, ActionItem, AttendanceStatus, ActionItemStatus, ProgressReport } from '../types/meeting.types'
 import { MeetingTypeBadge, MeetingStatusBadge } from './MeetingBadges'
@@ -95,20 +96,20 @@ export default function MeetingDetailDrawer({
                     <MeetingStatusBadge status={m.status} />
                     {isPiOrAdmin && pendingCount > 0 && (
                       <span style={{ background: '#fef9c3', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
-                        ⏳ {pendingCount} pending approval
+                        <EmojiIcon glyph="⏳" /> {pendingCount} pending approval
                       </span>
                     )}
                     {overdueActions > 0 && (
                       <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
-                        ⚠ {overdueActions} overdue
+                        <EmojiIcon glyph="⚠" /> {overdueActions} overdue
                       </span>
                     )}
                   </div>
                   <h2 style={{ color: '#1e293b', fontSize: 17, fontWeight: 800, margin: 0, lineHeight: 1.3 }}>{m.title}</h2>
                   <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 5 }}>
-                    <span style={{ color: '#64748b', fontSize: 12 }}>📅 {formatMeetingDate(m.scheduledAt)}</span>
-                    <span style={{ color: '#64748b', fontSize: 12 }}>🕐 {formatTime(m.scheduledAt)} – {formatTime(m.endTime)} ({formatMeetingDuration(m.scheduledAt, m.endTime)})</span>
-                    <span style={{ color: '#64748b', fontSize: 12 }}>📍 {m.location}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}><EmojiIcon glyph="📅" /> {formatMeetingDate(m.scheduledAt)}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}><EmojiIcon glyph="🕐" /> {formatTime(m.scheduledAt)} – {formatTime(m.endTime)} ({formatMeetingDuration(m.scheduledAt, m.endTime)})</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}><EmojiIcon glyph="📍" /> {m.location}</span>
                   </div>
                   {/* Video Meeting Buttons */}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
@@ -118,13 +119,13 @@ export default function MeetingDetailDrawer({
                         onClick={onStartVideoCall}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
-                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                          background: 'var(--accent)',
                           color: '#fff', fontSize: 13, fontWeight: 700,
                           padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
                           boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
                         }}
                       >
-                        🎥 Start LabOS Video Call
+                        <EmojiIcon glyph="🎥" /> Start LabOS Video Call
                       </button>
                     )}
                     {/* External Zoom Link */}
@@ -140,7 +141,7 @@ export default function MeetingDetailDrawer({
                           boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
                         }}
                       >
-                        🔗 Join External Link
+                        <EmojiIcon glyph="🔗" /> Join External Link
                       </a>
                     )}
                   </div>
@@ -152,7 +153,7 @@ export default function MeetingDetailDrawer({
                     <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {onRemindNow && m.status === 'scheduled' && (
                         <button onClick={onRemindNow} title="Send a reminder to attendees now" style={{ background: '#e0e7ff', border: 'none', borderRadius: 6, color: '#4338ca', padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                          🔔 Remind now
+                          <EmojiIcon glyph="🔔" /> Remind now
                         </button>
                       )}
                       {onEdit && (
@@ -184,7 +185,7 @@ export default function MeetingDetailDrawer({
                     padding: '7px 8px', cursor: 'pointer', fontSize: 12, fontWeight: tab === t.key ? 700 : 400,
                     boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s',
                   }}>
-                    {t.icon} {t.label}
+                    <EmojiIcon glyph={t.icon} /> {t.label}
                     {t.key === 'agenda' && isPiOrAdmin && pendingCount > 0 && (
                       <span style={{ marginLeft: 4, background: '#f59e0b', color: '#fff', fontSize: 10, padding: '1px 5px', borderRadius: 10 }}>{pendingCount}</span>
                     )}

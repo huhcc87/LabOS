@@ -1,5 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES, type SupplierEntry } from '../data/biomedicalSuppliers';
+import EmojiIcon from '../components/EmojiIcon';
+import { VENDOR_LINKS } from '../data/vendorLinks';
+import LabBanner from '../components/LabBanner';
 
 const TAG_COLORS: Record<string, string> = {
   'Gold Standard': '#f59e0b',
@@ -22,6 +25,7 @@ function StarRating({ rating }: { rating: number }) {
 
 function SupplierCard({ s }: { s: SupplierEntry }) {
   const [expanded, setExpanded] = useState(false);
+  const extra = VENDOR_LINKS[s.name];
   return (
     <div
       onClick={() => setExpanded(v => !v)}
@@ -46,7 +50,7 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{s.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.country}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{[s.supplierType, s.country].filter(Boolean).join(' · ')}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
           {s.tag && (
@@ -57,13 +61,13 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
               border: `1px solid ${TAG_COLORS[s.tag] || '#6366f1'}50`,
             }}>{s.tag}</span>
           )}
-          <StarRating rating={s.rating} />
+          {s.rating != null && <StarRating rating={s.rating} />}
         </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-        {s.specialty.slice(0, expanded ? undefined : 3).map(sp => (
-          <span key={sp} style={{
+        {s.specialty.slice(0, expanded ? undefined : 3).map((sp, i) => (
+          <span key={sp + i} style={{
             fontSize: 11, padding: '2px 8px', borderRadius: 12,
             background: 'var(--surface2)', color: 'var(--text-muted)',
             border: '1px solid var(--border)',
@@ -79,18 +83,33 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
           <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 10px' }}>
             {s.description}
           </p>
-          <a
-            href={s.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{
-              fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600,
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            Visit website →
-          </a>
+          {s.notes && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 10px' }}>{s.notes}</p>}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {[{ href: s.website, label: 'Visit website →' }, ...(s.catalogUrl && s.catalogUrl.replace(/\/$/, '') !== s.website.replace(/\/$/, '') ? [{ href: s.catalogUrl, label: 'Catalog →' }] : [])].map((l) => (
+              <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {l.label}
+              </a>
+            ))}
+          </div>
+          {extra && (
+            <div style={{ marginTop: 12 }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Product types</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {extra.types.map((t) => (
+                  <a key={t.type} href={t.url} target="_blank" rel="noopener noreferrer"
+                    title={t.direct ? 'Official product page' : 'Vendor catalog: search by product type'}
+                    style={{ fontSize: 12, padding: '3px 9px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', textDecoration: 'none' }}>
+                    {t.type}{t.offering === 'Limited' ? ' (limited)' : ''}{t.direct ? ' ↗' : ''}
+                  </a>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+                {extra.orderUrl && <a href={extra.orderUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Quote / order →</a>}
+                {' '}Price and lead time not checked: request a quote and confirm stock before ordering.
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -103,7 +122,15 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
 
 export default function SupplierDirectoryPage() {
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // The Shop page can open this list already filtered to a category.
+  // Read without removing: React runs state initializers twice in development, so removal happens in an effect.
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    try {
+      const c = sessionStorage.getItem('labos_vendor_category');
+      return c && (SUPPLIER_CATEGORIES as readonly string[]).includes(c) ? c : 'All';
+    } catch { return 'All'; }
+  });
+  useEffect(() => { try { sessionStorage.removeItem('labos_vendor_category'); } catch { /* ignore */ } }, []);
   const [sortBy, setSortBy] = useState<'name' | 'rating'>('rating');
 
   const filtered = useMemo(() => {
@@ -120,7 +147,7 @@ export default function SupplierDirectoryPage() {
       );
     }
     return [...list].sort((a, b) =>
-      sortBy === 'rating' ? b.rating - a.rating : a.name.localeCompare(b.name)
+      sortBy === 'rating' ? (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name)
     );
   }, [search, selectedCategory, sortBy]);
 
@@ -135,12 +162,7 @@ export default function SupplierDirectoryPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Biomedical Supplier Directory</h1>
-        <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-          {BIOMEDICAL_SUPPLIERS.length}+ vetted suppliers for reagents, chemicals, antibodies, equipment, and more
-        </p>
-      </div>
+      <LabBanner art="inventory" title="Vendor Directory" subtitle={`${BIOMEDICAL_SUPPLIERS.length}+ suppliers for reagents, chemicals, antibodies, equipment, and more`} />
 
       {/* Search + Sort */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -162,7 +184,7 @@ export default function SupplierDirectoryPage() {
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="vendor-layout">
         {/* Category filter sidebar */}
         <div className="card" style={{ padding: 16, position: 'sticky', top: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
@@ -196,7 +218,7 @@ export default function SupplierDirectoryPage() {
         <div>
           {filtered.length === 0 ? (
             <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+              <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="🔍" /></div>
               <div style={{ fontWeight: 600 }}>No suppliers found</div>
               <div style={{ fontSize: 13, marginTop: 4 }}>Try a different search or category</div>
             </div>
@@ -208,7 +230,7 @@ export default function SupplierDirectoryPage() {
                 {search ? ` matching "${search}"` : ''}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-                {filtered.map(s => <SupplierCard key={s.name} s={s} />)}
+                {filtered.map((s, i) => <SupplierCard key={s.name + i} s={s} />)}
               </div>
             </>
           )}

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // AGENT PANEL — Detailed view of a single agent's analysis output
 // ═══════════════════════════════════════════════════════════════════════════
@@ -30,7 +31,7 @@ export default function AgentPanel({ output }: Props) {
         borderLeft: `4px solid ${output.color}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: 22 }}>{output.icon}</span>
+          <span style={{ fontSize: 22 }}><EmojiIcon glyph={output.icon} /></span>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{output.title}</h3>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>{output.summary}</p>
@@ -41,7 +42,7 @@ export default function AgentPanel({ output }: Props) {
           {output.warnings.length > 0 && (
             <>
               <span>·</span>
-              <span style={{ color: '#f59e0b' }}>⚠️ {output.warnings.length} warning{output.warnings.length > 1 ? 's' : ''}</span>
+              <span style={{ color: '#f59e0b' }}><EmojiIcon glyph="⚠️" /> {output.warnings.length} warning{output.warnings.length > 1 ? 's' : ''}</span>
             </>
           )}
         </div>
@@ -76,7 +77,7 @@ export default function AgentPanel({ output }: Props) {
       {/* Warnings */}
       {output.warnings.length > 0 && (
         <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: '#fef3c710' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', marginBottom: 6 }}>⚠️ Warnings</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', marginBottom: 6 }}><EmojiIcon glyph="⚠️" /> Warnings</div>
           {output.warnings.map((w, i) => (
             <div key={i} style={{ fontSize: 12, color: 'var(--text)', padding: '4px 0', display: 'flex', gap: 6 }}>
               <span style={{ color: '#f59e0b' }}>•</span>
@@ -101,7 +102,7 @@ export default function AgentPanel({ output }: Props) {
       {/* Recommendations */}
       {output.recommendations.length > 0 && (
         <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', background: 'var(--surface2)' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}>💡 Recommendations</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}><EmojiIcon glyph="💡" /> Recommendations</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {output.recommendations.map((r, i) => (
               <div key={i} style={{ fontSize: 12, color: 'var(--text)', display: 'flex', gap: 8, lineHeight: 1.5 }}>
@@ -126,7 +127,7 @@ function SectionBlock({ section, isExpanded, onToggle }: { section: AgentSection
         display: 'flex', alignItems: 'center', width: '100%', padding: '12px 20px',
         background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
       }}>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 8, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)' }}>▶</span>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 8, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)' }}><EmojiIcon glyph="▶" /></span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{section.heading}</span>
         {section.severity && section.severity !== 'info' && (
           <span style={{ fontSize: 10, color: severityColor, fontWeight: 500, textTransform: 'uppercase' }}>

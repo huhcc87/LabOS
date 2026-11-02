@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from '../context/NavigationContext';
 import { useState } from 'react';
 import { statusColor } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
 
 const PIE_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -199,7 +200,7 @@ export default function DashboardPage() {
               gap: 12,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 18 }}>{p.icon}</span>
+                <span style={{ fontSize: 18 }}><EmojiIcon glyph={p.icon} /></span>
                 <div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: p.color }}>{p.count} {p.label}</span>
                   <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 8 }}>
@@ -240,7 +241,7 @@ export default function DashboardPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 20, flexShrink: 0,
                 }}>
-                  {stat.icon}
+                  <EmojiIcon glyph={stat.icon} />
                 </div>
                 <div>
                   <div style={{ fontSize: 26, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{val}</div>
@@ -258,7 +259,7 @@ export default function DashboardPage() {
         {/* Equipment Health */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>🔬</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="🔬" /></span>
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Equipment Health</h3>
             {equipmentAtRisk.length > 0 && (
               <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: 10, padding: '2px 8px' }}>
@@ -297,7 +298,7 @@ export default function DashboardPage() {
         {/* Inventory Risk */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>📦</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="📦" /></span>
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Inventory Risk</h3>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
@@ -306,7 +307,7 @@ export default function DashboardPage() {
               { label: 'Expiring Soon', value: expiringItems.length, color: '#ef4444', icon: '⏰' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center', padding: '10px 6px', background: `${s.color}12`, borderRadius: 8, border: `1px solid ${s.color}30` }}>
-                <div style={{ fontSize: 11 }}>{s.icon}</div>
+                <div style={{ fontSize: 11 }}><EmojiIcon glyph={s.icon} /></div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{s.label}</div>
               </div>
@@ -329,7 +330,7 @@ export default function DashboardPage() {
         {/* Grant Deadlines */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>📝</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="📝" /></span>
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Grant Deadlines</h3>
             <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>next 30 days</span>
           </div>
@@ -362,7 +363,7 @@ export default function DashboardPage() {
         {/* Sensor Alerts */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 18 }}>🌡</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="🌡" /></span>
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Sensor Alerts</h3>
             {sensorAlerts.length > 0 && (
               <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 10, padding: '2px 8px' }}>
@@ -436,7 +437,7 @@ export default function DashboardPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 22, margin: '0 auto 10px',
                   }}>
-                    {action.icon}
+                    <EmojiIcon glyph={action.icon} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>{action.label}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{action.desc}</div>
@@ -449,13 +450,13 @@ export default function DashboardPage() {
         {/* RIGHT: Today's Priorities */}
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 18 }}>📌</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="📌" /></span>
             <h2 style={{ fontSize: 15, fontWeight: 700 }}>Today's Focus</h2>
           </div>
 
           {priorities.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
+              <div style={{ fontSize: 36, marginBottom: 8 }}><EmojiIcon glyph="✅" /></div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', marginBottom: 4 }}>All clear!</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No urgent items today. Great work.</div>
             </div>
@@ -469,7 +470,7 @@ export default function DashboardPage() {
                   borderRadius: 8,
                   border: `1px solid ${p.color}`,
                 }}>
-                  <span style={{ fontSize: 16 }}>{p.icon}</span>
+                  <span style={{ fontSize: 16 }}><EmojiIcon glyph={p.icon} /></span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: p.color }}>{p.count}× {p.label}</div>
                   </div>
@@ -486,7 +487,7 @@ export default function DashboardPage() {
                 return (
                   <div key={stat.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>{stat.icon}</span>{stat.label}
+                      <span><EmojiIcon glyph={stat.icon} /></span>{stat.label}
                     </span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: stat.color }}>{val}</span>
                   </div>
@@ -504,7 +505,7 @@ export default function DashboardPage() {
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>📊</span> Recent Activity
+              <span><EmojiIcon glyph="📊" /></span> Recent Activity
             </h2>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{summary.audit_recent.length} events</span>
           </div>
@@ -546,7 +547,7 @@ export default function DashboardPage() {
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18 }}>📋</span>
+              <span style={{ fontSize: 18 }}><EmojiIcon glyph="📋" /></span>
               <h2 style={{ fontSize: 15, fontWeight: 700 }}>Today's Work</h2>
             </div>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -561,7 +562,7 @@ export default function DashboardPage() {
               { label: 'Low Stock', value: (summary as any)?.low_stock_items ?? 0, color: '#06b6d4', icon: '📦' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center', padding: '10px 8px', background: 'var(--surface2)', borderRadius: 8, border: `1px solid ${s.color}30` }}>
-                <div style={{ fontSize: 10, marginBottom: 2 }}>{s.icon}</div>
+                <div style={{ fontSize: 10, marginBottom: 2 }}><EmojiIcon glyph={s.icon} /></div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{s.label}</div>
               </div>
@@ -570,7 +571,7 @@ export default function DashboardPage() {
 
           {todayTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>✅</div>
+              <div style={{ fontSize: 28, marginBottom: 6 }}><EmojiIcon glyph="✅" /></div>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>Nothing due today!</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>You're all caught up.</div>
             </div>
@@ -621,7 +622,7 @@ export default function DashboardPage() {
           style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>📈</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="📈" /></span>
             <h2 style={{ fontSize: 15, fontWeight: 700 }}>Research Analytics</h2>
           </div>
           <span style={{ color: 'var(--text-muted)', fontSize: 13, transition: 'transform 0.2s', transform: showAnalytics ? 'rotate(180deg)' : 'none' }}>▼</span>

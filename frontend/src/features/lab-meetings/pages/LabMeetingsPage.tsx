@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { useMeetings } from '../hooks/useMeetings'
@@ -13,6 +14,8 @@ import VideoCallRoom from '../components/VideoCallRoom'
 import { videoApi } from '../../../lib/api'
 import toast from 'react-hot-toast'
 import type { Meeting, MeetingType, MeetingStatus } from '../types/meeting.types'
+import KnowledgeTab from '../components/KnowledgeTab'
+import PollsTab from '../components/PollsTab'
 
 // Meeting Templates
 const MEETING_TEMPLATES = [
@@ -96,29 +99,6 @@ const MEETING_TEMPLATES = [
   },
 ];
 
-// Knowledge Base Article Type
-interface KnowledgeArticle {
-  id: string;
-  title: string;
-  category: string;
-  content: string;
-  tags: string[];
-  createdBy: string;
-  createdAt: string;
-  meetingId?: string;
-  views: number;
-}
-
-// Poll Type
-interface Poll {
-  id: string;
-  question: string;
-  options: { id: string; text: string; votes: number }[];
-  createdBy: string;
-  status: 'active' | 'closed';
-  meetingId?: string;
-}
-
 export default function LabMeetingsPage() {
   const { user, hasRole } = useAuth()
   const isPiOrAdmin = hasRole('pi')
@@ -131,7 +111,6 @@ export default function LabMeetingsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null)
   const [showAgendaFormForNext, setShowAgendaFormForNext] = useState(false)
-  const [showProgressFormForNext, setShowProgressFormForNext] = useState(false)
   const [typeFilter, setTypeFilter] = useState<MeetingType | ''>('')
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | ''>('')
   const [search, setSearch] = useState('')
@@ -154,25 +133,6 @@ export default function LabMeetingsPage() {
   // New feature states
   const [showTemplates, setShowTemplates] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<typeof MEETING_TEMPLATES[0] | null>(null)
-
-  // Knowledge Base
-  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>([])
-  const [knowledgeSearch, setKnowledgeSearch] = useState('')
-  const [knowledgeCategory, setKnowledgeCategory] = useState('')
-
-  // Polls
-  const [polls, setPolls] = useState<Poll[]>([])
-  const [showCreatePoll, setShowCreatePoll] = useState(false)
-  const [newPollQuestion, setNewPollQuestion] = useState('')
-  const [newPollOptions, setNewPollOptions] = useState(['', ''])
-
-  // AI Transcription
-  const [transcriptions, setTranscriptions] = useState<{ meetingId: string; text: string; summary: string; actionItems: string[]; timestamp: string }[]>([])
-  const [showTranscriptionModal, setShowTranscriptionModal] = useState(false)
-  const [selectedTranscription, setSelectedTranscription] = useState<typeof transcriptions[0] | null>(null)
-
-  // Whiteboard
-  const [whiteboardOpen, setWhiteboardOpen] = useState(false)
 
   const tab = store.activeTab
 
@@ -259,7 +219,7 @@ export default function LabMeetingsPage() {
     return (
       <div style={{ padding: 0, minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📅" /></div>
           <div style={{ color: '#64748b', fontSize: 15 }}>Loading meetings...</div>
         </div>
       </div>
@@ -286,17 +246,17 @@ export default function LabMeetingsPage() {
             )}
             {overdueActions > 0 && (
               <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 700 }}>
-                ⚠ {overdueActions} overdue
+                <EmojiIcon glyph="⚠" /> {overdueActions} overdue
               </span>
             )}
             {isPiOrAdmin && pendingAgenda > 0 && (
               <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 600 }}>
-                📋 {pendingAgenda} agenda pending
+                <EmojiIcon glyph="📋" /> {pendingAgenda} agenda pending
               </span>
             )}
             {isPiOrAdmin && pendingReports > 0 && (
               <span style={{ background: '#f5f3ff', color: '#7c3aed', fontSize: 12, padding: '5px 10px', borderRadius: 6, fontWeight: 600 }}>
-                📊 {pendingReports} report{pendingReports > 1 ? 's' : ''} to review
+                <EmojiIcon glyph="📊" /> {pendingReports} report{pendingReports > 1 ? 's' : ''} to review
               </span>
             )}
             {/* Start Instant Video Call Button */}
@@ -311,7 +271,7 @@ export default function LabMeetingsPage() {
                 boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
               }}
             >
-              🎥 {joiningCall ? 'Starting...' : 'Start Video Call'}
+              <EmojiIcon glyph="🎥" /> {joiningCall ? 'Starting...' : 'Start Video Call'}
             </button>
             {isPiOrAdmin && (
               <button onClick={() => setShowCreate(true)} style={{ background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '9px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
@@ -335,23 +295,23 @@ export default function LabMeetingsPage() {
         )}
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 2, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 4, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 2, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, marginBottom: 20, flexWrap: 'wrap' }}>
           {([
             { key: 'upcoming', label: 'Upcoming', icon: '📅', count: store.upcoming.length },
             { key: 'past', label: 'Past', icon: '📂', count: store.past.length },
             { key: 'actions', label: 'Actions', icon: '✓', count: openActions, alert: overdueActions > 0 },
             { key: 'progress', label: 'Reports', icon: '📊', count: isPiOrAdmin ? pendingReports : undefined },
             { key: 'templates', label: 'Templates', icon: '📋' },
-            { key: 'knowledge', label: 'Knowledge', icon: '📚', count: knowledgeArticles.length },
-            { key: 'polls', label: 'Polls', icon: '📊', count: polls.filter(p => p.status === 'active').length },
+            { key: 'knowledge', label: 'Knowledge', icon: '📚' },
+            { key: 'polls', label: 'Polls', icon: '📊' },
             { key: 'analytics', label: 'Analytics', icon: '📈', show: isManagerOrAbove },
           ] as any[]).filter(t => t.show !== false).map((t: any) => (
             <button key={t.key} onClick={() => store.setActiveTab(t.key)} style={{
-              flex: 1, minWidth: 80, background: tab === t.key ? '#6366f1' : 'transparent', border: 'none', borderRadius: 8,
-              color: tab === t.key ? '#fff' : '#64748b', padding: '9px 12px', cursor: 'pointer', fontSize: 12,
+              flex: 1, minWidth: 80, background: tab === t.key ? 'var(--accent)' : 'transparent', border: 'none', borderRadius: 8,
+              color: tab === t.key ? '#fff' : 'var(--text-muted)', padding: '9px 12px', cursor: 'pointer', fontSize: 12,
               fontWeight: tab === t.key ? 700 : 400, transition: 'all 0.15s', position: 'relative',
             }}>
-              {t.icon} {t.label}
+              <EmojiIcon glyph={t.icon} /> {t.label}
               {t.count !== undefined && t.count > 0 && (
                 <span style={{ marginLeft: 5, background: tab === t.key ? 'rgba(255,255,255,0.3)' : (t.alert ? '#ef4444' : '#e2e8f0'), color: tab === t.key ? '#fff' : (t.alert ? '#fff' : '#64748b'), fontSize: 11, padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
                   {t.count}
@@ -371,7 +331,7 @@ export default function LabMeetingsPage() {
               <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value as any); store.setFilters({ ...store.filters, type: e.target.value as any }) }}
                 style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#475569', padding: '8px 12px', fontSize: 13 }}>
                 <option value="">All types</option>
-                {MEETING_TYPES.map(t => <option key={t} value={t}>{getMeetingTypeIcon(t)} {getMeetingTypeLabel(t)}</option>)}
+                {MEETING_TYPES.map(t => <option key={t} value={t}>{getMeetingTypeLabel(t)}</option>)}
               </select>
             </div>
 
@@ -386,7 +346,7 @@ export default function LabMeetingsPage() {
                     background: active ? getMeetingTypeColor(t) : '#fff', border: `1px solid ${getMeetingTypeColor(t)}44`,
                     borderRadius: 20, color: active ? '#fff' : getMeetingTypeColor(t), padding: '4px 12px', cursor: 'pointer', fontSize: 12,
                   }}>
-                    {getMeetingTypeIcon(t)} {getMeetingTypeLabel(t)} ({count})
+                    <EmojiIcon glyph={getMeetingTypeIcon(t)} /> {getMeetingTypeLabel(t)} ({count})
                   </button>
                 )
               })}
@@ -394,7 +354,7 @@ export default function LabMeetingsPage() {
 
             {store.filteredUpcoming.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8', background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>📅</div>
+                <div style={{ fontSize: 40, marginBottom: 10 }}><EmojiIcon glyph="📅" /></div>
                 <div style={{ fontSize: 15, color: '#64748b' }}>No upcoming meetings</div>
                 {isPiOrAdmin && <button onClick={() => setShowCreate(true)} style={{ marginTop: 12, background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '8px 18px', cursor: 'pointer', fontSize: 13 }}>Schedule First Meeting</button>}
               </div>
@@ -517,7 +477,7 @@ export default function LabMeetingsPage() {
                       justifyContent: 'center',
                       fontSize: 24,
                     }}>
-                      {template.icon}
+                      <EmojiIcon glyph={template.icon} />
                     </span>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>{template.name}</div>
@@ -575,321 +535,10 @@ export default function LabMeetingsPage() {
         )}
 
         {/* ── KNOWLEDGE BASE ─────────────────────────────────────────────────── */}
-        {tab === 'knowledge' && (
-          <div>
-            <div style={{
-              background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-              borderRadius: 20,
-              padding: '24px',
-              marginBottom: 24,
-              color: '#fff',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 48 }}>📚</span>
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Lab Knowledge Base</h2>
-                    <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: 14 }}>
-                      Insights and learnings captured from lab meetings
-                    </p>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <input
-                    placeholder="Search articles..."
-                    value={knowledgeSearch}
-                    onChange={(e) => setKnowledgeSearch(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: 'none',
-                      background: 'rgba(255,255,255,0.9)',
-                      fontSize: 14,
-                      width: 250,
-                    }}
-                  />
-                  <select
-                    value={knowledgeCategory}
-                    onChange={(e) => setKnowledgeCategory(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: 'none',
-                      background: 'rgba(255,255,255,0.9)',
-                      fontSize: 14,
-                    }}
-                  >
-                    <option value="">All Categories</option>
-                    <option value="Protocols">Protocols</option>
-                    <option value="Troubleshooting">Troubleshooting</option>
-                    <option value="Analysis">Analysis</option>
-                    <option value="Equipment">Equipment</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 16 }}>
-              {knowledgeArticles
-                .filter(a =>
-                  (!knowledgeSearch || a.title.toLowerCase().includes(knowledgeSearch.toLowerCase()) || a.tags.some(t => t.toLowerCase().includes(knowledgeSearch.toLowerCase()))) &&
-                  (!knowledgeCategory || a.category === knowledgeCategory)
-                )
-                .map(article => (
-                <div
-                  key={article.id}
-                  style={{
-                    background: '#fff',
-                    borderRadius: 16,
-                    padding: '24px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <span style={{
-                      padding: '4px 12px',
-                      borderRadius: 20,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      background: article.category === 'Protocols' ? '#dcfce7' : article.category === 'Troubleshooting' ? '#fee2e2' : '#dbeafe',
-                      color: article.category === 'Protocols' ? '#166534' : article.category === 'Troubleshooting' ? '#dc2626' : '#1e40af',
-                    }}>{article.category}</span>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{article.views} views</span>
-                  </div>
-
-                  <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{article.title}</h3>
-                  <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{article.content.slice(0, 100)}...</p>
-
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {article.tags.map(tag => (
-                      <span key={tag} style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, background: '#f1f5f9', color: '#64748b' }}>
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#94a3b8' }}>
-                    <span>From: {article.createdBy}</span>
-                    <span>{new Date(article.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {tab === 'knowledge' && <KnowledgeTab meetings={store.meetings.filter(m => m.minutes.trim()).map(m => ({ id: m.id, title: m.title, minutes: m.minutes }))} />}
 
         {/* ── POLLS ─────────────────────────────────────────────────────────── */}
-        {tab === 'polls' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <div>
-                <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Lab Polls & Surveys</h2>
-                <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>Gather feedback and make group decisions</p>
-              </div>
-              {isPiOrAdmin && (
-                <button
-                  onClick={() => setShowCreatePoll(true)}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: 10,
-                    background: '#6366f1',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: 14,
-                  }}
-                >
-                  + Create Poll
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 20 }}>
-              {polls.map(poll => {
-                const totalVotes = poll.options.reduce((sum, o) => sum + o.votes, 0)
-                return (
-                  <div
-                    key={poll.id}
-                    style={{
-                      background: '#fff',
-                      borderRadius: 16,
-                      padding: '24px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                      border: poll.status === 'active' ? '2px solid #22c55e' : '2px solid #e2e8f0',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{poll.question}</h3>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: 20,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: poll.status === 'active' ? '#dcfce7' : '#f1f5f9',
-                        color: poll.status === 'active' ? '#166534' : '#64748b',
-                      }}>{poll.status === 'active' ? '🟢 Active' : 'Closed'}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {poll.options.map(option => {
-                        const percent = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0
-                        return (
-                          <div key={option.id}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ fontSize: 14, color: '#475569' }}>{option.text}</span>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: '#6366f1' }}>{option.votes} ({percent.toFixed(0)}%)</span>
-                            </div>
-                            <div style={{ height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${percent}%`, background: '#6366f1', borderRadius: 4, transition: 'width 0.3s' }} />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {poll.status === 'active' && (
-                      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => {
-                            // Simulate voting
-                            const randomOption = poll.options[Math.floor(Math.random() * poll.options.length)]
-                            setPolls(polls.map(p => p.id === poll.id ? {
-                              ...p,
-                              options: p.options.map(o => o.id === randomOption.id ? { ...o, votes: o.votes + 1 } : o)
-                            } : p))
-                            toast.success('Vote recorded!')
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: '10px',
-                            borderRadius: 8,
-                            background: '#6366f1',
-                            color: '#fff',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: 13,
-                          }}
-                        >
-                          🗳️ Cast Vote
-                        </button>
-                        {isPiOrAdmin && (
-                          <button
-                            onClick={() => setPolls(polls.map(p => p.id === poll.id ? { ...p, status: 'closed' } : p))}
-                            style={{
-                              padding: '10px 16px',
-                              borderRadius: 8,
-                              background: '#f1f5f9',
-                              color: '#64748b',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                            }}
-                          >
-                            Close Poll
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    <div style={{ marginTop: 12, fontSize: 11, color: '#94a3b8' }}>
-                      Created by {poll.createdBy} • {totalVotes} total votes
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Create Poll Modal */}
-            {showCreatePoll && (
-              <>
-                <div onClick={() => setShowCreatePoll(false)} style={{ position: 'fixed', inset: 0, background: '#00000066', zIndex: 300 }} />
-                <div style={{
-                  position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                  background: '#fff', borderRadius: 16, padding: 24, width: 'min(500px, 90vw)', zIndex: 301,
-                  boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
-                }}>
-                  <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>Create New Poll</h3>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Question</label>
-                    <input
-                      value={newPollQuestion}
-                      onChange={(e) => setNewPollQuestion(e.target.value)}
-                      placeholder="What would you like to ask?"
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '2px solid #e2e8f0', fontSize: 14 }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Options</label>
-                    {newPollOptions.map((opt, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                        <input
-                          value={opt}
-                          onChange={(e) => {
-                            const newOpts = [...newPollOptions]
-                            newOpts[i] = e.target.value
-                            setNewPollOptions(newOpts)
-                          }}
-                          placeholder={`Option ${i + 1}`}
-                          style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '2px solid #e2e8f0', fontSize: 14 }}
-                        />
-                        {newPollOptions.length > 2 && (
-                          <button
-                            onClick={() => setNewPollOptions(newPollOptions.filter((_, idx) => idx !== i))}
-                            style={{ padding: '10px', borderRadius: 8, background: '#fee2e2', border: 'none', cursor: 'pointer' }}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setNewPollOptions([...newPollOptions, ''])}
-                      style={{ padding: '8px 16px', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 13 }}
-                    >
-                      + Add Option
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => setShowCreatePoll(false)}
-                      style={{ padding: '10px 20px', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 14 }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (newPollQuestion && newPollOptions.filter(o => o.trim()).length >= 2) {
-                          setPolls([...polls, {
-                            id: Date.now().toString(),
-                            question: newPollQuestion,
-                            options: newPollOptions.filter(o => o.trim()).map((text, i) => ({ id: `opt-${i}`, text, votes: 0 })),
-                            createdBy: currentUserName,
-                            status: 'active',
-                          }])
-                          setShowCreatePoll(false)
-                          setNewPollQuestion('')
-                          setNewPollOptions(['', ''])
-                          toast.success('Poll created!')
-                        } else {
-                          toast.error('Please enter a question and at least 2 options')
-                        }
-                      }}
-                      style={{ padding: '10px 20px', borderRadius: 8, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}
-                    >
-                      Create Poll
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        {tab === 'polls' && <PollsTab />}
       </div>
 
       {/* Detail Drawer */}
@@ -944,7 +593,7 @@ export default function LabMeetingsPage() {
             background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24,
             width: 'min(400px, 90vw)', zIndex: 301, boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
           }}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 12 }}><EmojiIcon glyph="🗑️" /></div>
             <h3 style={{ color: '#1e293b', fontSize: 16, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>Delete Meeting?</h3>
             <p style={{ color: '#64748b', fontSize: 13, textAlign: 'center', margin: '0 0 20px' }}>
               Are you sure you want to delete "<strong>{confirmDelete.title}</strong>"? This action cannot be undone.

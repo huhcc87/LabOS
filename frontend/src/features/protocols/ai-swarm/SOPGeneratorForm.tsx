@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // SOP GENERATOR FORM — Input form for AI Swarm protocol analysis
 // ═══════════════════════════════════════════════════════════════════════════
@@ -34,7 +35,7 @@ const BSL_LEVELS = ['BSL-1', 'BSL-2', 'BSL-3', 'BSL-4']
 
 const TEMPLATES: { label: string; input: Partial<SOPGeneratorInput> }[] = [
   {
-    label: '🧬 RT-qPCR Gene Expression',
+    label: "RT-qPCR Gene Expression",
     input: {
       experimentName: 'RT-qPCR Gene Expression Analysis',
       researchArea: 'Molecular Biology',
@@ -49,7 +50,7 @@ const TEMPLATES: { label: string; input: Partial<SOPGeneratorInput> }[] = [
     },
   },
   {
-    label: '🔬 Western Blot Protein Detection',
+    label: "Western Blot Protein Detection",
     input: {
       experimentName: 'Western Blot Analysis of Protein Expression',
       researchArea: 'Biochemistry',
@@ -64,7 +65,7 @@ const TEMPLATES: { label: string; input: Partial<SOPGeneratorInput> }[] = [
     },
   },
   {
-    label: '🧪 CRISPR-Cas9 Gene Knockout',
+    label: "CRISPR-Cas9 Gene Knockout",
     input: {
       experimentName: 'CRISPR-Cas9 Gene Knockout in Cell Lines',
       researchArea: 'Genetics',
@@ -79,7 +80,7 @@ const TEMPLATES: { label: string; input: Partial<SOPGeneratorInput> }[] = [
     },
   },
   {
-    label: '💉 Flow Cytometry Immunophenotyping',
+    label: "Flow Cytometry Immunophenotyping",
     input: {
       experimentName: 'Multi-Color Flow Cytometry Immunophenotyping',
       researchArea: 'Immunology',
@@ -246,12 +247,12 @@ export default function SOPGeneratorForm({ onSubmit, isRunning }: Props) {
       {/* Submit */}
       <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
         <button type="submit" disabled={!isValid || isRunning} style={{
-          background: isValid ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'var(--surface2)',
+          background: isValid ? 'var(--accent)' : 'var(--surface2)',
           border: 'none', borderRadius: 10, color: isValid ? '#fff' : 'var(--text-muted)',
           padding: '14px 32px', fontSize: 14, fontWeight: 600, cursor: isValid ? 'pointer' : 'not-allowed',
           opacity: isRunning ? 0.6 : 1,
         }}>
-          {isRunning ? '⏳ Running...' : '🚀 Launch 10-Agent Swarm Analysis'}
+          {isRunning ? <><EmojiIcon glyph="⏳" />{" Running..."}</> : <><EmojiIcon glyph="🚀" />{" Launch 10-Agent Swarm Analysis"}</>}
         </button>
       </div>
     </form>

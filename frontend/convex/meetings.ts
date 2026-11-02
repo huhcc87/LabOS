@@ -36,6 +36,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 500;
 
     let results = await ctx.db
@@ -67,8 +68,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("meetings") },
+  args: { token: v.optional(v.string()), id: v.id("meetings") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });
@@ -84,6 +86,9 @@ export const create = mutation({
     agenda: v.optional(v.string()),
     attendees: v.optional(v.string()),
     recording_url: v.optional(v.string()),
+    // The page sends these with every new meeting, so they have to be accepted here as they are on update.
+    status: v.optional(v.string()),
+    minutes: v.optional(v.string()),
     ...extraArgs,
   },
   handler: async (ctx, args) => {
@@ -94,7 +99,7 @@ export const create = mutation({
     const { token: _token, ...fields } = args;
     return await ctx.db.insert("meetings", {
       ...fields,
-      status: "scheduled",
+      status: fields.status ?? "scheduled",
       organizer_id: userId,
       organizer_name: (organizer as any)?.full_name,
       created_at: now,
@@ -154,8 +159,9 @@ export const remove = mutation({
 });
 
 export const upcoming = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const now = Date.now();
     const results = await ctx.db
       .query("meetings")
@@ -170,8 +176,9 @@ export const upcoming = query({
 });
 
 export const past = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const now = Date.now();
     const results = await ctx.db
       .query("meetings")

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 interface Equipment {
@@ -297,12 +299,9 @@ export default function EquipmentHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Equipment Management</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Track equipment, maintenance, and bookings</p>
-        </div>
+        <LabBanner art="lab" title="Equipment Management" subtitle="Track equipment, maintenance, and bookings" style={{ flex: 1, marginBottom: 0 }} />
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
-          ❓ How to Use
+          <EmojiIcon glyph="❓" /> How to Use
         </button>
       </div>
 
@@ -316,7 +315,7 @@ export default function EquipmentHubPage() {
           { label: 'Pending Bookings', value: pendingBookings, icon: '📅', color: '#a855f7' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 14 }}>
-            <div style={{ fontSize: 22, marginBottom: 2 }}>{stat.icon}</div>
+            <div style={{ fontSize: 22, marginBottom: 2 }}><EmojiIcon glyph={stat.icon} /></div>
             <div style={{ fontSize: 26, fontWeight: 700, color: stat.color }}>{stat.value}</div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{stat.label}</div>
           </div>
@@ -337,7 +336,7 @@ export default function EquipmentHubPage() {
               display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count > 0 && (
               <span style={{
@@ -380,7 +379,7 @@ export default function EquipmentHubPage() {
 
           {equipment.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔬</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🔬" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Equipment Yet</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Add lab equipment to track and manage</p>
               <button className="btn btn-primary" onClick={() => setShowEquipmentModal(true)}>+ Add First Equipment</button>
@@ -397,7 +396,7 @@ export default function EquipmentHubPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
-                        {eq.category === 'Microscope' ? '🔬' : eq.category === 'Centrifuge' ? '🌀' : eq.category === 'PCR Machine' ? '🧬' : eq.category === 'Freezer' ? '❄️' : eq.category === 'Incubator' ? '🌡️' : '⚗️'}
+                        {eq.category === 'Microscope' ? <><EmojiIcon glyph="🔬" /></> : eq.category === 'Centrifuge' ? <><EmojiIcon glyph="🌀" /></> : eq.category === 'PCR Machine' ? <><EmojiIcon glyph="🧬" /></> : eq.category === 'Freezer' ? <><EmojiIcon glyph="❄️" /></> : eq.category === 'Incubator' ? <><EmojiIcon glyph="🌡️" /></> : <><EmojiIcon glyph="⚗️" /></>}
                       </div>
                       <div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{eq.name}</h3>
@@ -410,17 +409,17 @@ export default function EquipmentHubPage() {
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span>📍 {eq.location}</span>
-                      <span>🏷️ {eq.category}</span>
+                      <span><EmojiIcon glyph="📍" /> {eq.location}</span>
+                      <span><EmojiIcon glyph="🏷️" /> {eq.category}</span>
                     </div>
-                    {eq.assignedTo && <div>👤 Assigned to: {eq.assignedTo}</div>}
-                    {eq.nextMaintenance && <div>🔧 Next maintenance: {eq.nextMaintenance}</div>}
-                    {eq.calibrationDue && <div>📏 Calibration due: {eq.calibrationDue}</div>}
+                    {eq.assignedTo && <div><EmojiIcon glyph="👤" /> Assigned to: {eq.assignedTo}</div>}
+                    {eq.nextMaintenance && <div><EmojiIcon glyph="🔧" /> Next maintenance: {eq.nextMaintenance}</div>}
+                    {eq.calibrationDue && <div><EmojiIcon glyph="📏" /> Calibration due: {eq.calibrationDue}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setViewingEquipment(eq)}>👁️ View</button>
-                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingEquipment(eq)}>✏️</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteEquipment(eq)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setViewingEquipment(eq)}><EmojiIcon glyph="👁️" /> View</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingEquipment(eq)}><EmojiIcon glyph="✏️" /></button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteEquipment(eq)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -438,7 +437,7 @@ export default function EquipmentHubPage() {
 
           {maintenances.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🔧" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Maintenance Scheduled</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Schedule preventive and corrective maintenance</p>
               <button className="btn btn-primary" onClick={() => setShowMaintenanceModal(true)}>+ Schedule First Maintenance</button>
@@ -449,7 +448,7 @@ export default function EquipmentHubPage() {
                 <div key={m.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: statusColors[m.status]?.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                      {m.type === 'calibration' ? '📏' : m.type === 'preventive' ? '🛡️' : '🔧'}
+                      {m.type === 'calibration' ? <><EmojiIcon glyph="📏" /></> : m.type === 'preventive' ? <><EmojiIcon glyph="🛡️" /></> : <><EmojiIcon glyph="🔧" /></>}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -464,12 +463,12 @@ export default function EquipmentHubPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     {m.status === 'scheduled' && (
-                      <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none' }} onClick={() => handleMaintenanceStatus(m, 'in-progress')}>▶️ Start</button>
+                      <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none' }} onClick={() => handleMaintenanceStatus(m, 'in-progress')}><EmojiIcon glyph="▶️" /> Start</button>
                     )}
                     {m.status === 'in-progress' && (
                       <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: 'none' }} onClick={() => handleMaintenanceStatus(m, 'completed')}>✓ Complete</button>
                     )}
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteMaintenance(m)}>🗑️</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteMaintenance(m)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -487,7 +486,7 @@ export default function EquipmentHubPage() {
 
           {bookings.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📅" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Bookings</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Reserve equipment for your experiments</p>
               <button className="btn btn-primary" onClick={() => setShowBookingModal(true)}>+ Make First Booking</button>
@@ -497,14 +496,14 @@ export default function EquipmentHubPage() {
               {bookings.map(b => (
                 <div key={b.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📅</div>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}><EmojiIcon glyph="📅" /></div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                         <h4 style={{ fontSize: 14, fontWeight: 600 }}>{b.equipmentName}</h4>
                         <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 500, background: statusColors[b.status]?.bg, color: statusColors[b.status]?.text }}>{b.status}</span>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        👤 {b.user} • {b.startDate} {b.startTime} - {b.endDate} {b.endTime}
+                        <EmojiIcon glyph="👤" /> {b.user} • {b.startDate} {b.startTime} - {b.endDate} {b.endTime}
                       </div>
                       {b.purpose && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Purpose: {b.purpose}</div>}
                     </div>
@@ -517,12 +516,12 @@ export default function EquipmentHubPage() {
                       </>
                     )}
                     {b.status === 'approved' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => handleBookingStatus(b, 'in-use')}>▶️ Start Use</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleBookingStatus(b, 'in-use')}><EmojiIcon glyph="▶️" /> Start Use</button>
                     )}
                     {b.status === 'in-use' && (
                       <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: 'none' }} onClick={() => handleBookingStatus(b, 'completed')}>✓ Complete</button>
                     )}
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteBooking(b)}>🗑️</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteBooking(b)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -536,7 +535,7 @@ export default function EquipmentHubPage() {
         <div>
           {usageLogs.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📊" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Usage Logs</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Equipment actions will be logged automatically</p>
             </div>
@@ -544,7 +543,7 @@ export default function EquipmentHubPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {usageLogs.map(log => (
                 <div key={log.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>📋</div>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}><EmojiIcon glyph="📋" /></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13 }}>
                       <strong>{log.user}</strong> {log.action} on <span style={{ color: 'var(--accent)' }}>{log.equipmentName}</span>
@@ -692,13 +691,13 @@ export default function EquipmentHubPage() {
             )}
             {/* QR Code placeholder */}
             <div style={{ background: 'var(--surface2)', borderRadius: 8, padding: 16, textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 64, marginBottom: 8 }}>📱</div>
+              <div style={{ fontSize: 64, marginBottom: 8 }}><EmojiIcon glyph="📱" /></div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>QR Code for quick lookup</div>
               <div style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{generateQRData(viewingEquipment)}</div>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-secondary" onClick={() => setViewingEquipment(null)} style={{ flex: 1 }}>Close</button>
-              <button className="btn btn-primary" onClick={() => { setEditingEquipment(viewingEquipment); setViewingEquipment(null); }} style={{ flex: 1 }}>✏️ Edit</button>
+              <button className="btn btn-primary" onClick={() => { setEditingEquipment(viewingEquipment); setViewingEquipment(null); }} style={{ flex: 1 }}><EmojiIcon glyph="✏️" /> Edit</button>
             </div>
           </div>
         </div>
@@ -834,7 +833,7 @@ export default function EquipmentHubPage() {
             </div>
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>🔬 Equipment</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🔬" /> Equipment</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Add equipment with name, model, serial number, and location</li>
                   <li>Track purchase date, warranty, and calibration dates</li>
@@ -843,7 +842,7 @@ export default function EquipmentHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>🔧 Maintenance</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🔧" /> Maintenance</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Schedule preventive, corrective, or calibration maintenance</li>
                   <li>Track maintenance status: Scheduled → In Progress → Completed</li>
@@ -851,7 +850,7 @@ export default function EquipmentHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>📅 Bookings</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="📅" /> Bookings</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>Reserve equipment for specific dates and times</li>
                   <li>Booking workflow: Pending → Approved → In Use → Completed</li>
@@ -859,7 +858,7 @@ export default function EquipmentHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>📊 Usage Log</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="📊" /> Usage Log</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.7 }}>
                   <li>All equipment actions are automatically logged</li>
                   <li>Track who did what and when</li>

@@ -11,6 +11,7 @@ import { ago, presetById, sensorState, STATE_LABEL, STATE_STYLE, type SensorStat
 import { AddSensorDialog } from '../features/iot/AddSensorDialog';
 import { SetupGuide } from '../features/iot/SetupGuide';
 import { SensorDetail, type SensorRow } from '../features/iot/SensorDetail';
+import LabBanner from '../components/LabBanner';
 
 const QUICK = ['ult80', 'f20', 'ln2temp', 'ln2level'];
 
@@ -36,8 +37,7 @@ export default function IoTDashboardPage() {
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
-          <h1 style={{ fontSize: 24, margin: 0 }}>Sensors</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 14 }}>Freezers, liquid nitrogen tanks, fridges and incubators, watched around the clock.</p>
+          <LabBanner art="lab" title="Sensors" subtitle="Freezers, liquid nitrogen tanks, fridges and incubators, watched around the clock." style={{ flex: 1, minWidth: 0 }} />
         </div>
         {canManage && <button className="btn btn-primary" onClick={() => setAdding('ult80')}>+ Add sensor</button>}
       </div>

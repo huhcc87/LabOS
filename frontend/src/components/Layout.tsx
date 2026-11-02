@@ -8,6 +8,7 @@ import { AIChatPanel } from './AIChatPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
+import EmojiIcon from './EmojiIcon';
 import { useHubAccess } from '../lib/useHubAccess';
 import { isHub } from '../../convex/hubs';
 import { SearchIcon, AssistantIcon, BellIcon, MoonIcon, SunIcon, MonitorIcon } from './HeaderIcons';
@@ -71,10 +72,9 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Protocols, instruments & scheduling',
     items: [
       { key: 'lab-hub', label: 'Lab Hub Overview', icon: '🔬', minRole: 'trainee' },
-      { key: 'protocols', label: 'Protocols / SOPs', icon: '📋', minRole: 'trainee' },
-      { key: 'eln', label: 'Lab Notebook', icon: '📓', minRole: 'trainee' },
+      { key: 'protocols', label: 'Protocols', icon: '📋', minRole: 'trainee' },
       { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
-      { key: 'equipment', label: 'Equipment', icon: '🔭', minRole: 'trainee' },
+      { key: 'equipment', label: 'Equipment & Maintenance', icon: '🔭', minRole: 'trainee' },
     ]
   },
   {
@@ -95,6 +95,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'NIH & NSF grant management',
     items: [
       { key: 'grants', label: 'Grants Overview', icon: '📝', minRole: 'trainee' },
+      { key: 'version-history', label: 'Version History', icon: '📜', minRole: 'trainee' },
     ]
   },
   {
@@ -103,7 +104,12 @@ const NAV_CATEGORIES: NavCategory[] = [
     color: '#d97706',
     description: 'Inventory, sensors, video calls & procurement',
     items: [
+      { key: 'shop', label: 'Shop', icon: '🛒', minRole: 'trainee' },
+      { key: 'requests', label: 'Requests', icon: '📋', minRole: 'trainee' },
+      { key: 'chemical-search', label: 'Chemical Search', icon: '🧪', minRole: 'trainee' },
+      { key: 'supplier-directory', label: 'Vendor Directory', icon: '🏪', minRole: 'trainee' },
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
+      { key: 'receiving', label: 'Receiving', icon: '📥', minRole: 'trainee' },
       { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
       { key: 'lab-meetings', label: 'LabHuddle (Video)', icon: '🎥', minRole: 'trainee' },
       { key: 'reagent-cart', label: 'Reagent Cart', icon: '🛒', minRole: 'trainee' },
@@ -142,8 +148,8 @@ const NAV_CATEGORIES: NavCategory[] = [
 // Routed pages that aren't in the sidebar, mapped to the hub that owns them (for the student access check).
 const EXTRA_PAGE_HUB: Record<string, string> = {
   instruments: 'Lab Hub', bookings: 'Lab Hub', sops: 'Lab Hub', maintenance: 'Lab Hub',
-  'lab-notebook': 'Lab Hub', 'storage-map': 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Resources',
-  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
+  'lab-notebook': 'Lab Hub', eln: 'Lab Hub', documents: 'Lab Hub', 'equipment-analytics': 'Lab Hub', 'video-call': 'Resources',
+  'sample-events': 'Sample Hub', 'print-labels': 'Sample Hub', 'barcode-scanner': 'Sample Hub', 'barcode-labels': 'Sample Hub', 'label-designer': 'Sample Hub', 'label-printer': 'Sample Hub', 'batch-import': 'Sample Hub',
   'grant-hub': 'Grant Hub', 'grant-budget': 'Grant Hub', 'funding-opportunities': 'Grant Hub', 'reviewer-feedback': 'Grant Hub',
   'collaborator-network': 'Grant Hub', 'reference-manager': 'Grant Hub', 'biosketch-generator': 'Grant Hub', 'grant-calendar': 'Grant Hub',
   'budget-calculator': 'Grant Hub', 'progress-reports': 'Grant Hub', 'support-letters': 'Grant Hub', 'success-analytics': 'Grant Hub',
@@ -363,7 +369,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
     'equipment': 'lab-hub', 'lab-meetings': 'inventory',
     'freezer-biobank': 'samples', 'labels': 'samples', 'label-printer': 'samples',
     'incidents': 'dashboard', 'reagent-hub': 'incidents', 'capa': 'incidents', 'training-cert': 'incidents',
-    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
+    'iot-dashboard': 'inventory', 'reagent-cart': 'inventory', 'requests': 'inventory', 'shop': 'inventory', 'chemical-search': 'inventory', 'receiving': 'inventory', 'procurement-hub': 'inventory', 'payment-methods': 'inventory',
     'audit': 'users', 'org-hierarchy': 'users', 'email-settings': 'users', 'lab-members': 'users',
   };
 
@@ -390,9 +396,9 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           title="Go to Dashboard"
           aria-label="Go to Dashboard"
         >
-          <span className="brand-icon">⬡</span>
+          <span className="brand-icon"><EmojiIcon glyph="⬡" size={18} /></span>
           <span className="brand-name">LabOS <span className="brand-version">v3</span></span>
-          <span className="brand-home-hint" aria-hidden="true">🏠</span>
+          <span className="brand-home-hint" aria-hidden="true"><EmojiIcon glyph="🏠" size={14} /></span>
         </button>
         <nav className="sidebar-nav">
           {visibleCategories.map((cat) => {
@@ -409,7 +415,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                   onClick={() => toggleCategory(cat.category)}
                 >
                   <div className="hub-icon-box" style={{ background: `${cat.color}22`, color: cat.color }}>
-                    {cat.icon}
+                    <EmojiIcon glyph={cat.icon} size={18} />
                   </div>
                   <div className="hub-header-text">
                     <span className="hub-name">{cat.category}</span>
@@ -425,7 +431,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                         className={`nav-item ${activePage === item.key ? 'active' : ''}`}
                         onClick={() => { onNavigate(item.key); setSidebarOpen(false); }}
                       >
-                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-icon"><EmojiIcon glyph={item.icon} size={17} /></span>
                         <span className="nav-label">{item.label}</span>
                       </button>
                     ))}
@@ -465,7 +471,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
             <div className="header-title-stack">
               {activeCategory && activePage !== 'dashboard' && (
                 <span className="header-breadcrumb" style={{ color: activeCategory.color }}>
-                  {activeCategory.icon} {activeCategory.category}
+                  <EmojiIcon glyph={activeCategory.icon} size={13} /> {activeCategory.category}
                 </span>
               )}
               <h1>{pageTitle}</h1>
@@ -516,7 +522,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                             className="search-result-item"
                             onClick={() => { onNavigate(result.page); setSearchOpen(false); setSearchQuery(''); }}
                           >
-                            <span className="result-icon">{result.icon}</span>
+                            <span className="result-icon"><EmojiIcon glyph={result.icon} size={16} /></span>
                             <div className="result-content">
                               <div className="result-title">{result.title}</div>
                               <div className="result-subtitle">{result.type} • {result.subtitle}</div>
@@ -571,7 +577,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                         <div className={`notification-dot ${notif.type === 'danger' ? 'danger' : notif.type === 'warning' ? 'warning' : notif.type === 'success' ? 'success' : ''}`} />
                         <div className="notification-content" style={{ flex: 1 }}>
                           <div className="notification-message">
-                            <span style={{ marginRight: 6 }}>{notif.icon}</span>
+                            <span style={{ marginRight: 6 }}><EmojiIcon glyph={notif.icon} /></span>
                             {notif.title}
                           </div>
                           <div className="notification-time">{notif.detail}</div>
@@ -618,7 +624,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
         <div className="page-container">
           {pageBlocked ? (
             <div className="card" style={{ maxWidth: 520, margin: '60px auto', padding: 32, textAlign: 'center' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+              <div style={{ marginBottom: 12, color: "var(--text-muted)" }}><EmojiIcon glyph="🔒" size={36} /></div>
               <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No access to {hubOfPage(activePage)}</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
                 Your PI{access.piName ? ` (${access.piName})` : ''} hasn't turned this on for your account. Ask them to enable it under My Students.
@@ -662,7 +668,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     background: `${action.color}20`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 16, flexShrink: 0,
-                  }}>{action.icon}</span>
+                  }}><EmojiIcon glyph={action.icon} /></span>
                   {action.label}
                 </button>
               ))}
@@ -759,14 +765,14 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                 <span className="footer-badge">HIPAA-Ready</span>
                 <span className="footer-badge">GDPR Tools</span>
                 <span className="footer-badge">Audit Trail</span>
-                <span className="footer-badge">On-Premise</span>
+                <span className="footer-badge">Two-Factor Sign-in</span>
               </div>
             </div>
           </div>
 
           {/* Bottom bar */}
           <div className="footer-bottom">
-            <span className="footer-copyright">© {new Date().getFullYear()} LabOS. All rights reserved. v3.0.0</span>
+            <span className="footer-copyright"><EmojiIcon glyph="©" /> {new Date().getFullYear()} LabOS. All rights reserved. v3.0.0</span>
             <span className="footer-divider">|</span>
             <span className="footer-legal" style={{ cursor: 'pointer' }} onClick={() => onNavigate('privacy-center')}>Privacy Center</span>
             <span className="footer-divider">|</span>
@@ -813,7 +819,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     padding: '8px 20px 4px',
                   }}>
-                    {cat.icon} {cat.category}
+                    <EmojiIcon glyph={cat.icon} /> {cat.category}
                   </div>
                   {cat.items.map(item => (
                     <button
@@ -828,7 +834,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                         border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: activePage === item.key ? 700 : 400,
                       }}
                     >
-                      <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
+                      <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}><EmojiIcon glyph={item.icon} /></span>
                       <span>{item.label}</span>
                       {activePage === item.key && (
                         <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
@@ -854,7 +860,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
             className={`mobile-nav-item ${activePage === item.key ? 'active' : ''}`}
             onClick={() => { onNavigate(item.key); setMoreDrawerOpen(false); }}
           >
-            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-icon"><EmojiIcon glyph={item.icon} size={17} /></span>
             <span>{item.label}</span>
           </button>
         ))}
@@ -862,7 +868,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
           className={`mobile-nav-item ${moreDrawerOpen ? 'active' : ''}`}
           onClick={() => setMoreDrawerOpen(v => !v)}
         >
-          <span className="nav-icon">☰</span>
+          <span className="nav-icon"><EmojiIcon glyph="☰" size={17} /></span>
           <span>More</span>
         </button>
       </nav>

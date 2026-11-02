@@ -55,7 +55,7 @@ function crudApi(
     },
     get: getFn
       ? async (id: IdLike) => {
-          const result = await client.query(getFn, { id: toStr(id) });
+          const result = await client.query(getFn, { token: getToken(), id: toStr(id) });
           return { data: adapt(result) };
         }
       : async (_id: IdLike) => ({ data: null }),
@@ -159,13 +159,13 @@ export const suppliersApi = {
     api.suppliers.get
   ),
   categories: async () => {
-    const result = await client.query(api.suppliers.list, { paginationOpts: { numItems: 200, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), paginationOpts: { numItems: 200, cursor: null } });
     const cats = new Set<string>();
     for (const s of result?.page ?? []) { if ((s as any).category) cats.add((s as any).category); }
     return { data: Array.from(cats) };
   },
   stats: async () => {
-    const result = await client.query(api.suppliers.list, { paginationOpts: { numItems: 200, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), paginationOpts: { numItems: 200, cursor: null } });
     const items = result?.page ?? [];
     return {
       data: {
@@ -177,7 +177,7 @@ export const suppliersApi = {
   },
   aiRecommend: async (query: string) => {
     // Match suppliers based on query against existing supplier data
-    const result = await client.query(api.suppliers.list, { search: query, paginationOpts: { numItems: 10, cursor: null } });
+    const result = await client.query(api.suppliers.list, { token: getToken(), search: query, paginationOpts: { numItems: 10, cursor: null } });
     const recommendations = (result?.page ?? []).map((s: any) => ({
       id: s._id,
       name: s.name,
@@ -188,7 +188,7 @@ export const suppliersApi = {
     return { data: { recommendations } };
   },
   listOrders: async (page = 1, perPage = 20, status = '') => {
-    const result = await client.query(api.suppliers.listOrders, {
+    const result = await client.query(api.suppliers.listOrders, { token: getToken(),
       status: status || undefined,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -196,7 +196,7 @@ export const suppliersApi = {
     return paginated(items, page, perPage);
   },
   orderStats: async () => {
-    const result = await client.query(api.suppliers.listOrders, {
+    const result = await client.query(api.suppliers.listOrders, { token: getToken(),
       paginationOpts: { numItems: 200, cursor: null },
     });
     const orders = result?.page ?? [];
@@ -210,7 +210,19 @@ export const suppliersApi = {
   },
   createOrder: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.suppliers.createOrder, { token, ...data });
+    // The backend keeps supplier, total, currency, notes and items (as text). Everything else goes into the notes.
+    const items = typeof data.items === 'string' ? data.items : data.items ? JSON.stringify(data.items) : data.items_json;
+    const total = Number(data.total_amount ?? data.total);
+    const notes = [
+      data.po_number && `PO ${data.po_number}`, data.urgency && `Urgency: ${data.urgency}`, data.project_code && `Project: ${data.project_code}`,
+      data.expected_delivery && `Expected delivery: ${data.expected_delivery}`, data.notes,
+    ].filter(Boolean).join(' · ');
+    const result = await client.mutation(api.suppliers.createOrder, {
+      token, currency: data.currency ?? 'USD',
+      ...(data.supplier_id ? { supplier_id: toStr(data.supplier_id) as any } : {}),
+      ...(Number.isFinite(total) ? { total_amount: total } : {}),
+      ...(notes ? { notes } : {}), ...(items ? { items } : {}),
+    });
     return { data: result };
   },
   updateOrder: async (id: IdLike, data: any) => {
@@ -238,7 +250,7 @@ export const suppliersApi = {
 
 export const schedulingApi = {
   listCalendar: async (page = 1, perPage = 100) => {
-    const result = await client.query(api.scheduling.listCalendar, {});
+    const result = await client.query(api.scheduling.listCalendar, { token: getToken() });
     return paginated(result ?? [], page, perPage);
   },
   createCalendarEvent: async (data: any) => {
@@ -286,7 +298,7 @@ export const schedulingApi = {
     return { data: { success: true } };
   },
   exportIcs: async () => {
-    const result = await client.query(api.scheduling.listCalendar, {});
+    const result = await client.query(api.scheduling.listCalendar, { token: getToken() });
     const events = result ?? [];
     const lines = [
       "BEGIN:VCALENDAR",
@@ -317,13 +329,13 @@ export const notebookApi = {
   sign: async (id: IdLike) => {
     const token = getToken();
     await client.mutation(api.labNotebook.sign, { token, id: id as any });
-    const entry = await client.query(api.labNotebook.get, { id: id as any });
+    const entry = await client.query(api.labNotebook.get, { token: getToken(), id: id as any });
     return { data: entry ? adapt(entry) : { id, success: true } };
   },
   witness: async (id: IdLike) => {
     const token = getToken();
     await client.mutation(api.labNotebook.witness, { token, id: id as any, witnessed_by: id as any });
-    const entry = await client.query(api.labNotebook.get, { id: id as any });
+    const entry = await client.query(api.labNotebook.get, { token: getToken(), id: id as any });
     return { data: entry ? adapt(entry) : { id, success: true } };
   },
 };
@@ -337,11 +349,11 @@ export const meetingsApi = {
     api.meetings.get
   ),
   upcoming: async (limit = 10) => {
-    const result = await client.query(api.meetings.upcoming, {});
+    const result = await client.query(api.meetings.upcoming, { token: getToken() });
     return { data: (result ?? []).slice(0, limit).map(adapt) };
   },
   past: async (limit = 20) => {
-    const result = await client.query(api.meetings.past, {});
+    const result = await client.query(api.meetings.past, { token: getToken() });
     return { data: (result ?? []).slice(0, limit).map(adapt) };
   },
   cancel: async (id: IdLike) => {
@@ -367,34 +379,102 @@ export const meetingsApi = {
   },
 };
 
+/** Convex request row -> the shape the Reagent Cart screen uses. */
+const cartRow = (r: any) => ({
+  id: r._id,
+  vendor: r.supplier ?? '',
+  name: r.name,
+  catalog: r.catalog_number ?? '',
+  size: r.size ?? r.unit ?? '',
+  unit_price: r.unit_price ?? null,
+  quantity: r.quantity,
+  currency: 'USD',
+  url: r.url ?? '',
+  image_url: '',
+  cas: r.cas ?? '',
+  notes: r.notes ?? '',
+  status: r.status,
+  captured_at: new Date(r.created_at).toISOString(),
+  ordered_at: r.ordered_at ? new Date(r.ordered_at).toISOString() : null,
+  requested_by: r.requested_by ?? '',
+  project: r.project ?? '',
+  grant: r.grant ?? '',
+  budget_code: r.budget_code ?? '',
+  urgency: r.urgency ?? 'normal',
+  needed_by: r.needed_by ?? null,
+  po_number: r.po_number ?? '',
+  decision_note: r.decision_note ?? '',
+  received_quantity: r.received_quantity ?? 0,
+  over_budget: (r.over_budget ?? []) as string[],
+});
+
+/** The fields the screen may send, renamed to what Convex stores. Anything else is dropped. */
+const cartFields = (d: any) => {
+  const out: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    name: 'name', quantity: 'quantity', vendor: 'supplier', supplier: 'supplier', catalog: 'catalog_number', catalog_number: 'catalog_number',
+    unit_price: 'unit_price', url: 'url', notes: 'notes', size: 'size', cas: 'cas', project: 'project', grant: 'grant',
+    budget_code: 'budget_code', urgency: 'urgency', needed_by: 'needed_by', unit: 'unit',
+  };
+  for (const [from, to] of Object.entries(map)) {
+    const val = d?.[from];
+    if (val === undefined || val === null || val === '') continue;
+    out[to] = val;
+  }
+  return out;
+};
+
 export const reagentCartApi = {
   list: async () => {
-    const token = getToken();
-    const result = await client.query(api.reagentCart.list, { token });
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.reagentCart.listAll, { token: getToken() });
+    return { data: (result ?? []).map(cartRow) };
   },
   create: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.reagentCart.create, { token, ...data });
+    const result = await client.mutation(api.reagentCart.create, { token: getToken(), ...(cartFields(data) as any) });
     return { data: result };
   },
   update: async (id: IdLike, data: any) => {
     const token = getToken();
-    await client.mutation(api.reagentCart.update, { token, id: id as any, ...data });
+    // Approving is a decision, not an edit: it goes through decide so the role is checked.
+    if (data?.status === 'approved' || data?.status === 'rejected') {
+      await client.mutation(api.reagentCart.decide, {
+        token, ids: [toStr(id) as any], decision: data.status === 'approved' ? 'approve' : 'reject', note: data.decision_note,
+      });
+    } else {
+      await client.mutation(api.reagentCart.update, { token, id: toStr(id) as any, ...(cartFields(data) as any), ...(data?.status ? { status: data.status } : {}) });
+    }
     return { data: { id } };
   },
   delete: async (id: IdLike) => {
-    const token = getToken();
-    await client.mutation(api.reagentCart.remove, { token, id: id as any });
+    await client.mutation(api.reagentCart.remove, { token: getToken(), id: toStr(id) as any });
     return { data: { success: true } };
   },
-  checkout: async (data: any) => {
-    const token = getToken();
-    const result = await client.mutation(api.reagentCart.checkout, {
-      token,
-      item_ids: data.item_ids,
-    });
+  /** `override` approves even when a request goes over a budget limit. `blocked` lists the ones held back. */
+  decide: async (ids: IdLike[], decision: 'approve' | 'reject', note?: string, override?: boolean) => {
+    const result = await client.mutation(api.reagentCart.decide, { token: getToken(), ids: ids.map((i) => toStr(i) as any), decision, note, override });
     return { data: result };
+  },
+  invoiceMatch: async () => ({ data: await client.query(api.reagentCart.invoiceMatch, { token: getToken() }) }),
+  addInvoice: async (data: { po_number: string; invoice_number: string; invoice_date?: number; amount: number; notes?: string }) => {
+    await client.mutation(api.reagentCart.addInvoice, { token: getToken(), ...data });
+    return { data: { ok: true } };
+  },
+  removeInvoice: async (id: string) => {
+    await client.mutation(api.reagentCart.removeInvoice, { token: getToken(), id: id as any });
+    return { data: { ok: true } };
+  },
+  /** Orders the approved requests among `item_ids`; one PO number per supplier. */
+  checkout: async (data: any) => {
+    const result = await client.mutation(api.reagentCart.placeOrder, { token: getToken(), ids: (data.item_ids ?? []).map((i: IdLike) => toStr(i) as any) });
+    const total = result.orders.reduce((s: number, o: { total: number }) => s + o.total, 0);
+    return { data: { mode: 'manual', ordered_count: result.ordered, skipped: result.skipped, total_amount: total, orders: result.orders } };
+  },
+  reorderLowStock: async () => ({ data: await client.mutation(api.reagentCart.reorderLowStock, { token: getToken() }) }),
+  spend: async () => ({ data: await client.query(api.reagentCart.spend, { token: getToken() }) }),
+  config: async () => ({ data: await client.query(api.reagentCart.config, { token: getToken() }) }),
+  setAutoApproveLimit: async (limit: number) => {
+    await client.mutation(api.reagentCart.setAutoApproveLimit, { token: getToken(), limit });
+    return { data: { limit } };
   },
   health: async () => {
     // Verify Convex connection is alive
@@ -448,14 +528,24 @@ export const auditApi = {
     const args: any = { token, page, per_page: perPage };
     if (extra?.entity_type) args.entity_type = extra.entity_type;
     const result = await client.query(api.audit.list, args);
-    return { data: { items: (result?.items ?? []).map(adapt), total: result?.total ?? 0, page: result?.page ?? 1, per_page: result?.per_page ?? perPage, pages: result?.total_pages ?? 1 } };
+    // The page reads changes_json and timestamp; the backend stores details and created_at.
+    const toRow = (r: any) => ({ ...adapt(r), changes_json: r.details ?? '', timestamp: new Date(r.created_at).toISOString() });
+    return { data: { items: (result?.items ?? []).map(toRow), total: result?.total ?? 0, page: result?.page ?? 1, per_page: result?.per_page ?? perPage, pages: result?.total_pages ?? 1 } };
   },
 };
 
 export const grantsApi = {
   aiDraft: async (data: any) => {
-    const result = await client.action(api.grants.aiDraft, { ...data, token: getToken() });
+    // The backend has no "disease" field; it goes in with the context so the draft still knows the area.
+    const { disease, context, ...rest } = data ?? {};
+    const ctxText = [disease ? `Disease area: ${disease}` : '', context].filter(Boolean).join('\n');
+    const result = await client.action(api.grants.aiDraft, { ...rest, ...(ctxText ? { context: ctxText } : {}), token: getToken() });
     return { data: result };
+  },
+  /** Which AI the research swarm can use right now: hosted keys that are set, and the local Ollama model if any. */
+  aiProviders: async () => {
+    const result = await client.query(api.grants.aiProviders, { token: getToken() });
+    return { data: result as Record<string, string | boolean | null> };
   },
   researchSynthesis: async (data: any) => {
     // Real multi-model AI synthesis (Claude / GPT-4o / DeepSeek; extracted-text-only fallback).
@@ -514,18 +604,30 @@ export const swarmFeedbackApi = {
   },
 };
 
+/** A stored version row back to the shape the Version History page reads. */
+const versionRow = (r: any) => {
+  let snap: any = {};
+  try { snap = JSON.parse(r.content); } catch { snap = { content: { [r.section]: r.content } }; } // rows saved one section at a time
+  return { ...adapt(r), grant_title: r.title, version_label: snap.version_label || '', notes: snap.notes || '', changes: snap.changes || [], content: snap.content || {}, created_by: '' };
+};
+
 export const grantVersionsApi = {
   listAll: async () => {
-    const result = await client.query(api.grants.listVersions, { grant_id: "" });
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.grants.listVersions, { token: getToken() });
+    return { data: (result ?? []).map(versionRow) };
   },
   listByGrant: async (grantId: string) => {
-    const result = await client.query(api.grants.listVersions, { grant_id: grantId });
-    return { data: (result ?? []).map(adapt) };
+    const result = await client.query(api.grants.listVersions, { token: getToken(), grant_id: grantId });
+    return { data: (result ?? []).map(versionRow) };
   },
   create: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.grants.createVersion, { token, ...data });
+    // A snapshot of the whole grant is one stored row; its label, notes, changes and sections ride along as JSON.
+    const existing = await client.query(api.grants.listVersions, { token, grant_id: data.grant_id });
+    const result = await client.mutation(api.grants.createVersion, {
+      token, grant_id: data.grant_id, title: data.grant_title || data.grant_id, section: 'snapshot', version: (existing?.length ?? 0) + 1,
+      content: JSON.stringify({ version_label: data.version_label ?? '', notes: data.notes ?? '', changes: data.changes ?? [], content: data.content ?? {} }),
+    });
     return { data: result };
   },
   delete: async (id: IdLike) => {
@@ -537,16 +639,29 @@ export const grantVersionsApi = {
 
 export const grantSubmissionsApi = {
   list: async (page = 1, perPage = 20, extra?: Record<string, string>) => {
-    const result = await client.query(api.grants.listSubmissions, {
+    const result = await client.query(api.grants.listSubmissions, { token: getToken(),
       status: extra?.status,
       paginationOpts: { numItems: 200, cursor: null },
     });
-    const items = result?.page ?? [];
+    // The page reads submitted_at and total_amount; the backend stores submission_date and amount_requested.
+    const items = (result?.page ?? []).map((r: any) => ({
+      ...r,
+      submitted_at: r.submission_date ? new Date(r.submission_date).toISOString().slice(0, 10) : '',
+      total_amount: r.amount_requested ?? 0,
+    }));
     return paginated(items, page, perPage);
   },
   create: async (data: any) => {
     const token = getToken();
-    const result = await client.mutation(api.grants.createSubmission, { token, ...data });
+    const when = data.submitted_at ? Date.parse(data.submitted_at) : NaN;
+    const num = (x: unknown) => (x === null || x === undefined || x === '' || !Number.isFinite(Number(x)) ? undefined : Number(x));
+    const text = (x: unknown) => (typeof x === 'string' && x.trim() ? x.trim() : undefined);
+    const body = {
+      title: data.title, status: data.status ?? 'submitted',
+      agency: text(data.agency), grant_type: text(data.grant_type), grant_number: text(data.grant_number), institute: text(data.institute), notes: text(data.notes),
+      submission_date: Number.isFinite(when) ? when : undefined, amount_requested: num(data.total_amount), score: num(data.score), percentile: num(data.percentile),
+    };
+    const result = await client.mutation(api.grants.createSubmission, { token, ...Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)) } as any);
     return { data: result };
   },
   update: async (id: IdLike, data: any) => {
@@ -560,14 +675,14 @@ export const grantSubmissionsApi = {
     return { data: { success: true } };
   },
   analytics: async () => {
-    const result = await client.query(api.grants.analytics, {});
+    const result = await client.query(api.grants.analytics, { token: getToken() });
     return { data: result };
   },
 };
 
 export const dashboardApi = {
   summary: async () => {
-    const result = await client.query(api.dashboard.summary, {});
+    const result = await client.query(api.dashboard.summary, { token: getToken() });
     return { data: result };
   },
 };
@@ -613,7 +728,7 @@ export const samplesApi = {
   ),
   listEvents: async (page = 1, perPage = 20, _search = '', sampleId?: string) => {
     if (!sampleId) return paginated([], page, perPage);
-    const result = await client.query(api.samples.listEvents, {
+    const result = await client.query(api.samples.listEvents, { token: getToken(),
       sampleId: sampleId as any,
       paginationOpts: { numItems: 200, cursor: null },
     });
@@ -621,7 +736,7 @@ export const samplesApi = {
     return paginated(items, page, perPage);
   },
   createEvent: async (data: any) => {
-    const result = await client.mutation(api.samples.createEvent, data);
+    const result = await client.mutation(api.samples.createEvent, { token: getToken(), ...data });
     return { data: result };
   },
   updateEvent: async (id: IdLike, data: any) => {
@@ -629,7 +744,7 @@ export const samplesApi = {
     return { data: { id } };
   },
   deleteEvent: async (id: IdLike) => {
-    await client.mutation(api.samples.deleteEvent, { id: toStr(id) as any });
+    await client.mutation(api.samples.deleteEvent, { token: getToken(), id: toStr(id) as any });
     return { data: { success: true } };
   },
 };
@@ -658,7 +773,7 @@ export const instrumentsApi = {
     api.instruments.get
   ),
   listBookings: async (page = 1, perPage = 20, _search = '') => {
-    const result = await client.query(api.instruments.listBookings, {});
+    const result = await client.query(api.instruments.listBookings, { token: getToken() });
     return paginated(result ?? [], page, perPage);
   },
   createBooking: async (data: any) => {
@@ -673,7 +788,7 @@ export const instrumentsApi = {
   },
   deleteBooking: async (id: IdLike) => {
     const token = getToken();
-    await client.mutation(api.instruments.cancelBooking, { id: id as any });
+    await client.mutation(api.instruments.cancelBooking, { token: getToken(), id: id as any });
     return { data: { success: true } };
   },
 };
@@ -738,7 +853,7 @@ export const costsApi = {
     api.costs.get
   ),
   summary: async () => {
-    const result = await client.query(api.costs.summary, {});
+    const result = await client.query(api.costs.summary, { token: getToken() });
     return { data: result };
   },
   approve: async (id: IdLike) => {
@@ -756,7 +871,7 @@ export const costsApi = {
 
 export const labMembersApi = {
   listForLab: async (labId: IdLike) => {
-    const result = await client.query(api.labMembers.listForLab, { lab_id: labId as any });
+    const result = await client.query(api.labMembers.listForLab, { token: getToken(), lab_id: labId as any });
     return { data: (result ?? []).map(adapt) };
   },
   listMy: async () => {
@@ -771,6 +886,8 @@ export const labMembersApi = {
   },
   invite: async (data: any) => {
     const token = getToken();
+    // The backend adds an existing account by id. Looking an account up by email would have to reach across labs, which is not allowed here.
+    if (!data?.user_id) throw new Error('Inviting by email is not available yet. Ask the person to sign up first, then add them.');
     const result = await client.mutation(api.labMembers.invite, { token, ...data });
     return { data: result };
   },
@@ -798,7 +915,7 @@ export const labMembersApi = {
   canIManage: async (labId: IdLike) => {
     try {
       const token = getToken();
-      const memberships = await client.query(api.labMembers.listForLab, { lab_id: toStr(labId) as any });
+      const memberships = await client.query(api.labMembers.listForLab, { token: getToken(), lab_id: toStr(labId) as any });
       const me = await client.query(api.users.getMe, { token });
       const myMembership = (memberships ?? []).find((m: any) => m.user_id === (me as any)?._id);
       const role = myMembership?.lab_role ?? "";
@@ -830,7 +947,7 @@ export const integrationsApi = {
   ...crudApi(api.integrations.list, api.integrations.create, api.integrations.update, api.integrations.remove),
   test: async (id: IdLike) => {
     // Test connection by verifying the integration exists
-    const result = await client.query(api.integrations.list, {});
+    const result = await client.query(api.integrations.list, { token: getToken() });
     const found = (result as any[])?.find?.((i: any) => i._id === toStr(id));
     return { data: { success: !!found, status: found ? "connected" : "not_found" } };
   },
@@ -844,7 +961,7 @@ export const integrationsApi = {
 export const templatesApi = {
   ...crudApi(api.templates.list, api.templates.create, api.templates.update, api.templates.remove),
   render: async (id: IdLike, vars: Record<string, string>) => {
-    const template = await client.query(api.templates.get, { id: toStr(id) as any });
+    const template = await client.query(api.templates.get, { token: getToken(), id: toStr(id) as any });
     if (!template) return { data: { content: "" } };
     let content = (template as any).content ?? "";
     for (const [key, val] of Object.entries(vars)) {
@@ -856,14 +973,14 @@ export const templatesApi = {
 
 export const activityApi = {
   list: async (page = 1, perPage = 50, _entityType = '', _userId?: string, _action = '') => {
-    const result = await client.query(api.activity.list, {
+    const result = await client.query(api.activity.list, { token: getToken(),
       paginationOpts: { numItems: 200, cursor: null },
     });
     const items = (result as any)?.page ?? (Array.isArray(result) ? result : []);
     return paginated(items, page, perPage);
   },
   recent: async (limit = 20) => {
-    const result = await client.query(api.activity.recent, { limit });
+    const result = await client.query(api.activity.recent, { token: getToken(), limit });
     return { data: (result ?? []).map(adapt) };
   },
   myActivity: async (page = 1, perPage = 50) => {
@@ -872,7 +989,7 @@ export const activityApi = {
     return paginated(result ?? [], page, perPage);
   },
   stats: async () => {
-    const result = await client.query(api.activity.stats, {});
+    const result = await client.query(api.activity.stats, { token: getToken() });
     return { data: result };
   },
 };
@@ -900,7 +1017,7 @@ export const filesApi = {
     return { data: (result ?? []).map(adapt) };
   },
   download: async (attachmentId: IdLike) => {
-    const result = await client.query(api.files.get, { id: toStr(attachmentId) as any });
+    const result = await client.query(api.files.get, { token: getToken(), id: toStr(attachmentId) as any });
     if (result?.url) {
       const resp = await fetch(result.url);
       return { data: await resp.blob() };
@@ -940,6 +1057,23 @@ export const biosketchApi = {
   },
 };
 
+/** LabHuddle polls and knowledge base. */
+export const huddleApi = {
+  listPolls: async () => ({ data: ((await client.query(api.huddle.listPolls, { token: getToken() })) ?? []).map(adapt) }),
+  createPoll: async (question: string, options: string[], meetingId?: IdLike) =>
+    ({ data: await client.mutation(api.huddle.createPoll, { token: getToken(), question, options, ...(meetingId ? { meeting_id: toStr(meetingId) as any } : {}) }) }),
+  vote: async (pollId: IdLike, optionIndex: number) => { await client.mutation(api.huddle.vote, { token: getToken(), poll_id: toStr(pollId) as any, option_index: optionIndex }); },
+  setPollStatus: async (pollId: IdLike, status: 'open' | 'closed') => { await client.mutation(api.huddle.setPollStatus, { token: getToken(), poll_id: toStr(pollId) as any, status }); },
+  deletePoll: async (pollId: IdLike) => { await client.mutation(api.huddle.deletePoll, { token: getToken(), poll_id: toStr(pollId) as any }); },
+  listArticles: async () => ({ data: ((await client.query(api.huddle.listArticles, { token: getToken() })) ?? []).map(adapt) }),
+  saveArticle: async (a: { id?: IdLike; title: string; category: string; content: string; tags: string; meeting_id?: IdLike }) => {
+    const { id, meeting_id, ...rest } = a;
+    if (id) await client.mutation(api.huddle.updateArticle, { token: getToken(), id: toStr(id) as any, ...rest });
+    else await client.mutation(api.huddle.createArticle, { token: getToken(), ...rest, ...(meeting_id ? { meeting_id: toStr(meeting_id) as any } : {}) });
+  },
+  deleteArticle: async (id: IdLike) => { await client.mutation(api.huddle.deleteArticle, { token: getToken(), id: toStr(id) as any }); },
+};
+
 export const videoApi = {
   createRoom: async (meetingId?: IdLike) => {
     const token = getToken();
@@ -949,11 +1083,11 @@ export const videoApi = {
     return { data: result };
   },
   getRoom: async (roomId: string) => {
-    const result = await client.query(api.videoRooms.getRoom, { room_id: roomId });
+    const result = await client.query(api.videoRooms.getRoom, { token: getToken(), room_id: roomId });
     return { data: result ? adapt(result) : null };
   },
   getRoomForMeeting: async (meetingId: string) => {
-    const result = await client.query(api.videoRooms.getRoomForMeeting, { meeting_id: meetingId as any });
+    const result = await client.query(api.videoRooms.getRoomForMeeting, { token: getToken(), meeting_id: meetingId as any });
     return { data: result ? adapt(result) : null };
   },
   deleteRoom: async (roomId: string) => {
@@ -962,7 +1096,7 @@ export const videoApi = {
     return { data: null };
   },
   getChatHistory: async (roomId: string) => {
-    const result = await client.query(api.videoRooms.getChatHistory, { room_id: roomId });
+    const result = await client.query(api.videoRooms.getChatHistory, { token: getToken(), room_id: roomId });
     return { data: (result ?? []).map(adapt) };
   },
   getTranscription: async (_roomId: string) => ({ data: [] }),
@@ -1036,11 +1170,24 @@ export const procurementApi = {
   listRules: async () => {
     const token = getToken();
     const result = await client.query(api.procurement.listRules, { token });
-    return { data: (result ?? []).map(adapt) };
+    // Back to what the page shows: an amount limit, a hazardous flag, and the role that must approve.
+    return { data: (result ?? []).map((r: any) => ({
+      ...adapt(r),
+      over_amount: r.condition_field === 'amount' ? Number(r.condition_value) : null,
+      hazardous: r.condition_field === 'hazardous',
+      role_required: String(r.action).startsWith('require_role:') ? String(r.action).slice('require_role:'.length) : r.action,
+    })) };
   },
   createRule: async (data: any) => {
     const token = getToken();
-    await client.mutation(api.procurement.createRule, { token, ...data });
+    // The page has one form (amount limit and/or hazardous, plus the approving role); the backend stores one condition per rule.
+    const action = `require_role:${data.role_required ?? 'staff'}`;
+    const conditions = [
+      ...(data.over_amount ? [{ condition_field: 'amount', condition_op: '>', condition_value: String(data.over_amount) }] : []),
+      ...(data.hazardous ? [{ condition_field: 'hazardous', condition_op: '=', condition_value: 'true' }] : []),
+    ];
+    if (!conditions.length) conditions.push({ condition_field: 'always', condition_op: '=', condition_value: 'true' });
+    for (const c of conditions) await client.mutation(api.procurement.createRule, { token, name: data.name, action, ...c });
     return { data: null };
   },
   deleteRule: async (id: IdLike) => {
@@ -1110,7 +1257,11 @@ export const procurementApi = {
   },
   createBorrow: async (data: any) => {
     const token = getToken();
-    await client.mutation(api.procurement.createBorrow, { token, ...data });
+    const notes = data.purpose ?? data.notes;
+    await client.mutation(api.procurement.createBorrow, {
+      token, item_name: String(data.item_name ?? data.name ?? 'Item'), quantity: Number(data.requested_quantity ?? data.quantity) || 1,
+      ...(data.unit ? { unit: data.unit } : {}), ...(notes ? { notes } : {}),
+    });
     return { data: null };
   },
   respondBorrow: async (id: IdLike, approve: boolean) => {
@@ -1149,7 +1300,7 @@ export const procurementApi = {
 export const protocolsPrintApi = {
   getPrintView: async (id: IdLike) => {
     try {
-      const result = await client.query(api.protocols.get, { id: toStr(id) as any });
+      const result = await client.query(api.protocols.get, { token: getToken(), id: toStr(id) as any });
       if (!result) return { data: "<p>Protocol not found</p>" };
       const p = result as any;
       const html = `
@@ -1176,11 +1327,32 @@ export const protocolsPrintApi = {
   },
 };
 
+/** Local Ollama via Convex. `text` is null when Ollama is off or fails: callers use their built-in draft. */
+export const protocolAiApi = {
+  complete: async (kind: 'protocol' | 'chat', prompt: string): Promise<string | null> => {
+    try {
+      const r = await client.action(api.protocolAi.complete, { token: getToken(), kind, prompt });
+      return r.text;
+    } catch {
+      return null;
+    }
+  },
+};
+
 export const orgApi = {
   list: async () => {
-    const result = await client.query(api.org.listOrgs, {});
+    const result = await client.query(api.org.listOrgs, { token: getToken() });
     return { data: (result ?? []).map(adapt) };
   },
 };
 
 export { client as convexClient };
+
+export const stockImportApi = {
+  importBatch: (source: string, records: any[]) => client.mutation(api.stockImport.importBatch, { token: getToken(), source, records }),
+  search: (p: { text?: string; kind?: string; category?: string; limit?: number }) => client.query(api.stockImport.search, { token: getToken(), ...p }),
+  summary: () => client.query(api.stockImport.summary, { token: getToken() }),
+  reconcile: () => client.query(api.stockImport.reconcile, { token: getToken() }),
+  alerts: () => client.query(api.stockImport.alerts, { token: getToken() }),
+  clearSource: (source: string) => client.mutation(api.stockImport.clearSource, { token: getToken(), source }),
+};

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface ReviewerComment {
   id: number;
@@ -79,25 +81,24 @@ export default function ReviewerFeedbackPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Reviewer Feedback & Resubmission</h1>
-          <p className="page-subtitle">Track reviewer comments and prepare your response to reviewers</p>
+          <LabBanner art="team" title="Reviewer Feedback & Resubmission" subtitle="Track reviewer comments and prepare your response to reviewers" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Import Summary')}>📥 Import Summary Statement</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Export Response')}>📤 Export Response</button>
-          <button className="btn btn-primary" onClick={() => comingSoon('AI Draft')}>✨ AI Draft Responses</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Import Summary')}><EmojiIcon glyph="📥" /> Import Summary Statement</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Export Response')}><EmojiIcon glyph="📤" /> Export Response</button>
+          <button className="btn btn-primary" onClick={() => comingSoon('AI Draft')}><EmojiIcon glyph="✨" /> AI Draft Responses</button>
         </div>
       </div>
 
       {reviews.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px 40px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="💬" /></div>
           <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Reviewer Feedback Yet</h3>
           <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24, maxWidth: 400, margin: '0 auto 24px' }}>
             Import your summary statement from NIH to track reviewer comments and prepare your response to reviewers for resubmission.
           </p>
           <button className="btn btn-primary">
-            📥 Import Summary Statement
+            <EmojiIcon glyph="📥" /> Import Summary Statement
           </button>
         </div>
       ) : (
@@ -191,7 +192,7 @@ export default function ReviewerFeedbackPage() {
 
             {/* Summary Statement */}
             <div className="card" style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>📋 Summary Statement</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}><EmojiIcon glyph="📋" /> Summary Statement</h3>
               <p style={{ fontSize: 13, color: 'var(--text-soft)', lineHeight: 1.7 }}>
                 {selectedReview.summaryStatement}
               </p>
@@ -199,7 +200,7 @@ export default function ReviewerFeedbackPage() {
 
             {/* Response Progress */}
             <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>📊 Response Progress</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}><EmojiIcon glyph="📊" /> Response Progress</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 28, fontWeight: 700 }}>{progressStats.total}</div>
@@ -315,26 +316,26 @@ export default function ReviewerFeedbackPage() {
                       />
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-sm btn-primary" onClick={() => setShowResponseEditor(null)}>
-                          💾 Save Response
+                          <EmojiIcon glyph="💾" /> Save Response
                         </button>
                         <button className="btn btn-sm btn-secondary" onClick={() => setShowResponseEditor(null)}>
                           Cancel
                         </button>
                         <button className="btn btn-sm btn-secondary">
-                          ✨ AI Suggest
+                          <EmojiIcon glyph="✨" /> AI Suggest
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-sm btn-primary" onClick={() => setShowResponseEditor(comment.id)}>
-                        ✍️ Write Response
+                        <EmojiIcon glyph="✍️" /> Write Response
                       </button>
                       <button className="btn btn-sm btn-secondary" onClick={() => handleMarkStatus(comment.id, 'addressed')}>
                         ✓ Mark Addressed
                       </button>
                       <button className="btn btn-sm btn-secondary" onClick={() => handleMarkStatus(comment.id, 'rebutted')}>
-                        ↩️ Rebut
+                        <EmojiIcon glyph="↩️" /> Rebut
                       </button>
                     </div>
                   )}

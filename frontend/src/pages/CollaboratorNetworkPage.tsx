@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Collaborator {
   id: number;
@@ -63,12 +65,11 @@ export default function CollaboratorNetworkPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Collaborator Network</h1>
-          <p className="page-subtitle">Manage co-investigators, share documents, and build your research network</p>
+          <LabBanner art="team" title="Collaborator Network" subtitle="Manage co-investigators, share documents, and build your research network" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}>📥 Import from ORCID</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Find Experts')}>🔍 Find Experts</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('ORCID Import')}><EmojiIcon glyph="📥" /> Import from ORCID</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Find Experts')}><EmojiIcon glyph="🔍" /> Find Experts</button>
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ Add Collaborator</button>
         </div>
       </div>
@@ -100,7 +101,7 @@ export default function CollaboratorNetworkPage() {
       {/* Shared Documents */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600 }}>📄 Shared Documents</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 600 }}><EmojiIcon glyph="📄" /> Shared Documents</h3>
           <button className="btn btn-sm btn-secondary">+ Share New Document</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
@@ -108,7 +109,7 @@ export default function CollaboratorNetworkPage() {
             <div key={doc.id} style={{ padding: 16, background: 'var(--surface2)', borderRadius: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <span style={{ fontSize: 20 }}>
-                  {doc.type === 'grant' ? '📝' : doc.type === 'manuscript' ? '📰' : '🧪'}
+                  {doc.type === 'grant' ? <><EmojiIcon glyph="📝" /></> : doc.type === 'manuscript' ? <><EmojiIcon glyph="📰" /></> : <><EmojiIcon glyph="🧪" /></>}
                 </span>
                 <span style={{
                   padding: '3px 8px',
@@ -298,7 +299,7 @@ export default function CollaboratorNetworkPage() {
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Shared Grants</div>
                 {selectedCollab.sharedGrants.map(g => (
-                  <div key={g} style={{ fontSize: 12, color: 'var(--text-soft)', padding: '4px 0' }}>📋 {g}</div>
+                  <div key={g} style={{ fontSize: 12, color: 'var(--text-soft)', padding: '4px 0' }}><EmojiIcon glyph="📋" /> {g}</div>
                 ))}
               </div>
             )}
@@ -312,10 +313,10 @@ export default function CollaboratorNetworkPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a href={`mailto:${selectedCollab.email}`} className="btn btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
-                ✉️ Send Email
+                <EmojiIcon glyph="✉️" /> Send Email
               </a>
-              <button className="btn btn-secondary">📄 Share Document</button>
-              <button className="btn btn-secondary">📋 Add to Grant</button>
+              <button className="btn btn-secondary"><EmojiIcon glyph="📄" /> Share Document</button>
+              <button className="btn btn-secondary"><EmojiIcon glyph="📋" /> Add to Grant</button>
             </div>
           </div>
         )}

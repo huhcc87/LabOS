@@ -9,6 +9,7 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { formatDateTime } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
 
 const STATUS_OPTIONS = ['pending', 'sent', 'failed'];
 const CHANNEL_OPTIONS = ['dashboard', 'email', 'sms'];
@@ -74,16 +75,16 @@ export default function RemindersPage() {
     { key: 'due_at', header: 'Due At', render: (r) => {
       const d = new Date(r.due_at);
       const isOverdue = d < now && r.status === 'pending';
-      return <span style={{ color: isOverdue ? '#ef4444' : 'var(--text-soft)', fontWeight: isOverdue ? 700 : 400, fontSize: 13 }}>{formatDateTime(r.due_at)}{isOverdue ? ' ⚠ Overdue' : ''}</span>;
+      return <span style={{ color: isOverdue ? '#ef4444' : 'var(--text-soft)', fontWeight: isOverdue ? 700 : 400, fontSize: 13 }}>{formatDateTime(r.due_at)}{isOverdue ? <>{" "}<EmojiIcon glyph="⚠" />{" Overdue"}</> : ''}</span>;
     }},
     { key: 'channel', header: 'Channel', render: (r) => {
       const c = CHANNEL_META[r.channel] || { color: '#94a3b8', icon: '?'};
-      return <span style={{ color: c.color, fontSize: 13 }}>{c.icon} {r.channel}</span>;
+      return <span style={{ color: c.color, fontSize: 13 }}><EmojiIcon glyph={c.icon} /> {r.channel}</span>;
     }},
     { key: 'recipient_role', header: 'Role', render: (r) => <span style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'capitalize' }}>{r.recipient_role}</span> },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.pending;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.status}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.status}</span>;
     }},
   ];
 
@@ -104,7 +105,7 @@ export default function RemindersPage() {
         {/* Overdue alert */}
         {overdue.length > 0 && (
           <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 18 }}>⚠</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="⚠" /></span>
             <div style={{ color: '#991b1b', fontSize: 13 }}>
               <strong>{overdue.length} overdue reminder{overdue.length > 1 ? 's' : ''} not yet sent:</strong>{' '}
               {overdue.map(r => r.title).join(', ')}

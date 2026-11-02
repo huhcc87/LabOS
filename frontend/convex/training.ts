@@ -7,6 +7,7 @@ const { requireAuth } = hubGuard("Safety & Quality");
 export const list = query({
   args: { token: v.optional(v.string()), search: v.optional(v.string()), status: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     let results = args.status
       ? await ctx.db.query("training").withIndex("by_status", (q) => q.eq("status", args.status!)).order("desc").collect()
       : await ctx.db.query("training").order("desc").collect();
@@ -15,7 +16,7 @@ export const list = query({
   },
 });
 
-export const get = query({ args: { id: v.id("training") }, handler: async (ctx, { id }) => ctx.db.get(id) });
+export const get = query({ args: { token: v.optional(v.string()), id: v.id("training") }, handler: async (ctx, { token, id }) => { await requireAuth(ctx, token); return ctx.db.get(id); } });
 
 export const create = mutation({
   args: { token: v.optional(v.string()), user_id: v.id("users"), training_name: v.string(), category: v.optional(v.string()), status: v.optional(v.string()), completed_at: v.optional(v.number()), expires_at: v.optional(v.number()), score: v.optional(v.number()), notes: v.optional(v.string()) },

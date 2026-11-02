@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useRef } from 'react'
 import type { ProtocolComment } from '../types/protocol.types'
 
@@ -407,7 +408,7 @@ export default function ProtocolComments({
           <div style={{
             textAlign: 'center', padding: 40, color: 'var(--text-muted)',
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="💬" /></div>
             <div style={{ fontSize: 14 }}>No comments yet</div>
             <div style={{ fontSize: 13, marginTop: 4, color: 'var(--text-soft)' }}>
               Start a discussion about this protocol

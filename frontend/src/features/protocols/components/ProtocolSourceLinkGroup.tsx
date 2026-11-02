@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 
 interface Props {
@@ -14,7 +15,7 @@ const linkBtn = (label: string, url: string, color: string) => (
     onMouseEnter={e => (e.currentTarget.style.background = color + '22')}
     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
   >
-    🔗 {label}
+    <EmojiIcon glyph="🔗" /> {label}
   </a>
 )
 

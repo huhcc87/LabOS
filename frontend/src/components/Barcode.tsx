@@ -3,7 +3,7 @@ import bwipjs from 'bwip-js';
 
 interface BarcodeProps {
   value: string;
-  type: 'barcode' | 'qrcode';
+  type: 'barcode' | 'qrcode' | 'datamatrix';
   width?: number;
   height?: number;
   showText?: boolean;
@@ -24,9 +24,9 @@ export default function Barcode({
     if (!canvasRef.current || !value) return;
 
     try {
-      if (type === 'qrcode') {
+      if (type === 'qrcode' || type === 'datamatrix') {
         bwipjs.toCanvas(canvasRef.current, {
-          bcid: 'qrcode',
+          bcid: type,
           text: value,
           scale: 3,
           height: Math.min(width, height) / 3,
@@ -75,7 +75,7 @@ export default function Barcode({
 // Utility function to generate barcode as data URL (for printing/exporting)
 export async function generateBarcodeDataURL(
   value: string,
-  type: 'barcode' | 'qrcode',
+  type: 'barcode' | 'qrcode' | 'datamatrix',
   options?: {
     width?: number;
     height?: number;
@@ -86,9 +86,9 @@ export async function generateBarcodeDataURL(
   const { width = 200, height = 80, showText = true } = options || {};
 
   try {
-    if (type === 'qrcode') {
+    if (type === 'qrcode' || type === 'datamatrix') {
       bwipjs.toCanvas(canvas, {
-        bcid: 'qrcode',
+        bcid: type,
         text: value,
         scale: 3,
         height: Math.min(width, height) / 3,

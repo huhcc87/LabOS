@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ProtocolTraining } from '../types/protocol.types'
 
@@ -155,7 +156,7 @@ export default function ProtocolTrainingTracker({
       }}>
         {filteredRecords.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="📚" /></div>
             <div style={{ fontSize: 14 }}>No training records found</div>
           </div>
         ) : (
@@ -180,7 +181,7 @@ export default function ProtocolTrainingTracker({
                   color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 16,
                 }}>
-                  {record.status === 'completed' && !expired ? '✓' : record.status === 'in_progress' ? '📖' : expired ? '⚠️' : '○'}
+                  {record.status === 'completed' && !expired ? '✓' : record.status === 'in_progress' ? <><EmojiIcon glyph="📖" /></> : expired ? <><EmojiIcon glyph="⚠️" /></> : '○'}
                 </div>
 
                 {/* User Info */}

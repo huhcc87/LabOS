@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { Meeting, MeetingType } from '../types/meeting.types'
 import { getMeetingTypeIcon, getMeetingTypeLabel } from '../utils/meetingUtils'
@@ -91,7 +92,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ color: '#1e293b', fontSize: 17, fontWeight: 800, margin: 0 }}>
-            {isEditMode ? '✏️ Edit Meeting' : '📅 Schedule New Meeting'}
+            {isEditMode ? <><EmojiIcon glyph="✏️" />{" Edit Meeting"}</> : <><EmojiIcon glyph="📅" />{" Schedule New Meeting"}</>}
           </h2>
           <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#64748b', padding: '6px 10px', cursor: 'pointer', fontSize: 16 }}>✕</button>
         </div>
@@ -105,7 +106,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
                   background: form.type === t ? '#6366f1' : '#f1f5f9', border: 'none', borderRadius: 8,
                   color: form.type === t ? '#fff' : '#64748b', padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: form.type === t ? 700 : 400,
                 }}>
-                  {getMeetingTypeIcon(t)} {getMeetingTypeLabel(t)}
+                  <EmojiIcon glyph={getMeetingTypeIcon(t)} /> {getMeetingTypeLabel(t)}
                 </button>
               ))}
             </div>
@@ -147,7 +148,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <input type="checkbox" checked={form.isRecurring} onChange={e => set('isRecurring', e.target.checked)} style={{ accentColor: '#6366f1', width: 16, height: 16 }} />
-              <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 600 }}>🔁 Recurring meeting</span>
+              <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 600 }}><EmojiIcon glyph="🔁" /> Recurring meeting</span>
             </label>
             {form.isRecurring && (
               <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
@@ -186,7 +187,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
           </div>
 
           <div>
-            <label style={lbl}>🔔 Remind attendees</label>
+            <label style={lbl}><EmojiIcon glyph="🔔" /> Remind attendees</label>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               {REMINDER_OPTIONS.map(o => (
                 <label key={o.minutes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#1e293b', cursor: 'pointer' }}>
@@ -209,7 +210,7 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
             <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, color: '#64748b', padding: '9px 18px', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
             <button onClick={handleSave} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '9px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-              {isEditMode ? '💾 Save Changes' : '📅 Schedule Meeting'}
+              {isEditMode ? <><EmojiIcon glyph="💾" />{" Save Changes"}</> : <><EmojiIcon glyph="📅" />{" Schedule Meeting"}</>}
             </button>
           </div>
         </div>

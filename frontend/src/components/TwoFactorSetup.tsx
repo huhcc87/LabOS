@@ -3,6 +3,7 @@ import { useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import EmojiIcon from './EmojiIcon';
 
 export function TwoFactorSetup() {
   const { user, token } = useAuth();
@@ -96,7 +97,7 @@ export function TwoFactorSetup() {
     return (
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <span style={{ fontSize: 24 }}>{isEnabled ? '🔐' : '🔓'}</span>
+          <span style={{ fontSize: 24 }}>{isEnabled ? <><EmojiIcon glyph="🔐" /></> : <><EmojiIcon glyph="🔓" /></>}</span>
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Two-Factor Authentication</h3>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>

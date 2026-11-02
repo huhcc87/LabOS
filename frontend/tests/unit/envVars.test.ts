@@ -37,7 +37,8 @@ describe("Required environment variables", () => {
     // This test documents the requirement.
     const url = import.meta.env.VITE_CONVEX_URL;
     if (url) {
-      expect(url).toMatch(/^https:\/\/.+\.convex\.cloud$/);
+      // Cloud deployment, or the free local backend that run-local.sh starts
+      expect(url).toMatch(/^(https:\/\/.+\.convex\.cloud|http:\/\/127\.0\.0\.1:\d+)$/);
     }
   });
 });

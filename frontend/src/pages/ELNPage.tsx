@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useELNSwarm } from '../features/eln-swarm/useELNSwarm';
 import ELNSwarmPanel from '../features/eln-swarm/ELNSwarmPanel';
 import type { EntryContext } from '../features/eln-swarm/elnSwarmEngine';
+import EmojiIcon from '../components/EmojiIcon';
 
 const RichELNEditor = lazy(() =>
   import('../components/RichELNEditor').then(m => ({ default: m.RichELNEditor }))
@@ -271,7 +272,7 @@ export default function ELNPage() {
                   style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'rgba(99,102,241,0.05)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = ''; }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{t.icon}</div>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}><EmojiIcon glyph={t.icon} /></div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{t.label}</div>
                 </div>
               ))}
@@ -284,7 +285,7 @@ export default function ELNPage() {
             {/* Header */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 24 }}>{tpl.icon}</span>
+                <span style={{ fontSize: 24 }}><EmojiIcon glyph={tpl.icon} /></span>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{tpl.label}</div>
                 <button onClick={() => { setNewTemplate(''); setNewData({}); }} style={{ marginLeft: 'auto', padding: '4px 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>Change</button>
               </div>
@@ -304,8 +305,8 @@ export default function ELNPage() {
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Experimental Data</h3>
-                <button onClick={handleAIDraft} disabled={aiLoading} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', cursor: aiLoading ? 'wait' : 'pointer', fontSize: 13, fontWeight: 600 }}>
-                  {aiLoading ? '⏳ Drafting...' : '✨ AI Draft'}
+                <button onClick={handleAIDraft} disabled={aiLoading} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: aiLoading ? 'wait' : 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  {aiLoading ? <><EmojiIcon glyph="⏳" />{" Drafting..."}</> : <><EmojiIcon glyph="✨" />{" AI Draft"}</>}
                 </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -332,13 +333,13 @@ export default function ELNPage() {
                         style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                           background: composeView === 'text' ? 'var(--primary)' : 'transparent',
                           color: composeView === 'text' ? '#fff' : 'var(--text)' }}>
-                        📝 Text
+                        <EmojiIcon glyph="📝" /> Text
                       </button>
                       <button type="button" onClick={() => setComposeView('handwrite')}
                         style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                           background: composeView === 'handwrite' ? 'var(--primary)' : 'transparent',
                           color: composeView === 'handwrite' ? '#fff' : 'var(--text)' }}>
-                        ✍️ Handwrite
+                        <EmojiIcon glyph="✍️" /> Handwrite
                       </button>
                     </div>
                   </div>
@@ -396,12 +397,12 @@ export default function ELNPage() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => { setShowSwarm(!showSwarm); if (!showSwarm) swarm.loadSuggestions(selected.template); }}
-              style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: showSwarm ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'rgba(99,102,241,0.1)', color: showSwarm ? '#fff' : '#6366f1', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-              🧠 AI Swarm
+              style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: showSwarm ? 'var(--accent)' : 'rgba(99,102,241,0.1)', color: showSwarm ? '#fff' : '#6366f1', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              <EmojiIcon glyph="🧠" /> AI Swarm
             </button>
-            <button onClick={() => exportEntry(selected)} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>⬇ Export</button>
+            <button onClick={() => exportEntry(selected)} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}><EmojiIcon glyph="⬇" /> Export</button>
             {selected.status === 'in_review' && (
-              <button onClick={() => handleSign(selected)} style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: '#22c55e', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✍ Sign Entry</button>
+              <button onClick={() => handleSign(selected)} style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: '#22c55e', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}><EmojiIcon glyph="✍" /> Sign Entry</button>
             )}
             <button onClick={() => { setView('list'); setShowSwarm(false); }} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>← Back</button>
           </div>
@@ -428,13 +429,13 @@ export default function ELNPage() {
                         style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                           background: detailView === 'text' ? 'var(--primary)' : 'transparent',
                           color: detailView === 'text' ? '#fff' : 'var(--text)' }}>
-                        📝 Text
+                        <EmojiIcon glyph="📝" /> Text
                       </button>
                       <button type="button" onClick={() => setDetailView('handwrite')}
                         style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                           background: detailView === 'handwrite' ? 'var(--primary)' : 'transparent',
                           color: detailView === 'handwrite' ? '#fff' : 'var(--text)' }}>
-                        ✍️ Handwrite{selected.handwriting && selected.handwriting.pages?.some(p => p.strokes.length > 0) && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
+                        <EmojiIcon glyph="✍️" /> Handwrite{selected.handwriting && selected.handwriting.pages?.some(p => p.strokes.length > 0) && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
                       </button>
                     </div>
                   </div>
@@ -509,7 +510,7 @@ export default function ELNPage() {
                   </div>
                   {selected.signedBy && (
                     <div className="card" style={{ borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.05)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 4 }}>✍ Digitally Signed</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 4 }}><EmojiIcon glyph="✍" /> Digitally Signed</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>By {selected.signedBy}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selected.signedAt ? new Date(selected.signedAt).toLocaleString() : ''}</div>
                     </div>
@@ -544,8 +545,8 @@ export default function ELNPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => { swarm.setSwarmTab('generator'); setShowSwarm(true); setView('detail'); setSelected(entries[0] || { id: 0, title: 'New Experiment', template: 'custom', date: new Date().toISOString().slice(0, 10), author: authorName, status: 'draft' as EntryStatus, tags: [], fairTags: [] as FAIRTag[], data: {}, notes: '', figures: [], version: 1 }); }}
-            style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-            ✨ Generate Experiment
+            style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+            <EmojiIcon glyph="✨" /> Generate Experiment
           </button>
           <button onClick={() => setView('compose')} className="btn btn-primary">+ New Entry</button>
         </div>
@@ -575,7 +576,7 @@ export default function ELNPage() {
         </select>
         <select style={{ ...INP, maxWidth: 180 }} value={filterTemplate} onChange={e => setFilterTemplate(e.target.value)}>
           <option value="all">All Templates</option>
-          {TEMPLATES.map(t => <option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
+          {TEMPLATES.map(t => <option key={t.key} value={t.key}><EmojiIcon glyph={t.icon} /> {t.label}</option>)}
         </select>
       </div>
 
@@ -589,7 +590,7 @@ export default function ELNPage() {
             <div key={entry.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, cursor: 'pointer' }}
               onClick={() => { setSelected(entry); setView('detail'); }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 28, flexShrink: 0 }}>{tplDef?.icon || '📝'}</div>
+                <div style={{ fontSize: 28, flexShrink: 0 }}>{tplDef?.icon || <><EmojiIcon glyph="📝" /></>}</div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.title}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tplDef?.label} · {entry.author} · {entry.date} · v{entry.version}</div>
@@ -601,7 +602,7 @@ export default function ELNPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: sm.bg, color: sm.color }}>{sm.label}</span>
-                {entry.signedBy && <span title="Digitally signed" style={{ color: '#4ade80', fontSize: 16 }}>✍</span>}
+                {entry.signedBy && <span title="Digitally signed" style={{ color: '#4ade80', fontSize: 16 }}><EmojiIcon glyph="✍" /></span>}
               </div>
             </div>
           );

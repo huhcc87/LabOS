@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { grantVersionsApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Version {
   id: number;
@@ -181,8 +183,7 @@ export default function VersionHistoryPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Version History & Compare</h1>
-          <p className="page-subtitle">Track changes across all versions of your grant applications</p>
+          <LabBanner art="admin" title="Version History & Compare" subtitle="Track changes across all versions of your grant applications" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           {compareMode ? (
@@ -235,7 +236,7 @@ export default function VersionHistoryPage() {
       {compareMode && !showComparison && (
         <div className="card" style={{ background: 'var(--accent-light)', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 24 }}>📊</span>
+            <span style={{ fontSize: 24 }}><EmojiIcon glyph="📊" /></span>
             <div>
               <div style={{ fontWeight: 600 }}>Compare Mode Active</div>
               <div style={{ fontSize: 13, color: 'var(--text-soft)' }}>
@@ -272,7 +273,7 @@ export default function VersionHistoryPage() {
       {/* Empty State */}
       {versions.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: 48 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="📂" /></div>
           <div style={{ fontWeight: 600, marginBottom: 8 }}>No version snapshots yet</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
             Create your first snapshot to start tracking grant changes over time.

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { ApprovalStatus, SourceType, ProtocolType, Difficulty, BiosafetyLevel } from '../types/protocol.types'
 import { getApprovalBadge, getSourceBadge, getProtocolTypeBadge, getDifficultyBadge, getBiosafetyBadge } from '../utils/protocolStatus'
@@ -8,7 +9,7 @@ const badge = (b: { label: string; color: string; background: string; icon: stri
     borderRadius: 4, fontSize: 11, fontWeight: 600, letterSpacing: '0.03em',
     color: b.color, background: b.background, whiteSpace: 'nowrap', ...extra,
   }}>
-    <span>{b.icon}</span>{b.label}
+    <span><EmojiIcon glyph={b.icon} /></span>{b.label}
   </span>
 )
 
@@ -20,12 +21,12 @@ export const BiosafetyBadge = ({ level }: { level: BiosafetyLevel }) => badge(ge
 
 export const OpenAccessBadge = () => (
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, color: '#d1fae5', background: '#065f46', whiteSpace: 'nowrap' }}>
-    🔓 Open Access
+    <EmojiIcon glyph="🔓" /> Open Access
   </span>
 )
 
 export const AiGeneratedBadge = () => (
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, color: '#e9d5ff', background: '#4c1d95', whiteSpace: 'nowrap' }}>
-    🤖 AI Draft
+    <EmojiIcon glyph="🤖" /> AI Draft
   </span>
 )

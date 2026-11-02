@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import EmojiIcon from './EmojiIcon';
 
 const CUSTOM = '__custom__';
 
@@ -14,7 +15,7 @@ export function SelectOrCustom({ value, options, onChange, noneLabel, id, label,
         <input id={id} aria-label={label} className="form-input" autoFocus placeholder="Type your own…" value={value}
           onChange={e => onChange(e.target.value)} style={{ flex: 1 }} />
         <button type="button" className="btn btn-sm btn-secondary" title="Back to the list"
-          onClick={() => { setTyping(false); onChange(noneLabel !== undefined ? '' : options[0] ?? ''); }}>↩ List</button>
+          onClick={() => { setTyping(false); onChange(noneLabel !== undefined ? '' : options[0] ?? ''); }}><EmojiIcon glyph="↩" /> List</button>
       </div>
     );
   }

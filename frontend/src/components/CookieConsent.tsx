@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EmojiIcon from './EmojiIcon';
 
 const STORAGE_KEY = 'labos_cookie_consent';
 const CONSENT_VERSION = '1.0';
@@ -54,7 +55,7 @@ export function CookieConsent() {
         {!showDetails ? (
           /* Compact banner */
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 20, flexShrink: 0 }}>🍪</div>
+            <div style={{ fontSize: 20, flexShrink: 0 }}><EmojiIcon glyph="🍪" /></div>
             <div style={{ flex: 1, minWidth: 200 }}>
               <span style={{ fontSize: 14, color: 'var(--text, #e8eef4)' }}>
                 LabOS uses essential session cookies for authentication and optional analytics
@@ -96,7 +97,7 @@ export function CookieConsent() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text, #e8eef4)' }}>
-                🍪 Cookie Preferences
+                <EmojiIcon glyph="🍪" /> Cookie Preferences
               </h3>
               <button onClick={() => setShowDetails(false)} style={{
                 background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20,

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // SWARM CONSENSUS VIEW — Visualizes multi-agent agreement & scoring
 // ═══════════════════════════════════════════════════════════════════════════
@@ -58,7 +59,7 @@ export default function SwarmConsensusView({ consensus }: Props) {
             padding: '16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 16 }}>{dim.icon}</span>
+              <span style={{ fontSize: 16 }}><EmojiIcon glyph={dim.icon} /></span>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{dim.label}</span>
             </div>
             {/* Progress bar */}
@@ -81,7 +82,7 @@ export default function SwarmConsensusView({ consensus }: Props) {
       {consensus.topRecommendations.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
           <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-            💡 Top Recommendations (Consensus)
+            <EmojiIcon glyph="💡" /> Top Recommendations (Consensus)
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {consensus.topRecommendations.map((rec, i) => (
@@ -105,7 +106,7 @@ export default function SwarmConsensusView({ consensus }: Props) {
       {consensus.conflicts.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid #f59e0b40', borderRadius: 12, padding: 20 }}>
           <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#f59e0b' }}>
-            ⚠️ Agent Conflicts & Resolutions
+            <EmojiIcon glyph="⚠️" /> Agent Conflicts & Resolutions
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {consensus.conflicts.map((conflict, i) => (

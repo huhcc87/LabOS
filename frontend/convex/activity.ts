@@ -4,15 +4,17 @@ import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: { token: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const results = await ctx.db.query("activity").withIndex("by_created").order("desc").take(200);
     return { page: results };
   },
 });
 
 export const recent = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, { limit }) => {
+  args: { token: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, { token, limit }) => {
+    await requireAuth(ctx, token);
     return ctx.db.query("activity").withIndex("by_created").order("desc").take(limit ?? 20);
   },
 });
@@ -26,8 +28,9 @@ export const myActivity = query({
 });
 
 export const stats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()),},
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     const all = await ctx.db.query("activity").collect();
     const byAction: Record<string, number> = {};
     for (const a of all) { byAction[a.action] = (byAction[a.action] ?? 0) + 1; }

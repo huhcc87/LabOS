@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useMemo } from 'react'
 import type { ProtocolAnalytics, ExecutionSession } from '../types/protocol.types'
 
@@ -381,7 +382,7 @@ export default function ProtocolAnalyticsDashboard({ protocolId, protocolTitle, 
                   display: 'flex', alignItems: 'flex-start', gap: 10,
                   padding: 10, background: '#7f1d1d11', borderRadius: 6,
                 }}>
-                  <span style={{ color: '#ef4444', fontSize: 14 }}>⚠️</span>
+                  <span style={{ color: '#ef4444', fontSize: 14 }}><EmojiIcon glyph="⚠️" /></span>
                   <div style={{ flex: 1 }}>
                     <div style={{ color: '#fca5a5', fontSize: 12, lineHeight: 1.4 }}>
                       {item.reason.length > 60 ? item.reason.slice(0, 60) + '...' : item.reason}

@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ActionItem, ActionItemStatus } from '../types/meeting.types'
 import { ActionStatusBadge, PriorityBadge } from './MeetingBadges'
@@ -122,14 +123,14 @@ export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove,
                   </div>
                   {item.description && <div style={{ color: '#64748b', fontSize: 12, marginBottom: 6 }}>{item.description}</div>}
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <span style={{ color: '#475569', fontSize: 12 }}>👤 {item.assignedToName} <span style={{ color: '#94a3b8' }}>({item.assignedToRole})</span></span>
+                    <span style={{ color: '#475569', fontSize: 12 }}><EmojiIcon glyph="👤" /> {item.assignedToName} <span style={{ color: '#94a3b8' }}>({item.assignedToRole})</span></span>
                     <span style={{ color: isOverdue && item.status !== 'completed' ? '#ef4444' : '#94a3b8', fontSize: 12, fontWeight: isOverdue ? 700 : 400 }}>
-                      📅 Due: {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      <EmojiIcon glyph="📅" /> Due: {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       {item.status !== 'completed' && item.status !== 'cancelled' && (
                         <span> ({daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : daysUntilDue === 0 ? 'today' : `${daysUntilDue}d left`})</span>
                       )}
                     </span>
-                    <span style={{ color: '#94a3b8', fontSize: 11 }}>📋 {item.meetingTitle}</span>
+                    <span style={{ color: '#94a3b8', fontSize: 11 }}><EmojiIcon glyph="📋" /> {item.meetingTitle}</span>
                     <span style={{ color: '#94a3b8', fontSize: 11 }}>by {item.assignedBy}</span>
                   </div>
                   {item.notes && <div style={{ marginTop: 6, color: '#475569', fontSize: 12, fontStyle: 'italic' }}>Note: {item.notes}</div>}
@@ -146,7 +147,7 @@ export default function ActionItemsPanel({ items, isPiOrAdmin, isManagerOrAbove,
                     {item.status === 'open' && (
                       <button onClick={() => onUpdateStatus(item.id, 'in_progress')}
                         style={{ background: '#eff6ff', border: 'none', borderRadius: 6, color: '#6366f1', padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>
-                        ▶ Start
+                        <EmojiIcon glyph="▶" /> Start
                       </button>
                     )}
                     <button onClick={() => { setEditingId(item.id); setAdding(false) }}

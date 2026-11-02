@@ -319,3 +319,46 @@ export function RackDialog({ count, initialName, onSubmit, onClose }: {
     </Modal>
   );
 }
+
+export interface QuickSetup { shelves: number; racks: number; boxes: number; rows: number; cols: number; names: string[] }
+
+const shelfName = (i: number, n: number) => (i === 0 ? 'Top Shelf' : i === n - 1 && n > 1 ? 'Bottom Shelf' : `${ordinal(i + 1)} Shelf`);
+
+/** Build the whole freezer in one go: shelves, racks on each shelf, and (optionally) empty boxes in every rack. */
+export function QuickSetupDialog({ onSubmit, onClose }: { onSubmit: (v: QuickSetup) => Promise<void>; onClose: () => void }) {
+  const [shelves, setShelves] = useState(5);
+  const [racks, setRacks] = useState(4);
+  const [boxes, setBoxes] = useState(0);
+  const [rows, setRows] = useState(9);
+  const [cols, setCols] = useState(9);
+  const bad = shelves < 1 || shelves > 12 || racks < 1 || racks > 12 || boxes < 0 || boxes > 12 || rows < 1 || rows > 26 || cols < 1 || cols > 26;
+  const names = Array.from({ length: shelves }, (_, i) => shelfName(i, shelves));
+  const { busy, error, run } = useSubmit(() => onSubmit({ shelves, racks, boxes, rows, cols, names }), onClose);
+  const num = (id: string, text: string, value: number, set: (n: number) => void, max: number, min = 1) => (
+    <div style={field}>
+      <label style={label} htmlFor={id}>{text}</label>
+      <input id={id} type="number" min={min} max={max} className="form-input" style={{ width: '100%' }} value={value} onChange={e => set(Number(e.target.value))} />
+    </div>
+  );
+  return (
+    <Modal title="Quick setup" onClose={onClose}>
+      <form onSubmit={run}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 0 }}>Adds shelves (Top Shelf, 2nd Shelf, … Bottom Shelf) with racks (Rack #1, #2, …). You can rename or change anything afterwards.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {num('qs-shelves', 'Shelves', shelves, setShelves, 12)}
+          {num('qs-racks', 'Racks on each shelf', racks, setRacks, 12)}
+          {num('qs-boxes', 'Empty boxes in each rack', boxes, setBoxes, 12, 0)}
+          <div />
+          {boxes > 0 && num('qs-rows', 'Box rows', rows, setRows, 26)}
+          {boxes > 0 && num('qs-cols', 'Box columns', cols, setCols, 26)}
+        </div>
+        <p style={{ fontSize: 13, margin: '0 0 12px' }}>This creates {shelves} shelves, {shelves * racks} racks{boxes > 0 ? ` and ${shelves * racks * boxes} boxes` : ''}.</p>
+        {error && <p role="alert" style={{ color: 'var(--bad-text)', fontSize: 13 }}>{error}</p>}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={busy || bad}>{busy ? 'Building…' : 'Build freezer'}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

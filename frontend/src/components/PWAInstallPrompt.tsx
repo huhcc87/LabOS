@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EmojiIcon from './EmojiIcon';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -72,7 +73,7 @@ export function PWAInstallPrompt() {
         animation: 'slideUp 0.35s cubic-bezier(.16,1,.3,1)',
         maxWidth: 480, margin: '0 auto',
       }}>
-        <div style={{ fontSize: 28, flexShrink: 0 }}>🧬</div>
+        <div style={{ fontSize: 28, flexShrink: 0 }}><EmojiIcon glyph="🧬" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>Install LabOS</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
@@ -104,7 +105,7 @@ export function PWAInstallPrompt() {
             boxShadow: '0 -8px 40px rgba(0,0,0,0.4)',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16, color: 'var(--text, #fff)' }}>
-              📱 Add LabOS to Home Screen
+              <EmojiIcon glyph="📱" /> Add LabOS to Home Screen
             </div>
             {[
               { icon: '1️⃣', text: 'Tap the Share button (□↑) in Safari\'s bottom toolbar' },
@@ -112,7 +113,7 @@ export function PWAInstallPrompt() {
               { icon: '3️⃣', text: 'Tap "Add" in the top-right corner' },
             ].map(s => (
               <div key={s.icon} style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{s.icon}</span>
+                <span style={{ fontSize: 22, flexShrink: 0 }}><EmojiIcon glyph={s.icon} /></span>
                 <span style={{ fontSize: 14, color: 'var(--text-muted, #8fa3b8)', lineHeight: 1.5 }}>{s.text}</span>
               </div>
             ))}

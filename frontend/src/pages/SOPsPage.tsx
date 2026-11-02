@@ -6,6 +6,7 @@ import type { Column } from '../components/Table';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { sopsApi } from '../lib/api';
+import LabBanner from '../components/LabBanner';
 
 interface SOP {
   id: number;
@@ -204,8 +205,7 @@ export default function SOPsPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>SOPs Library</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Standard Operating Procedures</p>
+          <LabBanner art="lab" title="SOPs Library" subtitle="Standard Operating Procedures" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button
           style={{ padding: '7px 16px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}

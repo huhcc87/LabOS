@@ -5,6 +5,7 @@
  * IMPORTANT: Change the default password immediately after first login!
  */
 import { internalAction, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -49,12 +50,18 @@ export const insertAdmin = internalMutation({
       .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
+    // Every account must belong to a lab, or the app has nothing to show it. Give a lab-less admin one.
+    const ensureLab = async (userId: Id<"users">) => {
+      const labId = await ctx.db.insert("labs", { name: "My Lab", pi_user_id: userId, created_at: Date.now() });
+      await ctx.db.patch(userId, { home_lab_id: labId, updated_at: Date.now() });
+    };
     if (existing) {
+      if (!existing.home_lab_id) { await ensureLab(existing._id); return `Admin ${email} was missing a lab: created "My Lab" for it`; }
       return `Admin already exists: ${email}`;
     }
 
     const now = Date.now();
-    await ctx.db.insert("users", {
+    const userId = await ctx.db.insert("users", {
       email,
       hashed_password,
       full_name,
@@ -67,6 +74,7 @@ export const insertAdmin = internalMutation({
       updated_at: now,
     });
 
-    return `Admin created: ${email} — CHANGE PASSWORD ON FIRST LOGIN`;
+    await ensureLab(userId);
+    return `Admin created: ${email} (lab "My Lab")`;
   },
 });

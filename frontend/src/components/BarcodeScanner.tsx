@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Modal } from './Modal';
+import EmojiIcon from './EmojiIcon';
 
 // Instructions for enabling camera in different browsers
 const CAMERA_PERMISSION_HELP = {
@@ -508,7 +509,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
             border: '2px solid #22c55e',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 24 }}>✅</span>
+              <span style={{ fontSize: 24 }}><EmojiIcon glyph="✅" /></span>
               <span style={{ fontWeight: 700, color: '#166534', fontSize: 16 }}>Product Found!</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
@@ -520,7 +521,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
               <div><strong>Unit:</strong> {productInfo.unit}</div>
               {productInfo.hazardClass && (
                 <div style={{ gridColumn: 'span 2', color: '#dc2626' }}>
-                  <strong>⚠️ Hazard:</strong> {productInfo.hazardClass}
+                  <strong><EmojiIcon glyph="⚠️" /> Hazard:</strong> {productInfo.hazardClass}
                 </div>
               )}
             </div>
@@ -566,7 +567,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
             textAlign: 'center',
             border: '2px solid #6366f1',
           }}>
-            <div style={{ fontSize: 48, marginBottom: 12, animation: 'pulse 1.5s infinite' }}>🔍</div>
+            <div style={{ fontSize: 48, marginBottom: 12, animation: 'pulse 1.5s infinite' }}><EmojiIcon glyph="🔍" /></div>
             <div style={{ fontWeight: 700, color: '#4338ca', fontSize: 16, marginBottom: 8 }}>
               Searching Online Database...
             </div>
@@ -589,7 +590,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
             border: '2px solid #f59e0b',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 24 }}>⚠️</span>
+              <span style={{ fontSize: 24 }}><EmojiIcon glyph="⚠️" /></span>
               <span style={{ fontWeight: 700, color: '#b45309', fontSize: 16 }}>Product Not Found</span>
             </div>
             <div style={{ fontSize: 13, color: '#92400e', marginBottom: 12 }}>
@@ -630,7 +631,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
               </button>
             </div>
             <div style={{ marginTop: 12, padding: 10, background: '#fff', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
-              💡 <strong>Tip:</strong> You can add this product to the database after entering its details manually.
+              <EmojiIcon glyph="💡" /> <strong>Tip:</strong> You can add this product to the database after entering its details manually.
             </div>
           </div>
         )}
@@ -648,13 +649,13 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                     padding: 16,
                     marginBottom: 16,
                   }}>
-                    <div style={{ fontWeight: 600, marginBottom: 8, color: '#dc2626' }}>⚠️ Camera Access Issue</div>
+                    <div style={{ fontWeight: 600, marginBottom: 8, color: '#dc2626' }}><EmojiIcon glyph="⚠️" /> Camera Access Issue</div>
                     <div style={{ fontSize: 13, marginBottom: 12, color: '#dc2626' }}>{error}</div>
 
                     {/* Browser-specific help */}
                     <div style={{ background: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, border: '1px solid #fecaca' }}>
                       <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 6, color: '#374151' }}>
-                        📋 How to enable camera:
+                        <EmojiIcon glyph="📋" /> How to enable camera:
                       </div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>
                         {CAMERA_PERMISSION_HELP[getBrowser()]}
@@ -675,7 +676,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                           fontSize: 13,
                         }}
                       >
-                        🔄 Retry
+                        <EmojiIcon glyph="🔄" /> Retry
                       </button>
                       <button
                         onClick={() => switchScanMode('usb')}
@@ -690,7 +691,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                           fontSize: 13,
                         }}
                       >
-                        🔌 USB Scanner
+                        <EmojiIcon glyph="🔌" /> USB Scanner
                       </button>
                       <button
                         onClick={() => switchScanMode('upload')}
@@ -705,7 +706,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                           fontSize: 13,
                         }}
                       >
-                        📁 Upload Photo
+                        <EmojiIcon glyph="📁" /> Upload Photo
                       </button>
                     </div>
                   </div>
@@ -727,7 +728,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                         >
                           {cameras.map((cam, i) => (
                             <option key={cam.deviceId} value={cam.deviceId}>
-                              📷 {cam.label || `Camera ${i + 1}`}
+                               {cam.label || `Camera ${i + 1}`}
                             </option>
                           ))}
                         </select>
@@ -774,7 +775,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
 
                     <div style={{ textAlign: 'center', marginTop: 12 }}>
                       <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>
-                        {scanning ? '📷 Position barcode inside the frame...' : '⏳ Initializing camera...'}
+                        {scanning ? <><EmojiIcon glyph="📷" />{" Position barcode inside the frame..."}</> : <><EmojiIcon glyph="⏳" />{" Initializing camera..."}</>}
                       </p>
                     </div>
                   </>
@@ -792,7 +793,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                   textAlign: 'center',
                   marginBottom: 16,
                 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔌</div>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}><EmojiIcon glyph="🔌" /></div>
                   <div style={{ fontWeight: 700, fontSize: 16, color: '#166534', marginBottom: 8 }}>
                     USB/Bluetooth Scanner Ready
                   </div>
@@ -820,7 +821,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                   />
                 </div>
                 <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12, fontSize: 12, color: '#64748b' }}>
-                  <strong>💡 Tip:</strong> Most USB/Bluetooth barcode scanners work like keyboards.
+                  <strong><EmojiIcon glyph="💡" /> Tip:</strong> Most USB/Bluetooth barcode scanners work like keyboards.
                   Just scan and the barcode will auto-fill. Press Enter or scan will submit automatically.
                 </div>
               </div>
@@ -856,7 +857,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                           color: '#fff',
                           fontWeight: 600,
                         }}>
-                          🔍 Scanning...
+                          <EmojiIcon glyph="🔍" /> Scanning...
                         </div>
                       )}
                     </div>
@@ -878,7 +879,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                         cursor: 'pointer',
                       }}
                     >
-                      📁 Upload Different Image
+                      <EmojiIcon glyph="📁" /> Upload Different Image
                     </button>
                   </div>
                 ) : (
@@ -896,7 +897,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                     onMouseOver={(e) => e.currentTarget.style.borderColor = '#6366f1'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
                   >
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>📁</div>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}><EmojiIcon glyph="📁" /></div>
                     <div style={{ fontWeight: 600, color: '#374151', marginBottom: 8 }}>
                       Click to upload barcode image
                     </div>
@@ -907,7 +908,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                 )}
 
                 <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12, fontSize: 12, color: '#64748b' }}>
-                  <strong>💡 Tip:</strong> For best results, ensure the barcode is well-lit,
+                  <strong><EmojiIcon glyph="💡" /> Tip:</strong> For best results, ensure the barcode is well-lit,
                   in focus, and takes up a good portion of the image.
                 </div>
               </div>
@@ -941,7 +942,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                 {/* Sample Barcodes for Testing */}
                 <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 16 }}>
                   <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13, color: '#475569' }}>
-                    🧪 Try these sample catalog numbers:
+                    <EmojiIcon glyph="🧪" /> Try these sample catalog numbers:
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {['M0267S', '10128016', 'E7023', '69504', '89092'].map(code => (
@@ -979,7 +980,7 @@ export function BarcodeScanner({ isOpen, onClose, onScan, mode = 'simple' }: Bar
                     cursor: manualInput.trim() ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  {mode === 'autofill' ? '🔍 Look Up Product' : '✓ Use Barcode'}
+                  {mode === 'autofill' ? <><EmojiIcon glyph="🔍" />{" Look Up Product"}</> : '✓ Use Barcode'}
                 </button>
               </div>
             )}

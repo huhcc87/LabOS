@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { UserRole } from '../lib/types';
@@ -68,6 +68,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(result.token);
     setLoading(true);
   }, [loginAction]);
+
+  // Dev-only auto-login: set VITE_DEV_AUTOLOGIN_EMAIL/PASSWORD in the gitignored .env.development.local
+  // (Vite never loads that file for production builds). Never runs off localhost.
+  const autoLoginTried = useRef(false);
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const email = import.meta.env.VITE_DEV_AUTOLOGIN_EMAIL;
+    const password = import.meta.env.VITE_DEV_AUTOLOGIN_PASSWORD;
+    if (!email || !password || user || loading || autoLoginTried.current) return;
+    autoLoginTried.current = true;
+    if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) return;
+    login(email, password).catch(() => { /* fall back to the normal login form */ });
+  }, [user, loading, login]);
 
   const register = useCallback(async (email: string, password: string, full_name: string) => {
     const result = await registerAction({ email, password, full_name });

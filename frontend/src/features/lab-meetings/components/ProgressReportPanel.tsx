@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ProgressReport } from '../types/meeting.types'
 
@@ -64,13 +65,13 @@ export default function ProgressReportPanel({ reports, isPiOrAdmin, currentUserN
               <div style={{ color: '#16a34a', fontWeight: 700, fontSize: 13, marginBottom: 4 }}>✓ Your progress report is submitted</div>
               {myReport.status === 'acknowledged' && myReport.piComment && (
                 <div style={{ color: '#166534', fontSize: 13, marginTop: 8, padding: '8px 12px', background: '#dcfce7', borderRadius: 6 }}>
-                  💬 PI feedback: <em>{myReport.piComment}</em>
+                  <EmojiIcon glyph="💬" /> PI feedback: <em>{myReport.piComment}</em>
                 </div>
               )}
             </div>
           ) : showForm ? null : (
             <button onClick={() => setShowForm(true)} style={{ background: '#6366f1', border: 'none', borderRadius: 8, color: '#fff', padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-              📊 Submit Progress Report for {meetingTitle}
+              <EmojiIcon glyph="📊" /> Submit Progress Report for {meetingTitle}
             </button>
           )}
         </div>
@@ -119,7 +120,7 @@ export default function ProgressReportPanel({ reports, isPiOrAdmin, currentUserN
                 </div>
               </div>
               <span style={{ background: r.status === 'acknowledged' ? '#dcfce7' : '#fef9c3', color: r.status === 'acknowledged' ? '#16a34a' : '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                {r.status === 'acknowledged' ? '✓ Acknowledged' : '📬 Submitted'}
+                {r.status === 'acknowledged' ? '✓ Acknowledged' : <><EmojiIcon glyph="📬" />{" Submitted"}</>}
               </span>
             </div>
 
@@ -128,32 +129,32 @@ export default function ProgressReportPanel({ reports, isPiOrAdmin, currentUserN
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {r.accomplishments.length > 0 && (
                 <div>
-                  <div style={{ color: '#16a34a', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>✅ ACCOMPLISHMENTS</div>
+                  <div style={{ color: '#16a34a', fontSize: 11, fontWeight: 700, marginBottom: 4 }}><EmojiIcon glyph="✅" /> ACCOMPLISHMENTS</div>
                   {r.accomplishments.map((a, i) => <div key={i} style={{ color: '#1e293b', fontSize: 12, marginBottom: 2 }}>• {a}</div>)}
                 </div>
               )}
               {r.challenges.length > 0 && (
                 <div>
-                  <div style={{ color: '#dc2626', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>⚠ CHALLENGES</div>
+                  <div style={{ color: '#dc2626', fontSize: 11, fontWeight: 700, marginBottom: 4 }}><EmojiIcon glyph="⚠" /> CHALLENGES</div>
                   {r.challenges.map((c, i) => <div key={i} style={{ color: '#1e293b', fontSize: 12, marginBottom: 2 }}>• {c}</div>)}
                 </div>
               )}
             </div>
             {r.nextSteps.length > 0 && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ color: '#6366f1', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>➡ NEXT STEPS</div>
+                <div style={{ color: '#6366f1', fontSize: 11, fontWeight: 700, marginBottom: 4 }}><EmojiIcon glyph="➡" /> NEXT STEPS</div>
                 {r.nextSteps.map((n, i) => <div key={i} style={{ color: '#1e293b', fontSize: 12, marginBottom: 2 }}>• {n}</div>)}
               </div>
             )}
             {r.papersRead && r.papersRead.length > 0 && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>📖 PAPERS READ</div>
+                <div style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 700, marginBottom: 4 }}><EmojiIcon glyph="📖" /> PAPERS READ</div>
                 {r.papersRead.map((p, i) => <div key={i} style={{ color: '#475569', fontSize: 12, marginBottom: 2 }}>• {p}</div>)}
               </div>
             )}
             {r.piComment && (
               <div style={{ marginTop: 10, padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6 }}>
-                <span style={{ color: '#1e40af', fontSize: 12 }}>💬 PI: <em>{r.piComment}</em></span>
+                <span style={{ color: '#1e40af', fontSize: 12 }}><EmojiIcon glyph="💬" /> PI: <em>{r.piComment}</em></span>
               </div>
             )}
             {isPiOrAdmin && r.status === 'submitted' && (

@@ -1,4 +1,5 @@
 import React from 'react'
+import EmojiIcon from '../../../components/EmojiIcon'
 import type { MeetingType, MeetingStatus, ActionItemStatus, ActionItemPriority, AgendaItemStatus, AttendanceStatus } from '../types/meeting.types'
 import { getMeetingTypeLabel, getMeetingTypeColor, getMeetingTypeIcon, getStatusColor, getPriorityColor } from '../utils/meetingUtils'
 
@@ -10,14 +11,14 @@ const badge = (label: string, color: string, icon?: string): React.CSSProperties
 
 export function MeetingTypeBadge({ type }: { type: MeetingType }) {
   const color = getMeetingTypeColor(type)
-  return <span style={badge(getMeetingTypeLabel(type), color)}>{getMeetingTypeIcon(type)} {getMeetingTypeLabel(type)}</span>
+  return <span style={badge(getMeetingTypeLabel(type), color)}><EmojiIcon glyph={getMeetingTypeIcon(type)} /> {getMeetingTypeLabel(type)}</span>
 }
 
 export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
   const labels: Record<MeetingStatus, string> = { scheduled: 'Scheduled', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled' }
   const icons: Record<MeetingStatus, string> = { scheduled: '📅', in_progress: '▶', completed: '✓', cancelled: '✕' }
   const color = getStatusColor(status)
-  return <span style={badge(labels[status], color)}>{icons[status]} {labels[status]}</span>
+  return <span style={badge(labels[status], color)}><EmojiIcon glyph={icons[status]} /> {labels[status]}</span>
 }
 
 export function ActionStatusBadge({ status }: { status: ActionItemStatus }) {
@@ -43,5 +44,5 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
   const labels: Record<AttendanceStatus, string> = { present: 'Present', absent: 'Absent', remote: 'Remote', excused: 'Excused' }
   const icons: Record<AttendanceStatus, string> = { present: '✓', absent: '✕', remote: '💻', excused: '~' }
   const color = getStatusColor(status)
-  return <span style={badge(labels[status], color)}>{icons[status]} {labels[status]}</span>
+  return <span style={badge(labels[status], color)}><EmojiIcon glyph={icons[status]} /> {labels[status]}</span>
 }

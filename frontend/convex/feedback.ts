@@ -4,7 +4,8 @@ import { requireAuth } from "./authHelper";
 
 export const list = query({
   args: { token: v.optional(v.string()), search: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
-  handler: async (ctx) => {
+  handler: async (ctx, { token }) => {
+    await requireAuth(ctx, token);
     return await ctx.db.query("feedback").order("desc").collect();
   },
 });

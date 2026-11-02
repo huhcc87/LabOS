@@ -6,6 +6,8 @@ import type { Column } from '../components/Table';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { costsApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface CostEntry {
   id: number;
@@ -250,8 +252,7 @@ export default function CostTrackingPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Cost Tracking</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Track lab expenses by project and category</p>
+          <LabBanner art="inventory" title="Cost Tracking" subtitle="Track lab expenses by project and category" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={exportToCSV} style={{
@@ -391,7 +392,7 @@ export default function CostTrackingPage() {
 
         {!loading && costs.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>💰</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="💰" /></div>
             <p>No expenses found</p>
           </div>
         )}

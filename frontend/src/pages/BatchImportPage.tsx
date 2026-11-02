@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface ImportRecord {
   row: number;
@@ -119,8 +121,7 @@ export default function BatchImportPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Batch Import</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Import samples, inventory, and more from CSV/Excel</p>
+          <LabBanner art="admin" title="Batch Import" subtitle="Import samples, inventory, and more from CSV/Excel" style={{ flex: 1, minWidth: 0 }} />
         </div>
         {step !== 'select' && (
           <button onClick={reset} style={{
@@ -229,7 +230,7 @@ export default function BatchImportPage() {
               }}
             >
               <input {...getInputProps()} />
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📤</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📤" /></div>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
                 {isDragActive ? 'Drop the file here...' : 'Drag & drop a CSV file here'}
               </p>
@@ -316,7 +317,7 @@ export default function BatchImportPage() {
         {/* Step 4: Complete */}
         {step === 'complete' && (
           <div style={{ maxWidth: 400, margin: '60px auto', textAlign: 'center' }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
+            <div style={{ fontSize: 64, marginBottom: 16 }}><EmojiIcon glyph="✅" /></div>
             <h2 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 700 }}>Import Complete!</h2>
             <p style={{ margin: 0, fontSize: 15, color: 'var(--text-muted)' }}>
               Successfully imported {validCount} records

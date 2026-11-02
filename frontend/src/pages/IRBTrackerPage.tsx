@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Protocol {
   id: number;
@@ -86,8 +88,7 @@ export default function IRBTrackerPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">IRB/IACUC Protocol Tracker</h1>
-          <p className="page-subtitle">Manage human subjects and animal research protocols</p>
+          <LabBanner art="safety" title="IRB/IACUC Protocol Tracker" subtitle="Manage human subjects and animal research protocols" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowNewProtocol(true)}>+ New Protocol</button>
@@ -124,7 +125,7 @@ export default function IRBTrackerPage() {
       {expiringCount > 0 && (
         <div className="card" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 24 }}>⚠️</span>
+            <span style={{ fontSize: 24 }}><EmojiIcon glyph="⚠️" /></span>
             <div>
               <div style={{ fontWeight: 600, color: '#ef4444' }}>Protocol Renewal Required</div>
               <div style={{ fontSize: 13, color: 'var(--text-soft)' }}>

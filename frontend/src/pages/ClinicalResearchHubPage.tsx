@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // ─── Shared ──────────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
@@ -134,8 +136,7 @@ export default function ClinicalResearchHubPage() {
     <div className="page" style={{ maxWidth: 1300, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Clinical Research Hub</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>IRB management · Patient cohorts · Clinical trial tracking · Adverse events</p>
+        <LabBanner art="lab" title="Clinical Research Hub" subtitle="IRB management · Patient cohorts · Clinical trial tracking · Adverse events" style={{ flex: 1, minWidth: 0 }} />
       </div>
 
       {/* Stats */}
@@ -147,7 +148,7 @@ export default function ClinicalResearchHubPage() {
           { label: 'Unresolved AEs', value: events.filter(e => !e.resolved).length, icon: '⚠️', color: events.filter(e => !e.resolved).length > 0 ? '#f87171' : '#9ca3af' },
         ].map(s => (
           <div key={s.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 22 }}>{s.icon}</div>
+            <div style={{ fontSize: 22 }}><EmojiIcon glyph={s.icon} /></div>
             <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
           </div>
@@ -159,7 +160,7 @@ export default function ClinicalResearchHubPage() {
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '10px 18px', fontSize: 14, fontWeight: tab === t.key ? 600 : 400, border: 'none', background: 'none', cursor: 'pointer', color: tab === t.key ? 'var(--primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t.key ? 'var(--primary)' : 'transparent'}`, transition: 'all 0.15s' }}>
-            {t.icon} {t.label}
+            <EmojiIcon glyph={t.icon} /> {t.label}
           </button>
         ))}
       </div>
@@ -224,7 +225,7 @@ export default function ClinicalResearchHubPage() {
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         <button onClick={e => { e.stopPropagation(); }} style={{ padding: '5px 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>+ Amendment</button>
-                        <button onClick={e => { e.stopPropagation(); }} style={{ padding: '5px 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>⬇ Export</button>
+                        <button onClick={e => { e.stopPropagation(); }} style={{ padding: '5px 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><EmojiIcon glyph="⬇" /> Export</button>
                       </div>
                     </div>
                     {isSelected && (
@@ -246,7 +247,7 @@ export default function ClinicalResearchHubPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Patient Cohorts (De-identified)</h3>
             <div style={{ display: 'flex', gap: 8 }}>
-              <span style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', fontSize: 12, fontWeight: 600 }}>🔒 HIPAA Protected</span>
+              <span style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', fontSize: 12, fontWeight: 600 }}><EmojiIcon glyph="🔒" /> HIPAA Protected</span>
               <button className="btn btn-primary" onClick={() => comingSoon('New Cohort')}>+ New Cohort</button>
             </div>
           </div>
@@ -261,7 +262,7 @@ export default function ClinicalResearchHubPage() {
                       <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{c.name}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                         {c.disease} · IRB: {c.irbRef}
-                        {c.biobank && <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(99,102,241,0.15)', color: '#818cf8', fontSize: 11 }}>🧊 Biobank Linked</span>}
+                        {c.biobank && <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(99,102,241,0.15)', color: '#818cf8', fontSize: 11 }}><EmojiIcon glyph="🧊" /> Biobank Linked</span>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>

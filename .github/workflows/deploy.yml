@@ -5,53 +5,101 @@ on:
     branches: [main]
   workflow_dispatch:       # allow manual trigger from GitHub UI
 
+# Each job below runs only when its secret exists, so an unconfigured target is skipped instead of failing the run.
+#   CONVEX_DEPLOY_KEY  -> deploys the database functions (Convex dashboard -> Settings -> Deploy keys, production)
+#   FLY_API_TOKEN      -> deploys the old Python backend to Fly.io (not needed for the Convex app)
+#   VERCEL_TOKEN       -> builds and deploys the website from this workflow (Vercel's own Git integration also deploys it)
+
 jobs:
+  # ── Deploy Convex (the database and server functions the website calls) ───
+  # Must finish before the website goes out, or the new site calls functions that do not exist yet.
+  deploy-convex:
+    name: Deploy Convex
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Skip when CONVEX_DEPLOY_KEY is not set
+        if: env.CONVEX_DEPLOY_KEY == ''
+        run: echo "::warning::CONVEX_DEPLOY_KEY is not set, so Convex was NOT deployed. The website may call functions the server does not have yet. Deploy by hand with npx convex deploy."
+      - uses: actions/checkout@v4
+        if: env.CONVEX_DEPLOY_KEY != ''
+      - uses: actions/setup-node@v4
+        if: env.CONVEX_DEPLOY_KEY != ''
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        if: env.CONVEX_DEPLOY_KEY != ''
+      - run: npx convex deploy --yes
+        if: env.CONVEX_DEPLOY_KEY != ''
+
   # ── Deploy backend to Fly.io ────────────────────────────────────────────
   deploy-backend:
     name: Deploy backend → Fly.io
     runs-on: ubuntu-latest
     environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
     steps:
+      - name: Skip when FLY_API_TOKEN is not set
+        if: env.FLY_API_TOKEN == ''
+        run: echo "FLY_API_TOKEN is not set, skipping the Fly.io deploy."
       - uses: actions/checkout@v4
-
+        if: env.FLY_API_TOKEN != ''
       - uses: superfly/flyctl-actions/setup-flyctl@master
-
+        if: env.FLY_API_TOKEN != ''
       - name: Deploy
+        if: env.FLY_API_TOKEN != ''
         run: flyctl deploy --remote-only
         working-directory: backend
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   # ── Deploy frontend to Vercel ───────────────────────────────────────────
   deploy-frontend:
     name: Deploy frontend → Vercel
     runs-on: ubuntu-latest
     environment: production
-    needs: deploy-backend      # wait for backend to be live first
+    needs: [deploy-convex, deploy-backend]     # server first, then the website
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
+      - name: Skip when VERCEL_TOKEN is not set
+        if: env.VERCEL_TOKEN == ''
+        run: echo "VERCEL_TOKEN is not set, skipping. Vercel's Git integration still deploys the website."
       - uses: actions/checkout@v4
+        if: env.VERCEL_TOKEN != ''
 
       - uses: actions/setup-node@v4
+        if: env.VERCEL_TOKEN != ''
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Vercel CLI
+        if: env.VERCEL_TOKEN != ''
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment
+        if: env.VERCEL_TOKEN != ''
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: frontend
 
       - name: Build
+        if: env.VERCEL_TOKEN != ''
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: frontend
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Deploy
+        if: env.VERCEL_TOKEN != ''
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: frontend

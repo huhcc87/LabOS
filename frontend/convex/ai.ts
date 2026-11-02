@@ -1,6 +1,7 @@
 import { action } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
+import { callOllama } from "./ollama";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,10 @@ async function callAI(
   systemPrompt: string,
   maxTokens = 1024
 ): Promise<{ text: string; source: string }> {
+  // Local Ollama first when a model is configured: free and private.
+  const local = await callOllama(messages, systemPrompt, maxTokens);
+  if (local) return { text: local, source: "ollama" };
+
   if (process.env.DEEPSEEK_API_KEY) {
     try {
       const text = await callDeepSeek(messages, systemPrompt, maxTokens);

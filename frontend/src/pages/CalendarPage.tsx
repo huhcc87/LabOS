@@ -8,6 +8,7 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { downloadBlob } from '../lib/utils';
 import api from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 const localizer = momentLocalizer(moment);
 
@@ -406,7 +407,7 @@ export default function CalendarPage() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={handleExportIcs} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-muted)', padding: '8px 14px', cursor: 'pointer', fontSize: 13 }}>
-              ⬇ Export ICS
+              <EmojiIcon glyph="⬇" /> Export ICS
             </button>
             <button
               onClick={() => { setEditing(null); resetForm(); setModalOpen(true); }}
@@ -490,7 +491,7 @@ export default function CalendarPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
               <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🗓</span> Upcoming Events
+                <span><EmojiIcon glyph="🗓" /></span> Upcoming Events
               </div>
               {upcomingEvents.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>No upcoming events</div>
@@ -511,7 +512,7 @@ export default function CalendarPage() {
                         {moment(ev.start).format('MMM D, h:mm a')}
                       </div>
                       {ev.resource?.location && (
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {ev.resource.location}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}><EmojiIcon glyph="📍" /> {ev.resource.location}</div>
                       )}
                     </div>
                   ))}
@@ -531,7 +532,7 @@ export default function CalendarPage() {
                 ))}
               </div>
               <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                💡 Click any event to edit or reschedule it.
+                <EmojiIcon glyph="💡" /> Click any event to edit or reschedule it.
               </div>
             </div>
           </div>
@@ -610,7 +611,7 @@ export default function CalendarPage() {
           {/* Feature 5: Quick Reschedule (edit only) */}
           {editing && (
             <div className="form-group" style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border)' }}>
-              <label style={{ ...lbl, marginBottom: 8 }}>⚡ Quick Reschedule</label>
+              <label style={{ ...lbl, marginBottom: 8 }}><EmojiIcon glyph="⚡" /> Quick Reschedule</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {[
                   { label: '+1 Day', days: 1 }, { label: '+3 Days', days: 3 },
@@ -657,7 +658,7 @@ export default function CalendarPage() {
             </div>
             {recurrenceRule !== 'none' && (
               <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 6 }}>
-                ⚠ Recurring events will be created from start date to end date
+                <EmojiIcon glyph="⚠" /> Recurring events will be created from start date to end date
               </div>
             )}
           </div>

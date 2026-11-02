@@ -15,6 +15,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 25;
 
     let results;
@@ -50,8 +51,9 @@ export const list = query({
 });
 
 export const get = query({
-  args: { id: v.id("tasks") },
+  args: { token: v.optional(v.string()), id: v.id("tasks") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     return await ctx.db.get(args.id);
   },
 });

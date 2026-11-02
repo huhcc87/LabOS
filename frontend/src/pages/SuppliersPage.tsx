@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { suppliersApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -259,10 +261,7 @@ export default function SuppliersPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Suppliers & Procurement</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-          Manage your lab supplier directory and purchase orders
-        </p>
+        <LabBanner art="inventory" title="Suppliers & Procurement" subtitle="Manage your lab supplier directory and purchase orders" style={{ flex: 1, minWidth: 0 }} />
       </div>
 
       {/* Stats row */}
@@ -274,7 +273,7 @@ export default function SuppliersPage() {
           { icon: '📋', label: 'Open POs',         value: openOrderStats, color: '#a78bfa' },
         ].map(s => (
           <div key={s.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 26, marginBottom: 4 }}>{s.icon}</div>
+            <div style={{ fontSize: 26, marginBottom: 4 }}><EmojiIcon glyph={s.icon} /></div>
             <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
           </div>
@@ -291,7 +290,7 @@ export default function SuppliersPage() {
             fontWeight: activeTab === tab ? 600 : 400, fontSize: 14, marginBottom: -1,
             textTransform: 'capitalize',
           }}>
-            {tab === 'suppliers' ? '🏭 Suppliers' : '📋 Purchase Orders'}
+            {tab === 'suppliers' ? <><EmojiIcon glyph="🏭" />{" Suppliers"}</> : <><EmojiIcon glyph="📋" />{" Purchase Orders"}</>}
           </button>
         ))}
       </div>
@@ -303,7 +302,7 @@ export default function SuppliersPage() {
           <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               className="form-input"
-              placeholder="🔍 Search suppliers..."
+              placeholder="Search suppliers..."
               style={{ flex: 1, minWidth: 200 }}
               value={suppSearch}
               onChange={e => setSuppSearch(e.target.value)}
@@ -331,12 +330,12 @@ export default function SuppliersPage() {
 
           {suppLoading ? (
             <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+              <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="⏳" /></div>
               <div>Loading suppliers...</div>
             </div>
           ) : suppliers.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🏭</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🏭" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Suppliers Found</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>
                 {suppSearch || categoryFilter || statusFilter
@@ -362,12 +361,12 @@ export default function SuppliersPage() {
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-                            🏭
+                            <EmojiIcon glyph="🏭" />
                           </div>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>
                               {s.company}
-                              {s.is_preferred && <span style={{ marginLeft: 6, fontSize: 11, color: '#fbbf24' }}>⭐</span>}
+                              {s.is_preferred && <span style={{ marginLeft: 6, fontSize: 11, color: '#fbbf24' }}><EmojiIcon glyph="⭐" /></span>}
                             </div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.supplier_id}</div>
                           </div>
@@ -427,12 +426,12 @@ export default function SuppliersPage() {
 
           {ordersLoading ? (
             <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+              <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="⏳" /></div>
               <div>Loading orders...</div>
             </div>
           ) : orders.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📋" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Purchase Orders</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>
                 {orderStatusFilter !== 'all' ? 'No orders with this status' : 'Create your first purchase order'}
@@ -507,7 +506,7 @@ export default function SuppliersPage() {
               <div>
                 <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
                   {selectedSupplier.company}
-                  {selectedSupplier.is_preferred && <span style={{ marginLeft: 8, color: '#fbbf24', fontSize: 18 }}>⭐</span>}
+                  {selectedSupplier.is_preferred && <span style={{ marginLeft: 8, color: '#fbbf24', fontSize: 18 }}><EmojiIcon glyph="⭐" /></span>}
                 </h2>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedSupplier.supplier_id}</span>
               </div>
@@ -560,10 +559,10 @@ export default function SuppliersPage() {
                 setSelectedSupplier(null);
                 setActiveTab('orders');
                 setShowNewOrder(true);
-              }}>📋 Create PO</button>
+              }}><EmojiIcon glyph="📋" /> Create PO</button>
               <button style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13 }}
                 onClick={() => handleDeleteSupplier(selectedSupplier.id)}>
-                🗑️
+                <EmojiIcon glyph="🗑️" />
               </button>
             </div>
           </div>

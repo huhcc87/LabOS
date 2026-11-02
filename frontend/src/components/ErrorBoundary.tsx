@@ -1,5 +1,6 @@
 import React from 'react';
 import { reportError } from '../lib/errorTracker';
+import EmojiIcon from './EmojiIcon';
 
 interface State {
   hasError: boolean;
@@ -55,12 +56,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
             border: '1px solid var(--border, #e2e8f0)', borderRadius: 12, padding: 32,
             boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
           }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="⚠️" /></div>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h2>
             <p style={{ fontSize: 14, color: 'var(--text-muted, #64748b)', marginBottom: 20, lineHeight: 1.6 }}>
               The app hit an unexpected error. Your data is safe — try reloading the page, or click below to recover.
             </p>
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV ? (
               <pre style={{
                 fontSize: 11, background: 'var(--surface2, #f1f5f9)', padding: 12,
                 borderRadius: 6, overflow: 'auto', maxHeight: 160, marginBottom: 16,
@@ -68,6 +69,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
               }}>
                 {this.state.error.message}
               </pre>
+            ) : (
+              <details style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted, #64748b)' }}>
+                <summary style={{ cursor: 'pointer' }}>Technical details (send these if you ask for help)</summary>
+                <code style={{ display: 'block', marginTop: 6, wordBreak: 'break-word' }}>{this.state.error.message.slice(0, 300)}</code>
+              </details>
             )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button

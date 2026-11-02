@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface CalendarEvent {
   id: number;
@@ -66,12 +68,11 @@ export default function GrantCalendarPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Grant Calendar</h1>
-          <p className="page-subtitle">Track deadlines, milestones, and important dates</p>
+          <LabBanner art="team" title="Grant Calendar" subtitle="Track deadlines, milestones, and important dates" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Google Calendar Sync')}>📥 Sync with Google Calendar</button>
-          <button className="btn btn-secondary" onClick={() => comingSoon('Manage Reminders')}>🔔 Manage Reminders</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Google Calendar Sync')}><EmojiIcon glyph="📥" /> Sync with Google Calendar</button>
+          <button className="btn btn-secondary" onClick={() => comingSoon('Manage Reminders')}><EmojiIcon glyph="🔔" /> Manage Reminders</button>
           <button className="btn btn-primary" onClick={() => comingSoon('Add Event')}>+ Add Event</button>
         </div>
       </div>
@@ -111,7 +112,7 @@ export default function GrantCalendarPage() {
       {/* NIH Standard Deadlines Reference */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600 }}>📅 NIH Standard Due Dates</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 600 }}><EmojiIcon glyph="📅" /> NIH Standard Due Dates</h3>
           <a href="https://grants.nih.gov/grants/how-to-apply-application-guide/due-dates-and-submission-policies/due-dates.htm" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent)' }}>
             View All →
           </a>
@@ -306,21 +307,21 @@ export default function GrantCalendarPage() {
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{selectedEvent.title}</h3>
               <div style={{ fontSize: 13, color: 'var(--text-soft)', marginBottom: 16 }}>
-                <div style={{ marginBottom: 4 }}>📅 {new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                {selectedEvent.time && <div style={{ marginBottom: 4 }}>🕐 {selectedEvent.time}</div>}
-                {selectedEvent.grant && <div style={{ marginBottom: 4 }}>📋 {selectedEvent.grant}</div>}
+                <div style={{ marginBottom: 4 }}><EmojiIcon glyph="📅" /> {new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                {selectedEvent.time && <div style={{ marginBottom: 4 }}><EmojiIcon glyph="🕐" /> {selectedEvent.time}</div>}
+                {selectedEvent.grant && <div style={{ marginBottom: 4 }}><EmojiIcon glyph="📋" /> {selectedEvent.grant}</div>}
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-soft)', marginBottom: 16 }}>{selectedEvent.description}</p>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Edit Event')}>✏️ Edit</button>
-                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Set Reminder')}>🔔 Set Reminder</button>
+                <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Edit Event')}><EmojiIcon glyph="✏️" /> Edit</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => comingSoon('Set Reminder')}><EmojiIcon glyph="🔔" /> Set Reminder</button>
               </div>
             </div>
           )}
 
           {/* Urgent Deadlines */}
           <div className="card" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#ef4444' }}>🔴 Urgent Deadlines</h4>
+            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#ef4444' }}><EmojiIcon glyph="🔴" /> Urgent Deadlines</h4>
             {upcomingEvents.filter(e => e.type === 'deadline' && getDaysUntil(e.date) <= 30).length === 0 ? (
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No urgent deadlines</p>
             ) : (
@@ -354,9 +355,9 @@ export default function GrantCalendarPage() {
           <div className="card">
             <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Quick Add</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Deadline')}>📅 Add Deadline</button>
-              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Schedule Meeting')}>👥 Schedule Meeting</button>
-              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Milestone')}>🎯 Add Milestone</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Deadline')}><EmojiIcon glyph="📅" /> Add Deadline</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Schedule Meeting')}><EmojiIcon glyph="👥" /> Schedule Meeting</button>
+              <button className="btn btn-sm btn-secondary btn-full" onClick={() => comingSoon('Add Milestone')}><EmojiIcon glyph="🎯" /> Add Milestone</button>
             </div>
           </div>
         </div>

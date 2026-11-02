@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useMemo } from 'react'
 
 interface AuditEntry {
@@ -265,7 +266,7 @@ export default function ProtocolComplianceAudit({
               display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            🔍 Run Check
+            <EmojiIcon glyph="🔍" /> Run Check
           </button>
           <div style={{ position: 'relative' }}>
             <button
@@ -276,7 +277,7 @@ export default function ProtocolComplianceAudit({
               }}
               onClick={() => onExportAuditReport('pdf')}
             >
-              📄 Export Report
+              <EmojiIcon glyph="📄" /> Export Report
             </button>
           </div>
         </div>
@@ -439,7 +440,7 @@ export default function ProtocolComplianceAudit({
           }}>
             {filteredAudit.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}><EmojiIcon glyph="📋" /></div>
                 <div style={{ fontSize: 14 }}>No audit entries found</div>
               </div>
             ) : (

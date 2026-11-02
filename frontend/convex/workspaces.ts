@@ -5,6 +5,7 @@ import { requireAuth } from "./authHelper";
 export const list = query({
   args: { token: v.optional(v.string()), search: v.optional(v.string()), paginationOpts: v.optional(v.object({ numItems: v.number(), cursor: v.union(v.string(), v.null()) })) },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     let results = await ctx.db.query("workspaces").order("desc").collect();
     if (args.search) { const t = args.search.toLowerCase(); results = results.filter((r) => r.name.toLowerCase().includes(t)); }
     return results;

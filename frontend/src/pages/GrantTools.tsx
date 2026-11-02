@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { grantsApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
 
   return (
     <div>
-      <SectionHeader title="🧮 Budget Calculator" subtitle="NIH-compliant grant budget with personnel, direct, and F&A costs" onBack={onBack} />
+      <SectionHeader title="Budget Calculator" subtitle="NIH-compliant grant budget with personnel, direct, and F&A costs" onBack={onBack} />
 
       {/* Controls row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -177,7 +178,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
       {/* Personnel */}
       <Card style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', margin: 0 }}>👥 Personnel</h3>
+          <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', margin: 0 }}><EmojiIcon glyph="👥" /> Personnel</h3>
           <button onClick={addPersonnel} style={{ padding: '5px 12px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>+ Add Person</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
@@ -225,7 +226,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
 
       {/* Direct non-personnel costs */}
       <Card style={{ marginBottom: 20 }}>
-        <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 16 }}>📦 Direct Costs (Year 1 base)</h3>
+        <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 16 }}><EmojiIcon glyph="📦" /> Direct Costs (Year 1 base)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
           {[
             ['Supplies & Reagents', supplies, setSupplies],
@@ -246,7 +247,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
 
       {/* Year-by-year summary */}
       <Card style={{ marginBottom: 20 }}>
-        <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 16 }}>📊 Year-by-Year Budget Summary</h3>
+        <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 16 }}><EmojiIcon glyph="📊" /> Year-by-Year Budget Summary</h3>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -277,7 +278,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
         </div>
         {mode === 'modular' && (
           <div style={{ marginTop: 12, padding: '10px 16px', background: 'rgba(251,191,36,0.1)', borderRadius: 8, border: '1px solid rgba(251,191,36,0.3)', fontSize: 13, color: '#fbbf24' }}>
-            ⚠️ Modular budget: Direct costs rounded to nearest $25,000 module.
+            <EmojiIcon glyph="⚠️" /> Modular budget: Direct costs rounded to nearest $25,000 module.
             Year 1 modular units: {Math.ceil(yearData[0].totalDirect / 25000)} × $25K = {fmt(Math.ceil(yearData[0].totalDirect / 25000) * 25000)}
           </div>
         )}
@@ -287,7 +288,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
         <div style={{ padding: '8px 20px', background: 'rgba(0,113,188,0.1)', border: '1px solid rgba(0,113,188,0.3)', borderRadius: 8, fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>
           {years}-Year Total: {fmt(totalAll)}
         </div>
-        <button onClick={exportTxt} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Export .txt</button>
+        <button onClick={exportTxt} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Export .txt</button>
         <button onClick={async () => {
           const { exportGrantDocx } = await import('../lib/exportDocx');
           let txt = `NIH GRANT BUDGET\n\nMode: ${mode === 'modular' ? 'Modular' : 'Detailed'}\nYears: ${years} | F&A Rate: ${faRate}%\n\nPERSONNEL\n`;
@@ -296,7 +297,7 @@ export function BudgetCalculator({ onBack }: { onBack: () => void }) {
           yearData.forEach((y, i) => { txt += `Year ${i+1}: Direct ${fmt(y.totalDirect)} | F&A ${fmt(y.fa)} | Total ${fmt(y.totalCosts)}\n`; });
           txt += `\nGRAND TOTAL: ${fmt(totalAll)}`;
           await exportGrantDocx({ title: 'NIH Grant Budget', grantType: mode === 'modular' ? 'Modular' : 'Detailed', disease: '', sections: { 'Budget Summary': txt }, sectionDefs: [{ key: 'Budget Summary', label: 'Budget Summary', icon: '💰' }] });
-        }} style={{ padding: '8px 18px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Word (.docx)</button>
+        }} style={{ padding: '8px 18px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Word (.docx)</button>
       </div>
     </div>
   );
@@ -357,13 +358,13 @@ export function BiosketschGenerator({ onBack }: { onBack: () => void }) {
 
   const AIBtn = ({ section, label }: { section: string; label?: string }) => (
     <button onClick={() => aiDraft(section)} disabled={aiLoading !== null} style={{ padding: '4px 10px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 6, background: 'rgba(99,102,241,0.1)', color: '#818cf8', cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-      {aiLoading === section ? '⏳ Generating…' : `✨ ${label || 'AI Draft'}`}
+      {aiLoading === section ? <><EmojiIcon glyph="⏳" />{" Generating…"}</> : `✨ ${label || 'AI Draft'}`}
     </button>
   );
 
   return (
     <div>
-      <SectionHeader title="👤 Biosketch Generator" subtitle="NIH-format biographical sketch (required for all NIH applications)" onBack={onBack} />
+      <SectionHeader title="Biosketch Generator" subtitle="NIH-format biographical sketch (required for all NIH applications)" onBack={onBack} />
 
       {/* Basic info */}
       <Card style={{ marginBottom: 20 }}>
@@ -435,7 +436,7 @@ export function BiosketschGenerator({ onBack }: { onBack: () => void }) {
       </Card>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={exportTxt} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Export .txt</button>
+        <button onClick={exportTxt} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Export .txt</button>
         <button onClick={async () => {
           const { exportGrantDocx } = await import('../lib/exportDocx');
           await exportGrantDocx({
@@ -455,7 +456,7 @@ export function BiosketschGenerator({ onBack }: { onBack: () => void }) {
               { key: 'D — Research Support', label: 'D — Research Support', icon: '💼' },
             ],
           });
-        }} style={{ padding: '8px 18px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Word (.docx)</button>
+        }} style={{ padding: '8px 18px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 8, background: 'rgba(99,102,241,0.12)', color: '#818cf8', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Word (.docx)</button>
       </div>
     </div>
   );
@@ -520,7 +521,7 @@ ${l.email}`;
 
   return (
     <div>
-      <SectionHeader title="✉️ Support Letters" subtitle="Track and generate support and collaboration letters for grant applications" onBack={onBack} />
+      <SectionHeader title="Support Letters" subtitle="Track and generate support and collaboration letters for grant applications" onBack={onBack} />
 
       {template ? (
         <div>
@@ -535,8 +536,8 @@ ${l.email}`;
             <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.8, color: 'var(--text)', margin: 0 }}>{genTemplate(template)}</pre>
           </Card>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-            <button onClick={() => navigator.clipboard.writeText(genTemplate(template))} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>📋 Copy</button>
-            <button onClick={() => downloadTxt(genTemplate(template), `support_letter_${template.name.replace(/\s/g, '_')}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Download</button>
+            <button onClick={() => navigator.clipboard.writeText(genTemplate(template))} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}><EmojiIcon glyph="📋" /> Copy</button>
+            <button onClick={() => downloadTxt(genTemplate(template), `support_letter_${template.name.replace(/\s/g, '_')}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Download</button>
           </div>
         </div>
       ) : (
@@ -615,7 +616,7 @@ ${l.email}`;
                     <option value="received">Received</option>
                     <option value="uploaded">Uploaded</option>
                   </select>
-                  <button onClick={() => setTemplate(l)} style={{ padding: '5px 10px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 6, background: 'rgba(99,102,241,0.1)', color: '#818cf8', cursor: 'pointer', fontSize: 11, whiteSpace: 'nowrap' }}>📝 Template</button>
+                  <button onClick={() => setTemplate(l)} style={{ padding: '5px 10px', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 6, background: 'rgba(99,102,241,0.1)', color: '#818cf8', cursor: 'pointer', fontSize: 11, whiteSpace: 'nowrap' }}><EmojiIcon glyph="📝" /> Template</button>
                   <button onClick={() => setLetters(ls => ls.filter(x => x.id !== l.id))} style={{ padding: '5px 8px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, background: 'rgba(239,68,68,0.1)', color: '#f87171', cursor: 'pointer', fontSize: 11 }}>✕</button>
                 </div>
               </Card>
@@ -763,7 +764,7 @@ export function TemplatesLibrary({ onBack, onLoadToComposer }: { onBack: () => v
 
   return (
     <div>
-      <SectionHeader title="📄 Templates Library" subtitle="Pre-built grant section templates — click to load into composer" onBack={onBack} />
+      <SectionHeader title="Templates Library" subtitle="Pre-built grant section templates — click to load into composer" onBack={onBack} />
 
       {preview ? (
         <div>
@@ -778,11 +779,11 @@ export function TemplatesLibrary({ onBack, onLoadToComposer }: { onBack: () => v
             <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.8, color: 'var(--text)', margin: 0 }}>{preview.content}</pre>
           </Card>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => navigator.clipboard.writeText(preview.content)} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>📋 Copy</button>
-            <button onClick={() => downloadTxt(preview.content, `template_${preview.id}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>⬇ .txt</button>
+            <button onClick={() => navigator.clipboard.writeText(preview.content)} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}><EmojiIcon glyph="📋" /> Copy</button>
+            <button onClick={() => downloadTxt(preview.content, `template_${preview.id}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}><EmojiIcon glyph="⬇" /> .txt</button>
             {onLoadToComposer && (
               <button onClick={() => { onLoadToComposer(preview.section, preview.content); onBack(); }} style={{ padding: '8px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
-                📝 Load into Composer
+                <EmojiIcon glyph="📝" /> Load into Composer
               </button>
             )}
           </div>
@@ -790,7 +791,7 @@ export function TemplatesLibrary({ onBack, onLoadToComposer }: { onBack: () => v
       ) : (
         <>
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} style={{ ...INPUT_STYLE, maxWidth: 280 }} placeholder="🔍 Search templates…" />
+            <input value={search} onChange={e => setSearch(e.target.value)} style={{ ...INPUT_STYLE, maxWidth: 280 }} placeholder="Search templates…" />
             <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ ...INPUT_STYLE, width: 'auto' }}>
               {types.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -886,7 +887,7 @@ ${c.email}`;
 
   return (
     <div>
-      <SectionHeader title="🤝 Collaborators" subtitle="Manage your collaborator network, roles, and generate collaboration letters" onBack={onBack} />
+      <SectionHeader title="Collaborators" subtitle="Manage your collaborator network, roles, and generate collaboration letters" onBack={onBack} />
 
       {letterTarget ? (
         <div>
@@ -901,8 +902,8 @@ ${c.email}`;
             <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.8, color: 'var(--text)', margin: 0 }}>{collabLetter(letterTarget)}</pre>
           </Card>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
-            <button onClick={() => navigator.clipboard.writeText(collabLetter(letterTarget))} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>📋 Copy</button>
-            <button onClick={() => downloadTxt(collabLetter(letterTarget), `collab_letter_${letterTarget.name.replace(/\s/g, '_')}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>⬇ Download</button>
+            <button onClick={() => navigator.clipboard.writeText(collabLetter(letterTarget))} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}><EmojiIcon glyph="📋" /> Copy</button>
+            <button onClick={() => downloadTxt(collabLetter(letterTarget), `collab_letter_${letterTarget.name.replace(/\s/g, '_')}.txt`)} style={{ padding: '8px 16px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}><EmojiIcon glyph="⬇" /> Download</button>
           </div>
         </div>
       ) : (
@@ -954,7 +955,7 @@ ${c.email}`;
 
           {/* List */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} style={{ ...INPUT_STYLE, maxWidth: 260 }} placeholder="🔍 Search collaborators…" />
+            <input value={search} onChange={e => setSearch(e.target.value)} style={{ ...INPUT_STYLE, maxWidth: 260 }} placeholder="Search collaborators…" />
             <button onClick={() => setShowAdd(true)} style={{ padding: '7px 16px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>+ Add Collaborator</button>
           </div>
 
@@ -968,16 +969,16 @@ ${c.email}`;
                   </div>
                   <span style={{ padding: '3px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: ROLE_COLORS[c.role]?.bg, color: ROLE_COLORS[c.role]?.color, whiteSpace: 'nowrap' }}>{c.role}</span>
                 </div>
-                {c.expertise && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>🔬 {c.expertise}</div>}
-                {c.contribution && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>📋 {c.contribution}</div>}
+                {c.expertise && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}><EmojiIcon glyph="🔬" /> {c.expertise}</div>}
+                {c.contribution && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}><EmojiIcon glyph="📋" /> {c.contribution}</div>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {c.budget > 0 && <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 700 }}>💰 ${c.budget.toLocaleString()}</span>}
+                    {c.budget > 0 && <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 700 }}><EmojiIcon glyph="💰" /> ${c.budget.toLocaleString()}</span>}
                     <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, background: c.status === 'active' ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: c.status === 'active' ? '#4ade80' : '#9ca3af' }}>{c.status}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 5 }}>
-                    <button onClick={() => setLetterTarget(c)} style={{ padding: '4px 9px', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, background: 'rgba(99,102,241,0.08)', color: '#818cf8', cursor: 'pointer', fontSize: 11 }}>📝 Letter</button>
-                    {c.email && <a href={`mailto:${c.email}`} style={{ padding: '4px 9px', border: '1px solid var(--border)', borderRadius: 5, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textDecoration: 'none' }}>✉️</a>}
+                    <button onClick={() => setLetterTarget(c)} style={{ padding: '4px 9px', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, background: 'rgba(99,102,241,0.08)', color: '#818cf8', cursor: 'pointer', fontSize: 11 }}><EmojiIcon glyph="📝" /> Letter</button>
+                    {c.email && <a href={`mailto:${c.email}`} style={{ padding: '4px 9px', border: '1px solid var(--border)', borderRadius: 5, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textDecoration: 'none' }}><EmojiIcon glyph="✉️" /></a>}
                     <button onClick={() => setCollaborators(cs => cs.filter(x => x.id !== c.id))} style={{ padding: '4px 8px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 5, background: 'rgba(239,68,68,0.08)', color: '#f87171', cursor: 'pointer', fontSize: 11 }}>✕</button>
                   </div>
                 </div>
@@ -991,7 +992,7 @@ ${c.email}`;
                 collaborators.forEach(c => { txt += `${c.name} (${c.role})\n${c.title} | ${c.institution}\nEmail: ${c.email}\nExpertise: ${c.expertise}\nContribution: ${c.contribution}\nBudget: $${c.budget.toLocaleString()}\n\n`; });
                 txt += `Total Active Budget: $${totalBudget.toLocaleString()}`;
                 downloadTxt(txt, 'collaborators.txt');
-              }} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>⬇ Export All</button>
+              }} style={{ padding: '8px 18px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><EmojiIcon glyph="⬇" /> Export All</button>
             </div>
           )}
         </>

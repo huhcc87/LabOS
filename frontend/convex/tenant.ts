@@ -16,6 +16,7 @@ import type { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
 import type { ObjectType, PropertyValidators } from "convex/values";
 import { isLabTable } from "./tenantTables";
+import { sha256Hex } from "./cryptoSecrets";
 
 type LabId = Id<"labs">;
 const fieldOf = (table: string): string | null => (table === "users" ? "home_lab_id" : isLabTable(table) ? "lab_id" : null);
@@ -104,7 +105,8 @@ async function keepLab(db: any, ref: any[]) {
 /** Who is calling, and which lab they are working in. */
 export async function whoIs(db: any, token: string | undefined | null) {
   if (!token) return { lab: null as LabId | null, self: null as string | null };
-  const session = await db.query("sessions").withIndex("by_token", (q: any) => q.eq("token", token)).first();
+  const hashed = await sha256Hex(token); // sessions store only the hash of the token
+  const session = await db.query("sessions").withIndex("by_token", (q: any) => q.eq("token", hashed)).first();
   if (!session || session.expires_at < Date.now()) return { lab: null, self: null };
   const user = await db.get(session.user_id);
   if (!user || !user.is_active) return { lab: null, self: null };

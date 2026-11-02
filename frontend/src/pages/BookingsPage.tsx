@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../lib/utils';
+import EmojiIcon from '../components/EmojiIcon';
 
 const STATUS_OPTIONS = ['reserved', 'active', 'completed', 'cancelled'];
 
@@ -86,7 +87,7 @@ export default function BookingsPage() {
     { key: 'end_time', header: 'End', render: (r) => formatDateTime(r.end_time) },
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.reserved;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.status}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.status}</span>;
     }},
   ];
 
@@ -116,7 +117,7 @@ export default function BookingsPage() {
         {/* Active now alert */}
         {activeNow.length > 0 && (
           <div style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 18 }}>▶</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="▶" /></span>
             <div style={{ color: '#14532d', fontSize: 13 }}>
               <strong>{activeNow.length} booking{activeNow.length > 1 ? 's' : ''} currently active:</strong>{' '}
               {activeNow.map(b => b.instrument_name || `Instrument #${b.instrument_id}`).join(', ')}
@@ -166,11 +167,11 @@ export default function BookingsPage() {
                       <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15 }}>{b.instrument_name || `Instrument #${b.instrument_id}`}</div>
                       <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{b.user_name || `User #${b.user_id}`}</div>
                     </div>
-                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5 }}>{m.icon} {b.status}</span>
+                    <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5 }}><EmojiIcon glyph={m.icon} /> {b.status}</span>
                   </div>
                   <div style={{ color: 'var(--text-soft)', fontSize: 12, marginBottom: 6 }}>{b.purpose}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
-                    <span>🕐 {formatDateTime(b.start_time)}</span>
+                    <span><EmojiIcon glyph="🕐" /> {formatDateTime(b.start_time)}</span>
                     <span>→ {formatDateTime(b.end_time)}</span>
                     {isToday && <span style={{ background: '#dcfce7', color: '#16a34a', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>Today</span>}
                   </div>

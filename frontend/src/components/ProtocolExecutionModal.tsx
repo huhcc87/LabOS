@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { downloadTextFile, protocolFilename } from '../lib/protocolFile';
+import EmojiIcon from './EmojiIcon';
 
 interface Step {
   index: number;
@@ -202,8 +203,8 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
             <div style={{ fontSize: 22, fontWeight: 800, color: progress === 100 ? '#22c55e' : 'var(--accent)' }}>{progress}%</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{completed}/{steps.length} steps</div>
           </div>
-          {!done && !editing && <button className="btn btn-sm btn-secondary" onClick={startEdit} title="Edit steps">✏️ Edit</button>}
-          <button className="btn btn-sm btn-secondary" onClick={download} title="Download protocol">⬇ Download</button>
+          {!done && !editing && <button className="btn btn-sm btn-secondary" onClick={startEdit} title="Edit steps"><EmojiIcon glyph="✏️" /> Edit</button>}
+          <button className="btn btn-sm btn-secondary" onClick={download} title="Download protocol"><EmojiIcon glyph="⬇" /> Download</button>
           <button className="btn btn-sm btn-secondary" onClick={toggleFull} title={isFull ? 'Exit full screen' : 'Full screen'}>
             {isFull ? '⤡ Exit full screen' : '⛶ Full screen'}
           </button>
@@ -226,12 +227,12 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
             />
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button className="btn btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveEdit}>💾 Save steps</button>
+              <button className="btn btn-primary" onClick={saveEdit}><EmojiIcon glyph="💾" /> Save steps</button>
             </div>
           </div>
         ) : done ? (
           <div style={{ padding: 40, textAlign: 'center', ...fillBody }}>
-            <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+            <div style={{ fontSize: 56, marginBottom: 12 }}><EmojiIcon glyph="✅" /></div>
             <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: '#22c55e' }}>Protocol Completed!</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>Finished at {finishedAt}</p>
             {executionNote && (
@@ -241,7 +242,7 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <button className="btn btn-secondary" onClick={download}>⬇ Download record</button>
+              <button className="btn btn-secondary" onClick={download}><EmojiIcon glyph="⬇" /> Download record</button>
               <button className="btn btn-primary" onClick={onClose}>Close</button>
             </div>
           </div>
@@ -250,7 +251,7 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
             {/* Active Timer Banner */}
             {activeTimer && (
               <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 22 }}>⏱</span>
+                <span style={{ fontSize: 22 }}><EmojiIcon glyph="⏱" /></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>TIMER RUNNING — Step {activeTimer.stepIndex + 1}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', fontFamily: 'monospace' }}>{fmt(activeTimer.timeLeft)}</div>
@@ -261,7 +262,7 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
 
             {steps.length === 0 && (
               <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 14 }}>
-                No steps yet. Click <b>✏️ Edit</b> above to add them, one per line.
+                No steps yet. Click <b><EmojiIcon glyph="✏️" /> Edit</b> above to add them, one per line.
               </div>
             )}
 
@@ -307,7 +308,7 @@ export function ProtocolExecutionModal({ protocolTitle, protocolContent, subtitl
                                 border: `1px solid ${isTimerActive ? '#ef444440' : 'rgba(99,102,241,0.3)'}`,
                               }}
                             >
-                              {isTimerActive ? '⏹ Stop' : `⏱ ${fmt(step.timerSeconds)}`}
+                              {isTimerActive ? <><EmojiIcon glyph="⏹" />{" Stop"}</> : `⏱ ${fmt(step.timerSeconds)}`}
                             </button>
                           )}
                         </div>

@@ -11,6 +11,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import Link from '@tiptap/extension-link';
+import EmojiIcon from './EmojiIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -322,7 +323,7 @@ export function RichELNEditor({
             active={editor?.isActive('taskList')}
             onClick={() => editor?.chain().focus().toggleTaskList().run()}
           >
-            ☑
+            <EmojiIcon glyph="☑" />
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -358,14 +359,14 @@ export function RichELNEditor({
             disabled={!editor?.can().undo()}
             onClick={() => editor?.chain().focus().undo().run()}
           >
-            ↩
+            <EmojiIcon glyph="↩" />
           </ToolbarButton>
           <ToolbarButton
             title="Redo (⌘⇧Z)"
             disabled={!editor?.can().redo()}
             onClick={() => editor?.chain().focus().redo().run()}
           >
-            ↪
+            <EmojiIcon glyph="↪" />
           </ToolbarButton>
 
           {/* Word count — right-aligned */}
@@ -411,7 +412,7 @@ export function RichELNEditor({
             style={exportBtnStyle}
             title="Copy content as Markdown to clipboard"
           >
-            📋 Copy as Markdown
+            <EmojiIcon glyph="📋" /> Copy as Markdown
           </button>
           <button
             type="button"
@@ -419,7 +420,7 @@ export function RichELNEditor({
             style={exportBtnStyle}
             title="Download as HTML file"
           >
-            ⬇ Export HTML
+            <EmojiIcon glyph="⬇" /> Export HTML
           </button>
           <button
             type="button"
@@ -427,7 +428,7 @@ export function RichELNEditor({
             style={exportBtnStyle}
             title="Print notes"
           >
-            🖨 Print
+            <EmojiIcon glyph="🖨" /> Print
           </button>
         </div>
       )}

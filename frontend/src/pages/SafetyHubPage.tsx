@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Types
 interface Incident {
@@ -245,12 +247,9 @@ export default function SafetyHubPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Quality & Safety</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manage incidents, compliance, and training</p>
-        </div>
+        <LabBanner art="safety" title="Quality & Safety" subtitle="Manage incidents, compliance, and training" style={{ flex: 1, marginBottom: 0 }} />
         <button onClick={() => setShowHelpModal(true)} className="btn btn-secondary">
-          ❓ How to Use
+          <EmojiIcon glyph="❓" /> How to Use
         </button>
       </div>
 
@@ -263,7 +262,7 @@ export default function SafetyHubPage() {
           { label: 'Training Due', value: trainings.filter(t => t.status === 'required').length, icon: '🎓', color: '#60a5fa' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ textAlign: 'center', padding: 16 }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{stat.icon}</div>
+            <div style={{ fontSize: 24, marginBottom: 4 }}><EmojiIcon glyph={stat.icon} /></div>
             <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
           </div>
@@ -284,7 +283,7 @@ export default function SafetyHubPage() {
               display: 'flex', alignItems: 'center', gap: 8, marginBottom: -1
             }}
           >
-            <span>{tab.icon}</span>
+            <span><EmojiIcon glyph={tab.icon} /></span>
             <span>{tab.label}</span>
             {tab.count > 0 && (
               <span style={{
@@ -336,7 +335,7 @@ export default function SafetyHubPage() {
 
           {incidents.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="⚠️" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Incidents Reported</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Report safety incidents to track and resolve them</p>
               <button className="btn btn-primary" onClick={() => setShowIncidentModal(true)}>+ Report First Incident</button>
@@ -358,7 +357,7 @@ export default function SafetyHubPage() {
                       background: severityColors[inc.severity]?.bg,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
                     }}>
-                      {inc.severity === 'high' ? '🚨' : inc.severity === 'medium' ? '⚠️' : '📋'}
+                      {inc.severity === 'high' ? <><EmojiIcon glyph="🚨" /></> : inc.severity === 'medium' ? <><EmojiIcon glyph="⚠️" /></> : <><EmojiIcon glyph="📋" /></>}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -376,9 +375,9 @@ export default function SafetyHubPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-secondary" onClick={() => setViewingIncident(inc)}>👁️ View</button>
-                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingIncident(inc)}>✏️ Edit</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteIncident(inc)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setViewingIncident(inc)}><EmojiIcon glyph="👁️" /> View</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingIncident(inc)}><EmojiIcon glyph="✏️" /> Edit</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteIncident(inc)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -396,7 +395,7 @@ export default function SafetyHubPage() {
 
           {compliances.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="✅" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Compliance Records</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Track your regulatory compliance and audits</p>
               <button className="btn btn-primary" onClick={() => setShowComplianceModal(true)}>+ Add First Record</button>
@@ -407,7 +406,7 @@ export default function SafetyHubPage() {
                 <div key={c.id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 28 }}>{c.status === 'compliant' ? '✅' : c.status === 'non-compliant' ? '❌' : c.status === 'in-review' ? '🔍' : '⏳'}</span>
+                      <span style={{ fontSize: 28 }}>{c.status === 'compliant' ? <><EmojiIcon glyph="✅" /></> : c.status === 'non-compliant' ? <><EmojiIcon glyph="❌" /></> : c.status === 'in-review' ? <><EmojiIcon glyph="🔍" /></> : <><EmojiIcon glyph="⏳" /></>}</span>
                       <div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{c.name}</h3>
                         <span style={{ fontSize: 11, color: 'var(--accent)' }}>{c.standard}</span>
@@ -424,11 +423,11 @@ export default function SafetyHubPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                     <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: 'none', flex: 1 }} onClick={() => handleComplianceStatus(c, 'compliant')}>✓ Compliant</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', flex: 1 }} onClick={() => handleComplianceStatus(c, 'in-review')}>🔍 Review</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', flex: 1 }} onClick={() => handleComplianceStatus(c, 'in-review')}><EmojiIcon glyph="🔍" /> Review</button>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setEditingCompliance(c)}>✏️ Edit</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteCompliance(c)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => setEditingCompliance(c)}><EmojiIcon glyph="✏️" /> Edit</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteCompliance(c)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -461,7 +460,7 @@ export default function SafetyHubPage() {
 
           {trainings.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="🎓" /></div>
               <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Training Assigned</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>Assign training to team members</p>
               <button className="btn btn-primary" onClick={() => setShowTrainingModal(true)}>+ Assign First Training</button>
@@ -472,7 +471,7 @@ export default function SafetyHubPage() {
                 <div key={t.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                      🎓
+                      <EmojiIcon glyph="🎓" />
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -494,15 +493,15 @@ export default function SafetyHubPage() {
                     {t.status !== 'completed' && (
                       <>
                         {t.status === 'required' && (
-                          <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none' }} onClick={() => handleTrainingStatus(t, 'in_progress')}>▶️ Start</button>
+                          <button className="btn btn-sm" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none' }} onClick={() => handleTrainingStatus(t, 'in_progress')}><EmojiIcon glyph="▶️" /> Start</button>
                         )}
                         {t.status === 'in_progress' && (
                           <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: 'none' }} onClick={() => handleTrainingStatus(t, 'completed')}>✓ Complete</button>
                         )}
                       </>
                     )}
-                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingTraining(t)}>✏️ Edit</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteTraining(t)}>🗑️</button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setEditingTraining(t)}><EmojiIcon glyph="✏️" /> Edit</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteTraining(t)}><EmojiIcon glyph="🗑️" /></button>
                   </div>
                 </div>
               ))}
@@ -621,7 +620,7 @@ export default function SafetyHubPage() {
                 <textarea id="resolution-notes" className="form-input" placeholder="How was this resolved?" rows={3} />
                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                   {viewingIncident.status === 'open' && (
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleIncidentStatus(viewingIncident, 'investigating')}>🔍 Start Investigation</button>
+                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleIncidentStatus(viewingIncident, 'investigating')}><EmojiIcon glyph="🔍" /> Start Investigation</button>
                   )}
                   <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
                     const resolution = (document.getElementById('resolution-notes') as HTMLTextAreaElement).value;
@@ -776,7 +775,7 @@ export default function SafetyHubPage() {
             </div>
             <div style={{ display: 'grid', gap: 20 }}>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>⚠️ Incidents</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="⚠️" /> Incidents</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Report safety incidents with type, severity, and location</li>
                   <li>Track incident status: Open → Investigating → Resolved</li>
@@ -785,7 +784,7 @@ export default function SafetyHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>✅ Compliance</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="✅" /> Compliance</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Track regulatory standards (GLP, GMP, ISO, OSHA, etc.)</li>
                   <li>Record audit dates and auditor information</li>
@@ -794,7 +793,7 @@ export default function SafetyHubPage() {
                 </ul>
               </div>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>🎓 Training</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}><EmojiIcon glyph="🎓" /> Training</h4>
                 <ul style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 20, margin: 0, lineHeight: 1.8 }}>
                   <li>Assign training to team members</li>
                   <li>Set due dates and track completion</li>

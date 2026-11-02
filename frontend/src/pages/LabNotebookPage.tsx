@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { exportCSV, exportPDF } from '../lib/export';
 import NotebookCanvas, { parseNotebookCanvas, serializeNotebookCanvas } from '../components/NotebookCanvas';
 import type { NotebookCanvasValue } from '../components/NotebookCanvas';
+import EmojiIcon from '../components/EmojiIcon';
 
 // Handwriting is stored inside the same `content` field as an HTML-comment
 // trailer so it round-trips through the backend with zero schema changes.
@@ -205,11 +206,11 @@ export default function LabNotebookPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() =>
             exportCSV(entries.map(e => ({ Title: e.title, Type: e.experiment_type, Tags: e.tags, Signed: e.signed_at ? 'Yes' : 'No', Archived: e.is_archived ? 'Yes' : 'No', Created: e.created_at?.toString().slice(0,10) || '' })), 'lab_notebook')
-          }>⬇ CSV</button>
+          }><EmojiIcon glyph="⬇" /> CSV</button>
           <button className="btn btn-secondary btn-sm" onClick={() =>
             exportPDF('Lab Notebook Export', ['Title','Type','Tags','Signed','Created'],
               entries.map(e => [e.title, e.experiment_type, e.tags, e.signed_at ? '✓' : '—', e.created_at?.toString().slice(0,10) || '']), 'lab_notebook')
-          }>⬇ PDF</button>
+          }><EmojiIcon glyph="⬇" /> PDF</button>
           <button className="btn btn-primary" onClick={() => { setShowNew(true); setSelectedEntry(null); }}>
             + New Entry
           </button>
@@ -234,7 +235,7 @@ export default function LabNotebookPage() {
               <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 16, textAlign: 'center' }}>Loading...</div>
             ) : entries.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>📓</div>
+                <div style={{ fontSize: 36, marginBottom: 8 }}><EmojiIcon glyph="📓" /></div>
                 <div style={{ fontSize: 13 }}>No entries yet. Create your first experiment record!</div>
               </div>
             ) : entries.map(entry => (
@@ -316,13 +317,13 @@ export default function LabNotebookPage() {
                     style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                       background: view === 'text' ? 'var(--accent)' : 'transparent',
                       color: view === 'text' ? '#fff' : 'var(--text)' }}>
-                    📝 Text
+                    <EmojiIcon glyph="📝" /> Text
                   </button>
                   <button onClick={() => setView('handwriting')}
                     style={{ padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                       background: view === 'handwriting' ? 'var(--accent)' : 'transparent',
                       color: view === 'handwriting' ? '#fff' : 'var(--text)' }}>
-                    ✍️ Handwrite{hasHandwriting && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
+                    <EmojiIcon glyph="✍️" /> Handwrite{hasHandwriting && <span style={{ marginLeft: 4, fontSize: 9 }}>●</span>}
                   </button>
                 </div>
                 {view === 'text' && (
@@ -335,7 +336,7 @@ export default function LabNotebookPage() {
                 {editMode && <button className="btn btn-secondary btn-sm" onClick={() => setEditMode(false)}>Cancel</button>}
                 {!isSigned && isAuthor && !editMode && <button onClick={handleSign} style={{ background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e40', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>✓ Sign</button>}
                 {isSigned && !isWitnessed && !isAuthor && <button onClick={handleWitness} style={{ background: '#6366f120', color: '#6366f1', border: '1px solid #6366f140', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>✓ Witness</button>}
-                {!isSigned && <button onClick={handleDelete} style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>🗑</button>}
+                {!isSigned && <button onClick={handleDelete} style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}><EmojiIcon glyph="🗑" /></button>}
               </div>
 
               {/* Title */}
@@ -386,7 +387,7 @@ export default function LabNotebookPage() {
             </>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 56 }}>📓</div>
+              <div style={{ fontSize: 56 }}><EmojiIcon glyph="📓" /></div>
               <div style={{ fontSize: 16, fontWeight: 600 }}>Select an entry or create a new one</div>
               <div style={{ fontSize: 13 }}>Auto-timestamped • Markdown editor • Sign & witness for IP protection</div>
               <button className="btn btn-primary" onClick={() => setShowNew(true)}>+ New Experiment Entry</button>

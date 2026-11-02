@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useMemo } from 'react'
 import { useProtocols } from '../hooks/useProtocols'
 import { useProtocolImport } from '../hooks/useProtocolImport'
@@ -21,8 +22,9 @@ import type { Protocol } from '../types/protocol.types'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { useSwarm, SwarmDashboard } from '../ai-swarm'
+import ExternalLibrary from '../ExternalLibrary'
 
-type MainTab = 'library' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
+type MainTab = 'library' | 'external' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
 type ViewerTab = 'genomics' | 'protein' | 'microscopy'
 
 const BIOSAFETY_COLORS: Record<string, string> = {
@@ -95,6 +97,7 @@ export default function ProtocolsPage() {
 
   const MAIN_TABS: { id: MainTab; label: string; icon: string }[] = [
     { id: 'library', label: 'Library', icon: '📚' },
+    { id: 'external', label: 'Protocol Library (open sources)', icon: '🌐' },
     { id: 'editor', label: 'Editor', icon: '✏️' },
     { id: 'ai-swarm', label: 'AI Swarm', icon: '🧬' },
     { id: 'ai', label: 'AI Assistant', icon: '🤖' },
@@ -118,10 +121,10 @@ export default function ProtocolsPage() {
             + New Protocol
           </button>
           <button onClick={() => importHook.setIsOpen(true)} style={headerBtn('var(--surface2)', 'var(--border)')}>
-            📥 Import
+            <EmojiIcon glyph="📥" /> Import
           </button>
           <button onClick={() => genHook.setIsOpen(true)} style={headerBtn('#6d28d9', '#8b5cf6')}>
-            🤖 AI Generate
+            <EmojiIcon glyph="🤖" /> AI Generate
           </button>
         </div>
       </div>
@@ -155,7 +158,7 @@ export default function ProtocolsPage() {
             cursor: 'pointer', fontSize: 13, fontWeight: mainTab === tab.id ? 600 : 400,
             display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
           }}>
-            <span>{tab.icon}</span>{tab.label}
+            <span><EmojiIcon glyph={tab.icon} /></span>{tab.label}
           </button>
         ))}
       </div>
@@ -163,11 +166,6 @@ export default function ProtocolsPage() {
       {/* ── Library Tab ── */}
       {mainTab === 'library' && (
         <>
-          <ProtocolCategoryCards
-            categories={store.categories}
-            activeCategory={store.activeCategory}
-            onSelectCategory={store.setActiveCategory}
-          />
           <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             <SubcategoryBrowser
               categories={store.categories}
@@ -189,7 +187,7 @@ export default function ProtocolsPage() {
                   borderRadius: 8, color: showFilters ? 'var(--accent)' : 'var(--text)',
                   padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 500,
                 }}>
-                  ⚙️ Filters {showFilters ? '▲' : '▼'}
+                  <EmojiIcon glyph="⚙️" /> Filters {showFilters ? '▲' : '▼'}
                 </button>
                 <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
                   {(['table', 'grid'] as const).map(m => (
@@ -230,7 +228,7 @@ export default function ProtocolsPage() {
 
               {displayedProtocols.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: 36, marginBottom: 14 }}>🔍</div>
+                  <div style={{ fontSize: 36, marginBottom: 14 }}><EmojiIcon glyph="🔍" /></div>
                   <div style={{ fontSize: 16 }}>No protocols match your filters</div>
                   <div style={{ fontSize: 13, marginTop: 6 }}>Try clearing filters or adjusting your search</div>
                 </div>
@@ -255,6 +253,14 @@ export default function ProtocolsPage() {
               )}
             </div>
           </div>
+          <details style={{ marginTop: 20 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 12 }}>Category overview (cards)</summary>
+            <ProtocolCategoryCards
+              categories={store.categories}
+              activeCategory={store.activeCategory}
+              onSelectCategory={store.setActiveCategory}
+            />
+          </details>
         </>
       )}
 
@@ -311,9 +317,9 @@ export default function ProtocolsPage() {
           </div>
           <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
             {([
-              { id: 'genomics', label: '🧬 Genomics (IGV)' },
-              { id: 'protein', label: '🔬 Protein Structure (Mol*)' },
-              { id: 'microscopy', label: '🔭 Microscopy (OSD)' },
+              { id: 'genomics', label: "Genomics (IGV)" },
+              { id: 'protein', label: "Protein Structure (Mol*)" },
+              { id: 'microscopy', label: "Microscopy (OSD)" },
             ] as { id: ViewerTab; label: string }[]).map(t => (
               <button key={t.id} onClick={() => setViewerTab(t.id)} style={{
                 padding: '9px 16px', border: 'none',
@@ -332,6 +338,8 @@ export default function ProtocolsPage() {
       )}
 
       {/* ── Analytics Tab ── */}
+      {mainTab === 'external' && <ExternalLibrary />}
+
       {mainTab === 'analytics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
@@ -399,7 +407,7 @@ export default function ProtocolsPage() {
                   if (!count) return null
                   return (
                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 16 }}>{cat.icon}</span>
+                      <span style={{ fontSize: 16 }}><EmojiIcon glyph={cat.icon} /></span>
                       <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{cat.name}</span>
                       <div style={{ width: 80, height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
                         <div style={{ width: `${(count / store.allProtocols.length) * 100}%`, height: '100%', background: cat.color, borderRadius: 3 }} />

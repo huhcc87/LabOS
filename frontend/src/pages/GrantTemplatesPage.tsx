@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { comingSoon } from '../lib/comingSoon';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Template {
   id: number;
@@ -107,8 +109,7 @@ export default function GrantTemplatesPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Grant Templates</h1>
-          <p className="page-subtitle">Pre-configured templates for major funding agencies</p>
+          <LabBanner art="inventory" title="Grant Templates" subtitle="Pre-configured templates for major funding agencies" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button className="btn btn-primary" onClick={() => comingSoon('Create Template')}>+ Create Custom Template</button>
       </div>
@@ -141,7 +142,7 @@ export default function GrantTemplatesPage() {
           <div key={template.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 32 }}>{template.icon}</span>
+                <span style={{ fontSize: 32 }}><EmojiIcon glyph={template.icon} /></span>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, textTransform: 'uppercase' }}>
                     {template.type}
@@ -188,8 +189,8 @@ export default function GrantTemplatesPage() {
             {/* Stats */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                <span style={{ marginRight: 12 }}>📊 {template.popularity}% popularity</span>
-                <span>📅 Last used: {new Date(template.lastUsed).toLocaleDateString()}</span>
+                <span style={{ marginRight: 12 }}><EmojiIcon glyph="📊" /> {template.popularity}% popularity</span>
+                <span><EmojiIcon glyph="📅" /> Last used: {new Date(template.lastUsed).toLocaleDateString()}</span>
               </div>
               <button className="btn btn-sm btn-primary" onClick={() => comingSoon('Use Template')}>Use Template →</button>
             </div>
@@ -199,7 +200,7 @@ export default function GrantTemplatesPage() {
 
       {/* Quick Start Guide */}
       <div className="card" style={{ marginTop: 32, background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)' }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>📚 Quick Start Guide</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}><EmojiIcon glyph="📚" /> Quick Start Guide</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
           <div>
             <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--accent)' }}>1. Choose a Template</h4>

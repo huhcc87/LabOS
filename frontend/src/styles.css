@@ -82,7 +82,7 @@
   background: var(--bg);
 }
 
-/* ── Light theme — calm, clinical (Quartzy-inspired: light gray, deep teal actions, slate text) ── */
+/* ── Light theme — calm, clinical (light gray, deep teal actions, slate text) ── */
 [data-theme="light"] {
   /* Primary colors */
   --primary-dark: #003f56;
@@ -402,6 +402,9 @@ a:hover { text-decoration: underline; }
   text-align: center;
   flex-shrink: 0;
   font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-label {
@@ -924,6 +927,9 @@ a:hover { text-decoration: underline; }
 
 .header-breadcrumb {
   font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1036,7 +1042,7 @@ a:hover { text-decoration: underline; }
   background: var(--hdr-surface);
   border: 1px solid var(--hdr-border);
   border-radius: var(--hdr-radius);
-  color: var(--text);
+  color: var(--header-text); /* header keeps its own palette in dark mode */
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
@@ -3020,7 +3026,7 @@ a:hover { text-decoration: underline; }
   }
 }
 
-/* ── App loading state (Quartzy-style: light gray, small teal spinner) ── */
+/* ── App loading state (light gray, small teal spinner) ── */
 .app-loading {
   height: 100vh;
   display: flex;
@@ -3153,3 +3159,35 @@ button:disabled { cursor: not-allowed; }
   .header-controls { display: none; }
   .sidebar-footer-mobile { display: block; }
 }
+
+/* ── Page banner with line illustration ── */
+.lab-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 28px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lab-banner-text h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; }
+.lab-banner-text p { margin: 0; color: var(--text-muted); font-size: 14px; max-width: 560px; }
+.lab-banner-art { flex: none; width: 220px; height: auto; color: var(--accent); opacity: 0.55; }
+@media (max-width: 720px) { .lab-banner-art { display: none; } }
+
+/* Vendor Directory: category list beside the vendors, stacked on phones */
+.vendor-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 720px) { .vendor-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Research AI result page: one Export menu */
+.export-menu { position: relative; }
+.export-menu > summary { list-style: none; cursor: pointer; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text); user-select: none; }
+.export-menu > summary::-webkit-details-marker { display: none; }
+.export-menu > summary::after { content: " \25BE"; }
+.export-menu > div { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+.export-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--text); cursor: pointer; }
+.export-item:hover, .export-item:focus-visible { background: var(--surface2); }

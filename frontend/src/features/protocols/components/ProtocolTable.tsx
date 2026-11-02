@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { Protocol } from '../types/protocol.types'
 import { ApprovalBadge, SourceBadge, ProtocolTypeBadge, DifficultyBadge } from './ProtocolBadges'
@@ -86,7 +87,7 @@ export default function ProtocolTable({ protocols, onView, onDelete, onApprove, 
                 <td style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', color: 'var(--text-soft)', fontSize: 13, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.owner}</td>
                 <td style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => onView(p)} title="View" style={btnStyle('var(--accent)')}>👁</button>
+                    <button onClick={() => onView(p)} title="View" style={btnStyle('var(--accent)')}><EmojiIcon glyph="👁" /></button>
                     {p.approvalStatus === 'under_review' && onApprove && (
                       <button onClick={() => onApprove(p)} title="Approve" style={btnStyle('var(--success)')}>✓</button>
                     )}
@@ -96,7 +97,7 @@ export default function ProtocolTable({ protocols, onView, onDelete, onApprove, 
                         <button onClick={() => setDeleteConfirm(null)} style={btnStyle('var(--text-muted)')}>Cancel</button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(p.id)} title="Delete" style={btnStyle('var(--danger)')}>🗑</button>
+                      <button onClick={() => setDeleteConfirm(p.id)} title="Delete" style={btnStyle('var(--danger)')}><EmojiIcon glyph="🗑" /></button>
                     )}
                   </div>
                 </td>

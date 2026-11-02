@@ -1,4 +1,6 @@
 import React, { useState, useRef, lazy, Suspense } from 'react';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 // Lazy-load heavy sub-pages so the main shell loads fast
 const ResearchAITab = lazy(() => import('./ResearchAITab'));
@@ -79,7 +81,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 function Loader() {
   return (
     <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: 28, marginBottom: 12 }}>⏳</div>
+      <div style={{ fontSize: 28, marginBottom: 12 }}><EmojiIcon glyph="⏳" /></div>
       Loading…
     </div>
   );
@@ -246,16 +248,11 @@ export default function GrantHubPage() {
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Grant Hub</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
-          Research AI · Write · Manage · Export
-        </p>
-      </div>
+      <LabBanner art="lab" title="Grant Hub" subtitle="Research, write, manage and export grant applications" />
 
       {/* ── NIH Deadlines (compact) ────────────────────────────────────── */}
       <div style={{ marginBottom: 16, padding: '10px 16px', background: 'rgba(0,113,188,0.06)', border: '1px solid rgba(0,113,188,0.15)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', whiteSpace: 'nowrap' }}>📅 NIH Deadlines</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', whiteSpace: 'nowrap' }}><EmojiIcon glyph="📅" /> NIH Deadlines</span>
         {NIH_DEADLINES.map(d => (
           <span key={d.mech} style={{
             padding: '4px 10px', borderRadius: 6, fontSize: 11,
@@ -283,7 +280,7 @@ export default function GrantHubPage() {
               marginBottom: -1,
             }}
           >
-            {tab.icon} {tab.label}
+            <EmojiIcon glyph={tab.icon} /> {tab.label}
             {tab.highlight && activeTab !== tab.key && (
               <span style={{ background: '#6366f1', color: 'white', padding: '1px 6px', borderRadius: 8, fontSize: 9, fontWeight: 700 }}>NEW</span>
             )}
@@ -340,7 +337,7 @@ export default function GrantHubPage() {
                     border: 'none', borderRadius: 6, marginBottom: 2, cursor: 'pointer', textAlign: 'left', fontSize: 12,
                     background: active ? 'var(--accent)' : 'transparent', color: active ? 'white' : 'var(--text)',
                   }}>
-                    <span>{s.icon}</span>
+                    <span><EmojiIcon glyph={s.icon} /></span>
                     <span style={{ flex: 1 }}>{s.label}</span>
                     {w > 0 && <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 6, background: active ? 'rgba(255,255,255,0.2)' : done ? '#22c55e' : 'var(--surface2)', color: active ? 'white' : done ? 'white' : 'var(--text-muted)' }}>{w}</span>}
                   </button>
@@ -361,7 +358,7 @@ export default function GrantHubPage() {
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button className="btn btn-primary btn-sm" onClick={() => handleAIDraft(activeSection)} disabled={aiLoading}>
-                  {aiLoading ? '⏳ Generating…' : '✨ AI Draft'}
+                  {aiLoading ? <><EmojiIcon glyph="⏳" />{" Generating…"}</> : <><EmojiIcon glyph="✨" />{" AI Draft"}</>}
                 </button>
                 <button className="btn btn-sm btn-secondary" onClick={() => navigator.clipboard.writeText(currentContent)}>Copy</button>
               </div>
@@ -377,10 +374,10 @@ export default function GrantHubPage() {
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={handleSave} disabled={saveStatus === 'saving'}>
-                {saveStatus === 'saving' ? '⏳ Saving…' : saveStatus === 'saved' ? '✅ Saved' : '💾 Save Draft'}
+                {saveStatus === 'saving' ? <><EmojiIcon glyph="⏳" />{" Saving…"}</> : saveStatus === 'saved' ? <><EmojiIcon glyph="✅" />{" Saved"}</> : <><EmojiIcon glyph="💾" />{" Save Draft"}</>}
               </button>
-              <button className="btn btn-secondary" onClick={handleExportDocx}>⬇ Word</button>
-              <button className="btn btn-secondary" onClick={handleExportTxt}>⬇ Text</button>
+              <button className="btn btn-secondary" onClick={handleExportDocx}><EmojiIcon glyph="⬇" /> Word</button>
+              <button className="btn btn-secondary" onClick={handleExportTxt}><EmojiIcon glyph="⬇" /> Text</button>
             </div>
           </div>
         </div>
@@ -406,18 +403,18 @@ export default function GrantHubPage() {
                     </div>
                     <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{g.title}</h3>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <span>👤 {g.pi}</span>
-                      <span>🏛 {g.fundingAgency}</span>
-                      {g.amount > 0 && <span>💵 ${g.amount.toLocaleString()}</span>}
+                      <span><EmojiIcon glyph="👤" /> {g.pi}</span>
+                      <span><EmojiIcon glyph="🏛" /> {g.fundingAgency}</span>
+                      {g.amount > 0 && <span><EmojiIcon glyph="💵" /> ${g.amount.toLocaleString()}</span>}
                     </div>
-                    {g.deadline && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>📅 Deadline: {new Date(g.deadline).toLocaleDateString()}</div>}
+                    {g.deadline && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}><EmojiIcon glyph="📅" /> Deadline: {new Date(g.deadline).toLocaleDateString()}</div>}
                   </div>
                 );
               })}
             </div>
           ) : (
             <div className="card" style={{ textAlign: 'center', padding: 50 }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><EmojiIcon glyph="📝" /></div>
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>No Grants Yet</h3>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Create your first grant to start tracking.</p>
               <button className="btn btn-primary" onClick={() => setShowNewGrant(true)}>+ Create Grant</button>
@@ -444,7 +441,7 @@ export default function GrantHubPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
               {TOOLS.map(t => (
                 <div key={t.key} className="card" style={{ cursor: 'pointer', padding: 20, textAlign: 'center' }} onClick={() => setActiveTool(t.key)}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>{t.icon}</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph={t.icon} /></div>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{t.label}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.desc}</div>
                 </div>

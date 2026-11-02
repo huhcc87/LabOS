@@ -1,3 +1,4 @@
+import EmojiIcon from '../../components/EmojiIcon';
 // ═══════════════════════════════════════════════════════════════════════════
 // ELN SWARM PANEL — AI Review panel for experiment entries
 // Displays inside the experiment detail view
@@ -29,15 +30,15 @@ export default function ELNSwarmPanel({ swarm, entry }: Props) {
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>🧬</span>
+          <span style={{ fontSize: 16 }}><EmojiIcon glyph="🧬" /></span>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>AI Swarm Intelligence</span>
         </div>
         {!swarm.review && !swarm.isReviewing && (
           <button onClick={() => swarm.runReview(entry)} style={{
-            padding: '6px 14px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            padding: '6px 14px', background: 'var(--accent)',
             border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600,
           }}>
-            🚀 Run AI Review
+            <EmojiIcon glyph="🚀" /> Run AI Review
           </button>
         )}
       </div>
@@ -52,7 +53,7 @@ export default function ELNSwarmPanel({ swarm, entry }: Props) {
             cursor: 'pointer', fontSize: 11, fontWeight: swarm.swarmTab === tab.id ? 600 : 400,
             display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
           }}>
-            <span>{tab.icon}</span>{tab.label}
+            <span><EmojiIcon glyph={tab.icon} /></span>{tab.label}
           </button>
         ))}
       </div>
@@ -78,10 +79,10 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
   if (swarm.isReviewing) {
     return (
       <div style={{ padding: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 10 }}>🧬</div>
+        <div style={{ fontSize: 28, marginBottom: 10 }}><EmojiIcon glyph="🧬" /></div>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>AI Swarm Review in Progress</div>
         <div style={{ width: '100%', height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden', marginBottom: 8 }}>
-          <div style={{ width: `${swarm.progress}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: 3, transition: 'width 0.3s' }} />
+          <div style={{ width: `${swarm.progress}%`, height: '100%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{swarm.progress}% — {swarm.currentAgent || 'Initializing...'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 12 }}>
@@ -90,8 +91,8 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
             const active = swarm.currentAgent === a.name
             return (
               <div key={a.id} style={{ padding: '6px 4px', borderRadius: 6, border: `1px solid ${active ? a.color : done ? '#10b981' : 'var(--border)'}`, opacity: done || active ? 1 : 0.4, textAlign: 'center' }}>
-                <div style={{ fontSize: 14 }}>{a.icon}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{done ? '✓' : active ? '⚡' : '...'}</div>
+                <div style={{ fontSize: 14 }}><EmojiIcon glyph={a.icon} /></div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{done ? '✓' : active ? <><EmojiIcon glyph="⚡" /></> : '...'}</div>
               </div>
             )
           })}
@@ -105,13 +106,13 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
   if (!swarm.review) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🧬</div>
+        <div style={{ fontSize: 32, marginBottom: 8 }}><EmojiIcon glyph="🧬" /></div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>8 specialized AI agents will analyze your experiment for scientific rigor, compliance, safety, statistics, literature support, reproducibility, optimization, and historical context.</div>
         <button onClick={() => swarm.runReview(entry)} style={{
-          padding: '10px 24px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          padding: '10px 24px', background: 'var(--accent)',
           border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
         }}>
-          🚀 Launch 8-Agent Review
+          <EmojiIcon glyph="🚀" /> Launch 8-Agent Review
         </button>
       </div>
     )
@@ -159,7 +160,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
             border: `1px solid ${activeAgent === output.agentId ? output.color : 'var(--border)'}`,
             borderRadius: 8, cursor: 'pointer', textAlign: 'left', borderLeft: `3px solid ${output.color}`,
           }}>
-            <span style={{ fontSize: 14 }}>{output.icon}</span>
+            <span style={{ fontSize: 14 }}><EmojiIcon glyph={output.icon} /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)' }}>{output.title}</div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{output.summary}</div>
@@ -175,7 +176,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
       {activeOutput && (
         <div style={{ marginTop: 12, padding: 12, background: 'var(--surface2)', borderRadius: 8, borderLeft: `3px solid ${activeOutput.color}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <span style={{ fontSize: 16 }}>{activeOutput.icon}</span>
+            <span style={{ fontSize: 16 }}><EmojiIcon glyph={activeOutput.icon} /></span>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{activeOutput.title}</span>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5, marginBottom: 8 }}>{activeOutput.summary}</p>
@@ -184,7 +185,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
             <div style={{ padding: '6px 10px', background: '#f59e0b10', borderRadius: 6, marginBottom: 8 }}>
               {activeOutput.warnings.map((w, i) => (
                 <div key={i} style={{ fontSize: 11, color: '#f59e0b', display: 'flex', gap: 4 }}>
-                  <span>⚠️</span><span>{w}</span>
+                  <span><EmojiIcon glyph="⚠️" /></span><span>{w}</span>
                 </div>
               ))}
             </div>
@@ -204,7 +205,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
 
           {activeOutput.recommendations.length > 0 && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 4 }}>💡 Recommendations</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 4 }}><EmojiIcon glyph="💡" /> Recommendations</div>
               {activeOutput.recommendations.map((r, i) => (
                 <div key={i} style={{ fontSize: 11, color: 'var(--text)', paddingLeft: 12, marginTop: 2 }}>
                   {i + 1}. {r}
@@ -218,7 +219,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
       {/* Top findings */}
       {c.topFindings.length > 0 && !activeAgent && (
         <div style={{ marginTop: 12, padding: 10, background: 'var(--surface2)', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 6 }}>💡 Key Findings</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 6 }}><EmojiIcon glyph="💡" /> Key Findings</div>
           {c.topFindings.slice(0, 4).map((f, i) => (
             <div key={i} style={{ fontSize: 11, color: 'var(--text)', marginTop: 3 }}>{i + 1}. {f}</div>
           ))}
@@ -231,7 +232,7 @@ function ReviewTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCon
         border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-muted)',
         cursor: 'pointer', fontSize: 11, fontWeight: 500,
       }}>
-        🔄 Re-run Analysis
+        <EmojiIcon glyph="🔄" /> Re-run Analysis
       </button>
     </div>
   )
@@ -253,11 +254,11 @@ function SuggestionsTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: Ent
 
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>💡 Smart Suggestions for {entry.template.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="💡" /> Smart Suggestions for {entry.template.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
       {swarm.suggestions.suggestions.map((sg, i) => (
         <div key={i} style={{ marginBottom: 12, padding: 10, background: 'var(--surface2)', borderRadius: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 14 }}>{sg.icon}</span>
+            <span style={{ fontSize: 14 }}><EmojiIcon glyph={sg.icon} /></span>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{sg.category}</span>
           </div>
           {sg.items.map((item, j) => (
@@ -291,7 +292,7 @@ function ManuscriptTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: Entr
 
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>📄 Generate Manuscript Sections</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="📄" /> Generate Manuscript Sections</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         {sections.map(s => (
           <button key={s.type} onClick={() => handleGenerate(s.type)} disabled={generating} style={{
@@ -299,7 +300,7 @@ function ManuscriptTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: Entr
             borderRadius: 8, cursor: generating ? 'wait' : 'pointer', fontSize: 11, color: 'var(--text)',
             display: 'flex', alignItems: 'center', gap: 4,
           }}>
-            <span>{s.icon}</span>{s.label}
+            <span><EmojiIcon glyph={s.icon} /></span>{s.label}
           </button>
         ))}
       </div>
@@ -311,7 +312,7 @@ function ManuscriptTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: Entr
             marginTop: 8, padding: '4px 10px', background: 'var(--accent)', border: 'none',
             borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 10, fontWeight: 600,
           }}>
-            📋 Copy to Clipboard
+            <EmojiIcon glyph="📋" /> Copy to Clipboard
           </button>
         </div>
       )}
@@ -338,7 +339,7 @@ function GrantTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCont
 
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>💰 Generate Grant Sections</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="💰" /> Generate Grant Sections</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         {sections.map(s => (
           <button key={s.type} onClick={() => handleGenerate(s.type)} disabled={generating} style={{
@@ -346,7 +347,7 @@ function GrantTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCont
             borderRadius: 8, cursor: generating ? 'wait' : 'pointer', fontSize: 11, color: 'var(--text)',
             display: 'flex', alignItems: 'center', gap: 4,
           }}>
-            <span>{s.icon}</span>{s.label}
+            <span><EmojiIcon glyph={s.icon} /></span>{s.label}
           </button>
         ))}
       </div>
@@ -358,7 +359,7 @@ function GrantTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryCont
             marginTop: 8, padding: '4px 10px', background: 'var(--accent)', border: 'none',
             borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 10, fontWeight: 600,
           }}>
-            📋 Copy to Clipboard
+            <EmojiIcon glyph="📋" /> Copy to Clipboard
           </button>
         </div>
       )}
@@ -383,7 +384,7 @@ function GeneratorTab({ swarm }: { swarm: UseELNSwarmReturn }) {
     return (
       <div style={{ padding: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>✨ Generated Experiment</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}><EmojiIcon glyph="✨" /> Generated Experiment</div>
           <button onClick={() => { swarm.resetSwarm() }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }}>New</button>
         </div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}>{exp.title}</div>
@@ -399,21 +400,21 @@ function GeneratorTab({ swarm }: { swarm: UseELNSwarmReturn }) {
         ].map((s, i) => (
           <div key={i} style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span>{s.icon}</span>{s.label}
+              <span><EmojiIcon glyph={s.icon} /></span>{s.label}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, whiteSpace: 'pre-wrap', marginTop: 2 }}>{s.content}</div>
           </div>
         ))}
 
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>🧬 Controls</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}><EmojiIcon glyph="🧬" /> Controls</div>
           <div style={{ fontSize: 11, color: '#10b981' }}>Positive: {exp.controls.positive.join('; ')}</div>
           <div style={{ fontSize: 11, color: '#ef4444' }}>Negative: {exp.controls.negative.join('; ')}</div>
           <div style={{ fontSize: 11, color: '#6366f1' }}>Internal: {exp.controls.internal.join('; ')}</div>
         </div>
 
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>⚠️ Potential Pitfalls</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}><EmojiIcon glyph="⚠️" /> Potential Pitfalls</div>
           {exp.potentialPitfalls.map((p, i) => (
             <div key={i} style={{ fontSize: 11, color: '#f59e0b', paddingLeft: 12, position: 'relative' }}>
               <span style={{ position: 'absolute', left: 0 }}>•</span>{p}
@@ -426,7 +427,7 @@ function GeneratorTab({ swarm }: { swarm: UseELNSwarmReturn }) {
 
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>✨ AI Experiment Generator</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}><EmojiIcon glyph="✨" /> AI Experiment Generator</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <input placeholder="Research question *" value={form.researchQuestion} onChange={e => setForm(p => ({ ...p, researchQuestion: e.target.value }))} style={inp} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -439,11 +440,11 @@ function GeneratorTab({ swarm }: { swarm: UseELNSwarmReturn }) {
           {TECHNIQUES.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <button onClick={handleGenerate} disabled={!form.researchQuestion.trim() || swarm.isGenerating} style={{
-          padding: '10px', background: form.researchQuestion.trim() ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'var(--surface2)',
+          padding: '10px', background: form.researchQuestion.trim() ? 'var(--accent)' : 'var(--surface2)',
           border: 'none', borderRadius: 8, color: form.researchQuestion.trim() ? '#fff' : 'var(--text-muted)',
           cursor: form.researchQuestion.trim() ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 600,
         }}>
-          {swarm.isGenerating ? '⏳ Generating...' : '✨ Generate Experiment'}
+          {swarm.isGenerating ? <><EmojiIcon glyph="⏳" />{" Generating..."}</> : <><EmojiIcon glyph="✨" />{" Generate Experiment"}</>}
         </button>
       </div>
     </div>
@@ -481,7 +482,7 @@ function ChatTab({ swarm, entry }: { swarm: UseELNSwarmReturn; entry: EntryConte
           return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: isUser ? 'row-reverse' : 'row', gap: 6, alignItems: 'flex-start' }}>
               <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isUser ? 'var(--accent)' : (agent?.color || '#6366f1') + '20', fontSize: 12, flexShrink: 0 }}>
-                {isUser ? '👤' : agent?.icon || '🧬'}
+                {isUser ? <><EmojiIcon glyph="👤" /></> : agent?.icon || <><EmojiIcon glyph="🧬" /></>}
               </div>
               <div style={{ maxWidth: '80%', padding: '8px 12px', background: isUser ? 'var(--accent)' : 'var(--surface2)', borderRadius: isUser ? '10px 10px 2px 10px' : '10px 10px 10px 2px', border: isUser ? 'none' : '1px solid var(--border)' }}>
                 {!isUser && agent && <div style={{ fontSize: 9, fontWeight: 600, color: agent.color, marginBottom: 2 }}>{agent.name}</div>}

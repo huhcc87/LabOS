@@ -129,7 +129,7 @@ export const remove = mutation({
 });
 
 export const listEvents = query({
-  args: {
+  args: { token: v.optional(v.string()),
     sampleId: v.id("samples"),
     paginationOpts: v.optional(
       v.object({
@@ -139,6 +139,7 @@ export const listEvents = query({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx, args.token);
     const numItems = args.paginationOpts?.numItems ?? 50;
     const cursor = args.paginationOpts?.cursor ?? null;
 

@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePagedApi } from '../hooks/useApi';
 import { formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import EmojiIcon from '../components/EmojiIcon';
 
 const SEVERITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
 const STATUS_OPTIONS = ['open', 'under_review', 'resolved', 'closed'];
@@ -81,7 +82,7 @@ export default function IncidentsPage() {
     { key: 'area', header: 'Area' },
     { key: 'severity', header: 'Severity', render: (r) => {
       const m = SEVERITY_META[r.severity] || SEVERITY_META.low;
-      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{m.icon} {r.severity}</span>;
+      return <span style={{ background: m.bg, color: m.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={m.icon} /> {r.severity}</span>;
     }},
     { key: 'status', header: 'Status', render: (r) => {
       const m = STATUS_META[r.status] || STATUS_META.open;
@@ -117,7 +118,7 @@ export default function IncidentsPage() {
         {/* Critical alert */}
         {criticalOpen.length > 0 && (
           <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 18 }}>🚨</span>
+            <span style={{ fontSize: 18 }}><EmojiIcon glyph="🚨" /></span>
             <div style={{ color: '#991b1b', fontSize: 13 }}>
               <strong>{criticalOpen.length} critical incident{criticalOpen.length > 1 ? 's' : ''} require immediate attention:</strong>{' '}
               {criticalOpen.map(i => i.title).join(', ')}
@@ -182,10 +183,10 @@ export default function IncidentsPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{inc.title}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>📍 {inc.area}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: 12 }}><EmojiIcon glyph="📍" /> {inc.area}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                      <span style={{ background: sm.bg, color: sm.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{sm.icon} {inc.severity}</span>
+                      <span style={{ background: sm.bg, color: sm.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}><EmojiIcon glyph={sm.icon} /> {inc.severity}</span>
                       <span style={{ background: stm.bg, color: stm.color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>{inc.status.replace('_', ' ')}</span>
                     </div>
                   </div>

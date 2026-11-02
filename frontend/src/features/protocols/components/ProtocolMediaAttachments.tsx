@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useRef } from 'react'
 
 interface MediaAttachment {
@@ -90,7 +91,7 @@ export default function ProtocolMediaAttachments({
             transition: 'all 0.2s ease',
           }}
         >
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📎</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}><EmojiIcon glyph="📎" /></div>
           <div style={{ color: 'var(--text)', fontSize: 15, fontWeight: 500 }}>
             Drop files here or click to upload
           </div>
@@ -233,7 +234,7 @@ export default function ProtocolMediaAttachments({
                   borderRadius: 8, textDecoration: 'none',
                 }}
               >
-                <span style={{ fontSize: 24 }}>📄</span>
+                <span style={{ fontSize: 24 }}><EmojiIcon glyph="📄" /></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>
                     {doc.name}
@@ -263,7 +264,7 @@ export default function ProtocolMediaAttachments({
       {/* Empty State */}
       {attachments.length === 0 && (
         <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📷</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}><EmojiIcon glyph="📷" /></div>
           <div style={{ fontSize: 14 }}>No attachments yet</div>
           <div style={{ fontSize: 13, marginTop: 4, color: 'var(--text-soft)' }}>
             Add images, videos, or documents to this protocol

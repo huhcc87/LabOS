@@ -5,6 +5,8 @@ import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Pagination } from '../components/Table';
 import { templatesApi } from '../lib/api';
+import EmojiIcon from '../components/EmojiIcon';
+import LabBanner from '../components/LabBanner';
 
 interface Template {
   id: number;
@@ -154,8 +156,7 @@ export default function TemplatesPage() {
         justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Document Templates</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Reusable templates for protocols, reports, and forms</p>
+          <LabBanner art="inventory" title="Document Templates" subtitle="Reusable templates for protocols, reports, and forms" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button
           style={{ padding: '7px 16px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
@@ -179,7 +180,7 @@ export default function TemplatesPage() {
               alignItems: 'center',
               gap: 12,
             }}>
-              <div style={{ fontSize: 24 }}>{style.icon}</div>
+              <div style={{ fontSize: 24 }}><EmojiIcon glyph={style.icon} /></div>
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: style.color }}>{stats[cat + 's' as keyof typeof stats]}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{cat}s</div>
@@ -337,7 +338,7 @@ export default function TemplatesPage() {
 
         {!loading && templates.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}><EmojiIcon glyph="📄" /></div>
             <p>No templates found</p>
           </div>
         )}

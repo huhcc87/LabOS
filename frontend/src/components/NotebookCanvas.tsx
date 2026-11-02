@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import EmojiIcon from './EmojiIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tool = 'pen' | 'highlighter' | 'eraser';
@@ -432,7 +433,7 @@ export default function NotebookCanvas({
                   color: tool === t.id ? '#fff' : 'var(--text, #0f172a)',
                 }} title={t.label}
               >
-                {t.icon} {t.label}
+                <EmojiIcon glyph={t.icon} /> {t.label}
               </button>
             ))}
           </div>
@@ -555,7 +556,7 @@ export default function NotebookCanvas({
       {!readOnly && (
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted, #64748b)' }}>
           <span>{internal.pages.length} page{internal.pages.length > 1 ? 's' : ''} · {totalStrokes} stroke{totalStrokes === 1 ? '' : 's'}</span>
-          <span>✍️ Use Apple Pencil, S Pen, or any stylus for pressure-sensitive writing</span>
+          <span><EmojiIcon glyph="✍️" /> Use Apple Pencil, S Pen, or any stylus for pressure-sensitive writing</span>
         </div>
       )}
     </div>

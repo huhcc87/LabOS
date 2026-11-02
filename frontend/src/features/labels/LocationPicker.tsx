@@ -5,6 +5,10 @@ import type { Id } from '../../../convex/_generated/dataModel';
 
 export interface Location { box_id: Id<'freezer_boxes'>; row: number; col: number }
 
+/** Where a unit keeps things, judged by its set temperature (°C). A unit with no temperature is "Other". */
+export const storageKind = (t?: number): string =>
+  t === undefined ? 'Other' : t <= -150 ? 'Liquid nitrogen' : t <= -60 ? '-80 °C freezer' : t <= -10 ? '-20 °C freezer' : t <= 10 ? 'Fridge (4 °C)' : 'Room temperature';
+
 const letter = (n: number) => String.fromCharCode(65 + n);
 const lbl: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 };
 
@@ -12,11 +16,14 @@ const lbl: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 7
 export function LocationPicker({ token, onChange }: { token: string | undefined; onChange: (l: Location | null) => void }) {
   const freezers = useQuery(api.freezer.list, token ? { token } : 'skip');
   const [freezerId, setFreezerId] = useState<Id<'freezers'> | ''>('');
+  const [kind, setKind] = useState('');
   const [rackId, setRackId] = useState('');
   const [boxId, setBoxId] = useState('');
   const [pos, setPos] = useState('');
 
-  const fid = freezerId || freezers?.[0]?._id;
+  const kinds = [...new Set((freezers ?? []).map(f => storageKind(f.temperature)))];
+  const shown = (freezers ?? []).filter(f => !kind || storageKind(f.temperature) === kind);
+  const fid = (freezerId && shown.some(f => f._id === freezerId) ? freezerId : shown[0]?._id);
   const structure = useQuery(api.freezer.structure, fid && token ? { token, freezer_id: fid } : 'skip');
   const boxes = (structure?.boxes ?? []).filter(b => b.rack_id === rackId);
   const box = boxes.find(b => b._id === boxId);
@@ -50,9 +57,13 @@ export function LocationPicker({ token, onChange }: { token: string | undefined;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+      {kinds.length > 1 && <div><label style={lbl} htmlFor="lp-k">Storage type</label>
+        <select id="lp-k" className="form-select" style={{ width: '100%' }} value={kind} onChange={e => { setKind(e.target.value); setFreezerId(''); }}>
+          <option value="">All</option>{kinds.map(k => <option key={k} value={k}>{k}</option>)}
+        </select></div>}
       <div><label style={lbl} htmlFor="lp-f">Freezer</label>
         <select id="lp-f" className="form-select" style={{ width: '100%' }} value={fid ?? ''} onChange={e => setFreezerId(e.target.value as Id<'freezers'>)}>
-          {freezers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+          {shown.map(f => <option key={f._id} value={f._id}>{f.name}{f.temperature !== undefined ? ` (${f.temperature} °C)` : ''}</option>)}
         </select></div>
       <div><label style={lbl} htmlFor="lp-r">Shelf › rack</label>
         <select id="lp-r" className="form-select" style={{ width: '100%' }} value={rackId} onChange={e => { setRackId(e.target.value); setBoxId(''); }}>

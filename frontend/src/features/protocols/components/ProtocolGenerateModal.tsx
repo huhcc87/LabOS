@@ -1,3 +1,4 @@
+import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
 import type { useProtocolGeneration } from '../hooks/useProtocolGeneration'
@@ -40,7 +41,7 @@ export default function ProtocolGenerateModal({ hook: h }: Props) {
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #2a2d3e', display: 'flex', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ color: '#e2e8f0', margin: 0, fontSize: 17 }}>🤖 Generate AI Protocol Draft</h2>
+            <h2 style={{ color: '#e2e8f0', margin: 0, fontSize: 17 }}><EmojiIcon glyph="🤖" /> Generate AI Protocol Draft</h2>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: '4px 0 0' }}>AI drafts must be reviewed by a qualified scientist before lab use</p>
           </div>
           <button onClick={() => { h.setIsOpen(false); h.reset() }} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 6, color: '#94a3b8', padding: '6px 10px', cursor: 'pointer', fontSize: 16 }}>✕</button>
@@ -49,7 +50,7 @@ export default function ProtocolGenerateModal({ hook: h }: Props) {
           {!h.generated ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ background: '#4c1d9522', border: '1px solid #8b5cf6', borderRadius: 8, padding: '10px 14px', color: '#c4b5fd', fontSize: 12 }}>
-                ⚠️ AI-generated protocols are drafts only. Never use in a laboratory without expert review and validation.
+                <EmojiIcon glyph="⚠️" /> AI-generated protocols are drafts only. Never use in a laboratory without expert review and validation.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {fld('Protocol Title / Topic *', inp(h.params.title, v => h.setParam('title', v), 'e.g. PBMC isolation from whole blood'))}
@@ -79,14 +80,14 @@ export default function ProtocolGenerateModal({ hook: h }: Props) {
                 <button onClick={() => { h.setIsOpen(false); h.reset() }} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 6, color: '#94a3b8', padding: '8px 16px', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={h.generate} disabled={h.isGenerating}
                   style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '8px 20px', cursor: h.isGenerating ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: h.isGenerating ? 0.7 : 1 }}>
-                  {h.isGenerating ? '⏳ Generating...' : '🤖 Generate Protocol'}
+                  {h.isGenerating ? <><EmojiIcon glyph="⏳" />{" Generating..."}</> : <><EmojiIcon glyph="🤖" />{" Generate Protocol"}</>}
                 </button>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ background: '#7f1d1d22', border: '1px solid #ef4444', borderRadius: 8, padding: '12px 16px' }}>
-                <div style={{ color: '#ef4444', fontWeight: 700, marginBottom: 4 }}>⚠️ AI DRAFT — NOT VALIDATED</div>
+                <div style={{ color: '#ef4444', fontWeight: 700, marginBottom: 4 }}><EmojiIcon glyph="⚠️" /> AI DRAFT — NOT VALIDATED</div>
                 <div style={{ color: '#fca5a5', fontSize: 12 }}>This protocol is AI-generated and must be reviewed by a qualified scientist before laboratory use. Confidence score: {Math.round((h.generated.confidenceScore || 0) * 100)}%</div>
               </div>
               <div style={{ background: '#1a1d27', border: '1px solid #2a2d3e', borderRadius: 8, padding: 16 }}>
@@ -104,7 +105,7 @@ export default function ProtocolGenerateModal({ hook: h }: Props) {
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={h.reset} style={{ background: '#242838', border: '1px solid #2a2d3e', borderRadius: 6, color: '#94a3b8', padding: '8px 16px', cursor: 'pointer' }}>← Edit Params</button>
                 <button onClick={h.saveDraft} style={{ background: '#6366f1', border: 'none', borderRadius: 6, color: '#fff', padding: '8px 20px', cursor: 'pointer', fontWeight: 600 }}>
-                  💾 Save as Draft
+                  <EmojiIcon glyph="💾" /> Save as Draft
                 </button>
               </div>
             </div>
