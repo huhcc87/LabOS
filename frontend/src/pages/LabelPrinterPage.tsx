@@ -5,7 +5,6 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
-import { scanUrl } from '../features/labels/scanCode';
 import EmojiIcon from '../components/EmojiIcon';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
@@ -96,10 +95,24 @@ const KNOWN_PRINTERS = [
   { id: 'any',     name: 'Other / Generic',  models: 'Any USB label printer',        vendorId: null,   accent: '#8e44ad', icon: '🔌' },
 ] as const;
 
+// USB vendor ids of common label/thermal printers, used to recognise a printer the browser already has access to.
+const PRINTER_VENDORS: Record<number, string> = {
+  0x0922: 'Dymo', 0x04f9: 'Brother', 0x0a5f: 'Zebra', 0x04b8: 'Epson', 0x1203: 'TSC', 0x195f: 'Godex', 0x0dd4: 'Custom', 0x20d1: 'Munbyn',
+};
+const printerLabel = (d: { vendorId: number; productName?: string | null }): string =>
+  d.productName || `${PRINTER_VENDORS[d.vendorId] ?? 'USB'} label printer`;
+
+// A sample sent to this page: its code (the sample ID) and the text for each label field key.
+interface LabelHandoff { code: string; details: Record<string, string> }
+const LABEL_HANDOFF_KEY = 'labos_label_handoff';
+
 // ─── Unique ID generator ──────────────────────────────────────────────────────
 function generateLabId(prefix = 'LAB'): string {
   const yr = new Date().getFullYear();
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const ABC = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  // Unbiased: keep only bytes below 252 (7 × 36) before taking % 36.
+  let rand = '';
+  while (rand.length < 6) for (const b of crypto.getRandomValues(new Uint8Array(8))) if (b < 252 && rand.length < 6) rand += ABC[b % 36];
   return `${prefix}-${yr}-${rand}`;
 }
 
@@ -201,7 +214,8 @@ function LabelCard({
       {/* Left: QR / barcode */}
       {(showQr || showBarcode) && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {showQr && <Barcode value={scanUrl(uid)} type={codeType} width={qrSize} height={qrSize} />}
+          {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
+          {showQr && <Barcode value={uid} type={codeType} width={qrSize} height={qrSize} />}
           {showBarcode && !showQr && (
             <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
               showText textSize={typo.uidPt} />
@@ -279,12 +293,37 @@ export default function LabelPrinterPage() {
   const [brand, setBrand] = useState('LabOS');
   const [fields, setFields] = useState<LabelField[]>(DEFAULT_FIELDS);
   const [uid, setUid] = useState(generateLabId());
+  // Samples sent from Sample Hub: one label each, with the details already typed there (entered once).
+  const [batch, setBatch] = useState<LabelHandoff[]>(() => {
+    try { return JSON.parse(sessionStorage.getItem(LABEL_HANDOFF_KEY) || '[]'); } catch { return []; }
+  });
+  useEffect(() => { try { sessionStorage.removeItem(LABEL_HANDOFF_KEY); } catch { /* ignore */ } }, []);
   const [copies, setCopies] = useState(1);
   const [typo, setTypo] = useState<Typography>(DEFAULT_TYPOGRAPHY);
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const [showPrinterModal, setShowPrinterModal] = useState(false);
+  // 'sheet' = fill each page with a grid of labels; 'single' = one label per page (page cut to the label size).
+  const [printMode, setPrintMode] = useState<'sheet' | 'single'>('sheet');
   const printAreaRef = useRef<HTMLDivElement>(null);
+
+  // Auto-detect: pick up a printer the browser was already allowed to use, and follow plug/unplug.
+  useEffect(() => {
+    const usb = (navigator as any).usb;
+    if (!usb) return;
+    const isKnown = (d: any) => d.vendorId in PRINTER_VENDORS;
+    const refresh = async () => {
+      try {
+        const found = (await usb.getDevices()).find(isKnown);
+        if (found) { setConnectedPrinterName(printerLabel(found)); setPrinterStatus('connected'); }
+        else { setConnectedPrinterName(null); setPrinterStatus(s => (s === 'connected' ? 'browser' : s)); }
+      } catch { /* no USB permission available: stay on browser print */ }
+    };
+    refresh();
+    usb.addEventListener('connect', refresh);
+    usb.addEventListener('disconnect', refresh);
+    return () => { usb.removeEventListener('connect', refresh); usb.removeEventListener('disconnect', refresh); };
+  }, []);
 
   // ── Saved templates ──────────────────────────────────────────────────────────
   const [savedTemplates, setSavedTemplates] = useState<LabelTemplate[]>(() => {
@@ -324,9 +363,14 @@ export default function LabelPrinterPage() {
   // Save each label (code + what's written on it) so scanning it later finds the details.
   const registerLabels = useMutation(api.labels.registerMany);
   const handlePrint = async () => {
-    const details = Object.fromEntries(fields.filter(f => f.show && f.value.trim()).map(f => [f.key, f.value.trim()]));
     try {
-      await registerLabels({ token: token ?? undefined, labels: labelsToPrint.map(l => ({ code: l.uid, details })) });
+      await registerLabels({
+        token: token ?? undefined,
+        labels: labelsToPrint.map(l => ({
+          code: l.uid,
+          details: Object.fromEntries(l.fields.filter(f => f.show && f.value.trim()).map(f => [f.key, f.value.trim()])),
+        })),
+      });
     } catch (e) {
       toast.error(`Printing anyway, but these labels can't be matched when scanned: ${errText(e)}`);
     }
@@ -389,22 +433,30 @@ export default function LabelPrinterPage() {
         : [{ vendorId: 0x0922 }, { vendorId: 0x04f9 }, { vendorId: 0x0a5f }];
       const device = await nav.usb.requestDevice({ filters });
       await device.open();
-      const name = device.productName || 'Label printer';
-      setConnectedPrinterName(name);
+      setConnectedPrinterName(printerLabel(device));
       setPrinterStatus('connected');
     } catch {
       setPrinterStatus('browser');
     }
   };
 
+  // Sheet grid only when the size is a sheet AND the user wants full sheets; otherwise one label per page.
+  const asSheet = size.layout === 'sheet' && printMode === 'sheet';
+
   // Generate the sheet/roll for printing
-  const labelsToPrint = Array.from({ length: copies }, (_, i) => ({
-    uid: copies === 1 ? uid : `${uid}-${(i + 1).toString().padStart(2, '0')}`,
-  }));
+  const labelsToPrint: { uid: string; fields: LabelField[] }[] = batch.length
+    ? batch.map(b => ({
+        uid: b.code,
+        fields: fields.map(f => (b.details[f.key] ? { ...f, value: b.details[f.key], show: true } : f)),
+      }))
+    : Array.from({ length: copies }, (_, i) => ({
+        uid: copies === 1 ? uid : `${uid}-${(i + 1).toString().padStart(2, '0')}`,
+        fields,
+      }));
 
   // Sheet grid layout (for Avery-style sheets)
   let printGridStyle: React.CSSProperties = {};
-  if (size.layout === 'sheet') {
+  if (asSheet) {
     printGridStyle = {
       display: 'grid',
       gridTemplateColumns: `repeat(${size.cols || 1}, ${size.widthMm}mm)`,
@@ -421,9 +473,11 @@ export default function LabelPrinterPage() {
         @media print {
           body * { visibility: hidden; }
           .label-print-area, .label-print-area * { visibility: visible; }
-          .label-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          html, body { margin: 0 !important; padding: 0 !important; }
+          .label-print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; }
+          .label-print-area .label-card { border: 0 !important; }
           @page {
-            size: ${size.layout === 'sheet' ? '8.5in 11in' : `${size.widthMm}mm ${size.heightMm}mm`};
+            size: ${asSheet ? '8.5in 11in' : `${size.widthMm}mm ${size.heightMm}mm`};
             margin: 0;
           }
           .page-break { break-after: page; }
@@ -507,7 +561,8 @@ export default function LabelPrinterPage() {
             </div>
 
             <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 12px', background: 'rgba(99,102,241,0.07)', borderRadius: 8 }}>
-              <strong>Note:</strong> Web USB pairing requires Chrome or Edge. After pairing, use <strong>Print</strong> to send labels — LabOS uses your OS print dialog for full print-quality output.
+              <strong>Auto-detect:</strong> once a printer is paired, LabOS recognises it on every visit and when you plug or unplug it (Chrome or Edge).
+              <br /><strong>Drivers:</strong> install your printer's driver so it shows in the print dialog — Dymo Connect (Dymo), Brother P-touch / b-PAC driver (Brother), Zebra Setup Utilities (Zebra). In the print dialog choose the printer, set paper size to your label, scale <em>100% / Actual size</em>, margins <em>None</em>, and the highest quality (300 dpi+) for small barcodes.
             </div>
           </div>
         </div>
@@ -789,9 +844,26 @@ export default function LabelPrinterPage() {
             </div>
           </div>
 
+          {batch.length > 0 && (
+            <div className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
+              <span><strong>{batch.length}</strong> sample{batch.length > 1 ? 's' : ''} from Sample Hub: one label each, details filled in.</span>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => setBatch([])}>Clear</button>
+            </div>
+          )}
+
           {/* Copies + branding */}
           <div className="card">
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Print options</div>
+            {size.layout === 'sheet' && (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10 }} role="group" aria-label="Print layout">
+                {([['sheet', 'Full sheet'], ['single', 'One label per page']] as const).map(([m, t]) => (
+                  <button key={m} type="button" onClick={() => setPrintMode(m)} aria-pressed={printMode === m}
+                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                      border: `1px solid ${printMode === m ? 'var(--accent, #6366f1)' : 'var(--border)'}`,
+                      background: printMode === m ? 'rgba(99,102,241,0.12)' : 'var(--surface)', color: 'var(--text)' }}>{t}</button>
+                ))}
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Copies</label>
@@ -821,9 +893,9 @@ export default function LabelPrinterPage() {
               </div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {copies} label{copies > 1 ? 's' : ''} will print
-              {size.layout === 'sheet' && size.cols && size.rows && (
-                <> ({Math.ceil(copies / (size.cols * size.rows))} sheet{Math.ceil(copies / (size.cols * size.rows)) > 1 ? 's' : ''})</>
+              {labelsToPrint.length} label{labelsToPrint.length > 1 ? 's' : ''} will print
+              {asSheet && size.cols && size.rows && (
+                <> ({Math.ceil(labelsToPrint.length / (size.cols * size.rows))} sheet{Math.ceil(labelsToPrint.length / (size.cols * size.rows)) > 1 ? 's' : ''})</>
               )}
             </div>
           </div>
@@ -831,16 +903,16 @@ export default function LabelPrinterPage() {
           {/* Single big preview */}
           <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: 30, background: 'var(--surface2)' }}>
             <div style={{ transform: size.widthMm < 30 ? 'scale(2.5)' : size.widthMm < 60 ? 'scale(1.6)' : 'scale(1)', transformOrigin: 'center' }}>
-              <LabelCard size={size} fields={fields} uid={uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
+              <LabelCard size={size} fields={labelsToPrint[0].fields} uid={labelsToPrint[0].uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
             </div>
           </div>
 
           {/* Print-only area */}
           <div ref={printAreaRef} className="label-print-area" style={{
-            background: '#ffffff', padding: size.layout === 'sheet' ? 0 : 4,
+            background: '#ffffff', padding: asSheet ? 0 : 4,
             borderRadius: 8, border: '1px solid var(--border)',
           }}>
-            {size.layout === 'sheet' ? (
+            {asSheet ? (
               // Group labels into pages
               Array.from({ length: Math.ceil(labelsToPrint.length / ((size.cols || 1) * (size.rows || 1))) }, (_, pageIdx) => {
                 const start = pageIdx * (size.cols || 1) * (size.rows || 1);
@@ -848,7 +920,7 @@ export default function LabelPrinterPage() {
                 return (
                   <div key={pageIdx} style={printGridStyle} className={pageIdx < Math.ceil(labelsToPrint.length / ((size.cols || 1) * (size.rows || 1))) - 1 ? 'page-break' : ''}>
                     {labelsToPrint.slice(start, end).map((l, j) => (
-                      <LabelCard key={j} size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
+                      <LabelCard key={j} size={size} fields={l.fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
                     ))}
                   </div>
                 );
@@ -857,7 +929,7 @@ export default function LabelPrinterPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {labelsToPrint.map((l, j) => (
                   <div key={j} className={j < labelsToPrint.length - 1 ? 'page-break' : ''}>
-                    <LabelCard size={size} fields={fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
+                    <LabelCard size={size} fields={l.fields} uid={l.uid} codeType={codeType} showQr={showQr} showBarcode={showBarcode} brand={brand} typo={typo} />
                   </div>
                 ))}
               </div>

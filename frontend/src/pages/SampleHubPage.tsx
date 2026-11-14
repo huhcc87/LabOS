@@ -248,7 +248,11 @@ export default function SampleHubPage() {
 
   // Generate Sample ID
   const generateSampleId = () => {
-    const num = Math.floor(Math.random() * 900000) + 100000;
+    // Unbiased 6-digit number: reject draws above the largest multiple of 900000.
+    const LIMIT = Math.floor(0x100000000 / 900000) * 900000;
+    let r = crypto.getRandomValues(new Uint32Array(1))[0];
+    while (r >= LIMIT) r = crypto.getRandomValues(new Uint32Array(1))[0];
+    const num = (r % 900000) + 100000;
     return `SMP-${num}`;
   };
 
@@ -310,11 +314,12 @@ export default function SampleHubPage() {
   };
 
   // Create sample (saved to the database)
-  const handleCreateSample = async () => {
+  const handleCreateSample = async (print: boolean) => {
     const type = (newSample.type === '__custom__' ? newSample.customType : newSample.type).trim();
-    const location = (newSample.location === '__custom__' ? newSample.customLocation : newSample.location).trim();
+    // No location yet is fine: the freezer box is chosen when the label is scanned.
+    const location = (newSample.location === '__custom__' ? newSample.customLocation : newSample.location).trim() || 'Awaiting storage';
 
-    if (!type || !location) {
+    if (!type) {
       showToast('Please fill in required fields', 'error');
       return;
     }
@@ -333,9 +338,11 @@ export default function SampleHubPage() {
     try { await evLab.add(sampleId, 'Created', newSample.parentSampleId ? `Derived from ${newSample.parentSampleId}` : 'New sample registered'); }
     catch (e) { showToast(errText(e), 'error'); }
 
+    const created = { sampleId, type, owner: newSample.owner, date: localDate(new Date()), location, quantity: newSample.quantity, unit: newSample.unit, notes: newSample.notes };
     setNewSample({ type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '', status: 'processing' });
     setShowSampleModal(false);
     showToast('Sample created successfully!', 'success');
+    if (print) printSampleLabels([created]);
   };
 
   // Update sample
@@ -457,6 +464,19 @@ export default function SampleHubPage() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('Chain of Custody exported', 'success');
+  };
+
+  // Send samples to the Label Printer: the sample ID is the label code, so a later scan finds this sample.
+  const printSampleLabels = (list: Pick<Sample, 'sampleId' | 'type' | 'owner' | 'date' | 'location' | 'quantity' | 'unit' | 'notes'>[]) => {
+    const handoff = list.map(s => ({
+      code: s.sampleId,
+      details: Object.fromEntries(Object.entries({
+        name: s.sampleId, type: s.type, owner: s.owner, date: s.date, storage: s.location === 'Awaiting storage' ? '' : s.location,
+        volume: s.quantity ? `${s.quantity} ${s.unit}`.trim() : '', notes: s.notes,
+      }).filter(([, v]) => v)),
+    }));
+    try { sessionStorage.setItem('labos_label_handoff', JSON.stringify(handoff)); } catch { /* label printer opens blank */ }
+    navigate('label-printer');
   };
 
   // Label queue management
@@ -963,9 +983,7 @@ export default function SampleHubPage() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="btn btn-sm" style={{ background: '#8b5cf6', color: 'white', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: 8 }}
                   onClick={() => {
-                    const selectedSamplesList = samples.filter(s => selectedSamples.has(s.id));
-                    addSamplesToLabelQueue(selectedSamplesList);
-                    setActiveTab('labels');
+                    printSampleLabels(samples.filter(s => selectedSamples.has(s.id)));
                   }}>
                   <EmojiIcon glyph="🖨️" /> Print ({selectedSamples.size})
                 </button>
@@ -1034,7 +1052,7 @@ export default function SampleHubPage() {
                         <EmojiIcon glyph="✏️" /> Edit
                       </button>
                       <button className="btn btn-sm" style={{ marginRight: 6, fontSize: 12, background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: 'none' }}
-                        onClick={() => { addSamplesToLabelQueue([s]); setActiveTab('labels'); }}>
+                        onClick={() => printSampleLabels([s])}>
                         <EmojiIcon glyph="🖨️" /> Print
                       </button>
                       <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', fontSize: 12 }}
@@ -1653,9 +1671,9 @@ export default function SampleHubPage() {
               </div>
 
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Storage Location *</label>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Storage Location</label>
                 <select className="form-select" value={newSample.location} onChange={e => setNewSample({ ...newSample, location: e.target.value })} style={{ width: '100%' }}>
-                  <option value="">Select location...</option>
+                  <option value="">Not stored yet (pick the freezer box when you scan it)</option>
                   {locationOptions.map(l => <option key={l} value={l}>{l}</option>)}
                   <option value="__custom__">+ Custom Location</option>
                 </select>
@@ -1710,7 +1728,8 @@ export default function SampleHubPage() {
 
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
               <button className="btn btn-secondary" onClick={() => setShowSampleModal(false)} style={{ flex: 1 }}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleCreateSample} style={{ flex: 1 }}>Create Sample</button>
+              <button className="btn btn-secondary" onClick={() => handleCreateSample(false)} style={{ flex: 1 }}>Create Sample</button>
+              <button className="btn btn-primary" onClick={() => handleCreateSample(true)} style={{ flex: 1 }}>Create &amp; print QR label</button>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
  * Custom password authentication — no OAuth, no rotating secrets.
  * Uses bcryptjs for hashing + a sessions table for token storage.
  */
-import { action, mutation, query, internalMutation, internalQuery } from "./_generated/server";
+import { action, mutation, query, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { passwordProblem } from "./security";
@@ -235,6 +235,30 @@ export const getUserById = internalQuery({
   args: { user_id: v.id("users") },
   handler: async (ctx, { user_id }) => {
     return await ctx.db.get(user_id);
+  },
+});
+
+/**
+ * Operator-only (CLI): set an account's password and clear any lockout.
+ * npx convex run customAuth:setPasswordByEmail '{"email":"…","password":"…"}'
+ */
+export const setPasswordByEmail = internalAction({
+  args: { email: v.string(), password: v.string() },
+  handler: async (ctx, { email, password }): Promise<string> => {
+    if (password.length < 8) throw new ConvexError("Password must be at least 8 characters");
+    const user = await ctx.runQuery(internal.customAuth.getUserByEmail, { email: email.trim().toLowerCase() });
+    if (!user) throw new ConvexError("No account with that email");
+    const bcrypt = await import("bcryptjs");
+    const hashed_password = await bcrypt.hash(password, 12);
+    await ctx.runMutation(internal.customAuth.storePassword, { user_id: user._id, hashed_password });
+    return "Password set and lockout cleared";
+  },
+});
+
+export const storePassword = internalMutation({
+  args: { user_id: v.id("users"), hashed_password: v.string() },
+  handler: async (ctx, { user_id, hashed_password }) => {
+    await ctx.db.patch(user_id, { hashed_password, failed_login_attempts: 0, locked_until: undefined, updated_at: Date.now() });
   },
 });
 

@@ -4,9 +4,9 @@ import ScanStore from '../features/labels/ScanStore';
 import BarcodeLabelsPage from './BarcodeLabelsPage';
 
 /** One place for labels: print them, then scan them to store the sample. */
-export default function LabelsPage() {
-  // A phone camera scan of a label opens the app at /?label=CODE
-  const [scanned] = useState(() => new URLSearchParams(window.location.search).get('label'));
+export default function LabelsPage({ scanCode }: { scanCode?: string }) {
+  // A phone camera scan opens the app at /?label=CODE; a USB scanner hands its code in as scanCode
+  const [scanned] = useState(() => scanCode ?? new URLSearchParams(window.location.search).get('label'));
   const [tab, setTab] = useState<'print' | 'stock' | 'scan'>(scanned ? 'scan' : 'print');
   useEffect(() => { if (scanned) window.history.replaceState(null, '', window.location.pathname); }, [scanned]);
 
