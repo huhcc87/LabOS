@@ -248,7 +248,11 @@ export default function SampleHubPage() {
 
   // Generate Sample ID
   const generateSampleId = () => {
-    const num = (crypto.getRandomValues(new Uint32Array(1))[0] % 900000) + 100000;
+    // Unbiased 6-digit number: reject draws above the largest multiple of 900000.
+    const LIMIT = Math.floor(0x100000000 / 900000) * 900000;
+    let r = crypto.getRandomValues(new Uint32Array(1))[0];
+    while (r >= LIMIT) r = crypto.getRandomValues(new Uint32Array(1))[0];
+    const num = (r % 900000) + 100000;
     return `SMP-${num}`;
   };
 

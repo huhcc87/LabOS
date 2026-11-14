@@ -110,7 +110,9 @@ const LABEL_HANDOFF_KEY = 'labos_label_handoff';
 function generateLabId(prefix = 'LAB'): string {
   const yr = new Date().getFullYear();
   const ABC = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const rand = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => ABC[b % 36]).join('');
+  // Unbiased: keep only bytes below 252 (7 × 36) before taking % 36.
+  let rand = '';
+  while (rand.length < 6) for (const b of crypto.getRandomValues(new Uint8Array(8))) if (b < 252 && rand.length < 6) rand += ABC[b % 36];
   return `${prefix}-${yr}-${rand}`;
 }
 
