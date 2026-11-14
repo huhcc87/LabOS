@@ -13,6 +13,8 @@ const DAY = 24 * HOUR;
 const MAX_LEN = 7 * DAY;
 /** Instruments in these states can't be booked. */
 const NOT_BOOKABLE = ["not_used", "maintenance", "out_of_service", "retired", "offline"];
+/** A booking in these states no longer holds its time slot; every other booking blocks it. */
+const FREE = ["cancelled", "completed"];
 
 export const REMINDER_EVERY_MS = 2 * DAY;
 /** All the booking details in one line, for notifications. */
@@ -42,12 +44,12 @@ export const overview = query({
     const instruments = (await ctx.db.query("instruments").collect()).filter((i) => i.status !== "retired");
     const now = Date.now();
     const upcoming = (await ctx.db.query("bookings").withIndex("by_start", (q) => q.gte("start_time", now - MAX_LEN)).collect())
-      .filter((b) => b.status !== "cancelled" && b.end_time > now);
+      .filter((b) => !FREE.includes(b.status) && b.end_time > now);
     const names = new Map<string, string>();
     const bookings = [];
     for (const b of upcoming.sort((a, c) => a.start_time - c.start_time)) {
       if (!names.has(b.user_id)) names.set(b.user_id, (await ctx.db.get(b.user_id))?.full_name ?? "Unknown");
-      bookings.push({ ...b, user_name: names.get(b.user_id)!, mine: b.user_id === userId, can_cancel: b.user_id === userId || hasRole(me.role, "manager") });
+      bookings.push({ ...b, user_name: names.get(b.user_id)!, mine: b.user_id === userId, can_cancel: b.user_id === userId });
     }
     return {
       instruments: instruments.map((i) => ({ ...i, bookable: !NOT_BOOKABLE.includes(i.status) })),
@@ -85,7 +87,7 @@ export const book = mutation({
     if (a.start_time < Date.now() - 5 * 60_000) throw new ConvexError("That time is in the past.");
 
     const clash = (await ctx.db.query("bookings").withIndex("by_instrument", (q) => q.eq("instrument_id", a.instrument_id)).collect())
-      .find((b) => b.status !== "cancelled" && b.start_time < a.end_time && b.end_time > a.start_time);
+      .find((b) => !FREE.includes(b.status) && b.start_time < a.end_time && b.end_time > a.start_time);
     if (clash) {
       const who = (await ctx.db.get(clash.user_id))?.full_name ?? "someone";
       throw new ConvexError(`${inst.name} is already booked by ${who} during part of that time. Pick a free slot (see "Already booked").`);
@@ -119,11 +121,22 @@ export const cancel = mutation({
   args: { token: v.optional(v.string()), id: v.id("bookings") },
   handler: async (ctx, { token, id }) => {
     const userId = await requireAuth(ctx, token);
-    const me = (await ctx.db.get(userId))!;
     const b = await ctx.db.get(id);
     if (!b) throw new ConvexError("Booking not found.");
-    if (b.user_id !== userId && !hasRole(me.role, "manager")) throw new ConvexError("You can only cancel your own bookings.");
+    if (b.user_id !== userId) throw new ConvexError("Only the person who booked can cancel this booking.");
     await ctx.db.patch(id, { status: "cancelled" });
+  },
+});
+
+/** Done with the instrument: frees the rest of the slot so others can book it. */
+export const complete = mutation({
+  args: { token: v.optional(v.string()), id: v.id("bookings") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await requireAuth(ctx, token);
+    const b = await ctx.db.get(id);
+    if (!b) throw new ConvexError("Booking not found.");
+    if (b.user_id !== userId) throw new ConvexError("Only the person who booked can mark this booking complete.");
+    await ctx.db.patch(id, { status: "completed", remind_every_2_days: undefined });
   },
 });
 
@@ -146,7 +159,7 @@ export const sendReminders = internalMutation({
     const gap = every_ms ?? REMINDER_EVERY_MS;
     const upcoming = await ctx.db.query("bookings").withIndex("by_start", (q) => q.gt("start_time", now)).take(1000);
     for (const b of upcoming) {
-      if (b.status === "cancelled" || !b.remind_every_2_days) continue;
+      if (FREE.includes(b.status) || !b.remind_every_2_days) continue;
       if (now - (b.last_reminded_at ?? b.created_at) < gap) continue;
       const inst = await ctx.db.get(b.instrument_id);
       await ctx.db.insert("notifications", {

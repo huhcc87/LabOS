@@ -122,7 +122,7 @@ const EVENT_ICONS: Record<string, string> = {
   note_added: '#',
 };
 
-export default function ExperimentsHubPage() {
+export default function ExperimentsHubPage({ initialTab = 'experiments' }: { initialTab?: TabType }) {
   const { token } = useAuth();
   const data = useQuery(api.experiments.overview, token ? { token } : 'skip');
   const saveExpM = useMutation(api.experiments.save);
@@ -136,7 +136,7 @@ export default function ExperimentsHubPage() {
   const addFileM = useMutation(api.experiments.addFile);
   const removeFileM = useMutation(api.experiments.removeFile);
 
-  const [activeTab, setActiveTab] = useState<TabType>('experiments');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Saved data, shaped for the screens below. `id` is the visible code (EXP-001); `docId` is the database id.
   const experiments: (Experiment & { docId: Id<'experiments'> })[] = (data?.experiments ?? []).map(e => ({
@@ -329,14 +329,14 @@ export default function ExperimentsHubPage() {
     { key: 'experiments', label: 'Experiments', icon: ':::' },
     { key: 'results', label: 'Results', icon: '=' },
     { key: 'timeline', label: 'Timeline', icon: '|' },
-    { key: 'files', label: 'Files', icon: '#' },
+    { key: 'files', label: 'Documents & files', icon: '#' },
   ];
 
   return (
     <div className="page experiments-hub">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <LabBanner art="lab" title="Experiments Hub" subtitle="Manage experiments, track progress, and document results" style={{ flex: 1, minWidth: 0 }} />
+          <LabBanner art="lab" title="Experiments & Documents" subtitle="Experiments, results, timeline and all lab documents and files in one place" style={{ flex: 1, minWidth: 0 }} />
         </div>
         <button onClick={() => setShowHelp(true)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
           ? Help
@@ -629,7 +629,7 @@ export default function ExperimentsHubPage() {
       {activeTab === 'files' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Experiment Files</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Documents & files</h2>
             <button onClick={() => setShowFileModal(true)} className="btn btn-primary" style={{ padding: '10px 20px' }}>
               + Upload File
             </button>
