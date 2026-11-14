@@ -3,3 +3,4 @@
 .vercel
 backups/
 .env*
+!.env.development
