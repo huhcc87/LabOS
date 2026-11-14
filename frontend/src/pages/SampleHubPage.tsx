@@ -248,7 +248,7 @@ export default function SampleHubPage() {
 
   // Generate Sample ID
   const generateSampleId = () => {
-    const num = Math.floor(Math.random() * 900000) + 100000;
+    const num = (crypto.getRandomValues(new Uint32Array(1))[0] % 900000) + 100000;
     return `SMP-${num}`;
   };
 
