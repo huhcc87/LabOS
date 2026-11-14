@@ -16,6 +16,8 @@ import { useLabProtocols, errText, type LabProtocol, type ProtocolInput } from '
 import type { Id } from '../../convex/_generated/dataModel';
 import EmojiIcon from '../components/EmojiIcon';
 import LabBanner from '../components/LabBanner';
+import ExperimentsHubPage from './ExperimentsHubPage';
+import ProtocolLibrary from '../features/protocols/pages/ProtocolsPage';
 
 // Types
 // Protocols are saved in Convex (shared with the whole lab); see useLabProtocols.
@@ -93,11 +95,12 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-type HubTab = 'protocols' | 'notebook' | 'sops' | 'instruments' | 'bookings';
+type HubTab = 'protocols' | 'notebook' | 'sops' | 'instruments' | 'bookings' | 'experiments';
 export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const sopCount = useQuery(api.sops.overview, token ? { token } : 'skip')?.sops.length ?? 0;
+  const libCount = useQuery(api.protocolLibrary.list, token ? { token } : 'skip')?.length ?? 0;
   const ib = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
   const mf = useQuery(api.maintenanceFlow.overview, token ? { token } : 'skip');
   const labProtocols = useLabProtocols(token);
@@ -742,8 +745,9 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
   };
 
   const tabs = [
-    { key: 'protocols', label: 'Protocols', icon: '📋', count: protocols.length },
+    { key: 'protocols', label: 'Protocols', icon: '📋', count: libCount },
     { key: 'notebook', label: 'Lab Notebook', icon: '📓' },
+    { key: 'experiments', label: 'Experiments', icon: '🧫' },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
   ];
@@ -799,7 +803,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {/* At a glance: one quiet line instead of five big tiles; each count opens its tab */}
       <nav aria-label="Lab at a glance" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginBottom: 20, fontSize: 14, color: 'var(--text-muted)' }}>
         {([
-          { tab: 'protocols', value: protocols.filter(p => ['active', 'approved'].includes((p.status ?? '').toLowerCase())).length, label: 'active protocols' },
+          { tab: 'protocols', value: libCount, label: 'protocols' },
           { tab: 'sops', value: sopCount, label: 'SOPs' },
           { tab: 'instruments', value: ib?.instruments.filter(i => i.bookable).length ?? 0, label: 'instruments available' },
           { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
@@ -821,18 +825,6 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <button className="btn btn-sm btn-secondary" onClick={() => navigate('equipment')} style={{ marginLeft: 'auto' }}>View</button>
         </div>
       )}
-
-      {/* More Tools Quick Access */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {([
-          { icon: 'file', label: 'Documents', page: 'documents' },
-        ] as const).map(tool => (
-          <button key={tool.page} className="chip-link" onClick={() => navigate(tool.page)}>
-            <Icon name={tool.icon} />
-            <span>{tool.label}</span>
-          </button>
-        ))}
-      </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
@@ -863,199 +855,8 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
         ))}
       </div>
 
-      {/* Protocols Tab */}
-      {activeTab === 'protocols' && (
-        <div>
-          {/* Search, Filter & Actions Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                placeholder="Search protocols..."
-                className="form-input"
-                style={{ width: 200 }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <select
-                className="form-select"
-                style={{ width: 130 }}
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-                <option value="archived">Archived</option>
-                <option value="none">No status</option>
-              </select>
-              <select
-                className="form-select"
-                style={{ width: 150 }}
-                value={categoryFilter}
-                onChange={e => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {PROTOCOL_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              <select
-                className="form-select"
-                style={{ width: 120 }}
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-              >
-                <option value="name">Sort: Name</option>
-                <option value="date">Sort: Date</option>
-                <option value="status">Sort: Status</option>
-                <option value="version">Sort: Version</option>
-              </select>
-              <button
-                className="icon-btn"
-                style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                aria-label={sortOrder === 'asc' ? 'Sorted ascending. Switch to descending' : 'Sorted descending. Switch to ascending'}
-                title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-              >
-                <Icon name={sortOrder === 'asc' ? 'arrowUp' : 'arrowDown'} />
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => exportToCSV('protocols')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="download" /> Export
-              </button>
-              <button className="btn btn-primary" onClick={() => setShowProtocolModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="plus" /> New protocol
-              </button>
-            </div>
-          </div>
-
-          {/* Bulk actions: only appear once something is selected */}
-          {selectedProtocols.size > 0 && (
-            <div role="region" aria-label="Bulk actions" style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
-              background: 'var(--accent-light)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: '8px 14px', marginBottom: 12,
-            }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-                {selectedProtocols.size} of {filterAndSortProtocols().length} selected
-                <button className="auth-link-reset" onClick={selectNoneProtocols} style={{ marginLeft: 12, fontWeight: 400, color: 'var(--link, var(--accent))' }}>Clear</button>
-              </span>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <select
-                  className="form-select"
-                  aria-label="Change status of selected protocols"
-                  style={{ width: 170 }}
-                  onChange={e => { if (e.target.value) { bulkChangeStatus('protocol', e.target.value); e.target.value = ''; }}}
-                  defaultValue=""
-                >
-                  <option value="" disabled>Change status…</option>
-                  <option value="active">Set active</option>
-                  <option value="draft">Set draft</option>
-                  <option value="archived">Set archived</option>
-                </select>
-                <button className="btn btn-sm" style={{ background: 'var(--bad-bg)', color: 'var(--bad-text)', border: '1px solid transparent', fontWeight: 700 }}
-                  onClick={() => setBulkDeleteConfirm({ type: 'protocol', count: selectedProtocols.size })}>
-                  Delete {selectedProtocols.size}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)' }}>
-                  <th style={{ padding: 12, width: 40 }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedProtocols.size === filterAndSortProtocols().length && filterAndSortProtocols().length > 0}
-                      onChange={e => e.target.checked ? selectAllProtocols() : selectNoneProtocols()}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  </th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Protocol Name</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Category</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Version</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Approval</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>Last Updated</th>
-                  <th style={{ padding: 12, textAlign: 'right', fontSize: 12, fontWeight: 600 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filterAndSortProtocols().map(p => {
-                  const sc = statusColor(p.status);
-                  const approval = approvalBadge(p.approval);
-                  const canRun = isApproved(p.approval);
-                  const statusLabel = p.status ? p.status.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) : '';
-                  return (
-                  <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: selectedProtocols.has(p.id) ? 'var(--accent-light)' : 'transparent' }}>
-                    <td style={{ padding: 12 }}>
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${p.name}`}
-                        checked={selectedProtocols.has(p.id)}
-                        onChange={() => toggleProtocolSelection(p.id)}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </td>
-                    <td style={{ padding: 12, fontSize: 14, fontWeight: 700 }}>
-                      <button className="auth-link-reset" onClick={() => { setViewProtocol(p); setEditMode(false); }} style={{ color: 'var(--text)', fontWeight: 700, fontSize: 14 }}>{p.name}</button>
-                      {p.useCount > 0 && <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>Used {p.useCount}×</div>}
-                    </td>
-                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>{p.category || 'General'}</td>
-                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)' }}>v{p.version}</td>
-                    <td style={{ padding: 12 }}>
-                      {p.status ? (
-                        <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: sc.bg, color: sc.text, whiteSpace: 'nowrap' }}>{statusLabel}</span>
-                      ) : <span style={{ color: 'var(--text-muted)' }} aria-label="No status">—</span>}
-                    </td>
-                    <td style={{ padding: 12 }}>
-                      {approval
-                        ? <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: approval.bg, color: approval.color, whiteSpace: 'nowrap' }}>{approval.text}</span>
-                        : <span style={{ color: 'var(--text-muted)' }} aria-label="No approval needed">—</span>}
-                    </td>
-                    <td style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(p.lastUpdated).toLocaleDateString()}</td>
-                    <td style={{ padding: 12, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {p.approval && p.approval.state !== 'approved' && canDecide(p.approval, user) && (
-                        <button className="btn btn-sm btn-primary" style={{ marginRight: 6 }} onClick={() => decideApproval(p, 'approved')}>Approve</button>
-                      )}
-                      <button
-                        className={canRun ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
-                        style={{ marginRight: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                        onClick={() => runProtocol(p)}
-                        title={canRun ? 'Run this protocol' : 'Needs approval first'}
-                        aria-disabled={!canRun}
-                      >
-                        <Icon name={canRun ? 'play' : 'lock'} size={13} /> Run
-                      </button>
-                      <button className="icon-btn" onClick={() => { setViewProtocol(p); setEditMode(false); }} title="View details" aria-label={`View ${p.name}`}><Icon name="eye" /></button>
-                      <button className="icon-btn" onClick={() => { setViewProtocol(p); setEditMode(true); }} title="Edit" aria-label={`Edit ${p.name}`}><Icon name="pencil" /></button>
-                      <button className="icon-btn" onClick={() => markAsUsed(p.id)} title="Log that it was used" aria-label={`Log use of ${p.name}`}><Icon name="check" /></button>
-                      <button className="icon-btn" onClick={() => duplicateProtocol(p)} title="Duplicate" aria-label={`Duplicate ${p.name}`}><Icon name="copy" /></button>
-                      <button className="icon-btn danger" onClick={() => setDeleteConfirm({ type: 'protocol', id: p.id, name: p.name })} title="Delete" aria-label={`Delete ${p.name}`}><Icon name="trash" /></button>
-                    </td>
-                  </tr>
-                  );
-                })}
-                {filterAndSortProtocols().length === 0 && (
-                  <tr>
-                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                      {labProtocols.loading ? 'Loading protocols…' : protocols.length > 0 ? 'No protocols found matching your criteria' : (
-                        <>
-                          <div>No protocols yet. Create one or import from the Protocol Library.</div>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Protocols Tab: one protocol list for the whole app, the Protocol Library (old Lab Hub list copied into it) */}
+      {activeTab === 'protocols' && <ProtocolLibrary embedded />}
 
       {/* SOPs Tab */}
       {activeTab === 'sops' && <SopsPanel />}
@@ -1063,6 +864,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
 
       {/* Instruments + Bookings: one screen */}
       {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
+      {activeTab === 'experiments' && <ExperimentsHubPage embedded />}
 
       {/* Maintenance Tab */}
 

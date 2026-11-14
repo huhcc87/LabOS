@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
   archived: '#ef4444',
 }
 
-export default function ProtocolsPage() {
+export default function ProtocolsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const store = useProtocols()
   const importHook = useProtocolImport(store.addProtocol)
   const genHook = useProtocolGeneration(store.addProtocol)
@@ -107,11 +107,11 @@ export default function ProtocolsPage() {
   ]
 
   return (
-    <div style={{ padding: '0', minHeight: '100vh' }}>
+    <div style={{ padding: '0', minHeight: embedded ? undefined : '100vh' }}>
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ color: 'var(--text)', fontSize: 26, fontWeight: 700, margin: 0 }}>Biomedical Protocol Library</h1>
+          {!embedded && <h1 style={{ color: 'var(--text)', fontSize: 26, fontWeight: 700, margin: 0 }}>Biomedical Protocol Library</h1>}
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
             {store.allProtocols.length} protocols · {PROTOCOL_CATEGORIES.length} categories · AI Swarm Protocol Intelligence
           </p>
