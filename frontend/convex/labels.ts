@@ -51,7 +51,18 @@ export const lookup = query({
     await requireAuth(ctx, token);
     const code = normalize(raw);
     const label = await ctx.db.query("sample_labels").withIndex("by_code", (q) => q.eq("code", code)).first();
-    if (!label) return { code, known: false as const };
+    if (!label) {
+      // Not printed from LabOS yet, but it may still be a sample on the Samples list (its ID is the label code).
+      const s = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", code)).first();
+      if (!s) return { code, known: false as const };
+      let m: Record<string, string> = {};
+      try { m = JSON.parse(s.metadata || "{}"); } catch { /* no extra details */ }
+      const details = cleanDetails({
+        name: s.name, type: s.type ?? "", owner: m.owner ?? "", notes: m.notes ?? "",
+        volume: m.quantity ? `${m.quantity} ${m.unit ?? ""}`.trim() : "",
+      });
+      return { code, known: true as const, details, stored: null, history: [] };
+    }
     const slot = label.slot_id ? await ctx.db.get(label.slot_id) : null;
     const events = await ctx.db.query("label_events").withIndex("by_code", (q) => q.eq("code", code)).order("desc").take(20);
     const names = new Map<string, string>();

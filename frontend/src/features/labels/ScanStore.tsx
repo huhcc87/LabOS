@@ -152,7 +152,19 @@ function StoreForm({ code, token, defaultOwner, details, known, onSave }: {
   return (
     <form onSubmit={submit} style={{ marginTop: 14 }}>
       {!known && <p className="auth-note warn">This isn't a LabOS label (it may come from a supplier or another system), so there are no saved details yet. Fill them in and it is stored the same way.</p>}
-      <h3 style={{ fontSize: 15, margin: '0 0 10px' }}>Sample details</h3>
+      {known && form.name.trim() && (
+        <p style={{ margin: '0 0 12px', fontSize: 15 }}>
+          <strong>{form.name}</strong>{[form.type, form.owner, form.volume].filter(Boolean).map(v => ` · ${v}`).join('')}
+        </p>
+      )}
+      <h3 style={{ fontSize: 15, margin: '0 0 10px' }}>Where to store it</h3>
+      <LocationPicker token={token} onChange={onLoc} />
+      {error && <p role="alert" style={{ color: 'var(--bad-text)', fontSize: 13 }}>{error}</p>}
+      <button className="btn btn-primary" type="submit" disabled={busy || !loc || !(form.name.trim() || form.sample_id.trim())} style={{ margin: '16px 0' }}>
+        {busy ? 'Saving…' : 'Store sample'}
+      </button>
+      <details open={!known || !form.name.trim()} style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Sample details {known && form.name.trim() ? '(from the label, change if needed)' : ''}</summary>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
         <div><label style={lbl} htmlFor="ss-name">Name *</label><input id="ss-name" className="form-input" style={{ width: '100%' }} value={form.name} onChange={set('name')} /></div>
         <div><label style={lbl} htmlFor="ss-id">Sample ID</label><input id="ss-id" className="form-input" style={{ width: '100%' }} value={form.sample_id} onChange={set('sample_id')} /></div>
@@ -163,12 +175,7 @@ function StoreForm({ code, token, defaultOwner, details, known, onSave }: {
       </div>
       {Object.keys(extra).length > 0 && (<div style={{ marginBottom: 12 }}><div style={{ ...lbl, color: 'var(--text-muted)', fontWeight: 400 }}>Also from the label (saved with the sample)</div><Details details={extra} /></div>)}
       <div style={{ marginBottom: 12 }}><label style={lbl} htmlFor="ss-notes">Notes</label><textarea id="ss-notes" className="form-input" style={{ width: '100%', resize: 'vertical' }} rows={2} value={form.notes} onChange={set('notes')} /></div>
-      <h3 style={{ fontSize: 15, margin: '16px 0 10px' }}>Where to store it</h3>
-      <LocationPicker token={token} onChange={onLoc} />
-      {error && <p role="alert" style={{ color: 'var(--bad-text)', fontSize: 13 }}>{error}</p>}
-      <button className="btn btn-primary" type="submit" disabled={busy || !loc || !(form.name.trim() || form.sample_id.trim())} style={{ marginTop: 16 }}>
-        {busy ? 'Saving…' : 'Store sample'}
-      </button>
+      </details>
     </form>
   );
 }

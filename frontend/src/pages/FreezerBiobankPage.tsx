@@ -1,4 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import ScanStore from '../features/labels/ScanStore';
+import HowToUse from '../features/labels/HowToUse';
+import { parseScan } from '../features/labels/scanCode';
 import { useConvex, useMutation, useQuery } from 'convex/react';
 import toast from 'react-hot-toast';
 import { api } from '../../convex/_generated/api';
@@ -46,8 +49,12 @@ const STATE_STYLE = {
   expired: { bg: 'var(--bad-bg)', fg: 'var(--bad-text)', mark: '!!' },
 } as const;
 
-export default function FreezerBiobankPage() {
+export default function FreezerBiobankPage({ scanCode }: { scanCode?: string }) {
   const { token, user, hasRole } = useAuth();
+  // A USB scan hands the code in; a phone camera scan opens the app at /?label=CODE
+  const [scanned, setScanned] = useState<string | null>(() => scanCode ?? new URLSearchParams(window.location.search).get('label'));
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('label')) window.history.replaceState(null, '', window.location.pathname); }, []);
+  const [scanText, setScanText] = useState('');
   const canBuild = hasRole('staff'); // add/delete freezers, shelves, racks, boxes
   const t = token ?? undefined;
   const skip = token ? undefined : 'skip';
@@ -138,6 +145,30 @@ export default function FreezerBiobankPage() {
           </button>
         )}
       </div>
+
+      <HowToUse />
+
+      {/* Always-there scan box: works with any USB scanner (it types the code + Enter) or by typing */}
+      {!scanned && (
+        <form className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
+          onSubmit={e => { e.preventDefault(); const c = parseScan(scanText); if (c) { setScanned(c); setScanText(''); } }}>
+          <label htmlFor="fz-scan" style={{ fontWeight: 700, fontSize: 14 }}>Scan a label</label>
+          <input id="fz-scan" className="form-input" style={{ flex: 1, minWidth: 200 }} autoFocus value={scanText}
+            placeholder="Click here, then scan the QR or barcode (or type SMP-…)" onChange={e => setScanText(e.target.value)} />
+          <button className="btn btn-primary" type="submit" disabled={!scanText.trim()}>Find sample</button>
+        </form>
+      )}
+
+      {/* A scanned sample label lands here: pick the box position and save */}
+      {scanned && (
+        <div className="card" style={{ padding: 16, marginBottom: 16, borderLeft: '4px solid var(--accent)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <strong style={{ fontSize: 15 }}>Store scanned sample</strong>
+            <button className="btn btn-sm btn-secondary" onClick={() => setScanned(null)}>Close</button>
+          </div>
+          <ScanStore initialCode={scanned} />
+        </div>
+      )}
 
       {/* Freezer picker */}
       {freezers && freezers.length > 0 && (

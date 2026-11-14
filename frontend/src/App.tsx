@@ -1,4 +1,5 @@
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
+import { useScannerWedge } from './features/labels/useScannerWedge';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TwoFactorGate } from './components/TwoFactorGate';
@@ -102,8 +103,13 @@ function AppInner() {
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   // Invite links look like /?invite=<token>
   const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
-  // Someone scanned a label QR code with their phone camera: open Labels once signed in
-  useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('labels'); }, [user]);
+  // Someone scanned a label QR code with their phone camera: open the Freezer page on it once signed in
+  useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('freezer-biobank'); }, [user]);
+
+  // A USB scanner (keyboard-style) scanned a label from any page: open the Freezer page to store it
+  const [scan, setScan] = useState<{ code: string; n: number } | null>(null);
+  const onScan = useCallback((text: string) => { setScan(s => ({ code: text, n: (s?.n ?? 0) + 1 })); setPage('freezer-biobank'); }, []);
+  useScannerWedge(!!user, onScan);
 
   // A11y: skip-to-content link
   useEffect(() => { setupSkipToContent(); }, []);
@@ -232,7 +238,7 @@ function AppInner() {
       // Tier 2 — Clinical & Translational Research
       case 'clinical-research': return <ClinicalResearchHubPage />;
       // Tier 4 — Operational Excellence
-      case 'freezer-biobank': return <FreezerBiobankPage />;
+      case 'freezer-biobank': return <FreezerBiobankPage key={scan?.n} scanCode={scan?.code} />;
       case 'vendor-intelligence': return <VendorIntelligencePage />;
       case 'training-cert': return <TrainingCertPage />;
       case 'privacy-center': return <SecurityCenterPage />;
