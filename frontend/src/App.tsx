@@ -27,7 +27,6 @@ const AdminHubPage           = lazy(() => import('./pages/AdminHubPage'));
 const ExperimentsHubPage     = lazy(() => import('./pages/ExperimentsHubPage'));
 const ProcurementHubPage     = lazy(() => import('./pages/ProcurementHubPage'));
 const ClinicalResearchHubPage= lazy(() => import('./pages/ClinicalResearchHubPage'));
-const ReagentHubPage         = lazy(() => import('./pages/ReagentHubPage'));
 
 const TasksPage              = lazy(() => import('./pages/TasksPage'));
 const CalendarPage           = lazy(() => import('./pages/CalendarPage'));
@@ -50,7 +49,6 @@ const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
 const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
-const TrainingCertPage       = lazy(() => import('./pages/TrainingCertPage'));
 const SecurityCenterPage      = lazy(() => import('./pages/SecurityCenterPage'));
 const SecurityDashboardPage  = lazy(() => import('./pages/SecurityDashboardPage'));
 const CapaPage               = lazy(() => import('./pages/CapaPage'));
@@ -75,7 +73,6 @@ const SubcontractManagerPage     = lazy(() => import('./pages/SubcontractManager
 const ERACommonsPage             = lazy(() => import('./pages/ERACommonsPage'));
 const WritingResourcesPage       = lazy(() => import('./pages/WritingResourcesPage'));
 const VersionHistoryPage         = lazy(() => import('./pages/VersionHistoryPage'));
-const SupplierDirectoryPage      = lazy(() => import('./pages/SupplierDirectoryPage'));
 
 // Page-level loading fallback
 function PageLoader() {
@@ -177,8 +174,8 @@ function AppInner() {
       case 'suppliers': return <SuppliersPage />;
       // Safety Hub
       case 'incidents': return <SafetyHubPage />;
-      case 'compliance': return <SafetyHubPage />;
-      case 'training': return <SafetyHubPage />;
+      case 'compliance': return <SafetyHubPage initialTab="compliance" />;
+      case 'training': return <SafetyHubPage initialTab="training" />;
       // Collaboration Hub
       case 'workspaces': return <CollaborationHubPage />;
       case 'lab-meetings': return <LabMeetingsPage />;
@@ -227,7 +224,7 @@ function AppInner() {
       // New v2 pages
       case 'lab-notebook': return <LabHubPage initialTab="notebook" />;
       case 'storage-map': return <FreezerBiobankPage />; // old Storage Map merged into Freezer / Biobank
-      case 'supplier-directory': return <SupplierDirectoryPage />;
+      case 'supplier-directory': return <ShopPage />; // Vendor Directory merged into Shop
       // Tier 1 — AI Research Intelligence
       case 'eln': return <LabHubPage initialTab="notebook" />;
       case 'iot-dashboard': return <IoTDashboardPage />;
@@ -249,10 +246,10 @@ function AppInner() {
       // Tier 4 — Operational Excellence
       case 'freezer-biobank': return <FreezerBiobankPage key={scan?.n} scanCode={scan?.code} />;
       case 'vendor-intelligence': return <VendorIntelligencePage />;
-      case 'training-cert': return <TrainingCertPage />;
+      case 'training-cert': return <SafetyHubPage initialTab="training" />; // old mock Training page merged into Safety Hub
       case 'privacy-center': return <SecurityCenterPage />;
       case 'security-dashboard': return <SecurityDashboardPage />;
-      case 'reagent-hub': return <ReagentHubPage />;
+      case 'reagent-hub': return <ResourcesHubPage />; // old Reagents page (dead REST API) merged into Inventory
       case 'capa': return <CapaPage />;
       case 'email-settings': return <EmailSettingsPage />;
       case 'report-builder': return <CustomReportBuilderPage />;

@@ -120,7 +120,7 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
   );
 }
 
-export default function SupplierDirectoryPage() {
+export default function SupplierDirectoryPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [search, setSearch] = useState('');
   // The Shop page can open this list already filtered to a category.
   // Read without removing: React runs state initializers twice in development, so removal happens in an effect.
@@ -162,7 +162,7 @@ export default function SupplierDirectoryPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
-      <LabBanner art="inventory" title="Vendor Directory" subtitle={`${BIOMEDICAL_SUPPLIERS.length}+ suppliers for reagents, chemicals, antibodies, equipment, and more`} />
+      {!embedded && <LabBanner art="inventory" title="Vendor Directory" subtitle={`${BIOMEDICAL_SUPPLIERS.length}+ suppliers for reagents, chemicals, antibodies, equipment, and more`} />}
 
       {/* Search + Sort */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
