@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import EmojiIcon from '../components/EmojiIcon';
+import { INST_PREFIX, qrValueFor } from '../features/instruments/instrumentQr';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -215,7 +216,7 @@ function LabelCard({
       {(showQr || showBarcode) && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
-          {showQr && <Barcode value={uid} type={codeType} width={qrSize} height={qrSize} />}
+          {showQr && <Barcode value={qrValueFor(uid)} type={codeType} width={qrSize} height={qrSize} />}
           {showBarcode && !showQr && (
             <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
               showText textSize={typo.uidPt} />
@@ -366,7 +367,8 @@ export default function LabelPrinterPage() {
     try {
       await registerLabels({
         token: token ?? undefined,
-        labels: labelsToPrint.map(l => ({
+        // Instrument labels open the instrument itself, so they aren't saved as sample labels.
+        labels: labelsToPrint.filter(l => !l.uid.startsWith(INST_PREFIX)).map(l => ({
           code: l.uid,
           details: Object.fromEntries(l.fields.filter(f => f.show && f.value.trim()).map(f => [f.key, f.value.trim()])),
         })),

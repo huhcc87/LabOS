@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
 import { useScannerWedge } from './features/labels/useScannerWedge';
+import { takeInstrumentScan } from './features/instruments/instrumentQr';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TwoFactorGate } from './components/TwoFactorGate';
@@ -34,7 +35,6 @@ const CalendarPage           = lazy(() => import('./pages/CalendarPage'));
 const AuditPage              = lazy(() => import('./pages/AuditPage'));
 const LabMeetingsPage        = lazy(() => import('./pages/LabMeetingsPage'));
 const ReportsPage            = lazy(() => import('./pages/ReportsPage'));
-const DocumentsPage          = lazy(() => import('./pages/DocumentsPage'));
 const SuppliersPage          = lazy(() => import('./pages/SuppliersPage'));
 const IoTDashboardPage       = lazy(() => import('./pages/IoTDashboardPage'));
 const EquipmentMaintenancePage = lazy(() => import('./pages/EquipmentMaintenancePage'));
@@ -105,10 +105,20 @@ function AppInner() {
   const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
   // Someone scanned a label QR code with their phone camera: open the Freezer page on it once signed in
   useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('freezer-biobank'); }, [user]);
+  // A phone scanned an instrument QR (/?instrument=<id>): open that instrument's booking once signed in
+  useEffect(() => {
+    if (!user || !takeInstrumentScan(window.location.href)) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    setPage('instruments');
+  }, [user]);
 
-  // A USB scanner (keyboard-style) scanned a label from any page: open the Freezer page to store it
+  // A USB scanner (keyboard-style) scanned a label from any page:
+  // an instrument label opens it on the booking page; anything else opens the Freezer page to store it.
   const [scan, setScan] = useState<{ code: string; n: number } | null>(null);
-  const onScan = useCallback((text: string) => { setScan(s => ({ code: text, n: (s?.n ?? 0) + 1 })); setPage('freezer-biobank'); }, []);
+  const onScan = useCallback((text: string) => {
+    setScan(s => ({ code: text, n: (s?.n ?? 0) + 1 }));
+    setPage(takeInstrumentScan(text.trim()) ? 'instruments' : 'freezer-biobank');
+  }, []);
   useScannerWedge(!!user, onScan);
 
   // A11y: skip-to-content link
@@ -151,7 +161,7 @@ function AppInner() {
       case 'dashboard': return <DashboardPage />;
       case 'protocols': return <ProtocolsPage />;
       case 'lab-hub': return <LabHubPage />;
-      case 'instruments': return <LabHubPage initialTab="instruments" />;
+      case 'instruments': return <LabHubPage key={scan?.n} initialTab="instruments" />;
       case 'bookings': return <LabHubPage initialTab="instruments" />;
       case 'tasks': return <TasksPage />;
       case 'calendar': return <CalendarPage />;
@@ -194,7 +204,7 @@ function AppInner() {
       // Reports & Analytics
       case 'reports': return <ReportsPage />;
       // Document Management
-      case 'documents': return <DocumentsPage />;
+      case 'documents': return <ExperimentsHubPage initialTab="files" />; // Document Management merged into Experiments & Documents
       // Grant Hub - Unified Grant Module
       case 'grants': return <GrantHubPage />;
       case 'grant-hub': return <GrantHubPage />;

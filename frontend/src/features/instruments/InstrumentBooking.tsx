@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import toast from 'react-hot-toast';
 import { api } from '../../../convex/_generated/api';
@@ -6,6 +6,8 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import EmojiIcon from '../../components/EmojiIcon';
+import { useNavigate } from '../../context/NavigationContext';
+import { INST_PREFIX, PICK_KEY } from './instrumentQr';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -31,10 +33,26 @@ export default function InstrumentBooking() {
   const data = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
   const book = useMutation(api.instrumentBooking.book);
   const cancel = useMutation(api.instrumentBooking.cancel);
+  const complete = useMutation(api.instrumentBooking.complete);
   const setReminder = useMutation(api.instrumentBooking.setReminder);
   const addInstrument = useMutation(api.instruments.create);
 
-  const [picked, setPicked] = useState<Id<'instruments'> | null>(null);
+  const navigate = useNavigate();
+  // A scanned instrument QR (INST-<id>) opens this page with that instrument already picked.
+  const [picked, setPicked] = useState<Id<'instruments'> | null>(() => {
+    try { return (sessionStorage.getItem(PICK_KEY) || null) as Id<'instruments'> | null; } catch { return null; }
+  });
+  useEffect(() => { try { sessionStorage.removeItem(PICK_KEY); } catch { /* ignore */ } }, []);
+  /**
+   * Admin: print QR labels to stick on instruments. Opens the Label Printer (size, fields, fonts all customisable);
+   * the QR is a link, so any phone camera opens this page on that instrument, ready to book.
+   */
+  const printQr = (list: { _id: string; name: string; location?: string }[]) => {
+    const labels = list.map((i) => ({ code: `${INST_PREFIX}${i._id}`, details: { name: i.name, storage: i.location ?? '', notes: 'Scan to book' } }));
+    try { sessionStorage.setItem('labos_label_handoff', JSON.stringify(labels)); } catch { /* label printer opens blank */ }
+    navigate('label-printer');
+  };
+  const now = Date.now();
   const [date, setDate] = useState(today());
   // Lab, person and room start filled in; the booker can type over them.
   const [labName, setLabName] = useState<string | null>(null);
@@ -88,7 +106,10 @@ export default function InstrumentBooking() {
       <section aria-label="Instruments">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>1. Choose an instrument</h3>
-          {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { preset: PRESETS[0], name: '', location: '' })}>+ Add instrument</button>}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {data.can_manage && instruments.length > 0 && <button className="btn btn-secondary btn-sm" onClick={() => printQr(instruments)} title="One QR label per instrument, to stick on each machine">Print all QR labels</button>}
+            {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { preset: PRESETS[0], name: '', location: '' })}>+ Add instrument</button>}
+          </div>
         </div>
         {adding && (
           <div className="card" style={{ padding: 12, marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -117,14 +138,19 @@ export default function InstrumentBooking() {
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {instruments.map((i, n) => {
                 const st = statusOf(i);
-                const next = bookings.find((b) => b.instrument_id === i._id);
+                const inUse = bookings.find((b) => b.instrument_id === i._id && b.start_time <= now && b.end_time > now);
+                const next = bookings.find((b) => b.instrument_id === i._id && b.start_time > now);
                 return (
                   <div key={i._id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none', background: picked === i._id ? 'rgba(0,113,188,0.08)' : undefined }}>
-                    <div style={{ flex: 1, minWidth: 160 }}>
+                    <button type="button" disabled={!i.bookable} onClick={() => { setPicked(i._id); setDone(null); }} title={i.bookable ? 'Book this instrument' : undefined}
+                      style={{ flex: 1, minWidth: 160, background: 'none', border: 0, padding: 0, textAlign: 'left', color: 'var(--text)', cursor: i.bookable ? 'pointer' : 'default' }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{i.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[i.location, next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}</div>
-                    </div>
+                      <div style={{ fontSize: 11, color: inUse ? '#b45309' : 'var(--text-muted)' }}>
+                        {[i.location, inUse ? `In use until ${new Date(inUse.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${inUse.person_name ?? inUse.user_name}` : i.bookable ? 'Free now' : '', next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}
+                      </div>
+                    </button>
                     <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
+                    {data.can_manage && <button className="btn btn-secondary btn-sm" onClick={() => printQr([i])} title="Print a QR label to stick on this instrument">QR label</button>}
                     {data.can_manage && (
                       <button className="btn btn-secondary btn-sm" onClick={() => act(() => setActive({ token: token!, id: i._id, active: !i.bookable }), i.bookable ? 'Marked not used' : 'Marked active')}>{i.bookable ? 'Mark not used' : 'Mark active'}</button>
                     )}
@@ -151,6 +177,18 @@ export default function InstrumentBooking() {
               <div><label style={lbl} htmlFor="bk-todate">To date</label><input id="bk-todate" type="date" min={date} value={toDate || date} onChange={(e) => { setToDate(e.target.value); setDone(null); }} style={input} /></div>
               <div><label style={lbl} htmlFor="bk-to">To time</label><input id="bk-to" type="time" value={to} onChange={(e) => { setTo(e.target.value); setDone(null); }} style={input} /></div>
             </div>
+            {/* Quick lengths: set the end from the start in one click */}
+            <div role="group" aria-label="Quick length" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Length:</span>
+              {[[30, '30 min'], [60, '1 h'], [120, '2 h'], [240, '4 h'], [480, 'Full day']].map(([mins, label]) => (
+                <button key={label} type="button" className="btn btn-sm btn-secondary" onClick={() => {
+                  const end = new Date(new Date(`${date}T${from}`).getTime() + (mins as number) * 60_000);
+                  const endDay = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+                  setToDate(endDay === date ? '' : endDay);
+                  setTo(`${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`); setDone(null);
+                }}>{label}</button>
+              ))}
+            </div>
             <label style={lbl} htmlFor="bk-purpose">What for? (optional)</label>
             <input id="bk-purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="e.g. qPCR plate, 96 wells" style={{ ...input, marginBottom: 10 }} />
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
@@ -169,7 +207,13 @@ export default function InstrumentBooking() {
 
             <h4 style={{ margin: '16px 0 6px', fontSize: 13 }}>Already booked</h4>
             {itsBookings.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nothing yet. Any time is free.</div> : itsBookings.map((b) => (
-              <div key={b._id} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.person_name ?? b.user_name}{b.room ? ` · ${b.room}` : ''}</div>
+              <div key={b._id} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ flex: 1 }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.person_name ?? b.user_name}{b.room ? ` · ${b.room}` : ''}{b.purpose ? ` · ${b.purpose}` : ''}</span>
+                {b.can_cancel && <>
+                  <button className="btn btn-sm btn-secondary" onClick={() => { if (confirm('Mark this booking complete? The instrument becomes free for others.')) act(() => complete({ token: token!, id: b._id }), 'Booking completed'); }}>Complete</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => { if (confirm('Cancel this booking?')) act(() => cancel({ token: token!, id: b._id }), 'Booking cancelled'); }}>Cancel</button>
+                </>}
+              </div>
             ))}
           </>
         )}
@@ -190,6 +234,7 @@ export default function InstrumentBooking() {
                   <input type="checkbox" checked={!!b.remind_every_2_days} disabled={b.start_time <= Date.now()} onChange={(e) => act(() => setReminder({ token: token!, id: b._id, on: e.target.checked }), e.target.checked ? 'Reminders on' : 'Reminders off')} />
                   Remind every 2 days
                 </label>
+                <button className="btn btn-primary btn-sm" onClick={() => { if (confirm('Mark this booking complete? The instrument becomes free for others.')) act(() => complete({ token: token!, id: b._id }), 'Booking completed'); }}>Mark complete</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => { if (confirm('Cancel this booking?')) act(() => cancel({ token: token!, id: b._id }), 'Booking cancelled'); }}>Cancel</button>
               </div>
             ))}

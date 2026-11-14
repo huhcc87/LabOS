@@ -62,7 +62,7 @@ function HealthRing({ score }: { score: number }) {
 
 const QUICK_ACTIONS = [
   { icon: '🧪', label: 'New Sample', desc: 'Register a sample', page: 'samples', color: '#6366f1' },
-  { icon: '📅', label: 'Book Equipment', desc: 'Schedule instrument time', page: 'protocols', color: '#22c55e' },
+  { icon: '📅', label: 'Book Equipment', desc: 'Schedule instrument time', page: 'instruments', color: '#22c55e' },
   { icon: '📋', label: 'New Protocol', desc: 'Draft a protocol', page: 'protocols', color: '#f59e0b' },
   { icon: '✓', label: 'Add Task', desc: 'Create a task', page: 'tasks', color: '#38bdf8' },
   { icon: '📝', label: 'Write Grant', desc: 'AI-assisted drafting', page: 'grants', color: '#8b5cf6' },
@@ -71,7 +71,7 @@ const QUICK_ACTIONS = [
 
 const PULSE_STATS = [
   { key: 'samples', label: 'Samples', icon: '🧪', color: '#6366f1', page: 'samples' },
-  { key: 'instruments', label: 'Instruments', icon: '🔬', color: '#8b5cf6', page: 'protocols' },
+  { key: 'instruments', label: 'Instruments', icon: '🔬', color: '#8b5cf6', page: 'instruments' },
   { key: 'protocols', label: 'Protocols', icon: '📋', color: '#22c55e', page: 'protocols' },
   { key: 'tasks_open', label: 'Open Tasks', icon: '✓', color: '#f59e0b', page: 'tasks' },
   { key: 'inventory_items', label: 'Inventory Items', icon: '📦', color: '#06b6d4', page: 'inventory' },
@@ -84,6 +84,9 @@ export default function DashboardPage() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [showAnalytics, setShowAnalytics] = useState(false);
+  // Who has which instrument booked, and when (same data as Lab Hub → Instruments & Booking)
+  const booking = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
+  const instName = (id: string) => booking?.instruments.find(i => i._id === id)?.name ?? 'Instrument';
 
   const summary = useQuery(api.dashboard.summary, token ? { token } : 'skip');
   const completeTask = useMutation(api.tasks.complete);
@@ -208,7 +211,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
-              <button onClick={() => navigate(p.label.includes('Task') ? 'tasks' : p.label.includes('Incident') ? 'incidents' : p.label.includes('Maintenance') ? 'protocols' : 'reminders')}
+              <button onClick={() => navigate(p.label.includes('Task') ? 'tasks' : p.label.includes('Incident') ? 'incidents' : p.label.includes('Maintenance') ? 'equipment' : 'reminders')}
                 style={{ fontSize: 12, background: `${p.color}20`, color: p.color, border: `1px solid ${p.color}40`, borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 View →
               </button>
@@ -290,7 +293,7 @@ export default function DashboardPage() {
               })}
             </div>
           )}
-          <button onClick={() => navigate('protocols')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
+          <button onClick={() => navigate('equipment')} style={{ marginTop: 10, width: '100%', padding: '5px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
             View All Equipment →
           </button>
         </div>
@@ -407,6 +410,26 @@ export default function DashboardPage() {
             IoT Dashboard →
           </button>
         </div>
+      </div>
+
+      {/* ── Instrument bookings ── */}
+      <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Instrument bookings</h2>
+          <button className="btn btn-sm btn-secondary" onClick={() => navigate('instruments')}>Book or manage →</button>
+        </div>
+        {!booking ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading…</div>
+          : booking.bookings.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No upcoming bookings. Every instrument is free.</div>
+          : booking.bookings.slice(0, 6).map(b => (
+            <button key={b._id} onClick={() => navigate('instruments')} style={{ display: 'flex', width: '100%', gap: 12, alignItems: 'center', padding: '8px 0', background: 'none', border: 0, borderTop: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left', color: 'var(--text)', fontSize: 13 }}>
+              <strong style={{ minWidth: 180 }}>{instName(b.instrument_id)}</strong>
+              <span style={{ flex: 1 }}>
+                {new Date(b.start_time).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                {b.purpose ? ` · ${b.purpose}` : ''}
+              </span>
+              <span style={{ color: 'var(--text-muted)' }}>{b.person_name ?? b.user_name}{b.room ? ` · Room ${b.room}` : ''}{b.mine ? ' · you' : ''}</span>
+            </button>
+          ))}
       </div>
 
       {/* ── Main Content: 2-column ── */}

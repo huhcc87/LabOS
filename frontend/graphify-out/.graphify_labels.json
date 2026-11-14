@@ -265,7 +265,19 @@
   "263": "incidents.ts",
   "264": "reagentCart.ts",
   "265": "@capacitor/app",
+  "266": "@vitejs/plugin-react",
   "267": "@testing-library/jest-dom",
+  "268": "vitest",
   "269": "@capacitor/keyboard",
-  "274": "@playwright/test"
+  "270": "CapApp-SPM",
+  "271": "backup.sh",
+  "272": "app/build.gradle",
+  "273": "capacitor.build.gradle",
+  "274": "@playwright/test",
+  "275": "Test",
+  "276": "android/build.gradle",
+  "277": "capacitor.settings.gradle",
+  "278": "settings.gradle",
+  "279": "variables.gradle",
+  "280": "CapApp-SPM.swift"
 }
