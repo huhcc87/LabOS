@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Barcode from '../components/Barcode';
 import toast from 'react-hot-toast';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import EmojiIcon from '../components/EmojiIcon';
 import { INST_PREFIX, qrValueFor } from '../features/instruments/instrumentQr';
+import { PRESETS, OTHER } from '../features/instruments/InstrumentBooking';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -283,7 +284,14 @@ function LabelCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LabelPrinterPage() {
-  const { token } = useAuth();
+  const { token, hasRole } = useAuth();
+  // Instrument codes (Equipment): managers/admins pick an instrument; its label opens that instrument's booking when scanned.
+  const canMakeInstrumentCodes = hasRole('manager');
+  const instData = useQuery(api.instrumentBooking.overview, token && canMakeInstrumentCodes ? { token } : 'skip');
+  const instrumentList = instData?.instruments ?? [];
+  const ALL = '__all__';
+  const NEW = 'new:';
+  const [instPick, setInstPick] = useState('');
   const [entityType, setEntityType] = useState('sample');
   const [sizeId, setSizeId] = useState('dymo30334');
   const [customW, setCustomW] = useState('40');
@@ -299,6 +307,28 @@ export default function LabelPrinterPage() {
     try { return JSON.parse(sessionStorage.getItem(LABEL_HANDOFF_KEY) || '[]'); } catch { return []; }
   });
   useEffect(() => { try { sessionStorage.removeItem(LABEL_HANDOFF_KEY); } catch { /* ignore */ } }, []);
+  /** Equipment: one label per chosen instrument (or all), with QR link + Code128 barcode. */
+  const createInstrument = useMutation(api.instruments.create);
+  const instLabel = (i: { _id: string; name: string; location?: string }) => ({ code: `${INST_PREFIX}${i._id}`, details: { name: i.name, storage: i.location ?? '', notes: 'Scan to book' } });
+  const pickInstrument = async (v: string) => {
+    // "new:<type>": the instrument isn't in the lab yet — add it (so scans can book it), then make its code.
+    if (v.startsWith(NEW)) {
+      const preset = v.slice(NEW.length);
+      const name = (preset === OTHER ? window.prompt('Instrument name') : preset)?.trim();
+      if (!name || !token) return;
+      const location = window.prompt(`Room or location of ${name} (optional)`)?.trim() || undefined;
+      try {
+        const id = await createInstrument({ token, name, location, status: 'active' });
+        setInstPick(id); setBatch([instLabel({ _id: id, name, location })]); setShowBarcode(true);
+        toast.success(`${name} added — its code is ready to print`);
+      } catch (e) { toast.error(errText(e)); }
+      return;
+    }
+    setInstPick(v);
+    const list = v === ALL ? instrumentList : instrumentList.filter(i => i._id === v);
+    setBatch(list.map(instLabel));
+    if (v) setShowBarcode(true);
+  };
   const [copies, setCopies] = useState(1);
   const [typo, setTypo] = useState<Typography>(DEFAULT_TYPOGRAPHY);
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
@@ -495,14 +525,18 @@ export default function LabelPrinterPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{
-            padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-            background: printerStatus === 'connected' ? 'rgba(34,197,94,0.15)' : 'rgba(99,102,241,0.1)',
-            color: printerStatus === 'connected' ? '#22c55e' : '#818cf8',
-          }}>
+          {/* Status only (not a button): which printer path Print uses */}
+          <div role="status"
+            title={printerStatus === 'connected' ? 'A USB label printer was detected. Print still opens your system print dialog.' : 'Print opens your browser print dialog. Pick your printer there. Use Connect printer to pair a USB label printer.'}
+            style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+              border: `1px solid ${printerStatus === 'connected' ? '#22c55e' : 'var(--border)'}`,
+              background: printerStatus === 'connected' ? 'rgba(34,197,94,0.15)' : 'var(--surface2)',
+              color: printerStatus === 'connected' ? '#15803d' : 'var(--text)',
+            }}>
             {printerStatus === 'connected'
-              ? `🖨️ ${connectedPrinterName ?? 'Paired printer'}`
-              : <><EmojiIcon glyph="🖨️" />{" Browser print"}</>}
+              ? <><EmojiIcon glyph="🖨️" /> Printer found: {connectedPrinterName ?? 'USB printer'}</>
+              : <><EmojiIcon glyph="🖨️" />{" Printing via: browser print dialog"}</>}
           </div>
           <button onClick={() => setShowPrinterModal(true)}
             style={{ padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}>
@@ -664,6 +698,33 @@ export default function LabelPrinterPage() {
                 </button>
               ))}
             </div>
+            {/* Admin: one-time QR / barcode for each instrument. Stick it on the machine; scanning it opens that instrument's booking. */}
+            {entityType === 'equipment' && (
+              <div style={{ marginTop: 12 }}>
+                <label htmlFor="lp-inst" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Instrument code (for booking by scan)</label>
+                {!canMakeInstrumentCodes ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 0' }}>Only a lab manager or admin can make instrument codes.</p>
+                ) : (
+                  <>
+                    <select id="lp-inst" value={instPick} onChange={e => pickInstrument(e.target.value)}
+                      style={{ width: '100%', marginTop: 6, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}>
+                      <option value="">Choose an instrument…</option>
+                      {instrumentList.length > 1 && <option value={ALL}>All instruments ({instrumentList.length})</option>}
+                      <optgroup label="Your lab's instruments">
+                        {instrumentList.map(i => <option key={i._id} value={i._id}>{i.name}{i.location ? ` (${i.location})` : ''}</option>)}
+                      </optgroup>
+                      <optgroup label="Add an instrument and make its code">
+                        {PRESETS.filter(p => !instrumentList.some(i => i.name === p)).map(p => <option key={p} value={`${NEW}${p}`}>+ {p}</option>)}
+                        <option value={`${NEW}${OTHER}`}>+ Other (type a name)…</option>
+                      </optgroup>
+                    </select>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                      Makes a QR (2D) that opens this instrument's booking page on any phone, plus a Code128 barcode for USB scanners. Choose QR or Data Matrix and the label size below. Print once and stick it on the instrument.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Label size */}
@@ -848,8 +909,8 @@ export default function LabelPrinterPage() {
 
           {batch.length > 0 && (
             <div className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
-              <span><strong>{batch.length}</strong> sample{batch.length > 1 ? 's' : ''} from Sample Hub: one label each, details filled in.</span>
-              <button type="button" className="btn btn-sm btn-secondary" onClick={() => setBatch([])}>Clear</button>
+              <span><strong>{batch.length}</strong> label{batch.length > 1 ? 's' : ''} ready: one each, details filled in.</span>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => { setBatch([]); setInstPick(''); }}>Clear</button>
             </div>
           )}
 

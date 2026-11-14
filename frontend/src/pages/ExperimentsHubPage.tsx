@@ -122,7 +122,7 @@ const EVENT_ICONS: Record<string, string> = {
   note_added: '#',
 };
 
-export default function ExperimentsHubPage({ initialTab = 'experiments' }: { initialTab?: TabType }) {
+export default function ExperimentsHubPage({ initialTab = 'experiments', embedded = false }: { initialTab?: TabType; embedded?: boolean }) {
   const { token } = useAuth();
   const data = useQuery(api.experiments.overview, token ? { token } : 'skip');
   const saveExpM = useMutation(api.experiments.save);
@@ -334,10 +334,13 @@ export default function ExperimentsHubPage({ initialTab = 'experiments' }: { ini
 
   return (
     <div className="page experiments-hub">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <LabBanner art="lab" title="Experiments & Documents" subtitle="Experiments, results, timeline and all lab documents and files in one place" style={{ flex: 1, minWidth: 0 }} />
-        </div>
+      <div className="page-header" style={{ display: 'flex', justifyContent: embedded ? 'flex-end' : 'space-between', alignItems: 'center', marginBottom: embedded ? 12 : 24 }}>
+        {/* Inside Lab Hub the hub already has its own banner */}
+        {!embedded && (
+          <div>
+            <LabBanner art="lab" title="Experiments & Documents" subtitle="Experiments, results, timeline and all lab documents and files in one place" style={{ flex: 1, minWidth: 0 }} />
+          </div>
+        )}
         <button onClick={() => setShowHelp(true)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
           ? Help
         </button>

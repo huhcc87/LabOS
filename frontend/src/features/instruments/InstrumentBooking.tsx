@@ -6,8 +6,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import EmojiIcon from '../../components/EmojiIcon';
-import { useNavigate } from '../../context/NavigationContext';
-import { INST_PREFIX, PICK_KEY } from './instrumentQr';
+import { PICK_KEY } from './instrumentQr';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -37,21 +36,11 @@ export default function InstrumentBooking() {
   const setReminder = useMutation(api.instrumentBooking.setReminder);
   const addInstrument = useMutation(api.instruments.create);
 
-  const navigate = useNavigate();
   // A scanned instrument QR (INST-<id>) opens this page with that instrument already picked.
   const [picked, setPicked] = useState<Id<'instruments'> | null>(() => {
     try { return (sessionStorage.getItem(PICK_KEY) || null) as Id<'instruments'> | null; } catch { return null; }
   });
   useEffect(() => { try { sessionStorage.removeItem(PICK_KEY); } catch { /* ignore */ } }, []);
-  /**
-   * Admin: print QR labels to stick on instruments. Opens the Label Printer (size, fields, fonts all customisable);
-   * the QR is a link, so any phone camera opens this page on that instrument, ready to book.
-   */
-  const printQr = (list: { _id: string; name: string; location?: string }[]) => {
-    const labels = list.map((i) => ({ code: `${INST_PREFIX}${i._id}`, details: { name: i.name, storage: i.location ?? '', notes: 'Scan to book' } }));
-    try { sessionStorage.setItem('labos_label_handoff', JSON.stringify(labels)); } catch { /* label printer opens blank */ }
-    navigate('label-printer');
-  };
   const now = Date.now();
   const [date, setDate] = useState(today());
   // Lab, person and room start filled in; the booker can type over them.
@@ -107,7 +96,6 @@ export default function InstrumentBooking() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>1. Choose an instrument</h3>
           <div style={{ display: 'flex', gap: 6 }}>
-            {data.can_manage && instruments.length > 0 && <button className="btn btn-secondary btn-sm" onClick={() => printQr(instruments)} title="One QR label per instrument, to stick on each machine">Print all QR labels</button>}
             {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { preset: PRESETS[0], name: '', location: '' })}>+ Add instrument</button>}
           </div>
         </div>
@@ -150,7 +138,6 @@ export default function InstrumentBooking() {
                       </div>
                     </button>
                     <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
-                    {data.can_manage && <button className="btn btn-secondary btn-sm" onClick={() => printQr([i])} title="Print a QR label to stick on this instrument">QR label</button>}
                     {data.can_manage && (
                       <button className="btn btn-secondary btn-sm" onClick={() => act(() => setActive({ token: token!, id: i._id, active: !i.bookable }), i.bookable ? 'Marked not used' : 'Marked active')}>{i.bookable ? 'Mark not used' : 'Mark active'}</button>
                     )}

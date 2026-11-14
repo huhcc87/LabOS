@@ -56,6 +56,7 @@ import type * as procurement from "../procurement.js";
 import type * as procurementAudit from "../procurementAudit.js";
 import type * as protocolAi from "../protocolAi.js";
 import type * as protocolLibrary from "../protocolLibrary.js";
+import type * as protocolMerge from "../protocolMerge.js";
 import type * as protocolRules from "../protocolRules.js";
 import type * as protocols from "../protocols.js";
 import type * as reagentCart from "../reagentCart.js";
@@ -138,6 +139,7 @@ declare const fullApi: ApiFromModules<{
   procurementAudit: typeof procurementAudit;
   protocolAi: typeof protocolAi;
   protocolLibrary: typeof protocolLibrary;
+  protocolMerge: typeof protocolMerge;
   protocolRules: typeof protocolRules;
   protocols: typeof protocols;
   reagentCart: typeof reagentCart;

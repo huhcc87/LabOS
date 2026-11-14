@@ -255,6 +255,23 @@ export const setPasswordByEmail = internalAction({
   },
 });
 
+/**
+ * Operator-only (CLI): change an account's role, e.g. make the lab owner an admin.
+ * npx convex run customAuth:setRoleByEmail '{"email":"…","role":"admin"}'
+ */
+export const setRoleByEmail = internalMutation({
+  args: {
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("pi"), v.literal("manager"), v.literal("staff"), v.literal("trainee")),
+  },
+  handler: async (ctx, { email, role }): Promise<string> => {
+    const user = await ctx.db.query("users").withIndex("by_email", (q) => q.eq("email", email.trim().toLowerCase())).first();
+    if (!user) throw new ConvexError("No account with that email");
+    await ctx.db.patch(user._id, { role, updated_at: Date.now() });
+    return `${email} is now ${role}`;
+  },
+});
+
 export const storePassword = internalMutation({
   args: { user_id: v.id("users"), hashed_password: v.string() },
   handler: async (ctx, { user_id, hashed_password }) => {

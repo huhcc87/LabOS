@@ -29,7 +29,6 @@ const ProcurementHubPage     = lazy(() => import('./pages/ProcurementHubPage'));
 const ClinicalResearchHubPage= lazy(() => import('./pages/ClinicalResearchHubPage'));
 const ReagentHubPage         = lazy(() => import('./pages/ReagentHubPage'));
 
-const ProtocolsPage          = lazy(() => import('./pages/ProtocolsPage'));
 const TasksPage              = lazy(() => import('./pages/TasksPage'));
 const CalendarPage           = lazy(() => import('./pages/CalendarPage'));
 const AuditPage              = lazy(() => import('./pages/AuditPage'));
@@ -159,7 +158,7 @@ function AppInner() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <DashboardPage />;
-      case 'protocols': return <ProtocolsPage />;
+      case 'protocols': return <LabHubPage initialTab="protocols" />; // Protocols live in Lab Hub
       case 'lab-hub': return <LabHubPage />;
       case 'instruments': return <LabHubPage key={scan?.n} initialTab="instruments" />;
       case 'bookings': return <LabHubPage initialTab="instruments" />;
@@ -200,7 +199,7 @@ function AppInner() {
       // Equipment Hub
       case 'equipment': return <EquipmentMaintenancePage />;
       // Experiments Hub
-      case 'experiments': return <ExperimentsHubPage />;
+      case 'experiments': return <LabHubPage initialTab="experiments" />; // Experiments lives inside Lab Hub
       // Reports & Analytics
       case 'reports': return <ReportsPage />;
       // Document Management
