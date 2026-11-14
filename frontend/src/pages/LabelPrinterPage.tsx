@@ -109,7 +109,8 @@ const LABEL_HANDOFF_KEY = 'labos_label_handoff';
 // ─── Unique ID generator ──────────────────────────────────────────────────────
 function generateLabId(prefix = 'LAB'): string {
   const yr = new Date().getFullYear();
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const ABC = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => ABC[b % 36]).join('');
   return `${prefix}-${yr}-${rand}`;
 }
 
