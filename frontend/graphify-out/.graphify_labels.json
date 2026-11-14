@@ -279,5 +279,15 @@
   "277": "capacitor.settings.gradle",
   "278": "settings.gradle",
   "279": "variables.gradle",
-  "280": "CapApp-SPM.swift"
+  "280": "CapApp-SPM.swift",
+  "281": "SafetyHubPage.tsx",
+  "282": "integrations.ts",
+  "283": "maintenance.ts",
+  "284": "tasks.ts",
+  "285": "tenantTables.ts",
+  "286": "videoRooms.ts",
+  "287": "EquipmentHubPage.tsx",
+  "288": "LocationPicker.tsx",
+  "289": "crudApi",
+  "290": "ReferenceManagerPage.tsx"
 }
