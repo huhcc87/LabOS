@@ -72,9 +72,6 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'Protocols, instruments & scheduling',
     items: [
       { key: 'lab-hub', label: 'Lab Hub Overview', icon: '🔬', minRole: 'trainee' },
-      { key: 'protocols', label: 'Protocols', icon: '📋', minRole: 'trainee' },
-      { key: 'experiments', label: 'Experiments', icon: '🧫', minRole: 'trainee' },
-      { key: 'equipment', label: 'Equipment & Maintenance', icon: '🔭', minRole: 'trainee' },
     ]
   },
   {

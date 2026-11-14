@@ -17,6 +17,7 @@ import type { Id } from '../../convex/_generated/dataModel';
 import EmojiIcon from '../components/EmojiIcon';
 import LabBanner from '../components/LabBanner';
 import ExperimentsHubPage from './ExperimentsHubPage';
+import MaintenancePanel from '../features/instruments/MaintenancePanel';
 import ProtocolLibrary from '../features/protocols/pages/ProtocolsPage';
 
 // Types
@@ -95,7 +96,7 @@ const LAB_LOCATIONS = [
   'Mass Spec Room', 'Sequencing Core', 'Flow Cytometry Core',
 ];
 
-type HubTab = 'protocols' | 'notebook' | 'sops' | 'instruments' | 'bookings' | 'experiments';
+type HubTab = 'protocols' | 'notebook' | 'sops' | 'instruments' | 'bookings' | 'experiments' | 'equipment';
 export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: HubTab }) {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -750,6 +751,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
     { key: 'experiments', label: 'Experiments', icon: '🧫' },
     { key: 'sops', label: 'SOPs', icon: '📚', count: sopCount },
     { key: 'instruments', label: 'Instruments & Booking', icon: '🔬', count: ib?.instruments.length ?? 0 },
+    { key: 'equipment', label: 'Equipment & Maintenance', icon: '🔭' },
   ];
 
   const modalStyle: React.CSSProperties = {
@@ -809,7 +811,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           { tab: 'bookings', value: ib?.bookings.filter(b => b.mine).length ?? 0, label: 'my bookings' },
           { tab: 'maintenance', value: mf?.open ?? 0, label: 'open instrument problems', alert: true },
         ] as const).map(s => (
-          <button key={s.tab} className="auth-link-reset" onClick={() => (s.tab === 'maintenance' ? navigate('equipment') : setActiveTab(s.tab))}
+          <button key={s.tab} className="auth-link-reset" onClick={() => setActiveTab(s.tab === 'maintenance' ? 'equipment' : s.tab)}
             style={{ color: 'inherit', fontSize: 'inherit', padding: '4px 0' }}>
             <strong style={{ color: 'alert' in s && s.value > 0 ? 'var(--bad-text)' : 'var(--text)', fontSize: 16 }}>{s.value}</strong> {s.label}
           </button>
@@ -822,7 +824,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
           <Icon name="alert" style={{ color: 'var(--bad-text)' }} />
           <span style={{ color: 'var(--bad-text)', fontWeight: 700, fontSize: 13 }}>{mf.open} open instrument problem{mf.open > 1 ? 's' : ''}:</span>
           <span style={{ color: 'var(--text)', fontSize: 13 }}>{[...new Set(mf.issues.filter(i => i.status !== 'completed').map(i => i.instrument_name))].join(', ')}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => navigate('equipment')} style={{ marginLeft: 'auto' }}>View</button>
+          <button className="btn btn-sm btn-secondary" onClick={() => setActiveTab('equipment')} style={{ marginLeft: 'auto' }}>View</button>
         </div>
       )}
 
@@ -865,6 +867,7 @@ export default function LabHubPage({ initialTab = 'protocols' }: { initialTab?: 
       {/* Instruments + Bookings: one screen */}
       {(activeTab === 'instruments' || activeTab === 'bookings') && <InstrumentBooking />}
       {activeTab === 'experiments' && <ExperimentsHubPage embedded />}
+      {activeTab === 'equipment' && <MaintenancePanel />}
 
       {/* Maintenance Tab */}
 
