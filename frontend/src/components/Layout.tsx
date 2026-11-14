@@ -104,10 +104,9 @@ const NAV_CATEGORIES: NavCategory[] = [
     color: '#d97706',
     description: 'Inventory, sensors, video calls & procurement',
     items: [
-      { key: 'shop', label: 'Shop', icon: '🛒', minRole: 'trainee' },
+      { key: 'shop', label: 'Shop & Vendors', icon: '🛒', minRole: 'trainee' },
       { key: 'requests', label: 'Requests', icon: '📋', minRole: 'trainee' },
       { key: 'chemical-search', label: 'Chemical Search', icon: '🧪', minRole: 'trainee' },
-      { key: 'supplier-directory', label: 'Vendor Directory', icon: '🏪', minRole: 'trainee' },
       { key: 'inventory', label: 'Inventory', icon: '📦', minRole: 'trainee' },
       { key: 'receiving', label: 'Receiving', icon: '📥', minRole: 'trainee' },
       { key: 'iot-dashboard', label: 'Sensors (IoT)', icon: '🌡️', minRole: 'trainee' },
@@ -124,7 +123,6 @@ const NAV_CATEGORIES: NavCategory[] = [
     description: 'GLP, compliance & training',
     items: [
       { key: 'incidents', label: 'Incidents', icon: '⚠️', minRole: 'trainee' },
-      { key: 'reagent-hub', label: 'Reagents', icon: '⚗️', minRole: 'trainee', advanced: true },
       { key: 'capa', label: 'CAPA', icon: '🔧', minRole: 'staff', advanced: true },
       { key: 'training-cert', label: 'Training & Certs', icon: '🎓', minRole: 'trainee' },
     ]

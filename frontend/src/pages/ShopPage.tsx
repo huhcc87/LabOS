@@ -3,6 +3,7 @@ import { useNavigate } from '../context/NavigationContext';
 import { BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES } from '../data/biomedicalSuppliers';
 import LabBanner from '../components/LabBanner';
 import EmojiIcon from '../components/EmojiIcon';
+import SupplierDirectoryPage from './SupplierDirectoryPage';
 
 /** One glyph per category tile; unknown categories fall back to a neutral icon. */
 const GLYPH: Record<string, string> = {
@@ -32,7 +33,13 @@ export default function ShopPage() {
     sessionStorage.setItem('labos_chem_prefill', q.trim());
     navigate('chemical-search');
   };
-  const browse = (category: string) => { sessionStorage.setItem('labos_vendor_category', category); navigate('supplier-directory'); };
+  // Vendor Directory lives on this page (it used to be a separate, duplicate page): a tile filters it in place.
+  const [dirKey, setDirKey] = useState(0);
+  const browse = (category: string) => {
+    sessionStorage.setItem('labos_vendor_category', category);
+    setDirKey(k => k + 1);
+    setTimeout(() => document.getElementById('vendors')?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
 
   return (
     <div>
@@ -62,6 +69,11 @@ export default function ShopPage() {
           </button>
         ))}
       </div>
+
+      <section id="vendors" aria-label="All vendors" style={{ marginTop: 32 }}>
+        <h2 style={{ fontSize: 18, margin: '0 0 14px' }}>All vendors</h2>
+        <SupplierDirectoryPage key={dirKey} embedded />
+      </section>
     </div>
   );
 }

@@ -45,8 +45,8 @@ const LOCATIONS = ['Lab 101', 'Lab 102', 'Lab 103', 'Storage Room', 'Common Area
 const TRAINING_CATEGORIES = ['Safety', 'Compliance', 'Technical', 'Equipment', 'Certification', 'Other'];
 const COMPLIANCE_STANDARDS = ['GLP', 'GMP', 'ISO 17025', 'OSHA', '21 CFR Part 11', 'CLIA', 'CAP', 'Other'];
 
-export default function SafetyHubPage() {
-  const [activeTab, setActiveTab] = useState<'incidents' | 'compliance' | 'training'>('incidents');
+export default function SafetyHubPage({ initialTab = 'incidents' }: { initialTab?: 'incidents' | 'compliance' | 'training' }) {
+  const [activeTab, setActiveTab] = useState<'incidents' | 'compliance' | 'training'>(initialTab);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Toast
