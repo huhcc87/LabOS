@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "convex/_generated/api.d.ts": {
-    "mtime": 1794615950.289682,
-    "ast_hash": "883f276d6941b4f7b791710effd8462e",
+    "mtime": 1794680704.2801137,
+    "ast_hash": "20d921dc6c995ed17a8e335371cdcd43",
     "semantic_hash": ""
   },
   "convex/_generated/api.js": {
@@ -130,8 +130,8 @@
     "semantic_hash": ""
   },
   "convex/customAuth.ts": {
-    "mtime": 1794621078.4246168,
-    "ast_hash": "79c83d1e0029057aca89bef6b78f6420",
+    "mtime": 1794670487.4884427,
+    "ast_hash": "30677c290b6bf95528fbaf8c3aae5122",
     "semantic_hash": ""
   },
   "convex/dashboard.ts": {
@@ -420,8 +420,8 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1794622404.1798182,
-    "ast_hash": "f884f90c30400d904bab283df6b818a0",
+    "mtime": 1794680625.571857,
+    "ast_hash": "c2229e4f326cb1d1fb019888ac6573ce",
     "semantic_hash": ""
   },
   "src/components/AIChatPanel.tsx": {
@@ -960,8 +960,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/pages/ProtocolsPage.tsx": {
-    "mtime": 1794615950.2805922,
-    "ast_hash": "e772e6c3592e608271e6b2addf606909",
+    "mtime": 1794680567.335498,
+    "ast_hash": "bea79758d04ba664a9e99d7a5dd6c466",
     "semantic_hash": ""
   },
   "src/features/protocols/services/bioProtocolService.ts": {
@@ -1260,13 +1260,8 @@
     "semantic_hash": ""
   },
   "src/pages/DashboardPage.tsx": {
-    "mtime": 1794615950.2799728,
-    "ast_hash": "05bb904c01bbbc51877a857fefcfd570",
-    "semantic_hash": ""
-  },
-  "src/pages/DocumentsPage.tsx": {
-    "mtime": 1794615950.2807972,
-    "ast_hash": "82cccca2e14a9cae9e1751a12fd576f0",
+    "mtime": 1794663515.6302109,
+    "ast_hash": "ae413410e7ee702cae4d78dec4e74399",
     "semantic_hash": ""
   },
   "src/pages/ELNPage.tsx": {
@@ -1295,8 +1290,8 @@
     "semantic_hash": ""
   },
   "src/pages/ExperimentsHubPage.tsx": {
-    "mtime": 1794615950.2864547,
-    "ast_hash": "8690f838a129c0f375546a18550fb725",
+    "mtime": 1794671306.1396055,
+    "ast_hash": "7a85f15277c5d111cf08462f3850d200",
     "semantic_hash": ""
   },
   "src/pages/FeedbackPage.tsx": {
@@ -1385,8 +1380,8 @@
     "semantic_hash": ""
   },
   "src/pages/LabHubPage.tsx": {
-    "mtime": 1794615950.3079996,
-    "ast_hash": "91cd578ce7a3bb3170489dc4b04056b0",
+    "mtime": 1794680625.5599227,
+    "ast_hash": "892e8f747150bef7ebd924b3139a8eab",
     "semantic_hash": ""
   },
   "src/pages/LabMeetingsPage.tsx": {
@@ -1405,8 +1400,8 @@
     "semantic_hash": ""
   },
   "src/pages/LabelPrinterPage.tsx": {
-    "mtime": 1794624875.6505268,
-    "ast_hash": "f58405eb087b4215a570602137c15ac6",
+    "mtime": 1794671018.6907852,
+    "ast_hash": "24cf7a12d7840a0c0a2cb7ebd4f237b2",
     "semantic_hash": ""
   },
   "src/pages/LabelsPage.tsx": {
@@ -1457,11 +1452,6 @@
   "src/pages/ProgressReportsPage.tsx": {
     "mtime": 1794615950.3237224,
     "ast_hash": "cb906b5e7ab9037ad1837a27796e987b",
-    "semantic_hash": ""
-  },
-  "src/pages/ProtocolsPage.tsx": {
-    "mtime": 1794615950.3239787,
-    "ast_hash": "936ea7bdb9179ce6254be1efb95a4aeb",
     "semantic_hash": ""
   },
   "src/pages/ReagentCartPage.tsx": {
@@ -2005,8 +1995,8 @@
     "semantic_hash": ""
   },
   "convex/instrumentBooking.ts": {
-    "mtime": 1794615950.3096354,
-    "ast_hash": "11f73e0091adae8fd3784b4614003667",
+    "mtime": 1794664282.579897,
+    "ast_hash": "9a3358530f627a121d9c039b14e4c92e",
     "semantic_hash": ""
   },
   "convex/invoiceMatch.ts": {
@@ -2120,8 +2110,8 @@
     "semantic_hash": ""
   },
   "src/features/instruments/InstrumentBooking.tsx": {
-    "mtime": 1794615950.277479,
-    "ast_hash": "89315694116bd0ee1b2915105f9bd8c9",
+    "mtime": 1794670109.626671,
+    "ast_hash": "1d62ce1fbee07179f3592767d3bd771e",
     "semantic_hash": ""
   },
   "src/features/instruments/MaintenancePanel.tsx": {
@@ -2312,6 +2302,21 @@
   "public/chronobio/viewer.html": {
     "mtime": 1794615950.335664,
     "ast_hash": "69d26f9ab6dae35779cea00a323a18d6",
+    "semantic_hash": ""
+  },
+  "convex/protocolMerge.ts": {
+    "mtime": 1794680556.0788279,
+    "ast_hash": "9eda95175f8c1a6a07a2cf0e1e8d94bb",
+    "semantic_hash": ""
+  },
+  "src/features/instruments/instrumentQr.ts": {
+    "mtime": 1794666344.608639,
+    "ast_hash": "d91fe720307976ccbf40d052dbe56851",
+    "semantic_hash": ""
+  },
+  "tests/unit/instrumentQr.test.ts": {
+    "mtime": 1794666451.805914,
+    "ast_hash": "aee0b6f466daf97a073bddc73901d242",
     "semantic_hash": ""
   }
 }
