@@ -6,6 +6,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import EmojiIcon from '../../components/EmojiIcon';
+import { ShareSopPanel, SharedWithUs } from './SopSharing';
 
 const CATEGORIES = ['Safety', 'Quality', 'Operations', 'Equipment'];
 const STATUS: Record<string, { text: string; color: string; bg: string }> = {
@@ -29,6 +30,7 @@ export default function SopsPanel() {
   const [form, setForm] = useState<{ title: string; category: string; version: string; file: File | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const [customCat, setCustomCat] = useState(false); // typing a category that isn't in the list
+  const [sharing, setSharing] = useState<Id<'sops'> | null>(null); // which SOP's share panel is open
 
   const sops = data?.sops ?? [];
   const categories = useMemo(() => [...new Set([...CATEGORIES, ...sops.map((s) => s.category ?? 'Other')])], [sops]);
@@ -93,6 +95,8 @@ export default function SopsPanel() {
         </div>
       )}
 
+      <SharedWithUs />
+
       {!data ? <div style={{ color: 'var(--text-muted)' }}>Loading…</div> : shown.length === 0 ? (
         <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>{sops.length === 0 ? 'No SOPs yet. Upload the first one.' : 'No SOPs match.'}</div>
       ) : categories.filter((c) => shown.some((s) => (s.category ?? 'Other') === c)).map((c) => (
@@ -101,7 +105,8 @@ export default function SopsPanel() {
           {shown.filter((s) => (s.category ?? 'Other') === c).map((s) => {
             const st = STATUS[s.status] ?? { text: s.status, color: 'var(--text-muted)', bg: 'var(--surface2)' };
             return (
-              <div key={s._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+              <div key={s._id}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 220 }}>
                   <div style={{ fontWeight: 600 }}>{s.title} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>v{s.version}</span></div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -118,8 +123,13 @@ export default function SopsPanel() {
                   </>
                 )}
                 {s.can_delete && (
+                  <button className="btn btn-secondary btn-sm" onClick={() => setSharing(sharing === s._id ? null : s._id)} title="Share with a collaborator who uses LabOS">🤝 Share</button>
+                )}
+                {s.can_delete && (
                   <button className="btn btn-secondary btn-sm" aria-label={`Delete ${s.title}`} onClick={() => { if (confirm(`Delete "${s.title}"?`)) act(() => remove({ token: token!, id: s._id }), 'Deleted'); }}><EmojiIcon glyph="🗑" /> Delete</button>
                 )}
+              </div>
+              {sharing === s._id && <ShareSopPanel sop={s} onClose={() => setSharing(null)} />}
               </div>
             );
           })}

@@ -336,6 +336,22 @@ export default defineSchema({
     .index("by_status", ["status"])
     .searchIndex("search_title", { searchField: "title", filterFields: ["status"] }),
 
+  // An SOP/protocol one lab shares with a collaborator's lab on LabOS (cross-lab, so not lab-scoped:
+  // convex/sopSharing.ts checks owner_lab_id / to_lab_id itself).
+  sop_shares: defineTable({
+    sop_id: v.id("sops"),
+    owner_lab_id: v.id("labs"),
+    to_lab_id: v.id("labs"),
+    to_user_id: v.id("users"), // the collaborator it was shared with (their lab gets access)
+    permission: v.union(v.literal("view"), v.literal("view_download")),
+    citation: v.string(), // how the receiving lab must cite it
+    note: v.optional(v.string()),
+    shared_by: v.id("users"),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    created_at: v.number(),
+  }).index("by_sop", ["sop_id"])
+    .index("by_to_lab", ["to_lab_id"]),
+
   // ── Maintenance ──────────────────────────────────────────────────────
   maintenance: defineTable({
     lab_id: v.optional(v.id("labs")),
