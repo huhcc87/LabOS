@@ -1,5 +1,5 @@
 import EmojiIcon from '../../../components/EmojiIcon';
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { useProtocols } from '../hooks/useProtocols'
 import { useProtocolImport } from '../hooks/useProtocolImport'
 import { useProtocolGeneration } from '../hooks/useProtocolGeneration'
@@ -14,31 +14,13 @@ import ProtocolImportModal from '../components/ProtocolImportModal'
 import ProtocolGenerateModal from '../components/ProtocolGenerateModal'
 import ProtocolEditor from '../components/ProtocolEditor'
 import ProtocolAIHelper from '../components/ProtocolAIHelper'
-import ProtocolWorkflowBuilder from '../components/ProtocolWorkflowBuilder'
-import GenomicsViewer from '../viewers/GenomicsViewer'
-import ProteinStructureViewer from '../viewers/ProteinStructureViewer'
-import MicroscopyViewer from '../viewers/MicroscopyViewer'
 import type { Protocol } from '../types/protocol.types'
 import { PROTOCOL_CATEGORIES } from '../data/categories'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { useSwarm, SwarmDashboard } from '../ai-swarm'
 import ExternalLibrary from '../ExternalLibrary'
 
-type MainTab = 'library' | 'external' | 'editor' | 'ai' | 'ai-swarm' | 'workflow' | 'viewers' | 'analytics'
-type ViewerTab = 'genomics' | 'protein' | 'microscopy'
+type MainTab = 'library' | 'external' | 'editor' | 'ai'
 
-const BIOSAFETY_COLORS: Record<string, string> = {
-  'BSL-1': '#10b981',
-  'BSL-2': '#f59e0b',
-  'BSL-3': '#f97316',
-  'BSL-4': '#dc2626',
-}
-const STATUS_COLORS: Record<string, string> = {
-  approved: '#10b981',
-  draft: '#6b7280',
-  under_review: '#f59e0b',
-  archived: '#ef4444',
-}
 
 export default function ProtocolsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const store = useProtocols()
@@ -48,7 +30,7 @@ export default function ProtocolsPage({ embedded = false }: { embedded?: boolean
   const [activeSubcategory, setActiveSubcategory] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [mainTab, setMainTab] = useState<MainTab>('library')
-  const [viewerTab, setViewerTab] = useState<ViewerTab>('genomics')
+  const [aiMode, setAiMode] = useState<'assistant' | 'swarm'>('assistant')
   const [editingProtocol, setEditingProtocol] = useState<Partial<Protocol> | null>(null)
 
   const activeCatData = PROTOCOL_CATEGORIES.find(c => c.id === store.activeCategory)
@@ -62,28 +44,6 @@ export default function ProtocolsPage({ embedded = false }: { embedded?: boolean
     store.updateProtocol({ ...p, approvalStatus: 'approved', lastReviewedAt: new Date().toISOString() })
   }
 
-  // Analytics data
-  const analyticsData = useMemo(() => {
-    const all = store.allProtocols
-    const byCat = PROTOCOL_CATEGORIES.map(cat => ({
-      name: cat.name.split(' ')[0],
-      count: all.filter(p => p.category === cat.id).length,
-    })).filter(d => d.count > 0).sort((a, b) => b.count - a.count).slice(0, 8)
-
-    const byStatus = ['approved', 'draft', 'under_review', 'archived'].map(s => ({
-      name: s === 'under_review' ? 'Review' : s.charAt(0).toUpperCase() + s.slice(1),
-      value: all.filter(p => p.approvalStatus === s).length,
-      color: STATUS_COLORS[s],
-    })).filter(d => d.value > 0)
-
-    const byBsl = Object.entries(BIOSAFETY_COLORS).map(([bsl, color]) => ({
-      name: bsl,
-      value: all.filter(p => p.biosafetyLevel === bsl).length,
-      color,
-    })).filter(d => d.value > 0)
-
-    return { byCat, byStatus, byBsl }
-  }, [store.allProtocols])
 
   const handleEditorSave = (data: Partial<Protocol>) => {
     if (data.id && store.allProtocols.find(p => p.id === data.id)) {
@@ -98,12 +58,7 @@ export default function ProtocolsPage({ embedded = false }: { embedded?: boolean
   const MAIN_TABS: { id: MainTab; label: string; icon: string }[] = [
     { id: 'library', label: 'Library', icon: '📚' },
     { id: 'external', label: 'Protocol Library (open sources)', icon: '🌐' },
-    { id: 'editor', label: 'Editor', icon: '✏️' },
-    { id: 'ai-swarm', label: 'AI Swarm', icon: '🧬' },
-    { id: 'ai', label: 'AI Assistant', icon: '🤖' },
-    { id: 'workflow', label: 'Workflows', icon: '🔀' },
-    { id: 'viewers', label: 'Viewers', icon: '🔬' },
-    { id: 'analytics', label: 'Analytics', icon: '📊' },
+    { id: 'ai', label: 'AI', icon: '🤖' }, // Assistant and Swarm in one tab; the editor opens from + New Protocol
   ]
 
   return (
@@ -275,152 +230,31 @@ export default function ProtocolsPage({ embedded = false }: { embedded?: boolean
         </div>
       )}
 
-      {/* ── AI Swarm Tab ── */}
-      {mainTab === 'ai-swarm' && (
-        <SwarmDashboard swarm={swarm} />
-      )}
-
-      {/* ── AI Assistant Tab ── */}
+      {/* ── AI tab: Assistant (one protocol at a time) and Swarm (multi-agent drafting) in one place ── */}
       {mainTab === 'ai' && (
-        <div style={{ maxWidth: 780 }}>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ margin: '0 0 4px', color: 'var(--text)', fontSize: 18, fontWeight: 600 }}>AI Protocol Assistant</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              Generate, improve, convert, and analyse biomedical protocols using AI. All generation is optional and requires an API key.
-            </p>
-          </div>
-          <ProtocolAIHelper protocol={store.selectedProtocol || undefined} />
-        </div>
-      )}
-
-      {/* ── Workflow Builder Tab ── */}
-      {mainTab === 'workflow' && (
         <div>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ margin: '0 0 4px', color: 'var(--text)', fontSize: 18, fontWeight: 600 }}>Protocol Workflow Builder</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              Visualise protocol workflows as step-by-step flow diagrams with decision gates and QC checkpoints.
-            </p>
-          </div>
-          <ProtocolWorkflowBuilder />
-        </div>
-      )}
-
-      {/* ── Viewers Tab ── */}
-      {mainTab === 'viewers' && (
-        <div>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ margin: '0 0 4px', color: 'var(--text)', fontSize: 18, fontWeight: 600 }}>Scientific Viewers</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              Integrated viewers for genomics tracks, protein structures, and microscopy/pathology slides.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-            {([
-              { id: 'genomics', label: "Genomics (IGV)" },
-              { id: 'protein', label: "Protein Structure (Mol*)" },
-              { id: 'microscopy', label: "Microscopy (OSD)" },
-            ] as { id: ViewerTab; label: string }[]).map(t => (
-              <button key={t.id} onClick={() => setViewerTab(t.id)} style={{
-                padding: '9px 16px', border: 'none',
-                borderBottom: viewerTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-                background: 'transparent', color: viewerTab === t.id ? 'var(--accent)' : 'var(--text-muted)',
-                cursor: 'pointer', fontSize: 13, fontWeight: viewerTab === t.id ? 600 : 400,
-              }}>
-                {t.label}
+          <div role="group" aria-label="AI mode" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            {([['assistant', '🤖 Assistant', 'Improve, convert and analyse one protocol'], ['swarm', '🧬 Swarm', 'Several AI agents draft and review a protocol together']] as const).map(([k, label, hint]) => (
+              <button key={k} type="button" onClick={() => setAiMode(k)} aria-pressed={aiMode === k} title={hint}
+                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer', fontWeight: aiMode === k ? 700 : 500,
+                  border: `1px solid ${aiMode === k ? 'var(--accent)' : 'var(--border)'}`,
+                  background: aiMode === k ? 'rgba(99,102,241,0.12)' : 'transparent', color: 'var(--text)' }}>
+                {label}
               </button>
             ))}
           </div>
-          {viewerTab === 'genomics' && <GenomicsViewer />}
-          {viewerTab === 'protein' && <ProteinStructureViewer />}
-          {viewerTab === 'microscopy' && <MicroscopyViewer />}
+          {aiMode === 'swarm' ? <SwarmDashboard swarm={swarm} /> : (
+            <div style={{ maxWidth: 780 }}>
+              <p style={{ margin: '0 0 16px', color: 'var(--text-muted)', fontSize: 13 }}>
+                Generate, improve, convert, and analyse biomedical protocols using AI. Generation is optional.
+              </p>
+              <ProtocolAIHelper protocol={store.selectedProtocol || undefined} />
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Analytics Tab ── */}
       {mainTab === 'external' && <ExternalLibrary />}
-
-      {mainTab === 'analytics' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <h2 style={{ margin: '0 0 4px', color: 'var(--text)', fontSize: 18, fontWeight: 600 }}>Protocol Analytics</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              Usage trends, approval status, biosafety distribution, and category breakdown.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
-            {/* Protocols by Category */}
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Protocols by Category</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={analyticsData.byCat} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={80} />
-                  <Tooltip
-                    contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ color: 'var(--text)' }}
-                  />
-                  <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Approval Status */}
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Approval Status</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={analyticsData.byStatus} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                    {analyticsData.byStatus.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }} />
-                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Biosafety Level */}
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Biosafety Level Distribution</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={analyticsData.byBsl} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                    {analyticsData.byBsl.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }} />
-                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Summary table */}
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Category Summary</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-                {PROTOCOL_CATEGORIES.map(cat => {
-                  const count = store.allProtocols.filter(p => p.category === cat.id).length
-                  if (!count) return null
-                  return (
-                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 16 }}><EmojiIcon glyph={cat.icon} /></span>
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{cat.name}</span>
-                      <div style={{ width: 80, height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ width: `${(count / store.allProtocols.length) * 100}%`, height: '100%', background: cat.color, borderRadius: 3 }} />
-                      </div>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 24, textAlign: 'right' }}>{count}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modals & Drawer */}
       <ProtocolDetailDrawer

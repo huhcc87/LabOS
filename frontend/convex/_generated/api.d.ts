@@ -68,6 +68,7 @@ import type * as search from "../search.js";
 import type * as security from "../security.js";
 import type * as seedProdAdmin from "../seedProdAdmin.js";
 import type * as settings from "../settings.js";
+import type * as sopSharing from "../sopSharing.js";
 import type * as sops from "../sops.js";
 import type * as stockAlerts from "../stockAlerts.js";
 import type * as stockImport from "../stockImport.js";
@@ -151,6 +152,7 @@ declare const fullApi: ApiFromModules<{
   security: typeof security;
   seedProdAdmin: typeof seedProdAdmin;
   settings: typeof settings;
+  sopSharing: typeof sopSharing;
   sops: typeof sops;
   stockAlerts: typeof stockAlerts;
   stockImport: typeof stockImport;

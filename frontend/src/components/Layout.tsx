@@ -71,7 +71,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     color: '#2563eb',
     description: 'Protocols, instruments & scheduling',
     items: [
-      { key: 'lab-hub', label: 'Lab Hub Overview', icon: '🔬', minRole: 'trainee' },
+      { key: 'lab-hub', label: 'Lab Hub', icon: '🔬', minRole: 'trainee' },
     ]
   },
   {
@@ -407,7 +407,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
               >
                 <button
                   className={`nav-category-header ${isHubActive ? 'hub-header-active' : ''}`}
-                  onClick={() => toggleCategory(cat.category)}
+                  onClick={() => (cat.items.length === 1 ? (onNavigate(cat.items[0].key), setSidebarOpen(false)) : toggleCategory(cat.category))}
                 >
                   <div className="hub-icon-box" style={{ background: `${cat.color}22`, color: cat.color }}>
                     <EmojiIcon glyph={cat.icon} size={18} />
@@ -416,9 +416,9 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     <span className="hub-name">{cat.category}</span>
                     <span className="hub-desc">{cat.description}</span>
                   </div>
-                  <span className={`nav-category-chevron ${isCollapsed ? 'collapsed' : ''}`}>▼</span>
+                  {cat.items.length > 1 && <span className={`nav-category-chevron ${isCollapsed ? 'collapsed' : ''}`}>▼</span>}
                 </button>
-                {!isCollapsed && (
+                {!isCollapsed && cat.items.length > 1 && (
                   <div className="nav-category-items">
                     {cat.items.map((item) => (
                       <button
