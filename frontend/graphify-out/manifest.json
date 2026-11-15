@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "convex/_generated/api.d.ts": {
-    "mtime": 1794680704.2801137,
-    "ast_hash": "20d921dc6c995ed17a8e335371cdcd43",
+    "mtime": 1794701088.265678,
+    "ast_hash": "738caceef60210f19a41831be42590d7",
     "semantic_hash": ""
   },
   "convex/_generated/api.js": {
@@ -280,8 +280,8 @@
     "semantic_hash": ""
   },
   "convex/schema.ts": {
-    "mtime": 1794615950.274322,
-    "ast_hash": "50c5adff102db447d5f19816f3fe31f0",
+    "mtime": 1794701064.2984645,
+    "ast_hash": "5413fda9af9b7bd4f0a7b59e57315e87",
     "semantic_hash": ""
   },
   "convex/search.ts": {
@@ -420,8 +420,8 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1794680625.571857,
-    "ast_hash": "c2229e4f326cb1d1fb019888ac6573ce",
+    "mtime": 1794697854.8123457,
+    "ast_hash": "3e038292ae3736227ddac3f0e82d8a1b",
     "semantic_hash": ""
   },
   "src/components/AIChatPanel.tsx": {
@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "src/components/Layout.tsx": {
-    "mtime": 1794615950.3453052,
-    "ast_hash": "9c32f3308e4210144661f99e13ff5fc2",
+    "mtime": 1794699333.773918,
+    "ast_hash": "b1552dc2e952513b218c2d002dfb4af7",
     "semantic_hash": ""
   },
   "src/components/MarkdownRenderer.tsx": {
@@ -909,11 +909,6 @@
     "ast_hash": "c95276b9ec2e72560895ae095a75f1cc",
     "semantic_hash": ""
   },
-  "src/features/protocols/components/ProtocolWorkflowBuilder.tsx": {
-    "mtime": 1794615950.273732,
-    "ast_hash": "1cc8bb3db5772ce4d38c34488d7687c7",
-    "semantic_hash": ""
-  },
   "src/features/protocols/components/StepEditModal.tsx": {
     "mtime": 1794615950.2743134,
     "ast_hash": "5e66a6414f3e93ad53c404f31b9acc3e",
@@ -960,8 +955,8 @@
     "semantic_hash": ""
   },
   "src/features/protocols/pages/ProtocolsPage.tsx": {
-    "mtime": 1794680567.335498,
-    "ast_hash": "bea79758d04ba664a9e99d7a5dd6c466",
+    "mtime": 1794700599.4024038,
+    "ast_hash": "9f412af5bd92ebb58a138d4d813e7bc9",
     "semantic_hash": ""
   },
   "src/features/protocols/services/bioProtocolService.ts": {
@@ -1017,21 +1012,6 @@
   "src/features/protocols/utils/protocolStatus.ts": {
     "mtime": 1794615950.2919915,
     "ast_hash": "fe2c9c7dcdea12b16b110b2868b783d6",
-    "semantic_hash": ""
-  },
-  "src/features/protocols/viewers/GenomicsViewer.tsx": {
-    "mtime": 1794615950.293034,
-    "ast_hash": "8c590601dcd5c782c2263984d515f9dc",
-    "semantic_hash": ""
-  },
-  "src/features/protocols/viewers/MicroscopyViewer.tsx": {
-    "mtime": 1794615950.2934864,
-    "ast_hash": "0c585ce87f028b0ead960c50ec32df22",
-    "semantic_hash": ""
-  },
-  "src/features/protocols/viewers/ProteinStructureViewer.tsx": {
-    "mtime": 1794615950.293971,
-    "ast_hash": "eda8d777cd5f787bee07a9c7c1dc19fe",
     "semantic_hash": ""
   },
   "src/hooks/useApi.ts": {
@@ -1380,8 +1360,8 @@
     "semantic_hash": ""
   },
   "src/pages/LabHubPage.tsx": {
-    "mtime": 1794680625.5599227,
-    "ast_hash": "892e8f747150bef7ebd924b3139a8eab",
+    "mtime": 1794697860.5493011,
+    "ast_hash": "04fac4ae783fd143cf7f9bfaa710762b",
     "semantic_hash": ""
   },
   "src/pages/LabMeetingsPage.tsx": {
@@ -1459,11 +1439,6 @@
     "ast_hash": "49017cd022a375d5459eb7cd2a0f2b50",
     "semantic_hash": ""
   },
-  "src/pages/ReagentHubPage.tsx": {
-    "mtime": 1794615950.3244615,
-    "ast_hash": "380d409299c9dfaf7e3a269f2b14a479",
-    "semantic_hash": ""
-  },
   "src/pages/ReferenceManagerPage.tsx": {
     "mtime": 1794615950.3249443,
     "ast_hash": "f936946619212ce7467268de8844d20f",
@@ -1505,8 +1480,8 @@
     "semantic_hash": ""
   },
   "src/pages/SafetyHubPage.tsx": {
-    "mtime": 1794615950.2729304,
-    "ast_hash": "ffbcd2d6605afb7d5abd727705e53ed3",
+    "mtime": 1794696894.584179,
+    "ast_hash": "e10b06318cefd9858bc68a38b8c89193",
     "semantic_hash": ""
   },
   "src/pages/SampleEventsPage.tsx": {
@@ -1540,8 +1515,8 @@
     "semantic_hash": ""
   },
   "src/pages/SupplierDirectoryPage.tsx": {
-    "mtime": 1794615950.280747,
-    "ast_hash": "02a364ab72f1fb94e307dab31d947e74",
+    "mtime": 1794696877.3114026,
+    "ast_hash": "ff8884b4d970ac19b716bb92f762da93",
     "semantic_hash": ""
   },
   "src/pages/SuppliersPage.tsx": {
@@ -1562,11 +1537,6 @@
   "src/pages/TemplatesPage.tsx": {
     "mtime": 1794615950.283944,
     "ast_hash": "96281bf7e71bdce30048b87093fd4163",
-    "semantic_hash": ""
-  },
-  "src/pages/TrainingCertPage.tsx": {
-    "mtime": 1794615950.2847357,
-    "ast_hash": "6fb9865030816781ed4418eef96c69ed",
     "semantic_hash": ""
   },
   "src/pages/TrainingPage.tsx": {
@@ -2165,8 +2135,8 @@
     "semantic_hash": ""
   },
   "src/features/sops/SopsPanel.tsx": {
-    "mtime": 1794615950.2952182,
-    "ast_hash": "227ef2587d721394cc25eb662328ebd9",
+    "mtime": 1794701166.87669,
+    "ast_hash": "96cbd4f2aa30856f44e16a436d153b10",
     "semantic_hash": ""
   },
   "src/features/stockimport/parse.ts": {
@@ -2204,11 +2174,6 @@
     "ast_hash": "a9dcc1853187d9665c635a333dc61aa7",
     "semantic_hash": ""
   },
-  "src/pages/EquipmentMaintenancePage.tsx": {
-    "mtime": 1794615950.285552,
-    "ast_hash": "78826b27e9180508a795210a9f7cc9bd",
-    "semantic_hash": ""
-  },
   "src/pages/NotebookHubPage.tsx": {
     "mtime": 1794615950.3137174,
     "ast_hash": "4b2de51059592b92c9daa719f9b2f9d0",
@@ -2230,8 +2195,8 @@
     "semantic_hash": ""
   },
   "src/pages/ShopPage.tsx": {
-    "mtime": 1794615950.2782211,
-    "ast_hash": "4d778ddb425f5ccd1770fc6479fbb2aa",
+    "mtime": 1794696894.5770223,
+    "ast_hash": "28cc5060b50fe29d9a7a8d19e439a3b9",
     "semantic_hash": ""
   },
   "tests/unit/budgetForecast.test.ts": {
@@ -2317,6 +2282,16 @@
   "tests/unit/instrumentQr.test.ts": {
     "mtime": 1794666451.805914,
     "ast_hash": "aee0b6f466daf97a073bddc73901d242",
+    "semantic_hash": ""
+  },
+  "convex/sopSharing.ts": {
+    "mtime": 1794701065.5883374,
+    "ast_hash": "e19095f9b043c1f4c307e3d7ccc67dc6",
+    "semantic_hash": ""
+  },
+  "src/features/sops/SopSharing.tsx": {
+    "mtime": 1794701135.9049268,
+    "ast_hash": "3934428013ee43627b4f4ef6e724517b",
     "semantic_hash": ""
   }
 }
