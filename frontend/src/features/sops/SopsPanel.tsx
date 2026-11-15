@@ -95,6 +95,20 @@ export default function SopsPanel() {
         </div>
       )}
 
+      {(() => {
+        const pending = sops.filter((s) => s.status === 'pending');
+        if (pending.length === 0) return null;
+        return (
+          <div role="status" style={{ padding: '10px 14px', marginBottom: 14, borderRadius: 8, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', fontSize: 13 }}>
+            {data?.can_approve ? (
+              <><strong>{pending.length} SOP{pending.length > 1 ? 's' : ''} waiting for your approval.</strong> Use <strong>✓ Approve</strong> or <strong>✕ Reject</strong> on the row below. Approved SOPs count as current for the whole lab.</>
+            ) : (
+              <><strong>{pending.length} SOP{pending.length > 1 ? 's' : ''} waiting for PI approval.</strong> Only a PI or admin can approve. The status here updates when they decide.</>
+            )}
+          </div>
+        );
+      })()}
+
       <SharedWithUs />
 
       {!data ? <div style={{ color: 'var(--text-muted)' }}>Loading…</div> : shown.length === 0 ? (

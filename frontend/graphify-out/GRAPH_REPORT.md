@@ -1,16 +1,16 @@
-# Graph Report - frontend  (2026-11-14)
+# Graph Report - frontend  (2026-11-15)
 
 ## Corpus Check
-- 426 files · ~635,666 words
+- 421 files · ~628,921 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3345 nodes · 6346 edges · 291 communities (196 shown, 95 thin omitted)
+- 3305 nodes · 6316 edges · 289 communities (192 shown, 97 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 98 edges (avg confidence: 0.69)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cd0d80b2`
+- Built from commit: `cb454e82`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -268,7 +268,6 @@
 - @vitejs/plugin-react
 - @testing-library/jest-dom
 - vitest
-- @capacitor/keyboard
 - CapApp-SPM
 - backup.sh
 - @playwright/test
@@ -280,20 +279,18 @@
 - tenantTables.ts
 - videoRooms.ts
 - EquipmentHubPage.tsx
-- LocationPicker.tsx
-- crudApi
 - ReferenceManagerPage.tsx
 
 ## God Nodes (most connected - your core abstractions)
-1. `EmojiIcon()` - 147 edges
-2. `useAuth()` - 94 edges
-3. `query()` - 53 edges
-4. `mutation()` - 50 edges
+1. `EmojiIcon()` - 142 edges
+2. `useAuth()` - 97 edges
+3. `query()` - 54 edges
+4. `mutation()` - 51 edges
 5. `s()` - 47 edges
-6. `errText()` - 45 edges
-7. `api` - 41 edges
-8. `comingSoon()` - 35 edges
-9. `hubGuard()` - 34 edges
+6. `errText()` - 47 edges
+7. `api` - 42 edges
+8. `hubGuard()` - 35 edges
+9. `comingSoon()` - 35 edges
 10. `usePagedApi()` - 29 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -311,55 +308,55 @@
 ## Import Cycles
 - None detected.
 
-## Communities (291 total, 95 thin omitted)
+## Communities (289 total, 97 thin omitted)
 
 ### Community 0 - "meetingUtils.ts"
-Cohesion: 0.05
-Nodes (79): ActionItemForm(), dayInput(), PRIORITIES, Props, ActionItemsPanel(), Props, CATEGORIES, Props (+71 more)
+Cohesion: 0.06
+Nodes (79): EmojiIcon(), ActionItemForm(), dayInput(), PRIORITIES, Props, ActionItemsPanel(), Props, CATEGORIES (+71 more)
 
 ### Community 1 - "swarmEngine.ts"
 Cohesion: 0.05
-Nodes (70): AgentPanel(), Props, scoreColor(), BSL_LEVELS, bslColor(), inputStyle, Props, RESEARCH_AREAS (+62 more)
+Nodes (69): AgentPanel(), Props, scoreColor(), BSL_LEVELS, bslColor(), inputStyle, Props, RESEARCH_AREAS (+61 more)
 
 ### Community 2 - "api.d.ts"
-Cohesion: 0.06
-Nodes (38): chat, history, inventoryPredictions, list, log, get, { requireAuth }, save (+30 more)
+Cohesion: 0.04
+Nodes (57): chat, history, inventoryPredictions, get, { requireAuth }, save, create, list (+49 more)
 
 ### Community 3 - "App.tsx"
-Cohesion: 0.03
-Nodes (58): AcceptInvitePage, AdminHubPage, AILabManagerPage, AuditPage, BiosketchGeneratorPage, BudgetCalculatorPage, CalendarPage, CapaPage (+50 more)
+Cohesion: 0.04
+Nodes (54): AcceptInvitePage, AdminHubPage, AILabManagerPage, AuditPage, BiosketchGeneratorPage, BudgetCalculatorPage, CalendarPage, CapaPage (+46 more)
 
 ### Community 4 - "Table.tsx"
-Cohesion: 0.08
-Nodes (27): UseApiOptions, Attachment, AuditAction, Booking, BookingStatus, CalendarEvent, DashboardSummary, IncidentReport (+19 more)
+Cohesion: 0.06
+Nodes (53): UseApiOptions, usePagedApi(), AuditAction, AuditLog, BookingStatus, CalendarEvent, ComplianceLog, DashboardSummary (+45 more)
 
 ### Community 5 - "customAuth.ts"
-Cohesion: 0.10
-Nodes (17): adminResetPassword, createSession, createUserAndSession, forceLogoutAll, getSessionByToken, getUserByEmail, getUserById, login (+9 more)
+Cohesion: 0.05
+Nodes (36): crons, adminResetPassword, createSession, createUserAndSession, forceLogoutAll, getSessionByToken, getUserByEmail, getUserById (+28 more)
 
 ### Community 6 - "ReportsPage.tsx"
-Cohesion: 0.05
-Nodes (45): xlsx, BatchImport(), BatchImportProps, ColumnMapping, IMPORT_CONFIGS, ImportConfig, ImportStatus, ParsedData (+37 more)
+Cohesion: 0.21
+Nodes (15): ExportMenu(), ExportMenuProps, downloadFile(), EXPORT_OPTIONS, ExportButtonConfig, exportData(), ExportFormat, ExportOptions (+7 more)
 
 ### Community 7 - "api.ts"
 Cohesion: 0.07
-Nodes (40): activityApi, auditApi, authApi, biosketchApi, client, complianceApi, CONVEX_URL, dashboardApi (+32 more)
+Nodes (46): activityApi, adapt(), aiApi, auditApi, authApi, client, complianceApi, CONVEX_URL (+38 more)
 
 ### Community 8 - "Layout.tsx"
-Cohesion: 0.18
-Nodes (20): AddSensorDialog(), limitsOf(), num(), ConnectGuide(), CodeKind, Judged, Preset, presetById() (+12 more)
+Cohesion: 0.13
+Nodes (30): AddSensorDialog(), limitsOf(), num(), ConnectGuide(), ago(), CodeKind, Judged, Preset (+22 more)
 
 ### Community 9 - "ResearchAITab.tsx"
-Cohesion: 0.08
-Nodes (29): AgencyOverview, Article, ArticleLibrary, dateFilterToDays(), downloadText(), europePmcSearch(), fetchByDOI(), FUNDING_AGENCIES (+21 more)
+Cohesion: 0.07
+Nodes (33): fundingApi, swarmFeedbackApi, AgencyOverview, Article, ArticleLibrary, autoGenerateTopic(), dateFilterToDays(), downloadText() (+25 more)
 
 ### Community 10 - "authHelper.ts"
-Cohesion: 0.09
-Nodes (26): list, myActivity, recent, stats, LEADER_ROLES, mustSetUp2fa(), PRIVILEGED_ROLES, ROLE_ORDER (+18 more)
+Cohesion: 0.06
+Nodes (39): list, myActivity, recent, stats, list, log, LEADER_ROLES, mustSetUp2fa() (+31 more)
 
 ### Community 11 - "ProtocolBadges.tsx"
-Cohesion: 0.14
-Nodes (27): ApprovalBadge(), badge(), BiosafetyBadge(), DifficultyBadge(), ProtocolTypeBadge(), SourceBadge(), ProtocolCardGrid(), generatePrintHTML() (+19 more)
+Cohesion: 0.16
+Nodes (24): ApprovalBadge(), badge(), BiosafetyBadge(), DifficultyBadge(), ProtocolTypeBadge(), SourceBadge(), ProtocolCardGrid(), btnStyle() (+16 more)
 
 ### Community 12 - "protocolImportService.ts"
 Cohesion: 0.11
@@ -378,20 +375,20 @@ Cohesion: 0.14
 Nodes (22): ELNSwarmCallbacks, EntryContext, inp, Props, ELNAgentDefinition, ELNAgentId, ELNAgentOutput, ELNAgentScore (+14 more)
 
 ### Community 16 - "hubGuard"
-Cohesion: 0.10
-Nodes (30): productLink(), isCasNumber(), VENDOR_SEARCHES, VendorSearch, vendorSearchUrl(), box, BudgetRow, InvoicePanel() (+22 more)
+Cohesion: 0.12
+Nodes (19): box, BudgetRow, InvoicePanel(), lbl, MATCH_LABEL, MatchRow, RequestForm(), RequestInput (+11 more)
 
 ### Community 17 - "procurement.ts"
 Cohesion: 0.07
 Nodes (29): addRestricted, approve, checkBudget, createBorrow, createBudget, createRule, deleteBudget, deleteRestricted (+21 more)
 
 ### Community 18 - "useAuth"
-Cohesion: 0.15
-Nodes (28): useAuth(), s(), usePagedApi(), useConvexPaged(), UseConvexPagedOptions, ComplianceLog, formatDate(), hasRole() (+20 more)
+Cohesion: 0.10
+Nodes (29): api, components, AdminPasswordReset(), Props, Check(), TwoFactorGate(), TwoFactorSetup(), AuthContext (+21 more)
 
 ### Community 19 - "protocols/pages/ProtocolsPage.tsx"
-Cohesion: 0.09
-Nodes (30): fld(), GenHook, inp(), Props, ProtocolGenerateModal(), sel(), WFEdge, WFNode (+22 more)
+Cohesion: 0.11
+Nodes (26): Props, fld(), GenHook, inp(), Props, ProtocolGenerateModal(), sel(), Props (+18 more)
 
 ### Community 20 - "manifest.json"
 Cohesion: 0.07
@@ -406,8 +403,8 @@ Cohesion: 0.40
 Nodes (3): ConnState, SensorFrame, WS_URL
 
 ### Community 23 - "comingSoon"
-Cohesion: 0.11
-Nodes (20): comingSoon(), Application, ERACommonsPage(), INITIAL_APPLICATIONS, StatusEvent, Grant, GrantsPage(), INITIAL_GRANTS (+12 more)
+Cohesion: 0.08
+Nodes (26): comingSoon(), Collaborator, CollaboratorNetworkPage(), INITIAL_COLLABORATORS, INITIAL_DOCUMENTS, SharedDocument, Application, ERACommonsPage() (+18 more)
 
 ### Community 24 - "ELNPage.tsx"
 Cohesion: 0.09
@@ -418,44 +415,44 @@ Cohesion: 0.07
 Nodes (26): applyPasswordChange, changePassword, cleanup, COMMON, CONSENT_TYPES, consumeRecoveryCode, createRecoveryCodes, disableBlocked (+18 more)
 
 ### Community 26 - "AuthContext.tsx"
-Cohesion: 0.13
-Nodes (20): b64(), encryptionConfigured(), importKey(), openSecret(), sealSecret(), sha256Hex(), unb64(), sealConfig() (+12 more)
+Cohesion: 0.10
+Nodes (28): b64(), encryptionConfigured(), importKey(), openSecret(), sealSecret(), sha256Hex(), unb64(), create (+20 more)
 
 ### Community 27 - "InventoryPage.tsx"
-Cohesion: 0.12
-Nodes (16): BarcodeScanner(), InventoryItem, CHEMICAL_COMPATIBILITY, GHS_HAZARDS, HAZARD_CLASSES, INVENTORY_CATEGORIES, INVENTORY_UNITS, InventoryPage() (+8 more)
+Cohesion: 0.11
+Nodes (18): BarcodeScannerProps, CAMERA_PERMISSION_HELP, PRODUCT_DATABASE, InventoryItem, CHEMICAL_COMPATIBILITY, GHS_HAZARDS, HAZARD_CLASSES, INVENTORY_CATEGORIES (+10 more)
 
 ### Community 28 - "SampleHubPage.tsx"
-Cohesion: 0.11
-Nodes (25): api, SelectOrCustom(), SampleEvent, useLabSampleEvents(), LabSample, localDate(), META, parseMeta() (+17 more)
+Cohesion: 0.14
+Nodes (12): SelectOrCustom(), BARCODE_TYPES, DEFAULT_STATUSES, EVENT_ICONS, EVENT_TYPES, FIELD_LABELS, LABEL_SIZES, QUANTITY_UNITS (+4 more)
 
 ### Community 29 - "Protocol"
-Cohesion: 0.12
-Nodes (18): key(), AI_ACTIONS, AIAction, Props, Props, Props, ProtocolEditor(), TEMPLATE_CONTENT (+10 more)
+Cohesion: 0.15
+Nodes (14): AI_ACTIONS, AIAction, Props, Props, Props, TEMPLATE_CONTENT, Props, ProtocolExportButtons() (+6 more)
 
 ### Community 30 - "ProtocolDetailTabs.tsx"
-Cohesion: 0.15
-Nodes (13): AiGeneratedBadge(), OpenAccessBadge(), Props, Tab, TABS, formatDate(), getChangesSummary(), Props (+5 more)
+Cohesion: 0.10
+Nodes (24): AiGeneratedBadge(), OpenAccessBadge(), generatePrintHTML(), handlePrint(), Props, ProtocolDetailDrawer(), Props, Tab (+16 more)
 
 ### Community 31 - "ProcurementHubPage.tsx"
-Cohesion: 0.11
-Nodes (14): BudgetForecast, COUNTED, forecastBudget(), ForecastRow, total(), when(), BudgetsTab(), INP (+6 more)
+Cohesion: 0.14
+Nodes (5): procurementApi, INP, OCRTab(), Tab, TABS
 
 ### Community 32 - "protocol.types.ts"
-Cohesion: 0.12
-Nodes (18): formatDate(), getStatusColor(), Props, ProtocolApprovalWorkflow(), Props, Props, ApprovalRequest, ApprovalReviewer (+10 more)
+Cohesion: 0.15
+Nodes (15): formatDate(), getStatusColor(), Props, ProtocolApprovalWorkflow(), ApprovalRequest, ApprovalReviewer, AuditEntry, ComplianceCheck (+7 more)
 
 ### Community 33 - "useProtocols.ts"
-Cohesion: 0.20
-Nodes (11): chk(), Props, ProtocolFiltersBar(), sel(), useProtocols(), ViewMode, ProtocolFilters, applyFilters() (+3 more)
+Cohesion: 0.24
+Nodes (7): chk(), Props, ProtocolFiltersBar(), sel(), ProtocolFilters, countActiveFilters(), DEFAULT_FILTERS
 
 ### Community 34 - "dependencies"
 Cohesion: 0.10
-Nodes (21): axios, @capacitor/haptics, @capacitor/local-notifications, dependencies, axios, @capacitor/haptics, @capacitor/local-notifications, pdfjs-dist (+13 more)
+Nodes (21): @capacitor/haptics, @capacitor/keyboard, @capacitor/local-notifications, dependencies, @capacitor/haptics, @capacitor/keyboard, @capacitor/local-notifications, pdfjs-dist (+13 more)
 
 ### Community 35 - "grants.ts"
-Cohesion: 0.08
-Nodes (30): callAI(), callAnthropic(), callDeepSeek(), chat, inventoryPredictions, action, aiDraft, aiProviders (+22 more)
+Cohesion: 0.06
+Nodes (38): callAI(), callAnthropic(), callDeepSeek(), chat, inventoryPredictions, AGENCY_DEFS, analyzeFunding, cleanQuery() (+30 more)
 
 ### Community 36 - "protocols.ts"
 Cohesion: 0.10
@@ -466,8 +463,8 @@ Cohesion: 0.10
 Nodes (20): DOM.Iterable, ES2020, src, DOM, compilerOptions, allowImportingTsExtensions, allowSyntheticDefaultImports, esModuleInterop (+12 more)
 
 ### Community 38 - "AdminHubPage.tsx"
-Cohesion: 0.12
-Nodes (17): AdminPasswordReset(), Props, AdminHubPage(), AuditLog, DEPARTMENTS, FILE_CATEGORIES, Integration, INTEGRATION_CATALOG (+9 more)
+Cohesion: 0.14
+Nodes (15): AdminHubPage(), AuditLog, DEPARTMENTS, FILE_CATEGORIES, Integration, INTEGRATION_CATALOG, inviteUrl(), LabFile (+7 more)
 
 ### Community 39 - "components/index.ts"
 Cohesion: 0.26
@@ -475,18 +472,18 @@ Nodes (12): Equipment, formatDate(), formatDuration(), formatTime(), getInitials
 
 ### Community 40 - "GrantTools.tsx"
 Cohesion: 0.12
-Nodes (17): BiosketschGenerator(), BudgetCalculator(), Collaborator, CollaboratorsManager(), ContribToScience, downloadTxt(), FA_RATES, INPUT_STYLE (+9 more)
+Nodes (16): BudgetCalculator(), Collaborator, CollaboratorsManager(), ContribToScience, downloadTxt(), FA_RATES, INPUT_STYLE, LETTER_STATUS_COLORS (+8 more)
 
 ### Community 41 - "AppDelegate"
 Cohesion: 0.13
 Nodes (13): Any, Bool, Capacitor, NSUserActivity, UIApplication, UIApplicationDelegate, UIKit, UIResponder (+5 more)
 
 ### Community 42 - "api.js"
-Cohesion: 0.10
-Nodes (19): hasRole(), articleFields, createArticle, createPoll, deleteArticle, deletePoll, listArticles, listPolls (+11 more)
+Cohesion: 0.06
+Nodes (32): hasRole(), articleFields, createArticle, createPoll, deleteArticle, deletePoll, listArticles, listPolls (+24 more)
 
 ### Community 43 - "invites.ts"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (25): Confirmation, input, InstrumentBooking(), lbl, PRESETS, statusOf(), today(), when() (+17 more)
 
 ### Community 44 - "compilerOptions"
@@ -507,7 +504,7 @@ Nodes (8): ErrorBoundary, Props, State, dedupKey(), ErrorReport, initErrorTracki
 
 ### Community 48 - "utils.ts"
 Cohesion: 0.06
-Nodes (50): BarcodeScannerProps, CAMERA_PERMISSION_HELP, PRODUCT_DATABASE, ConfirmDialog(), ConfirmDialogProps, Modal(), ModalProps, Column (+42 more)
+Nodes (48): ConfirmDialog(), ConfirmDialogProps, Modal(), ModalProps, Column, Pagination(), PaginationProps, Table() (+40 more)
 
 ### Community 49 - "ClinicalResearchHubPage.tsx"
 Cohesion: 0.11
@@ -519,43 +516,43 @@ Nodes (10): DataModel, Doc, Id, TableNames, afterEdit(), approvalValidator, Appr
 
 ### Community 51 - "LabHubPage.tsx"
 Cohesion: 0.13
-Nodes (17): approvalBadge(), errText(), Booking, HubTab, Instrument, INSTRUMENT_TYPES, LAB_LOCATIONS, LabHubPage() (+9 more)
+Nodes (18): protocolsApi, approvalBadge(), errText(), Booking, HubTab, Instrument, INSTRUMENT_TYPES, LAB_LOCATIONS (+10 more)
 
 ### Community 52 - "NotebookCanvas.tsx"
 Cohesion: 0.12
 Nodes (13): emptyValue(), HIGHLIGHTER_COLORS, HL_WIDTHS, NotebookCanvas(), NotebookPage, PageData, PaperStyle, PEN_COLORS (+5 more)
 
 ### Community 53 - "ScanStore.tsx"
-Cohesion: 0.18
-Nodes (7): parseScan(), Form, lbl, MAPPED, ScanStore(), StoreForm(), StockHits
+Cohesion: 0.13
+Nodes (13): lastUsed(), lbl, letter(), Location, LocationPicker(), storageKind(), parseScan(), Form (+5 more)
 
 ### Community 54 - "protocolStorage.ts"
 Cohesion: 0.12
 Nodes (5): db, FavoriteProtocol, OfflineChecklist, ProtocolDB, RecentProtocol
 
 ### Community 55 - "ExperimentsHubPage.tsx"
-Cohesion: 0.12
-Nodes (12): Check(), Isolate, TwoFactorGate(), TwoFactorSetup(), AuthContext, AuthProvider(), clearToken(), saveToken() (+4 more)
+Cohesion: 0.33
+Nodes (5): DEFAULT_SETTINGS, LabSetting, SECTIONS, SettingsPage(), SettingsSection
 
 ### Community 56 - "analytics.ts"
-Cohesion: 0.21
-Nodes (8): AnalyticsEvent, initAnalytics(), trackEvent(), trackPageView(), initWebVitals(), reportMetric(), convex, queryClient
+Cohesion: 0.43
+Nodes (3): AnalyticsEvent, trackEvent(), trackPageView()
 
 ### Community 57 - "GrantBudgetPage.tsx"
-Cohesion: 0.11
-Nodes (17): ScopedQuery, esc(), LABEL_SIZES, labelsHtml(), LabelSize, LabelSpec, printLabels(), toImage() (+9 more)
+Cohesion: 0.13
+Nodes (21): BarcodeScanner(), day(), Lot, StockHits, StockResult(), esc(), LABEL_SIZES, labelsHtml() (+13 more)
 
 ### Community 58 - "LabNotebookPage.tsx"
-Cohesion: 0.25
-Nodes (7): createMethod, deleteMethod, listMethods, listOrders, { requireAuth }, setDefault, status
+Cohesion: 0.16
+Nodes (18): detailFields(), HIDDEN, KINDS, Loaded, productLink(), REASONS, StockImportTab(), isCasNumber() (+10 more)
 
 ### Community 59 - "devDependencies"
 Cohesion: 0.12
-Nodes (17): @edge-runtime/vm, devDependencies, @edge-runtime/vm, @playwright/test, @types/jspdf, @types/papaparse, @types/react-dom, typescript (+9 more)
+Nodes (17): convex-test, @edge-runtime/vm, devDependencies, convex-test, @edge-runtime/vm, @playwright/test, @types/papaparse, @types/react-dom (+9 more)
 
 ### Community 60 - "ProtocolGenerateModal.tsx"
-Cohesion: 0.18
-Nodes (16): dompurify, dompurify, parseNotebookCanvas(), serializeNotebookCanvas(), notebookApi, exportCSV(), exportPDF(), Entry (+8 more)
+Cohesion: 0.23
+Nodes (12): dompurify, dompurify, parseNotebookCanvas(), serializeNotebookCanvas(), Entry, EXPERIMENT_TYPES, formatDate(), joinContent() (+4 more)
 
 ### Community 61 - "CustomReportBuilderPage.tsx"
 Cohesion: 0.18
@@ -566,8 +563,8 @@ Cohesion: 0.18
 Nodes (13): authHeaders(), ChannelPrefs, DEFAULT_EVENT_PREFS, DEFAULT_TEMPLATES, EmailSettingsPage(), EmailTemplate, EVENT_META, EventPrefs (+5 more)
 
 ### Community 63 - "ReagentHubPage.tsx"
-Cohesion: 0.14
-Nodes (10): daysUntil(), DISPOSAL_METHODS, DISPOSAL_REASONS, DisposalLog, ExpiryAlerts, ExpiryBadge(), ExpiryItem, HAZARD_COLORS (+2 more)
+Cohesion: 0.16
+Nodes (14): DashboardSummary, DEFAULT_KPI_GOALS, isOverdue(), kpiColor(), KpiGoal, LabUser, loadTargets(), PIE_COLORS (+6 more)
 
 ### Community 64 - "SecurityDashboardPage.tsx"
 Cohesion: 0.19
@@ -578,36 +575,36 @@ Cohesion: 0.16
 Nodes (13): authHeaders(), cancelBtn, dialog, ElectronicSignatureDialog(), inputStyle, labelStyle, overlay, Props (+5 more)
 
 ### Community 66 - "ResourcesHubPage.tsx"
-Cohesion: 0.14
-Nodes (10): aiApi, costsApi, templatesApi, CATEGORIES, Expense, EXPENSE_CATEGORIES, InventoryItem, Template (+2 more)
+Cohesion: 0.16
+Nodes (11): costsApi, exportCSV(), exportPDF(), CATEGORIES, Expense, EXPENSE_CATEGORIES, InventoryItem, ResourcesHubPage() (+3 more)
 
 ### Community 67 - "useNavigate"
 Cohesion: 0.29
 Nodes (6): AGENCIES, FundingOpportunitiesPage(), FundingOpportunity, GRANT_TYPES, INITIAL_OPPORTUNITIES, INSTITUTES
 
 ### Community 68 - "ProtocolScheduling.tsx"
-Cohesion: 0.13
-Nodes (17): mutation, query, emailConfigured(), accept, consume, issueInvite(), Kind, lookup (+9 more)
+Cohesion: 0.09
+Nodes (23): mutation, query, emailConfigured(), accept, consume, issueInvite(), Kind, lookup (+15 more)
 
 ### Community 69 - "CollaborationHubPage.tsx"
-Cohesion: 0.17
-Nodes (12): feedbackApi, meetingsApi, workspacesApi, Activity, CollaborationHubPage(), DURATION_OPTIONS, Feedback, FEEDBACK_TYPES (+4 more)
+Cohesion: 0.22
+Nodes (9): Activity, CollaborationHubPage(), DURATION_OPTIONS, Feedback, FEEDBACK_TYPES, Meeting, MEETING_LOCATIONS, Workspace (+1 more)
 
 ### Community 70 - "CalendarPage.tsx"
-Cohesion: 0.10
-Nodes (21): AuditLog, downloadBlob(), formatDateTime(), ROLE_ORDER, ACTION_META, AuditPage(), authHeaders(), CalendarPage() (+13 more)
+Cohesion: 0.08
+Nodes (22): fakeClient, Attachment, downloadBlob(), CalendarPage(), CalEvent, DURATION_PRESETS, EVENT_TITLE_TEMPLATES, EVENT_TYPE_COLORS (+14 more)
 
 ### Community 71 - "exportDocx.ts"
-Cohesion: 0.24
-Nodes (10): exportGrantDocx(), exportSwarmDocx(), GrantExportOptions, saveBlob(), SwarmExportOptions, DISEASE_TYPES, GRANT_TYPES, GrantComposePage() (+2 more)
+Cohesion: 0.20
+Nodes (12): grantsApi, exportGrantDocx(), exportSwarmDocx(), GrantExportOptions, saveBlob(), SwarmExportOptions, DISEASE_TYPES, GRANT_TYPES (+4 more)
 
 ### Community 73 - "TasksPage.tsx"
-Cohesion: 0.21
-Nodes (11): TrainingRecord, statusColor(), computeHealthScore(), DashboardPage(), greeting(), PIE_COLORS, PULSE_STATS, QUICK_ACTIONS (+3 more)
+Cohesion: 0.33
+Nodes (7): computeHealthScore(), DashboardPage(), greeting(), PIE_COLORS, PULSE_STATS, QUICK_ACTIONS, todayLabel()
 
 ### Community 74 - "BiosketchGeneratorPage.tsx"
-Cohesion: 0.15
-Nodes (12): BIOSKETCH_FORMATS, BiosketchGeneratorPage(), Education, Grant, INITIAL_EDUCATION, INITIAL_GRANTS, INITIAL_PERSONAL, INITIAL_POSITIONS (+4 more)
+Cohesion: 0.14
+Nodes (13): biosketchApi, BIOSKETCH_FORMATS, BiosketchGeneratorPage(), Education, Grant, INITIAL_EDUCATION, INITIAL_GRANTS, INITIAL_PERSONAL (+5 more)
 
 ### Community 75 - "samples.ts"
 Cohesion: 0.10
@@ -618,8 +615,8 @@ Cohesion: 0.17
 Nodes (11): approveOrder, create, createOrder, get, list, listOrders, receiveOrder, remove (+3 more)
 
 ### Community 77 - "VendorIntelligencePage.tsx"
-Cohesion: 0.14
-Nodes (13): EmptyState(), EmptyStateProps, BudgetCategory, GrantBudgetPage(), INITIAL_BUDGETS, INITIAL_GRANTS, INITIAL_TRANSACTIONS, Transaction (+5 more)
+Cohesion: 0.08
+Nodes (22): EmptyState(), EmptyStateProps, BudgetCategory, GrantBudgetPage(), INITIAL_BUDGETS, INITIAL_GRANTS, INITIAL_TRANSACTIONS, Transaction (+14 more)
 
 ### Community 78 - "CapaPage.tsx"
 Cohesion: 0.18
@@ -630,8 +627,8 @@ Cohesion: 0.18
 Nodes (11): authHeaders(), emptyLab, emptyOrg, emptySite, LAB_TYPES, LabNode, OrgHierarchyPage(), OrgNode (+3 more)
 
 ### Community 80 - "TrainingCertPage.tsx"
-Cohesion: 0.17
-Nodes (10): CertStatus, MODULES, MY_CERTS, MyCert, QuizState, STATUS_META, Tab, TEAM (+2 more)
+Cohesion: 0.23
+Nodes (12): SampleEvent, useLabSampleEvents(), LabSample, localDate(), META, parseMeta(), SampleInput, toArgs() (+4 more)
 
 ### Community 81 - "instruments.ts"
 Cohesion: 0.09
@@ -646,8 +643,8 @@ Cohesion: 0.25
 Nodes (11): askELNSwarm(), computeELNConsensus(), delay(), emptyConsensus(), generateGrantSection(), generateManuscriptSection(), getSmartSuggestions(), runELNSwarmReview() (+3 more)
 
 ### Community 84 - "VideoCallRoom.tsx"
-Cohesion: 0.13
-Nodes (17): Avatar(), formatTimeAgo(), getInitials(), Props, ProtocolComments(), findBestMatch(), InventoryItem, LinkedReagent (+9 more)
+Cohesion: 0.36
+Nodes (7): findBestMatch(), InventoryItem, LinkedReagent, parseQuantity(), Props, ProtocolInventoryCheck(), useRealInventory()
 
 ### Community 85 - "SamplesPage.tsx"
 Cohesion: 0.20
@@ -658,8 +655,8 @@ Cohesion: 0.20
 Nodes (9): approve, create, get, list, reject, remove, { requireAuth }, summary (+1 more)
 
 ### Community 87 - "funding.ts"
-Cohesion: 0.10
-Nodes (18): suppliersApi, APPROVAL_COLORS, PO_STATUS_COLORS, PO_STATUSES, PRIORITY_COLORS, PurchaseOrder, Supplier, SuppliersPage() (+10 more)
+Cohesion: 0.22
+Nodes (8): APPROVAL_COLORS, PO_STATUS_COLORS, PO_STATUSES, PRIORITY_COLORS, PurchaseOrder, Supplier, SuppliersPage(), URGENCY_COLORS
 
 ### Community 88 - "iot.ts"
 Cohesion: 0.12
@@ -670,7 +667,7 @@ Cohesion: 0.12
 Nodes (16): EVENT_ICONS, Experiment, ExperimentFile, ExperimentsHubPage(), ExperimentStep, INITIAL_EXPERIMENTS, INITIAL_FILES, INITIAL_RESULTS (+8 more)
 
 ### Community 90 - "org.ts"
-Cohesion: 0.12
+Cohesion: 0.14
 Nodes (14): Box, CLASSES, Dialog, letter(), Rack, RowCells(), Search(), Shelf (+6 more)
 
 ### Community 91 - "scheduling.ts"
@@ -678,72 +675,68 @@ Cohesion: 0.20
 Nodes (9): createCalendarEvent, createReminder, deleteCalendarEvent, deleteReminder, listCalendar, listReminders, reminderStats, updateCalendarEvent (+1 more)
 
 ### Community 92 - "ProtocolAnalyticsDashboard.tsx"
-Cohesion: 0.29
-Nodes (7): formatDate(), formatDuration(), Props, ProtocolAnalyticsDashboard(), Props, ExecutionSession, ProtocolAnalytics
+Cohesion: 0.36
+Nodes (5): formatDate(), formatDuration(), Props, ProtocolAnalyticsDashboard(), ProtocolAnalytics
 
 ### Community 93 - "SuppliersPage.tsx"
 Cohesion: 0.07
-Nodes (42): AIChatPanel(), Msg, renderMarkdownInline(), STARTER_QUESTIONS, Can(), CanProps, AssistantIcon(), BellIcon() (+34 more)
+Nodes (38): Can(), CanProps, AssistantIcon(), BellIcon(), MonitorIcon(), MoonIcon(), SearchIcon(), SunIcon() (+30 more)
 
 ### Community 94 - "GrantHubPage.tsx"
-Cohesion: 0.18
-Nodes (9): ChronoBioTab, DISEASE_TYPES, Grant, GRANT_TYPES, GrantToolsModule, ResearchAITab, SECTIONS, STATUS_COLORS (+1 more)
+Cohesion: 0.14
+Nodes (12): days(), detailLine(), ChronoBioTab, DISEASE_TYPES, Grant, GRANT_TYPES, GrantHubPage(), GrantToolsModule (+4 more)
 
 ### Community 95 - "PrivacyCenterPage.tsx"
 Cohesion: 0.24
 Nodes (8): AdminPrivacyPanel(), api, ConsentRecord, ErasureRequest, fmtDate(), PolicyInfo, PrivacyCenterPage(), STATUS_COLORS
 
 ### Community 96 - "inventory.ts"
-Cohesion: 0.15
-Nodes (12): create, createEvent, deleteEvent, get, list, listAll, listAllEvents, listEvents (+4 more)
+Cohesion: 0.04
+Nodes (44): assertHub(), hubGuard(), create, expiringSoon, get, list, lowStock, remove (+36 more)
 
 ### Community 97 - "labNotebook.ts"
 Cohesion: 0.22
 Nodes (8): create, get, list, remove, { requireAuth }, sign, update, witness
 
-### Community 98 - "DataTable.tsx"
-Cohesion: 0.12
-Nodes (13): internalAction, internalMutation, internalQuery, sendInvite, audit, backfill, startFirstLab, copyLabHubProtocols (+5 more)
-
 ### Community 99 - "ProtocolExecutionModal.tsx"
-Cohesion: 0.21
-Nodes (19): detailFields(), HIDDEN, KINDS, Loaded, readFile(), REASONS, StockImportTab(), clean() (+11 more)
+Cohesion: 0.28
+Nodes (15): readFile(), AttendanceSheet(), SwarmDashboard(), clean(), cleanHeader(), ImportKind, importReport(), num() (+7 more)
 
 ### Community 100 - "SupplierDirectoryPage.tsx"
 Cohesion: 0.14
 Nodes (14): OnboardingWizard(), STEPS, NavigationContext, useNavigate(), BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES, SupplierEntry, VENDOR_LINKS (+6 more)
 
 ### Community 101 - "ProtocolComplianceAudit.tsx"
-Cohesion: 0.12
-Nodes (11): crons, components, internal, httpAction, http, createPaymentIntent, createSetupIntent, detachPaymentMethod (+3 more)
+Cohesion: 0.18
+Nodes (10): xlsx, BatchImport(), BatchImportProps, ColumnMapping, IMPORT_CONFIGS, ImportConfig, ImportStatus, ParsedData (+2 more)
 
 ### Community 102 - "Suggested Additional Features"
-Cohesion: 0.06
-Nodes (37): requireAuth(), requireRole(), sanitizeUser(), approve, canManageLab(), invite, listForLab, listMy (+29 more)
+Cohesion: 0.19
+Nodes (12): sanitizeUser(), approve, canManageLab(), invite, listForLab, listMy, MANAGER_LAB_ROLES, pendingApprovals (+4 more)
 
 ### Community 104 - "VersionHistoryPage.tsx"
-Cohesion: 0.25
-Nodes (8): grantVersionsApi, apiToVersion(), Change, EMPTY_FORM, INP, SectionVersion, Version, VersionHistoryPage()
+Cohesion: 0.29
+Nodes (7): apiToVersion(), Change, EMPTY_FORM, INP, SectionVersion, Version, VersionHistoryPage()
 
 ### Community 105 - "LabMembersPage.tsx"
 Cohesion: 0.24
 Nodes (7): exportBtnStyle, injectTiptapCSS(), RichELNEditor(), RichELNEditorProps, ToolbarButtonProps, wordCount(), Typography
 
 ### Community 106 - "SafetyHubPage.tsx"
-Cohesion: 0.06
-Nodes (28): DOTS, EmojiIcon(), iconFor(), MAP, Props, day(), Lot, StockResult() (+20 more)
+Cohesion: 0.13
+Nodes (12): DOTS, iconFor(), MAP, Props, formatFileSize(), MediaAttachment, Props, ProtocolMediaAttachments() (+4 more)
 
 ### Community 107 - "SuccessAnalyticsPage.tsx"
-Cohesion: 0.22
-Nodes (8): FundingTrend, INITIAL_FUNDING_TRENDS, INITIAL_MY_SUBMISSIONS, INITIAL_NIH_SUCCESS_RATES, INITIAL_PERSONAL_STATS, PersonalStats, SuccessAnalyticsPage(), SuccessRate
+Cohesion: 0.20
+Nodes (9): grantSubmissionsApi, FundingTrend, INITIAL_FUNDING_TRENDS, INITIAL_MY_SUBMISSIONS, INITIAL_NIH_SUCCESS_RATES, INITIAL_PERSONAL_STATS, PersonalStats, SuccessAnalyticsPage() (+1 more)
 
 ### Community 108 - "payments.ts"
-Cohesion: 0.15
-Nodes (15): errText(), passwordChecks(), ACTION_LABEL, AdminPolicy(), card, h2, muted, Password() (+7 more)
+Cohesion: 0.12
+Nodes (19): useProtocols(), ViewMode, applyFilters(), countBySubcategory(), errText(), passwordChecks(), ACTION_LABEL, AdminPolicy() (+11 more)
 
 ### Community 110 - "DashboardPage.tsx"
-Cohesion: 0.15
-Nodes (13): book, cancel, complete, days(), detailLine(), FREE, NOT_BOOKABLE, overview (+5 more)
+Cohesion: 0.20
+Nodes (9): createLab, createOrg, createSite, listLabs, listOrgs, listSites, updateLab, updateOrg (+1 more)
 
 ### Community 111 - "ProtocolComplianceAudit.tsx"
 Cohesion: 0.28
@@ -762,12 +755,12 @@ Cohesion: 0.25
 Nodes (4): BatchQRCodeGeneratorProps, BatchQRItem, QRCodeGeneratorProps, QRCodeModalProps
 
 ### Community 115 - "EquipmentHubPage.tsx"
-Cohesion: 0.26
-Nodes (12): cartCsv(), csvCell(), downloadText(), esc(), ExportRow, openPrint(), poHtml(), ReagentCartPage() (+4 more)
+Cohesion: 0.20
+Nodes (17): cartCsv(), csvCell(), downloadText(), esc(), ExportRow, openPrint(), poHtml(), ReagentCartPage() (+9 more)
 
 ### Community 116 - "StorageMapPage.tsx"
-Cohesion: 0.20
-Nodes (8): consume, lookup, lots, pending, receive, recent, { requireAuth }, stockLots
+Cohesion: 0.27
+Nodes (9): BudgetForecast, COUNTED, forecastBudget(), key(), total(), when(), ProtocolEditor(), BudgetsTab() (+1 more)
 
 ### Community 117 - "WritingResourcesPage.tsx"
 Cohesion: 0.25
@@ -790,8 +783,8 @@ Cohesion: 0.29
 Nodes (6): ApprovalMode, area, group, label, Props, ProtocolFormFields()
 
 ### Community 122 - "ProtocolExecutionMode.tsx"
-Cohesion: 0.08
-Nodes (23): assertHub(), hubGuard(), create, get, list, { requireAuth }, resolve, update (+15 more)
+Cohesion: 0.20
+Nodes (9): alerts, clearSource, importBatch, KINDS, reconcile, record, { requireAuth, requireRole }, search (+1 more)
 
 ### Community 123 - "sops.ts"
 Cohesion: 0.15
@@ -811,27 +804,27 @@ Nodes (5): BudgetCalculatorPage(), BudgetConfig, DEFAULT_CONFIG, INITIAL_PERSONN
 
 ### Community 127 - "CollaboratorNetworkPage.tsx"
 Cohesion: 0.33
-Nodes (5): Collaborator, CollaboratorNetworkPage(), INITIAL_COLLABORATORS, INITIAL_DOCUMENTS, SharedDocument
+Nodes (6): btn, DataTable(), DataTableProps, disabledBtn, exportToCsv(), exportToXlsx()
 
 ### Community 128 - "GrantCalendarPage.tsx"
-Cohesion: 0.13
-Nodes (10): ART, Props, ImportRecord, ImportTemplate, TEMPLATES, CalendarEvent, EVENT_COLORS, GrantCalendarPage() (+2 more)
+Cohesion: 0.14
+Nodes (9): ART, Props, ImportRecord, ImportTemplate, TEMPLATES, GrantReview, INITIAL_REVIEWS, ReviewerComment (+1 more)
 
 ### Community 129 - "AIChatPanel.tsx"
-Cohesion: 0.15
-Nodes (14): Article, CATEGORIES, EMPTY, errText(), field, KnowledgeTab(), linkBtn, MeetingSource (+6 more)
+Cohesion: 0.24
+Nodes (9): Article, CATEGORIES, EMPTY, errText(), field, KnowledgeTab(), linkBtn, MeetingSource (+1 more)
 
 ### Community 130 - "ProgressReportsPage.tsx"
-Cohesion: 0.33
-Nodes (5): INITIAL_REPORTS, ProgressReport, ProgressReportsPage(), ReportSection, RPPR_SECTIONS
+Cohesion: 0.43
+Nodes (6): Avatar(), formatTimeAgo(), getInitials(), Props, ProtocolComments(), ProtocolComment
 
 ### Community 131 - "ReferenceManagerPage.tsx"
 Cohesion: 0.33
 Nodes (7): cents(), matchPo(), MatchStatus, PoLine, PoMatch, usd(), lines
 
 ### Community 132 - "ResearchAITab"
-Cohesion: 0.29
-Nodes (7): articleToFile(), autoGenerateTopic(), buildAtomicNotes(), DISEASES, ResearchAITab(), STOP_WORDS, SWARM_MODELS
+Cohesion: 0.40
+Nodes (5): articleToFile(), buildAtomicNotes(), DISEASES, ResearchAITab(), SWARM_MODELS
 
 ### Community 134 - "jspdf"
 Cohesion: 0.50
@@ -858,8 +851,8 @@ Cohesion: 0.46
 Nodes (7): committedFor(), COUNTED, key(), Line, lineTotal(), matchingBudgets(), overBudget()
 
 ### Community 141 - "ExampleUnitTest.java"
-Cohesion: 0.29
-Nodes (8): AlertReason, AlertRow, field(), num(), StockAlert, stockAlerts(), inst(), NOW
+Cohesion: 0.38
+Nodes (6): AlertReason, AlertRow, field(), num(), StockAlert, stockAlerts()
 
 ### Community 142 - "gradlew"
 Cohesion: 0.38
@@ -867,7 +860,7 @@ Nodes (6): AppInner(), Field, textField(), unType(), useScannerWedge(), setupSki
 
 ### Community 144 - "Feature 10: Compliance & Audit"
 Cohesion: 0.38
-Nodes (6): ExecutionSession, formatTime(), parseDuration(), Props, ProtocolExecutionMode(), StepExecution
+Nodes (5): initAnalytics(), initWebVitals(), reportMetric(), convex, queryClient
 
 ### Community 145 - "Feature 2: Protocol Versioning & History"
 Cohesion: 0.40
@@ -875,15 +868,15 @@ Nodes (4): Icon(), IconName, PATHS, Props
 
 ### Community 146 - "Feature 3: Smart Inventory Integration"
 Cohesion: 0.33
-Nodes (10): ago(), sensorState, STATE_LABEL, STATE_STYLE, num(), RANGES, SensorDetail(), SensorRow (+2 more)
+Nodes (6): authHeaders(), COLORS, Conflict, EquipmentAnalyticsPage(), InstrumentUtil, UtilizationData
 
 ### Community 147 - "Feature 4: Collaboration Features"
 Cohesion: 0.18
 Nodes (10): cancelBooking, create, createBooking, get, list, listBookings, remove, { requireAuth } (+2 more)
 
 ### Community 148 - "Feature 5: Media Attachments"
-Cohesion: 0.38
-Nodes (8): AGENCY_DEFS, analyzeFunding, cleanQuery(), ercSearch(), fetchWithTimeout(), nihSearch(), nsfSearch(), ukriSearch()
+Cohesion: 0.33
+Nodes (5): CalendarEvent, EVENT_COLORS, GrantCalendarPage(), INITIAL_EVENTS, NIH_DEADLINES
 
 ### Community 149 - "Feature 6: Approval Workflow"
 Cohesion: 0.40
@@ -914,8 +907,8 @@ Cohesion: 0.50
 Nodes (4): Feature 3: Smart Inventory Integration, Flow Diagram, How to Use, Overview
 
 ### Community 161 - "ProtocolComments.tsx"
-Cohesion: 0.22
-Nodes (7): create, data, fields, list, markGenerated, remove, update
+Cohesion: 0.50
+Nodes (4): AIChatPanel(), Msg, renderMarkdownInline(), STARTER_QUESTIONS
 
 ### Community 163 - "ProtocolTrainingTracker.tsx"
 Cohesion: 0.48
@@ -953,13 +946,13 @@ Nodes (4): For Lab Managers, For Lab Researchers, For Quality/Compliance, Quick 
 Cohesion: 0.31
 Nodes (8): CATALOG, CATEGORY_CONFIG, Integration, IntegrationsPage(), launchUrl(), parseConfig(), STATUS_CONFIG, TYPE_ICONS
 
-### Community 231 - "@types/jspdf"
-Cohesion: 0.22
-Nodes (7): fakeClient, labMembersApi, INP, LabUnit, Membership, ROLE_OPTIONS, STATUS_META
+### Community 243 - "app/build.gradle"
+Cohesion: 0.50
+Nodes (4): ForecastRow, day(), NOW, row()
 
 ### Community 261 - "settings.ts"
-Cohesion: 0.22
-Nodes (8): create, expiringSoon, get, list, lowStock, remove, { requireAuth }, update
+Cohesion: 0.50
+Nodes (4): errText(), field, PollRow, PollsTab()
 
 ### Community 263 - "incidents.ts"
 Cohesion: 0.33
@@ -968,10 +961,6 @@ Nodes (5): Amendment, INITIAL_AMENDMENTS, INITIAL_PROTOCOLS, IRBTrackerPage(), P
 ### Community 281 - "SafetyHubPage.tsx"
 Cohesion: 0.22
 Nodes (7): Compliance, COMPLIANCE_STANDARDS, Incident, INCIDENT_TYPES, LOCATIONS, Training, TRAINING_CATEGORIES
-
-### Community 282 - "integrations.ts"
-Cohesion: 0.32
-Nodes (7): create, keepSecrets(), list, maskConfig(), parse(), remove, update
 
 ### Community 283 - "maintenance.ts"
 Cohesion: 0.25
@@ -982,48 +971,36 @@ Cohesion: 0.25
 Nodes (7): complete, create, get, list, myTasks, remove, update
 
 ### Community 285 - "tenantTables.ts"
-Cohesion: 0.32
-Nodes (6): fieldOf(), isLabTable(), LAB_TABLES, LabTable, SET, NOT_SCOPED_ON_PURPOSE
-
-### Community 286 - "videoRooms.ts"
-Cohesion: 0.25
-Nodes (7): createRoom, deleteRoom, getChatHistory, getRoom, getRoomForMeeting, { requireAuth }, sendChatMessage
+Cohesion: 0.19
+Nodes (10): internalQuery, audit, backfill, startFirstLab, fieldOf(), isLabTable(), LAB_TABLES, LabTable (+2 more)
 
 ### Community 287 - "EquipmentHubPage.tsx"
 Cohesion: 0.25
 Nodes (6): Booking, CATEGORIES, Equipment, LOCATIONS, Maintenance, UsageLog
-
-### Community 288 - "LocationPicker.tsx"
-Cohesion: 0.43
-Nodes (6): lastUsed(), lbl, letter(), Location, LocationPicker(), storageKind()
-
-### Community 289 - "crudApi"
-Cohesion: 0.40
-Nodes (6): adapt(), crudApi(), getToken(), paginated(), toStr(), versionRow()
 
 ### Community 290 - "ReferenceManagerPage.tsx"
 Cohesion: 0.47
 Nodes (5): authHeaders(), DEFAULT_FOLDERS, EMPTY_FORM, Reference, ReferenceManagerPage()
 
 ## Knowledge Gaps
-- **1557 isolated node(s):** `config`, `components`, `TableNames`, `Doc`, `Id` (+1552 more)
+- **1532 isolated node(s):** `config`, `components`, `TableNames`, `Doc`, `Id` (+1527 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **95 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **97 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `EmojiIcon()` connect `SafetyHubPage.tsx` to `meetingUtils.ts`, `swarmEngine.ts`, `Table.tsx`, `ReportsPage.tsx`, `api.ts`, `ResearchAITab.tsx`, `ProtocolBadges.tsx`, `protocolImportService.ts`, `useELNSwarm.ts`, `hubGuard`, `useAuth`, `protocols/pages/ProtocolsPage.tsx`, `comingSoon`, `ELNPage.tsx`, `InventoryPage.tsx`, `SampleHubPage.tsx`, `Protocol`, `ProtocolDetailTabs.tsx`, `ProcurementHubPage.tsx`, `protocol.types.ts`, `AdminHubPage.tsx`, `components/index.ts`, `GrantTools.tsx`, `invites.ts`, `LabelPrinterPage.tsx`, `main.tsx`, `utils.ts`, `ClinicalResearchHubPage.tsx`, `LabHubPage.tsx`, `NotebookCanvas.tsx`, `ExperimentsHubPage.tsx`, `GrantBudgetPage.tsx`, `ProtocolGenerateModal.tsx`, `CustomReportBuilderPage.tsx`, `EmailSettingsPage.tsx`, `ReagentHubPage.tsx`, `SecurityDashboardPage.tsx`, `ElectronicSignatureDialog.tsx`, `ResourcesHubPage.tsx`, `useNavigate`, `CollaborationHubPage.tsx`, `CalendarPage.tsx`, `exportDocx.ts`, `TasksPage.tsx`, `BiosketchGeneratorPage.tsx`, `VendorIntelligencePage.tsx`, `CapaPage.tsx`, `OrgHierarchyPage.tsx`, `TrainingCertPage.tsx`, `VideoCallRoom.tsx`, `funding.ts`, `labels.ts`, `org.ts`, `ProtocolAnalyticsDashboard.tsx`, `SuppliersPage.tsx`, `GrantHubPage.tsx`, `PrivacyCenterPage.tsx`, `SupplierDirectoryPage.tsx`, `VersionHistoryPage.tsx`, `LabMembersPage.tsx`, `SuccessAnalyticsPage.tsx`, `payments.ts`, `ProtocolComplianceAudit.tsx`, `WritingResourcesPage.tsx`, `EquipmentAnalyticsPage.tsx`, `BudgetCalculatorPage.tsx`, `CollaboratorNetworkPage.tsx`, `GrantCalendarPage.tsx`, `ProgressReportsPage.tsx`, `Protocol Library - Advanced Features Guide`, `Feature 10: Compliance & Audit`, `CookieConsent.tsx`, `ProtocolTrainingTracker.tsx`, `ActivityPage.tsx`, `@types/jspdf`, `incidents.ts`, `SafetyHubPage.tsx`, `EquipmentHubPage.tsx`, `ReferenceManagerPage.tsx`?**
-  _High betweenness centrality (0.181) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `dependencies` to `bcryptjs`, `jspdf`, `package.json`, `ReportsPage.tsx`, `@capacitor/app`, `@capacitor/keyboard`, `@capacitor/android`, `@capacitor/cli`, `@capacitor/core`, `@capacitor/device`, `@capacitor/filesystem`, `@capacitor/ios`, `@capacitor/preferences`, `@capacitor/push-notifications`, `@capacitor/status-bar`, `convex`, `date-fns`, `dexie`, `docx`, `file-saver`, `fuse.js`, `@hookform/resolvers`, `html2canvas`, `lucide-react`, `mermaid`, `moment`, `ProtocolGenerateModal.tsx`, `mqtt`, `otplib`, `papaparse`, `qrcode`, `react`, `react-big-calendar`, `react-dom`, `react-dropzone`, `react-hook-form`, `react-hot-toast`, `react-markdown`, `react-qr-code`, `recharts`, `remark-gfm`, `@sentry/react`, `socket.io-client`, `stripe`, `@tanstack/react-query`, `@tanstack/react-table`, `@tiptap/extension-highlight`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-table`, `@tiptap/extension-table-header`, `@tiptap/extension-table-row`, `@tiptap/extension-task-item`, `@tiptap/extension-task-list`, `@tiptap/pm`, `@tiptap/react`, `@types/bwip-js`, `@types/dompurify`, `@types/file-saver`, `@types/uuid`, `uuid`, `web-vitals`, `zod`, `SuppliersPage.tsx`, `backup.sh`, `android/build.gradle`, `capacitor.settings.gradle`, `settings.gradle`, `variables.gradle`, `ProtocolMediaAttachments.tsx`?**
-  _High betweenness centrality (0.147) - this node is a cross-community bridge._
-- **Why does `xlsx` connect `ReportsPage.tsx` to `dependencies`, `ProtocolExecutionModal.tsx`, `useAuth`, `org.ts`, `Protocol`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+- **Why does `EmojiIcon()` connect `meetingUtils.ts` to `swarmEngine.ts`, `Table.tsx`, `ReportsPage.tsx`, `api.ts`, `ResearchAITab.tsx`, `ProtocolBadges.tsx`, `protocolImportService.ts`, `useELNSwarm.ts`, `hubGuard`, `useAuth`, `protocols/pages/ProtocolsPage.tsx`, `comingSoon`, `ELNPage.tsx`, `InventoryPage.tsx`, `SampleHubPage.tsx`, `Protocol`, `ProtocolDetailTabs.tsx`, `ProcurementHubPage.tsx`, `protocol.types.ts`, `AdminHubPage.tsx`, `components/index.ts`, `GrantTools.tsx`, `invites.ts`, `LabelPrinterPage.tsx`, `main.tsx`, `utils.ts`, `ClinicalResearchHubPage.tsx`, `LabHubPage.tsx`, `NotebookCanvas.tsx`, `ExperimentsHubPage.tsx`, `GrantBudgetPage.tsx`, `ProtocolGenerateModal.tsx`, `CustomReportBuilderPage.tsx`, `EmailSettingsPage.tsx`, `SecurityDashboardPage.tsx`, `ElectronicSignatureDialog.tsx`, `ResourcesHubPage.tsx`, `useNavigate`, `CollaborationHubPage.tsx`, `CalendarPage.tsx`, `exportDocx.ts`, `TasksPage.tsx`, `BiosketchGeneratorPage.tsx`, `VendorIntelligencePage.tsx`, `CapaPage.tsx`, `OrgHierarchyPage.tsx`, `VideoCallRoom.tsx`, `funding.ts`, `labels.ts`, `org.ts`, `ProtocolAnalyticsDashboard.tsx`, `SuppliersPage.tsx`, `GrantHubPage.tsx`, `PrivacyCenterPage.tsx`, `SupplierDirectoryPage.tsx`, `VersionHistoryPage.tsx`, `LabMembersPage.tsx`, `SafetyHubPage.tsx`, `SuccessAnalyticsPage.tsx`, `payments.ts`, `ProtocolComplianceAudit.tsx`, `EquipmentHubPage.tsx`, `WritingResourcesPage.tsx`, `EquipmentAnalyticsPage.tsx`, `BudgetCalculatorPage.tsx`, `GrantCalendarPage.tsx`, `ProgressReportsPage.tsx`, `Protocol Library - Advanced Features Guide`, `Feature 3: Smart Inventory Integration`, `Feature 5: Media Attachments`, `CookieConsent.tsx`, `ProtocolComments.tsx`, `ProtocolTrainingTracker.tsx`, `ActivityPage.tsx`, `incidents.ts`, `SafetyHubPage.tsx`, `EquipmentHubPage.tsx`, `ReferenceManagerPage.tsx`?**
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `dependencies` to `bcryptjs`, `jspdf`, `package.json`, `@capacitor/app`, `integrations.ts`, `@capacitor/android`, `@capacitor/cli`, `@capacitor/core`, `@capacitor/device`, `@capacitor/filesystem`, `@capacitor/ios`, `@capacitor/preferences`, `@capacitor/push-notifications`, `@capacitor/status-bar`, `convex`, `date-fns`, `dexie`, `docx`, `file-saver`, `fuse.js`, `@hookform/resolvers`, `html2canvas`, `lucide-react`, `mermaid`, `moment`, `ProtocolGenerateModal.tsx`, `mqtt`, `otplib`, `papaparse`, `qrcode`, `react`, `react-big-calendar`, `react-dom`, `react-dropzone`, `react-hook-form`, `react-hot-toast`, `react-markdown`, `react-qr-code`, `recharts`, `remark-gfm`, `@sentry/react`, `socket.io-client`, `stripe`, `@tanstack/react-query`, `@tanstack/react-table`, `@tiptap/extension-highlight`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-table`, `@tiptap/extension-table-header`, `@tiptap/extension-table-row`, `@tiptap/extension-task-item`, `@tiptap/extension-task-list`, `@tiptap/pm`, `@tiptap/react`, `@types/bwip-js`, `@types/dompurify`, `@types/file-saver`, `@types/uuid`, `uuid`, `web-vitals`, `zod`, `ProtocolComplianceAudit.tsx`, `SuppliersPage.tsx`, `backup.sh`, `android/build.gradle`, `capacitor.settings.gradle`, `settings.gradle`, `variables.gradle`, `ProtocolMediaAttachments.tsx`?**
+  _High betweenness centrality (0.148) - this node is a cross-community bridge._
+- **Why does `xlsx` connect `ProtocolComplianceAudit.tsx` to `dependencies`, `ProtocolExecutionModal.tsx`, `ReagentHubPage.tsx`, `ScanStore.tsx`, `org.ts`, `Protocol`, `CollaboratorNetworkPage.tsx`?**
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **What connects `config`, `components`, `TableNames` to the rest of the system?**
-  _1557 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1532 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `meetingUtils.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05390835579514825 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.055705300988319856 - nodes in this community are weakly interconnected._
 - **Should `swarmEngine.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.051526251526251524 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.052434456928838954 - nodes in this community are weakly interconnected._
 - **Should `api.d.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06219426974143955 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04216216216216216 - nodes in this community are weakly interconnected._

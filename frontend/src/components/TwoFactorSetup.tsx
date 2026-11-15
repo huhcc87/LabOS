@@ -5,11 +5,55 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import EmojiIcon from './EmojiIcon';
 
+/** Free authenticator apps (official store pages). Any TOTP app works; these are just well-known ones. */
+const APPS: { name: string; from: string; links: [string, string][] }[] = [
+  { name: 'Google Authenticator', from: 'Google', links: [['iPhone', 'https://apps.apple.com/app/google-authenticator/id388497605'], ['Android', 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2']] },
+  { name: 'Microsoft Authenticator', from: 'Microsoft', links: [['iPhone', 'https://apps.apple.com/app/microsoft-authenticator/id983156458'], ['Android', 'https://play.google.com/store/apps/details?id=com.azure.authenticator']] },
+  { name: 'Authy', from: 'Twilio', links: [['iPhone', 'https://apps.apple.com/app/twilio-authy/id494168017'], ['Android', 'https://play.google.com/store/apps/details?id=com.authy.authy']] },
+  { name: '2FAS', from: 'open source', links: [['iPhone', 'https://apps.apple.com/app/2fas-auth/id1217793794'], ['Android', 'https://play.google.com/store/apps/details?id=com.twofasapp']] },
+  { name: 'Ente Auth', from: 'open source, encrypted backup', links: [['iPhone', 'https://apps.apple.com/app/ente-auth/id6444121398'], ['Android', 'https://play.google.com/store/apps/details?id=io.ente.auth']] },
+  { name: 'Aegis', from: 'open source, Android only', links: [['Google Play', 'https://play.google.com/store/apps/details?id=com.beemdevelopment.aegis'], ['F-Droid', 'https://f-droid.org/packages/com.beemdevelopment.aegis/']] },
+  { name: '1Password', from: 'password manager', links: [['Download', 'https://1password.com/downloads']] },
+  { name: 'Bitwarden', from: 'password manager', links: [['Download', 'https://bitwarden.com/download/']] },
+];
+
+/** How 2FA works + where to get an authenticator app. */
+function TwoFactorGuide({ open = false }: { open?: boolean }) {
+  return (
+    <details open={open} style={{ marginTop: 16, fontSize: 13, lineHeight: 1.6 }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>How to use 2FA · get an authenticator app</summary>
+      <ol style={{ margin: '10px 0', paddingLeft: 20 }}>
+        <li>Install any authenticator app on your phone (list below, all free).</li>
+        <li>Click <strong>Enable 2FA</strong> here. A QR code appears.</li>
+        <li>In the app tap <strong>+</strong> / <strong>Add account</strong> → <strong>Scan QR code</strong>, and point the phone at the screen. (Can’t scan? Choose “Enter a setup key” and type the secret key shown.)</li>
+        <li>Type the 6-digit code the app shows into LabOS and click <strong>Verify &amp; Enable</strong>.</li>
+        <li>From now on, after your password, LabOS asks for the current 6-digit code from the app.</li>
+      </ol>
+      <p style={{ margin: '0 0 8px', color: 'var(--text-muted)' }}>
+        Tip: pick an app with backup (Authy, Ente Auth, Microsoft, Google with account sync, or a password manager) so a lost phone doesn’t lock you out. iPhone’s built-in Passwords app also works.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 8 }}>
+        {APPS.map((a) => (
+          <div key={a.name} style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface2)' }}>
+            <div style={{ fontWeight: 600 }}>{a.name} <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 12 }}>· {a.from}</span></div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {a.links.map(([label, href]) => (
+                <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent)' }}>{label} ↗</a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export function TwoFactorSetup() {
   const { user, token } = useAuth();
   const [step, setStep] = useState<'idle' | 'setup' | 'verify' | 'disable'>('idle');
   const [secret, setSecret] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [account, setAccount] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,6 +70,7 @@ export function TwoFactorSetup() {
     try {
       const result = await setupTotp({ token });
       setSecret(result.secret);
+      setAccount(result.account);
       const QRCode = await import('qrcode');
       const dataUrl = await QRCode.toDataURL(result.otpauth_url, { width: 200, margin: 2 });
       setQrDataUrl(dataUrl);
@@ -127,6 +172,7 @@ export function TwoFactorSetup() {
             </button>
           )}
         </div>
+        <TwoFactorGuide open={!isEnabled} />
       </div>
     );
   }
@@ -136,8 +182,13 @@ export function TwoFactorSetup() {
       <div style={cardStyle}>
         <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600 }}>Set Up Two-Factor Authentication</h3>
         <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Scan the QR code below with your authenticator app (Google Authenticator, Authy, or 1Password).
+          Open your authenticator app on your phone, tap <strong>+</strong> → <strong>Scan QR code</strong>, and scan the code below. Any authenticator app works.
         </p>
+        {account && (
+          <p style={{ margin: '-12px 0 16px', fontSize: 12, color: 'var(--text-muted)' }}>
+            This code is unique to you. In your app it appears as <strong>{account}</strong>, separate from any other lab you belong to.
+          </p>
+        )}
 
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -184,6 +235,7 @@ export function TwoFactorSetup() {
             Cancel
           </button>
         </div>
+        <TwoFactorGuide />
       </div>
     );
   }

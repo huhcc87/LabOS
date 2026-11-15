@@ -3,9 +3,19 @@ import { v, ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { sealSecret, openSecret, sha256Hex } from "./cryptoSecrets";
 
+/**
+ * Name shown in the authenticator app. The secret is already random per user (so every QR is unique);
+ * putting the lab in the issuer keeps one person's entries for different labs / LabOS subscriptions apart,
+ * so they're easy to tell apart and an app never overwrites one with another. Colons break otpauth labels.
+ */
+export function totpIssuer(labName?: string | null): string {
+  const lab = (labName ?? "").replace(/:/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+  return lab ? `LabOS (${lab})` : "LabOS";
+}
+
 export const setupTotp = action({
   args: { token: v.string() },
-  handler: async (ctx, { token }): Promise<{ secret: string; otpauth_url: string }> => {
+  handler: async (ctx, { token }): Promise<{ secret: string; otpauth_url: string; account: string }> => {
     const session = await ctx.runQuery(api.totp.getSession, { token });
     if (!session) throw new ConvexError("Unauthorized");
 
@@ -15,14 +25,16 @@ export const setupTotp = action({
 
     const { generateSecret, generateURI } = await import("otplib");
     const secret = generateSecret();
-    const otpauth_url = generateURI({ issuer: "LabOS", label: session.email, secret });
+    const labName = existing?.home_lab_id ? await ctx.runQuery(internal.totp.labName, { lab_id: existing.home_lab_id }) : null;
+    const issuer = totpIssuer(labName);
+    const otpauth_url = generateURI({ issuer, label: session.email, secret });
 
     await ctx.runMutation(internal.totp.storePendingSecret, {
       user_id: session.user_id,
       secret: await sealSecret(secret),
     });
 
-    return { secret, otpauth_url };
+    return { secret, otpauth_url, account: `${issuer} · ${session.email}` };
   },
 });
 
@@ -87,6 +99,11 @@ export const getUser = internalQuery({
   handler: async (ctx, { user_id }) => {
     return await ctx.db.get(user_id);
   },
+});
+
+export const labName = internalQuery({
+  args: { lab_id: v.id("labs") },
+  handler: async (ctx, { lab_id }) => (await ctx.db.get(lab_id))?.name ?? null,
 });
 
 export const storePendingSecret = internalMutation({
