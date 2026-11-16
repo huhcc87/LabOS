@@ -6,7 +6,11 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from '../context/NavigationContext';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import BookingCalendar from '../features/instruments/BookingCalendar';
+import { errText } from '../lib/errors';
+import type { Id } from '../../convex/_generated/dataModel';
 import { statusColor } from '../lib/utils';
 import EmojiIcon from '../components/EmojiIcon';
 
@@ -86,7 +90,12 @@ export default function DashboardPage() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   // Who has which instrument booked, and when (same data as Lab Hub → Instruments & Booking)
   const booking = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
-  const instName = (id: string) => booking?.instruments.find(i => i._id === id)?.name ?? 'Instrument';
+  const instName = (id?: string) => booking?.instruments.find(i => i._id === id)?.name ?? 'Instrument';
+  const [showCal, setShowCal] = useState(false);
+  const calRef = useRef<HTMLDivElement>(null);
+  const calNotes = useQuery(api.instrumentBooking.notes, token ? { token } : 'skip');
+  const addNote = useMutation(api.instrumentBooking.addNote);
+  const removeNote = useMutation(api.instrumentBooking.removeNote);
 
   const summary = useQuery(api.dashboard.summary, token ? { token } : 'skip');
   const completeTask = useMutation(api.tasks.complete);
@@ -225,7 +234,10 @@ export default function DashboardPage() {
         {PULSE_STATS.slice(0, 4).map(stat => {
           const val = (summary as any)[stat.key] ?? 0;
           return (
-            <button key={stat.key} onClick={() => navigate(stat.page)}
+            <button key={stat.key}
+              // Instruments opens the calendar right here (with every booking's details and notes); the rest open their page.
+              onClick={() => { if (stat.key === 'instruments') { setShowCal(true); setTimeout(() => calRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); } else navigate(stat.page); }}
+              aria-expanded={stat.key === 'instruments' ? showCal : undefined}
               style={{ all: 'unset', cursor: 'pointer' }}>
               <div className="card" style={{
                 padding: '20px 22px',
@@ -413,24 +425,26 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Instrument bookings ── */}
-      <div className="card" style={{ padding: 18, marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Instrument bookings</h2>
-          <button className="btn btn-sm btn-secondary" onClick={() => navigate('instruments')}>Book or manage →</button>
+      {/* Opens when someone clicks the Instruments card above: one calendar with every booking's details and the notes */}
+      {showCal && (
+        <div ref={calRef} className="card" style={{ padding: 18, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Instrument calendar</h2>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm btn-secondary" onClick={() => navigate('instruments')}>Book or manage →</button>
+              <button className="btn btn-sm btn-secondary" aria-label="Close calendar" onClick={() => setShowCal(false)}>✕</button>
+            </div>
+          </div>
+          {!booking ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading…</div> : (
+            <BookingCalendar
+              bookings={booking.bookings} notes={calNotes ?? []} from={new Date().toISOString().slice(0, 10)}
+              instrumentName={instName}
+              onAddNote={async (day, text) => { try { await addNote({ token: token!, date: day, text }); toast.success('Note added'); } catch (e) { toast.error(errText(e)); } }}
+              onDeleteNote={async (id) => { try { await removeNote({ token: token!, id: id as Id<'calendar_notes'> }); } catch (e) { toast.error(errText(e)); } }}
+            />
+          )}
         </div>
-        {!booking ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading…</div>
-          : booking.bookings.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No upcoming bookings. Every instrument is free.</div>
-          : booking.bookings.slice(0, 6).map(b => (
-            <button key={b._id} onClick={() => navigate('instruments')} style={{ display: 'flex', width: '100%', gap: 12, alignItems: 'center', padding: '8px 0', background: 'none', border: 0, borderTop: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left', color: 'var(--text)', fontSize: 13 }}>
-              <strong style={{ minWidth: 180 }}>{instName(b.instrument_id)}</strong>
-              <span style={{ flex: 1 }}>
-                {new Date(b.start_time).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                {b.purpose ? ` · ${b.purpose}` : ''}
-              </span>
-              <span style={{ color: 'var(--text-muted)' }}>{b.person_name ?? b.user_name}{b.room ? ` · Room ${b.room}` : ''}{b.mine ? ' · you' : ''}</span>
-            </button>
-          ))}
-      </div>
+      )}
 
       {/* ── Main Content: 2-column ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20, marginBottom: 24, alignItems: 'start' }}>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useConvex } from 'convex/react';
+import { useConvex, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { HUBS } from '../../convex/hubs';
@@ -30,6 +30,7 @@ export default function MyStudentsPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const requests = useQuery(api.piAccess.pendingRequests, token ? { token } : 'skip'); // live, so new requests appear at once
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -75,6 +76,22 @@ export default function MyStudentsPage() {
       <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 20px' }}>
         Add the people in your lab, then choose which parts of LabOS each one can use. Dashboard is always on.
       </p>
+
+      {requests && requests.length > 0 && (
+        <div className="card" style={{ padding: 16, marginBottom: 16 }} aria-label="Access requests">
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>Access requests ({requests.length})</h2>
+          {requests.map(r => (
+            <div key={r._id} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontWeight: 600 }}>{r.user_name} wants {HUB_ICON[r.hub]} {r.hub}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.user_email}{r.note ? ` · "${r.note}"` : ''}</div>
+              </div>
+              <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => run(() => convex.mutation(api.piAccess.decideRequest, { token: token!, id: r._id, approve: true }))}>Approve</button>
+              <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => run(() => convex.mutation(api.piAccess.decideRequest, { token: token!, id: r._id, approve: false }))}>Decline</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
