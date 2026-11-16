@@ -32,6 +32,7 @@ import type * as hubs from "../hubs.js";
 import type * as huddle from "../huddle.js";
 import type * as incidents from "../incidents.js";
 import type * as instrumentBooking from "../instrumentBooking.js";
+import type * as instrumentEmail from "../instrumentEmail.js";
 import type * as instruments from "../instruments.js";
 import type * as integrations from "../integrations.js";
 import type * as inventory from "../inventory.js";
@@ -116,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   huddle: typeof huddle;
   incidents: typeof incidents;
   instrumentBooking: typeof instrumentBooking;
+  instrumentEmail: typeof instrumentEmail;
   instruments: typeof instruments;
   integrations: typeof integrations;
   inventory: typeof inventory;

@@ -9,6 +9,7 @@ import { OnboardingWizard } from './OnboardingWizard';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
 import EmojiIcon from './EmojiIcon';
+import LockedHub from './LockedHub';
 import { useHubAccess } from '../lib/useHubAccess';
 import { isHub } from '../../convex/hubs';
 import { SearchIcon, AssistantIcon, BellIcon, MoonIcon, SunIcon, MonitorIcon } from './HeaderIcons';
@@ -349,8 +350,10 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   const hubAllowed = (hub?: string) => !access.restricted || !hub || !isHub(hub) || access.hubs.includes(hub);
   const pageBlocked = !hubAllowed(hubOfPage(activePage));
 
-  const visibleCategories = NAV_CATEGORIES.filter(cat => hubAllowed(cat.category)).map(cat => ({
+  // Every hub stays visible; a locked one shows a padlock and asks for access when opened.
+  const visibleCategories = NAV_CATEGORIES.map(cat => ({
     ...cat,
+    locked: !hubAllowed(cat.category),
     items: cat.items.filter(item =>
       hasRole(item.minRole) && (navMode === 'full' || !item.advanced || item.key === activePage))
   })).filter(cat => cat.items.length > 0);
@@ -413,7 +416,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     <EmojiIcon glyph={cat.icon} size={18} />
                   </div>
                   <div className="hub-header-text">
-                    <span className="hub-name">{cat.category}</span>
+                    <span className="hub-name">{cat.category}{cat.locked ? ' 🔒' : ''}</span>
                     <span className="hub-desc">{cat.description}</span>
                   </div>
                   {cat.items.length > 1 && <span className={`nav-category-chevron ${isCollapsed ? 'collapsed' : ''}`}>▼</span>}
@@ -618,14 +621,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
         <div className="page-container">
           {pageBlocked ? (
-            <div className="card" style={{ maxWidth: 520, margin: '60px auto', padding: 32, textAlign: 'center' }}>
-              <div style={{ marginBottom: 12, color: "var(--text-muted)" }}><EmojiIcon glyph="🔒" size={36} /></div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No access to {hubOfPage(activePage)}</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
-                Your PI{access.piName ? ` (${access.piName})` : ''} hasn't turned this on for your account. Ask them to enable it under My Students.
-              </p>
-              <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>Go to Dashboard</button>
-            </div>
+            <LockedHub hub={hubOfPage(activePage) ?? 'this hub'} piName={access.piName} onHome={() => onNavigate('dashboard')} />
           ) : children}
         </div>
 
@@ -814,7 +810,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     padding: '8px 20px 4px',
                   }}>
-                    <EmojiIcon glyph={cat.icon} /> {cat.category}
+                    <EmojiIcon glyph={cat.icon} /> {cat.category}{cat.locked ? ' 🔒' : ''}
                   </div>
                   {cat.items.map(item => (
                     <button

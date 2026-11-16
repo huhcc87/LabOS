@@ -71,6 +71,19 @@ export const regenerate = mutation({
   },
 });
 
+/** Admin / PI sends a password-reset link to someone who has already joined (valid 1 hour; signs them out everywhere when used). */
+export const adminReset = mutation({
+  args: { token: v.optional(v.string()), user_id: v.id("users") },
+  handler: async (ctx, { token, user_id }) => {
+    const me = await requireRole(ctx, token, "admin");
+    const user = await ctx.db.get(user_id);
+    if (!user || !user.is_active) throw new ConvexError("User not found");
+    if (user.hashed_password === NO_PASSWORD) throw new ConvexError("This user hasn't joined yet. Send an invite link instead.");
+    if (me.role !== "superadmin" && user.home_lab_id !== me.home_lab_id) throw new ConvexError("User not found");
+    return await issueInvite(ctx, user_id, me._id, "reset");
+  },
+});
+
 /** Public: who is this link for? Returns null for unknown, expired or used links. */
 export const lookup = query({
   args: { invite: v.string() },

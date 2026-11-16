@@ -127,6 +127,9 @@ export default defineSchema({
     last_calibrated: v.optional(v.number()),
     next_calibration: v.optional(v.number()),
     notes: v.optional(v.string()),
+    // Hours bookable without approval, as minutes after local midnight (default 08:00-18:00); set by an admin/PI
+    work_start_min: v.optional(v.number()),
+    work_end_min: v.optional(v.number()),
     created_at: v.number(),
     updated_at: v.number(),
   }).index("by_lab", ["lab_id"]).searchIndex("search_name", { searchField: "name" }),
@@ -147,6 +150,8 @@ export default defineSchema({
     when_text: v.optional(v.string()), // "Mon, Oct 19, 9:00 AM to Tue, Oct 20, 5:00 PM" in the booker's time zone, for reminders
     remind_every_2_days: v.optional(v.boolean()),
     last_reminded_at: v.optional(v.number()),
+    outside_hours: v.optional(v.boolean()), // status "pending_approval" until an admin/PI decides
+    decided_by: v.optional(v.id("users")),
     created_at: v.number(),
   }).index("by_lab", ["lab_id"])
     .index("by_instrument", ["instrument_id"])
@@ -472,6 +477,28 @@ export default defineSchema({
   }).index("by_lab", ["lab_id"]).searchIndex("search_name", { searchField: "name" }),
 
   // ── Notifications ────────────────────────────────────────────────────
+  // Short notes people pin to a day on the instrument calendar (optionally for one instrument)
+  calendar_notes: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    instrument_id: v.optional(v.id("instruments")),
+    user_id: v.id("users"),
+    date: v.string(), // YYYY-MM-DD in the writer's time zone
+    text: v.string(),
+    created_at: v.number(),
+  }).index("by_date", ["date"]).index("by_instrument", ["instrument_id"]),
+
+  // A limited user asks their PI / admin for a hub they can see but not open. Only a PI / admin decides.
+  access_requests: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    user_id: v.id("users"),
+    hub: v.string(),
+    note: v.optional(v.string()),
+    status: v.string(), // pending | approved | declined
+    decided_by: v.optional(v.id("users")),
+    decided_at: v.optional(v.number()),
+    created_at: v.number(),
+  }).index("by_user", ["user_id"]).index("by_status", ["status"]),
+
   notifications: defineTable({
     lab_id: v.optional(v.id("labs")),
     user_id: v.id("users"),

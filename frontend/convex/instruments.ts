@@ -1,6 +1,7 @@
 import { query, mutation } from "./tenant";
 import { v } from "convex/values";
-import { hubGuard } from "./authHelper";
+import { ConvexError } from "convex/values";
+import { hubGuard, hasRole } from "./authHelper";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth } = hubGuard("Lab Hub");
 
@@ -77,8 +78,12 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx, args.token);
+    const userId = await requireAuth(ctx, args.token);
+    if (!hasRole((await ctx.db.get(userId))!.role, "manager")) throw new ConvexError("Only an admin or PI can add instruments.");
     const { token: _, ...fields } = args;
+    const key = (x?: string) => (x ?? "").trim().toLowerCase();
+    const dup = (await ctx.db.query("instruments").collect()).find((i) => i.status !== "retired" && key(i.name) === key(fields.name) && key(i.location) === key(fields.location));
+    if (dup) throw new ConvexError(`${dup.name}${dup.location ? ` in ${dup.location}` : ""} is already listed.`);
     const now = Date.now();
     return await ctx.db.insert("instruments", {
       ...fields,

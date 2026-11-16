@@ -139,7 +139,7 @@ export default function AdminHubPage() {
     name: '', email: '', role: 'Staff', department: 'Research', position: ''
   });
   // Sign-up link shown after adding a user (or on request for someone who hasn't joined).
-  const [inviteLink, setInviteLink] = useState<{ name: string; email: string; url: string; emailed: boolean } | null>(null);
+  const [inviteLink, setInviteLink] = useState<{ name: string; email: string; url: string; emailed: boolean; reset?: boolean } | null>(null);
 
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -258,6 +258,14 @@ export default function AdminHubPage() {
       const { token, emailed } = res.data as { token: string; emailed: boolean };
       setInviteLink({ name: user.name, email: user.email, url: inviteUrl(token), emailed });
     } catch (e: any) { showToast(e?.data || e?.message || 'Could not create invite link', 'error'); }
+  };
+
+  const handleResetLink = async (user: User) => {
+    try {
+      const res = await usersAdminApi.newReset(user.id);
+      const { token, emailed } = res.data as { token: string; emailed: boolean };
+      setInviteLink({ name: user.name, email: user.email, url: inviteUrl(token), emailed, reset: true });
+    } catch (e: any) { showToast(e?.data || e?.message || 'Could not create reset link', 'error'); }
   };
 
   const handleUpdateUser = async () => {
@@ -568,6 +576,9 @@ export default function AdminHubPage() {
                           {user.invitePending && (
                             <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Get a new sign-up link for this person" onClick={() => handleInviteLink(user)}><Icon name="link" size={13} /> Invite link</button>
                           )}
+                          {!user.invitePending && user.status === 'active' && (
+                            <button className="btn btn-sm btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Send a password reset link" onClick={() => handleResetLink(user)}><Icon name="link" size={13} /> Reset password</button>
+                          )}
                           <button className="icon-btn" onClick={() => setEditingUser(user)} title="Edit" aria-label={`Edit ${user.name}`}><Icon name="pencil" /></button>
                           <button className="icon-btn danger" onClick={() => handleDeleteUser(user)} title="Deactivate" aria-label={`Deactivate ${user.name}`}><Icon name="trash" /></button>
                         </div>
@@ -758,7 +769,7 @@ export default function AdminHubPage() {
       {inviteLink && (
         <div style={modalStyle} onClick={() => setInviteLink(null)}>
           <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}><EmojiIcon glyph="🔗" /> Invite link for {inviteLink.name}</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}><EmojiIcon glyph="🔗" /> {inviteLink.reset ? 'Password reset link' : 'Invite link'} for {inviteLink.name}</h3>
             {inviteLink.emailed && (
               <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--ok-text)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
                 <EmojiIcon glyph="✉️" /> Invite emailed to {inviteLink.email}. You can also copy the link below.
@@ -766,7 +777,7 @@ export default function AdminHubPage() {
             )}
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               {inviteLink.emailed ? 'Link' : 'Send this link'} for <strong>{inviteLink.email}</strong>. They open it, choose their own password, and from then on sign in with that email.
-              It works once and expires in 7 days.
+              {inviteLink.reset ? 'It works once, expires in 1 hour, and signs them out everywhere when used.' : 'It works once and expires in 7 days.'}
             </p>
             <input className="form-input" readOnly value={inviteLink.url} onFocus={e => e.target.select()} style={{ width: '100%', marginBottom: 12, fontSize: 12 }} />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

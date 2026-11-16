@@ -936,6 +936,11 @@ export const usersAdminApi = {
     const result = await client.mutation(api.invites.regenerate, { token: getToken(), user_id: id as any });
     return { data: result };
   },
+  /** One-hour password-reset link for a user who has already joined. */
+  newReset: async (id: IdLike) => {
+    const result = await client.mutation(api.invites.adminReset, { token: getToken(), user_id: id as any });
+    return { data: result };
+  },
 };
 
 export const trainingApi = crudApi(api.training.list, api.training.create, api.training.update, api.training.remove, api.training.get);

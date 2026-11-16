@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { errText } from '../../lib/errors';
 import EmojiIcon from '../../components/EmojiIcon';
 import { PICK_KEY } from './instrumentQr';
+import BookingCalendar, { fmtMin } from './BookingCalendar';
+import { downloadIcs, googleCalendarUrl } from './calendarLinks';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
@@ -24,7 +26,7 @@ export const statusOf = (i: { bookable: boolean; status: string }) =>
     : i.status === 'maintenance' ? { text: 'Under repair', color: '#b91c1c', bg: 'rgba(220,38,38,0.12)' } // set by a problem report in Maintenance
     : { text: i.status.replace(/_/g, ' '), color: '#b45309', bg: 'rgba(245,158,11,0.14)' };
 
-interface Confirmation { instrument: string; location?: string; start_time: number; end_time: number; reminders: boolean }
+interface Confirmation { instrument: string; location?: string; start_time: number; end_time: number; reminders: boolean; pending?: boolean }
 
 /** Instruments and bookings on one screen: pick an instrument, choose a time, confirm. */
 export default function InstrumentBooking() {
@@ -56,6 +58,13 @@ export default function InstrumentBooking() {
   const [done, setDone] = useState<Confirmation | null>(null);
   const [adding, setAdding] = useState<{ preset: string; name: string; location: string } | null>(null);
   const setActive = useMutation(api.instrumentBooking.setActive);
+  const decide = useMutation(api.instrumentBooking.decide);
+  const setHours = useMutation(api.instrumentBooking.setHours);
+  const removeDuplicates = useMutation(api.instrumentBooking.removeDuplicates);
+  const notes = useQuery(api.instrumentBooking.notes, token ? { token } : 'skip');
+  const addNote = useMutation(api.instrumentBooking.addNote);
+  const removeNote = useMutation(api.instrumentBooking.removeNote);
+  const [hours, setHoursDraft] = useState<{ start: string; end: string } | null>(null);
 
   const instruments = data?.instruments ?? [];
   const bookings = data?.bookings ?? [];
@@ -67,10 +76,12 @@ export default function InstrumentBooking() {
     if (!token || !picked) return;
     const start = new Date(`${date}T${from}`).getTime();
     const end = new Date(`${toDate || date}T${to}`).getTime();
+    const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
     setBusy(true);
     try {
       setDone(await book({
         token, instrument_id: picked, start_time: start, end_time: end, purpose, remind_every_2_days: remind,
+        start_min: mins(from), end_min: mins(to),
         lab_name: labName ?? data?.lab, person_name: personName ?? data?.person, room: room ?? current?.location,
         when_text: `${when(start)} to ${when(end)}`,
       }));
@@ -96,6 +107,7 @@ export default function InstrumentBooking() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>1. Choose an instrument</h3>
           <div style={{ display: 'flex', gap: 6 }}>
+            {data.can_manage && data.duplicates > 0 && <button className="btn btn-secondary btn-sm" onClick={() => act(async () => { const r = await removeDuplicates({ token: token! }); toast(`${r.removed} duplicate${r.removed === 1 ? '' : 's'} removed`); }, 'Cleaned up')}>Merge {data.duplicates} duplicate{data.duplicates === 1 ? '' : 's'}</button>}
             {data.can_add_instrument && <button className="btn btn-secondary btn-sm" onClick={() => setAdding(adding ? null : { preset: PRESETS[0], name: '', location: '' })}>+ Add instrument</button>}
           </div>
         </div>
@@ -111,7 +123,7 @@ export default function InstrumentBooking() {
           </div>
         )}
         {instruments.length === 0 && (
-          <div className="card" style={{ padding: 16, marginBottom: 10, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet. Use the list below: choose "Other" to add one, or press "+ Add instrument" to pick from common ones.</div>
+          <div className="card" style={{ padding: 16, marginBottom: 10, textAlign: 'center', color: 'var(--text-muted)' }}>No instruments yet. {data.can_add_instrument ? 'Press "+ Add instrument" to add one.' : 'Ask your lab admin or PI to add them.'}</div>
         )}
         {(
           <>
@@ -121,7 +133,7 @@ export default function InstrumentBooking() {
             }} style={{ ...input, marginBottom: 10 }}>
               <option value="">Select an instrument…</option>
               {instruments.map((i) => <option key={i._id} value={i._id} disabled={!i.bookable}>{i.name}{i.location ? ` (${i.location})` : ''} — {statusOf(i).text}</option>)}
-              <option value="__add__">Other: my instrument isn't listed (add it)</option>
+              {data.can_add_instrument && <option value="__add__">Other: my instrument isn't listed (add it)</option>}
             </select>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {instruments.map((i, n) => {
@@ -154,7 +166,18 @@ export default function InstrumentBooking() {
         <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>2. Pick a time and confirm</h3>
         {!current ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Choose an instrument on the left.</div> : (
           <>
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>{current.name}</div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>{current.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span>Working hours {fmtMin(current.work_start_min)} to {fmtMin(current.work_end_min)}. Other times need admin / PI approval.</span>
+              {data.can_manage && !hours && <button type="button" className="btn btn-sm btn-secondary" onClick={() => setHoursDraft({ start: `${String(Math.floor(current.work_start_min / 60)).padStart(2, '0')}:${String(current.work_start_min % 60).padStart(2, '0')}`, end: `${String(Math.floor(current.work_end_min / 60)).padStart(2, '0')}:${String(current.work_end_min % 60).padStart(2, '0')}` })}>Set hours</button>}
+              {data.can_manage && hours && (
+                <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                  <input aria-label="Working hours start" type="time" value={hours.start} onChange={(e) => setHoursDraft({ ...hours, start: e.target.value })} style={{ ...input, width: 110 }} />
+                  <input aria-label="Working hours end" type="time" value={hours.end} onChange={(e) => setHoursDraft({ ...hours, end: e.target.value })} style={{ ...input, width: 110 }} />
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => { const m = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)); act(async () => { await setHours({ token: token!, id: current._id, start_min: m(hours.start), end_min: m(hours.end) }); setHoursDraft(null); }, 'Working hours saved'); }}>Save</button>
+                </span>
+              )}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div><label style={lbl} htmlFor="bk-lab">Lab name</label><input id="bk-lab" value={labName ?? data.lab} onChange={(e) => setLabName(e.target.value)} placeholder="Lab name" style={input} /></div>
               <div><label style={lbl} htmlFor="bk-person">Person name</label><input id="bk-person" value={personName ?? data.person} onChange={(e) => setPersonName(e.target.value)} placeholder="Your name" style={input} /></div>
@@ -185,10 +208,17 @@ export default function InstrumentBooking() {
 
             {done && (
               <div role="status" style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'rgba(34,197,94,0.12)', color: 'var(--text)', fontSize: 13 }}>
-                <strong>✓ Booked: {done.instrument}</strong><br />
+                <strong>{done.pending ? `⏳ Waiting for approval: ${done.instrument}` : `✓ Booked: ${done.instrument}`}</strong><br />
                 {personName ?? data.person}{(labName ?? data.lab) ? ` · ${labName ?? data.lab}` : ''}<br />
                 From {when(done.start_time)} to {when(done.end_time)}{done.location ? ` · ${done.location}` : ''}<br />
-                {done.reminders ? 'You will get a reminder every 2 days until it starts.' : 'No reminders set.'}
+                {done.pending ? 'This is outside working hours, so an admin or PI must approve it. You will be notified.' : done.reminders ? 'You will get a reminder every 2 days until it starts, and an email with a calendar invite.' : 'No reminders set.'}
+                {!done.pending && (() => {
+                  const ev = { title: `${done.instrument} (LabOS booking)`, details: `Booked by ${personName ?? data.person}${purpose ? ` for ${purpose}` : ''}`, location: done.location, start: done.start_time, end: done.end_time };
+                  return <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    <a className="btn btn-sm btn-secondary" href={googleCalendarUrl(ev)} target="_blank" rel="noopener noreferrer">Add to Google Calendar</a>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => downloadIcs(ev)}>Download .ics (Outlook / Apple)</button>
+                  </div>;
+                })()}
               </div>
             )}
 
@@ -205,6 +235,38 @@ export default function InstrumentBooking() {
           </>
         )}
       </section>
+
+      {/* 3. Calendar of the picked instrument; click days to set the from/to dates */}
+      <section aria-label="Calendar" className="card" style={{ padding: 16 }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>3. Calendar and notes</h3>
+        {!current ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Choose an instrument to see when it is free.</div> : (
+          <BookingCalendar key={current._id} bookings={itsBookings} from={date} to={toDate || date}
+            notes={(notes ?? []).filter((n) => !n.instrument_id || n.instrument_id === current._id)}
+            onAddNote={(day, text) => act(() => addNote({ token: token!, date: day, text, instrument_id: current._id }), 'Note added')}
+            onDeleteNote={(id) => act(() => removeNote({ token: token!, id: id as Id<'calendar_notes'> }), 'Note deleted')}
+            // First click sets the start day; a later day then sets the end day; another click starts over.
+            onPick={(day) => { if (!toDate && day > date) setToDate(day); else { setDate(day); setToDate(''); } setDone(null); }} />
+        )}
+      </section>
+
+      {/* Out-of-hours requests waiting for an admin / PI */}
+      {data.can_manage && bookings.some((b) => b.can_decide) && (
+        <section aria-label="Approvals" style={{ gridColumn: '1 / -1' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 15 }}>Waiting for your approval</h3>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {bookings.filter((b) => b.can_decide).map((b, n) => (
+              <div key={b._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontWeight: 600 }}>{instruments.find((i) => i._id === b.instrument_id)?.name ?? 'Instrument'} · {b.person_name ?? b.user_name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{b.purpose ? ` · ${b.purpose}` : ''}</div>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={() => act(() => decide({ token: token!, id: b._id, approve: true }), 'Approved')}>Approve</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => act(() => decide({ token: token!, id: b._id, approve: false }), 'Declined')}>Decline</button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* My bookings with the reminder switch */}
       <section aria-label="My bookings" style={{ gridColumn: '1 / -1' }}>
