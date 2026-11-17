@@ -67,8 +67,10 @@ async function pushToLabOS(product) {
         captured_at: new Date().toISOString(),
       }),
     });
-    if (!res.ok) const err = await res.json().catch(() => ({}));
-    return { ok: false, status: res.status, error: err.error || `HTTP ${res.status}` };
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { ok: false, status: res.status, error: err.error || `HTTP ${res.status}` };
+    }
     const data = await res.json().catch(() => ({}));
     return { ok: true, serverId: data.id };
   } catch (e) {

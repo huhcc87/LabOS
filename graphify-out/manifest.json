@@ -460,8 +460,8 @@
     "semantic_hash": ""
   },
   "extension/background.js": {
-    "mtime": 1794830591.4960506,
-    "ast_hash": "aebf8a22889f438f36d639115dfe5b3b",
+    "mtime": 1794881409.8562865,
+    "ast_hash": "bf68224db955990462fd0f7efb346062",
     "semantic_hash": ""
   },
   "extension/content/_shared.js": {
@@ -530,18 +530,18 @@
     "semantic_hash": ""
   },
   "extension/manifest.firefox.json": {
-    "mtime": 1794830591.5076332,
-    "ast_hash": "668f972779c6151c058f2a505668bee7",
+    "mtime": 1794881412.4193625,
+    "ast_hash": "3e3d102da14d7459ce9de36029ea00c6",
     "semantic_hash": ""
   },
   "extension/manifest.json": {
-    "mtime": 1794830591.50801,
-    "ast_hash": "2b618b1c6fb4f889901c1b7184400c7b",
+    "mtime": 1794881411.1570847,
+    "ast_hash": "212381e81928d20bc2669dce809bf0c5",
     "semantic_hash": ""
   },
   "extension/options.js": {
-    "mtime": 1794830591.5094912,
-    "ast_hash": "5569df2bba0978944442d65f6c49b1fb",
+    "mtime": 1794881399.4435809,
+    "ast_hash": "6b38ad77e14a8c49b253250362fba979",
     "semantic_hash": ""
   },
   "extension/package.sh": {
@@ -550,8 +550,8 @@
     "semantic_hash": ""
   },
   "extension/popup.js": {
-    "mtime": 1794830591.5141988,
-    "ast_hash": "e24465547d6b2e60f53d34a742b4f9d2",
+    "mtime": 1794881399.4441364,
+    "ast_hash": "0bfe7d07712ff149af19b89f2afb5904",
     "semantic_hash": ""
   },
   "frontend/android/app/build.gradle": {
@@ -615,8 +615,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.d.ts": {
-    "mtime": 1794831316.2638953,
-    "ast_hash": "20601e9c568beac547775bc0a31f5ced",
+    "mtime": 1794881399.44464,
+    "ast_hash": "1de17a85c619eeecee0f68300027e1fb",
     "semantic_hash": ""
   },
   "frontend/convex/_generated/api.js": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/reagentCart.ts": {
-    "mtime": 1794830591.486522,
-    "ast_hash": "dc58c4518063cb3c64e3c32fac5bd3aa",
+    "mtime": 1794881399.4460912,
+    "ast_hash": "21cd822f7c8b11e806cbad941a15e5c0",
     "semantic_hash": ""
   },
   "frontend/convex/samples.ts": {
@@ -805,8 +805,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/schema.ts": {
-    "mtime": 1794832503.6284122,
-    "ast_hash": "f889b32ad97022a760b42f4728380b0f",
+    "mtime": 1794881399.4470644,
+    "ast_hash": "3266b267a7eb0b61692b2bb0e15590d3",
     "semantic_hash": ""
   },
   "frontend/convex/search.ts": {
@@ -1925,8 +1925,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/SettingsPage.tsx": {
-    "mtime": 1794830591.5039108,
-    "ast_hash": "354d771c165ee7b55105998bd087c37c",
+    "mtime": 1794881399.4484348,
+    "ast_hash": "7c1497e5dd2803c80b5665537c377084",
     "semantic_hash": ""
   },
   "frontend/src/pages/SubcontractManagerPage.tsx": {
@@ -2185,8 +2185,8 @@
     "semantic_hash": ""
   },
   "extension/INSTALL.md": {
-    "mtime": 1794830591.4923456,
-    "ast_hash": "e82b25322cfb165da425d2f33d1af3e6",
+    "mtime": 1794881399.4415708,
+    "ast_hash": "c9bbc0dff757d4ca313cc8a19cdb0adf",
     "semantic_hash": ""
   },
   "extension/PUBLISH.md": {
@@ -2205,8 +2205,8 @@
     "semantic_hash": ""
   },
   "extension/options.html": {
-    "mtime": 1794830591.5086446,
-    "ast_hash": "e874d6b8a6599ea1be239860c8fe87af",
+    "mtime": 1794881399.4432435,
+    "ast_hash": "2c8c5fad1900d29ae725d75afc357c8e",
     "semantic_hash": ""
   },
   "extension/popup.html": {
@@ -2575,8 +2575,8 @@
     "semantic_hash": ""
   },
   "frontend/convex/http.ts": {
-    "mtime": 1794830591.5169942,
-    "ast_hash": "cedc457cb5038e61bcc0c8ac4bb985e5",
+    "mtime": 1794881399.4455378,
+    "ast_hash": "41f92a2577547fc7a744c16c0d30d5ba",
     "semantic_hash": ""
   },
   "frontend/convex/labsAdmin.ts": {
@@ -3317,6 +3317,26 @@
   "frontend/tests/unit/zebraUsb.test.ts": {
     "mtime": 1794878705.4082372,
     "ast_hash": "f2cbaa3e7c2b35bfcbf88566b2cc0534",
+    "semantic_hash": ""
+  },
+  "frontend/convex/extensionApi.ts": {
+    "mtime": 1794881399.4449518,
+    "ast_hash": "7dd1ec7f327c3f0d67848fb74b5569f2",
+    "semantic_hash": ""
+  },
+  "frontend/convex/extensionKeys.ts": {
+    "mtime": 1794881399.4452043,
+    "ast_hash": "fb15dd829e880292ea654664500d61bd",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ExtensionKeyCard.tsx": {
+    "mtime": 1794881399.4477365,
+    "ast_hash": "8c3e9400df739ddd0dd0da3c378dd33c",
+    "semantic_hash": ""
+  },
+  "frontend/tests/unit/extensionBridge.test.ts": {
+    "mtime": 1794881399.4490416,
+    "ast_hash": "e77ee2c355187bcd0ce05955945809ca",
     "semantic_hash": ""
   }
 }

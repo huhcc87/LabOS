@@ -32,7 +32,7 @@
     "*://*.beckman.com/*",
     "*://*.promega.com/*",
     "*://*.takarabio.com/*",
-    "https://*.convex.site/*",
+    "https://tame-ladybug-197.convex.site/*",
     "http://localhost/*"
   ],
   "background": {
