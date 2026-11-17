@@ -6,7 +6,10 @@
  * and works offline; the backend copy is the source of truth for checkout.
  */
 
-const DEFAULT_API_BASE = 'http://localhost:8000/api';
+// Production LabOS (Convex HTTP site). Routes: GET /health, POST /reagent-cart. Key is made in LabOS → Settings → Security.
+const DEFAULT_API_BASE = 'https://tame-ladybug-197.convex.site/extension';
+// The old FastAPI backend also had /procurement/scan and /inventory. The Convex bridge does not, so those checks are skipped.
+const isLegacyApi = (base) => !/\/extension\/?$/.test(base);
 
 async function getSettings() {
   const s = await chrome.storage.sync.get([
@@ -60,10 +63,14 @@ async function pushToLabOS(product) {
         cas: product.cas,
         purity: product.purity,
         notes: product.notes,
+        quantity: 1,
         captured_at: new Date().toISOString(),
       }),
     });
-    if (!res.ok) return { ok: false, status: res.status, error: `HTTP ${res.status}` };
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { ok: false, status: res.status, error: err.error || `HTTP ${res.status}` };
+    }
     const data = await res.json().catch(() => ({}));
     return { ok: true, serverId: data.id };
   } catch (e) {
@@ -125,7 +132,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     if (msg.type === 'LABOS_HAZARD_SCAN') {
       const { apiBase, apiToken } = await getSettings();
-      if (!apiBase) { sendResponse({ matches: [] }); return; }
+      if (!apiBase || !isLegacyApi(apiBase)) { sendResponse({ matches: [] }); return; }
       const params = new URLSearchParams();
       if (msg.cas) params.set('cas', msg.cas);
       if (msg.name) params.set('name', msg.name);
@@ -143,7 +150,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'LABOS_INVENTORY_CHECK') {
       // Check the LabOS inventory for an existing match by CAS or catalog.
       const { apiBase, apiToken } = await getSettings();
-      if (!apiBase) { sendResponse({ matches: [] }); return; }
+      if (!apiBase || !isLegacyApi(apiBase)) { sendResponse({ matches: [] }); return; }
       const q = encodeURIComponent(msg.cas || msg.catalog || msg.name || '');
       try {
         const r = await fetch(`${apiBase}/inventory?search=${q}&per_page=5`, {
@@ -168,7 +175,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'LABOS_TEST_CONNECTION') {
       const { apiBase, apiToken } = await getSettings();
       try {
-        const res = await fetch(`${apiBase}/reagent-cart/health`, {
+        const res = await fetch(`${apiBase}${isLegacyApi(apiBase) ? '/reagent-cart/health' : '/health'}`, {
           headers: apiToken ? { Authorization: `Bearer ${apiToken}` } : {},
         });
         sendResponse({ ok: res.ok, status: res.status });

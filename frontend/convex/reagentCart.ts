@@ -106,30 +106,42 @@ function checkDetails(a: { quantity?: number; unit_price?: number; urgency?: str
   if (a.urgency !== undefined && !URGENCY.includes(a.urgency)) throw new ConvexError("Urgency must be normal or urgent.");
 }
 
+/**
+ * Adds one request. Shared by the app and the browser-extension endpoint (extensionKeys.ts).
+ * `ctx.db` must already be lab-scoped (the tenant wrapper does that; the extension path uses scopeDb).
+ */
+export async function insertRequest(
+  ctx: { db: any },
+  userId: Id<"users">,
+  fields: { name: string; quantity: number; unit_price?: number; urgency?: string; [k: string]: unknown },
+): Promise<Id<"reagent_cart">> {
+  checkDetails(fields);
+  const limit = await autoApproveLimit(ctx);
+  // A request that would exceed a grant/project/budget limit always waits for a manager.
+  const over = overBudget(await ctx.db.query("procurement_budgets").collect(), await ctx.db.query("reagent_cart").collect(), fields as any);
+  const auto = !over.length && limit > 0 && fields.unit_price !== undefined && lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }) <= limit;
+  const id = await ctx.db.insert("reagent_cart", {
+    ...fields,
+    name: fields.name.trim(),
+    user_id: userId,
+    status: auto ? "approved" : "pending",
+    ...(auto ? { approved_at: Date.now(), decision_note: `Auto-approved (under ${limit})` } : {}),
+    ...(over.length ? { decision_note: `Needs a manager: over budget (${over.map((o: { name: string }) => o.name).join(", ")})` } : {}),
+    created_at: Date.now(),
+  });
+  await logProcurement(ctx as any, userId, "request", id, {
+    item: fields.name.trim(), quantity: fields.quantity, total: lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }),
+    status: auto ? "approved" : "pending", ...(auto ? { auto_approved_under: limit } : {}), ...(over.length ? { over_budget: over.map((o: { name: string }) => o.name) } : {}),
+  });
+  return id;
+}
+
 export const create = mutation({
   args: { token: v.optional(v.string()), name: v.string(), quantity: v.number(), ...detailArgs },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
-    checkDetails(args);
     const { token: _t, ...fields } = args;
-    const limit = await autoApproveLimit(ctx);
-    // A request that would exceed a grant/project/budget limit always waits for a manager.
-    const over = overBudget(await ctx.db.query("procurement_budgets").collect(), await ctx.db.query("reagent_cart").collect(), fields);
-    const auto = !over.length && limit > 0 && fields.unit_price !== undefined && lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }) <= limit;
-    const id = await ctx.db.insert("reagent_cart", {
-      ...fields,
-      name: fields.name.trim(),
-      user_id: userId,
-      status: auto ? "approved" : "pending",
-      ...(auto ? { approved_at: Date.now(), decision_note: `Auto-approved (under ${limit})` } : {}),
-      ...(over.length ? { decision_note: `Needs a manager: over budget (${over.map((o) => o.name).join(", ")})` } : {}),
-      created_at: Date.now(),
-    });
-    await logProcurement(ctx, userId, "request", id, {
-      item: fields.name.trim(), quantity: fields.quantity, total: lineTotal({ unit_price: fields.unit_price, quantity: fields.quantity }),
-      status: auto ? "approved" : "pending", ...(auto ? { auto_approved_under: limit } : {}), ...(over.length ? { over_budget: over.map((o) => o.name) } : {}),
-    });
-    return id;
+    return insertRequest(ctx, userId, fields);
   },
 });
 
