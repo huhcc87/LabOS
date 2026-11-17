@@ -1820,8 +1820,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LabelPrinterPage.tsx": {
-    "mtime": 1794830591.5503695,
-    "ast_hash": "24cf7a12d7840a0c0a2cb7ebd4f237b2",
+    "mtime": 1794878745.8359632,
+    "ast_hash": "0bac04eef78412a928374011b9424271",
     "semantic_hash": ""
   },
   "frontend/src/pages/LoginPage.tsx": {
@@ -3307,6 +3307,16 @@
   "frontend/src/features/instruments/calendarLinks.ts": {
     "mtime": 1794831262.3432121,
     "ast_hash": "8d2e87a2c903e48a292710c15dc6bf91",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/zebraUsb.ts": {
+    "mtime": 1794878778.098438,
+    "ast_hash": "1754c3699761b4d97a6d00e25cd5dce0",
+    "semantic_hash": ""
+  },
+  "frontend/tests/unit/zebraUsb.test.ts": {
+    "mtime": 1794878705.4082372,
+    "ast_hash": "f2cbaa3e7c2b35bfcbf88566b2cc0534",
     "semantic_hash": ""
   }
 }

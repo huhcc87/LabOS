@@ -8,6 +8,7 @@ import { errText } from '../lib/errors';
 import EmojiIcon from '../components/EmojiIcon';
 import { INST_PREFIX, qrValueFor } from '../features/instruments/instrumentQr';
 import { PRESETS, OTHER } from '../features/instruments/InstrumentBooking';
+import { ZEBRA_VENDOR_ID, labelsToZpl, sendZpl, type Dpi } from '../lib/zebraUsb';
 
 // ─── Label presets (mm) ───────────────────────────────────────────────────────
 interface LabelSize {
@@ -93,7 +94,7 @@ const ENTITY_PRESETS: Record<string, { label: string; emoji: string; fields: Par
 const KNOWN_PRINTERS = [
   { id: 'dymo',    name: 'Dymo LabelWriter', models: '450 · 550 · 4XL',             vendorId: 0x0922, accent: '#e74c3c', icon: '🔴' },
   { id: 'brother', name: 'Brother QL Series', models: 'QL-800 · 820NWB · 1110NWB',  vendorId: 0x04f9, accent: '#2980b9', icon: '🔵' },
-  { id: 'zebra',   name: 'Zebra ZD / ZT',    models: 'ZD420 · ZD620 · ZT230',       vendorId: 0x0a5f, accent: '#27ae60', icon: '🟢' },
+  { id: 'zebra',   name: 'Zebra GX / ZD / ZT', models: 'GX430t · GX420t · ZD420 · ZT230', vendorId: 0x0a5f, accent: '#27ae60', icon: '🟢' },
   { id: 'any',     name: 'Other / Generic',  models: 'Any USB label printer',        vendorId: null,   accent: '#8e44ad', icon: '🔌' },
 ] as const;
 
@@ -334,6 +335,10 @@ export default function LabelPrinterPage() {
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const [showPrinterModal, setShowPrinterModal] = useState(false);
+  // A paired Zebra printer: "Print to Zebra" sends ZPL over USB, no print dialog. GX430t is 300 dpi; GX420t / ZD420 are 203.
+  const [zebra, setZebra] = useState<any>(null);
+  const [dpi, setDpi] = useState<Dpi>(300);
+  const [usbBusy, setUsbBusy] = useState(false);
   // 'sheet' = fill each page with a grid of labels; 'single' = one label per page (page cut to the label size).
   const [printMode, setPrintMode] = useState<'sheet' | 'single'>('sheet');
   const printAreaRef = useRef<HTMLDivElement>(null);
@@ -346,6 +351,7 @@ export default function LabelPrinterPage() {
     const refresh = async () => {
       try {
         const found = (await usb.getDevices()).find(isKnown);
+        setZebra(found?.vendorId === ZEBRA_VENDOR_ID ? found : null); // a Zebra can be printed to directly (ZPL over USB)
         if (found) { setConnectedPrinterName(printerLabel(found)); setPrinterStatus('connected'); }
         else { setConnectedPrinterName(null); setPrinterStatus(s => (s === 'connected' ? 'browser' : s)); }
       } catch { /* no USB permission available: stay on browser print */ }
@@ -393,6 +399,29 @@ export default function LabelPrinterPage() {
 
   // Save each label (code + what's written on it) so scanning it later finds the details.
   const registerLabels = useMutation(api.labels.registerMany);
+  /** Sends the labels to the paired Zebra over USB as ZPL. Same scan-matching registration as the normal print. */
+  const handlePrintUsb = async () => {
+    if (!zebra) return;
+    setUsbBusy(true);
+    try {
+      await registerLabels({
+        token: token ?? undefined,
+        labels: labelsToPrint.filter(l => !l.uid.startsWith(INST_PREFIX)).map(l => ({
+          code: l.uid,
+          details: Object.fromEntries(l.fields.filter(f => f.show && f.value.trim()).map(f => [f.key, f.value.trim()])),
+        })),
+      }).catch((e) => toast.error(`Printing anyway, but these labels can't be matched when scanned: ${errText(e)}`));
+      const zpl = labelsToZpl(
+        labelsToPrint.map(l => ({ code: l.uid, lines: l.fields.filter(f => f.show && f.value.trim()).map(f => (f.key === 'name' ? f.value.trim() : `${f.label}: ${f.value.trim()}`)) })),
+        { widthMm: size.widthMm, heightMm: size.heightMm, dpi, qr: showQr, barcode: showBarcode, brand: brand.trim() || undefined },
+      );
+      await sendZpl(zebra, zpl);
+      toast.success(`Sent ${labelsToPrint.length} label${labelsToPrint.length === 1 ? '' : 's'} to the Zebra`);
+    } catch (e) {
+      toast.error(errText(e));
+    } finally { setUsbBusy(false); }
+  };
+
   const handlePrint = async () => {
     try {
       await registerLabels({
@@ -465,6 +494,7 @@ export default function LabelPrinterPage() {
         : [{ vendorId: 0x0922 }, { vendorId: 0x04f9 }, { vendorId: 0x0a5f }];
       const device = await nav.usb.requestDevice({ filters });
       await device.open();
+      setZebra(device.vendorId === ZEBRA_VENDOR_ID ? device : null);
       setConnectedPrinterName(printerLabel(device));
       setPrinterStatus('connected');
     } catch {
@@ -527,7 +557,7 @@ export default function LabelPrinterPage() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Status only (not a button): which printer path Print uses */}
           <div role="status"
-            title={printerStatus === 'connected' ? 'A USB label printer was detected. Print still opens your system print dialog.' : 'Print opens your browser print dialog. Pick your printer there. Use Connect printer to pair a USB label printer.'}
+            title={zebra ? 'Zebra printer paired. "Print to Zebra (USB)" sends the labels straight to it.' : printerStatus === 'connected' ? 'A USB label printer was detected. Print still opens your system print dialog.' : 'Print opens your browser print dialog. Pick your printer there. Use Connect printer to pair a USB label printer.'}
             style={{
               padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
               border: `1px solid ${printerStatus === 'connected' ? '#22c55e' : 'var(--border)'}`,
@@ -546,9 +576,22 @@ export default function LabelPrinterPage() {
             style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid #22c55e', background: 'rgba(34,197,94,0.1)', color: '#22c55e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <EmojiIcon glyph="💾" /> Save Template
           </button>
+          {zebra && (
+            <>
+              <select aria-label="Printer resolution" value={dpi} onChange={e => setDpi(Number(e.target.value) as Dpi)} title="GX430t = 300 dpi; GX420t / ZD420 = 203 dpi"
+                style={{ padding: '8px 10px', borderRadius: 8, fontSize: 13, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>
+                <option value={300}>300 dpi (GX430t)</option>
+                <option value={203}>203 dpi (GX420t, ZD420)</option>
+              </select>
+              <button onClick={handlePrintUsb} disabled={usbBusy}
+                style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', background: '#16a34a', color: '#fff', cursor: 'pointer' }}>
+                <EmojiIcon glyph="🦓" /> {usbBusy ? 'Sending…' : `Print to Zebra (USB)${copies > 1 ? ` × ${copies}` : ''}`}
+              </button>
+            </>
+          )}
           <button onClick={handlePrint}
-            style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', background: 'var(--primary, #6366f1)', color: '#fff', cursor: 'pointer' }}>
-            <EmojiIcon glyph="🖨️" /> Print {copies > 1 ? `× ${copies}` : ''}
+            style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: zebra ? '1px solid var(--border)' : 'none', background: zebra ? 'var(--surface2)' : 'var(--primary, #6366f1)', color: zebra ? 'var(--text)' : '#fff', cursor: 'pointer' }}>
+            <EmojiIcon glyph="🖨️" /> {zebra ? 'Print dialog' : 'Print'} {copies > 1 ? `× ${copies}` : ''}
           </button>
         </div>
       </div>
