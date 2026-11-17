@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { settingsApi } from '../lib/api';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
+import ExtensionKeyCard from '../components/ExtensionKeyCard';
 import EmojiIcon from '../components/EmojiIcon';
 import LabBanner from '../components/LabBanner';
 
@@ -545,6 +546,8 @@ export default function SettingsPage() {
               <h2 style={{ margin: '0 0 24px', fontSize: 18, fontWeight: 600 }}>Security Settings</h2>
 
               <TwoFactorSetup />
+
+              <ExtensionKeyCard />
 
               <div style={{ marginTop: 24, marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 8 }}>Session Timeout (minutes)</label>

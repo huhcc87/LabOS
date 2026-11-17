@@ -34,9 +34,11 @@
     <h2>Connection</h2>
     <p class="desc">Point the extension at your LabOS backend. Captured items will sync automatically.</p>
     <label>LabOS API base URL</label>
-    <input id="apiBase" type="url" placeholder="http://localhost:8000/api" />
-    <label>API token (from LabOS → Settings → Tokens)</label>
-    <input id="apiToken" type="password" placeholder="paste your bearer token here" />
+    <input id="apiBase" type="url" placeholder="https://tame-ladybug-197.convex.site/extension" />
+    <label>LabOS web app URL (for the "Open LabOS" button)</label>
+    <input id="appUrl" type="url" placeholder="https://your-labos.vercel.app" />
+    <label>Extension key (LabOS → Settings → Security → Browser extension key)</label>
+    <input id="apiToken" type="password" placeholder="paste your lbx_… key here" />
     <button class="btn btn-primary" id="save-connection">Save</button>
     <button class="btn btn-ghost" id="test-connection">Test connection</button>
     <span class="saved" id="saved-msg"></span>

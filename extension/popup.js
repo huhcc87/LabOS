@@ -7,7 +7,7 @@ async function testConnection() {
 }
 
 async function getSettings() {
-  return new Promise(r => chrome.storage.sync.get(['apiBase'], s => r(s)));
+  return new Promise(r => chrome.storage.sync.get(['apiBase', 'appUrl'], s => r(s)));
 }
 
 // Sanitize text to prevent XSS when inserting into DOM
@@ -84,8 +84,10 @@ async function init() {
   });
   document.getElementById('open-labos').addEventListener('click', async () => {
     const s = await getSettings();
-    const base = (s.apiBase || 'http://localhost:8000/api').replace('/api', '');
-    chrome.tabs.create({ url: `${base}/?page=reagent-cart` });
+    if (s.appUrl) { chrome.tabs.create({ url: `${s.appUrl}/?page=reagent-cart` }); return; }
+    // Old FastAPI setup: the app lived next to the API. Otherwise ask for the web app address.
+    if (s.apiBase && s.apiBase.endsWith('/api')) { chrome.tabs.create({ url: `${s.apiBase.replace('/api', '')}/?page=reagent-cart` }); return; }
+    chrome.runtime.openOptionsPage();
   });
   document.getElementById('capture-page').addEventListener('click', async () => {
     // Works on ANY website — uses activeTab permission to grab tab metadata,

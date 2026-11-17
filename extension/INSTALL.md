@@ -61,10 +61,14 @@ In the Settings tab:
 
 | Field | What to enter |
 |---|---|
-| **LabOS API base URL** | `http://localhost:8000/api` for local dev, or your deployed URL `https://api.labos.example.com/api` |
-| **API token** | From LabOS → Settings → Tokens. Copy the bearer token. |
+| **LabOS API base URL** | Pre-filled with production: `https://tame-ladybug-197.convex.site/extension`. (LabOS → Settings → Security → Browser extension key shows the exact URL for your deployment.) |
+| **Extension key** | In LabOS go to **Settings → Security → Browser extension key → Make extension key**. Copy the `lbx_…` key (shown once) and paste it here. Revoke or replace it there any time. |
+| **LabOS web app URL** | Your LabOS address, used by the popup's "Open LabOS" button. |
 
-Click **Save**, then **Test connection** — green ✓ means good.
+Click **Save**, then **Test connection** — green ✓ means good. A captured product
+lands in *your* Reagent Cart as a pending request (or auto-approved under your lab's limit),
+following your role, hub access and budgets. The vendor-page hazard and inventory
+pre-checks are only available with the old self-hosted FastAPI backend and are skipped.
 
 ### Use it
 
@@ -152,7 +156,7 @@ For permanent install across your team's machines:
 | Problem | Fix |
 |---|---|
 | Orange button doesn't appear | Refresh the vendor page. If still missing, the vendor changed their HTML — open the extension Options → add a custom selector |
-| "Failed to send to LabOS" toast | Open ⚙ → click "Test connection". If red, verify the API URL and that LabOS backend is running. CORS errors? Add the extension origin to `CORS_ORIGINS` in `backend/.env` |
+| "Failed to send to LabOS" toast | Open ⚙ → click "Test connection". Status 401 = key wrong or revoked (make a new one in LabOS Settings → Security); 403 = your PI has not given you the Resources hub, or 2FA setup is pending; 429 = more than 30 sends a minute |
 | Extension keeps reloading | Chrome auto-reloads after file changes. Disable in `chrome://extensions` → Details if it's distracting |
 | Popup shows old data | The popup polls every open. Click 🚀 Open LabOS Cart to see the source of truth |
 | Items show "⏳ local" forever | Connection broken — check ⚙ Settings → Test connection |

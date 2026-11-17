@@ -22,6 +22,8 @@ import type * as cryptoSecrets from "../cryptoSecrets.js";
 import type * as customAuth from "../customAuth.js";
 import type * as dashboard from "../dashboard.js";
 import type * as experiments from "../experiments.js";
+import type * as extensionApi from "../extensionApi.js";
+import type * as extensionKeys from "../extensionKeys.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
 import type * as freezer from "../freezer.js";
@@ -107,6 +109,8 @@ declare const fullApi: ApiFromModules<{
   customAuth: typeof customAuth;
   dashboard: typeof dashboard;
   experiments: typeof experiments;
+  extensionApi: typeof extensionApi;
+  extensionKeys: typeof extensionKeys;
   feedback: typeof feedback;
   files: typeof files;
   freezer: typeof freezer;
