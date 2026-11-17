@@ -11,6 +11,17 @@ export default defineSchema({
     created_at: v.number(),
   }).index("by_token", ["token"]).index("by_user", ["user_id"]),
 
+  // Long-lived key for the LabOS Reagent Capture browser extension. One live key per person; only the hash is stored.
+  // Not a lab table: it belongs to a person, and the lab is read from that person when the key is used.
+  extension_keys: defineTable({
+    user_id: v.id("users"),
+    key_hash: v.string(),
+    key_hint: v.string(), // last 4 characters, so a person can tell which key they hold
+    created_at: v.number(),
+    last_used_at: v.optional(v.number()),
+    revoked_at: v.optional(v.number()),
+  }).index("by_hash", ["key_hash"]).index("by_user", ["user_id"]),
+
   // ── Users ────────────────────────────────────────────────────────────
   // Sliding-window counters that slow down password guessing and abuse. Shared by every function instance.
   rate_limits: defineTable({

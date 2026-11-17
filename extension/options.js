@@ -1,7 +1,8 @@
 async function load() {
-  const s = await chrome.storage.sync.get(['apiBase', 'apiToken', 'customVendors', 'crowdsource']);
-  document.getElementById('apiBase').value = s.apiBase || 'http://localhost:8000/api';
+  const s = await chrome.storage.sync.get(['apiBase', 'apiToken', 'appUrl', 'customVendors', 'crowdsource']);
+  document.getElementById('apiBase').value = s.apiBase || 'https://tame-ladybug-197.convex.site/extension';
   document.getElementById('apiToken').value = s.apiToken || '';
+  document.getElementById('appUrl').value = s.appUrl || '';
   const cs = document.getElementById('crowdsource');
   if (cs) {
     cs.checked = !!s.crowdsource;
@@ -40,7 +41,8 @@ function renderVendors(list) {
 document.getElementById('save-connection').addEventListener('click', async () => {
   const apiBase = document.getElementById('apiBase').value.trim();
   const apiToken = document.getElementById('apiToken').value.trim();
-  await chrome.storage.sync.set({ apiBase, apiToken });
+  const appUrl = document.getElementById('appUrl').value.trim().replace(/\/$/, '');
+  await chrome.storage.sync.set({ apiBase, apiToken, appUrl });
   const msg = document.getElementById('saved-msg');
   msg.textContent = '✓ Saved';
   setTimeout(() => msg.textContent = '', 1500);

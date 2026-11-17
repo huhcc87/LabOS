@@ -32,6 +32,7 @@
     "*://*.beckman.com/*",
     "*://*.promega.com/*",
     "*://*.takarabio.com/*",
+    "https://*.convex.site/*",
     "http://localhost/*"
   ],
   "background": {
