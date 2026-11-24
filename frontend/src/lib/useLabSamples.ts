@@ -59,9 +59,9 @@ export function useLabSamples(token: string | null) {
   return {
     samples, loading: rows === undefined,
     create: (s: SampleInput) => createM({ token: t, ...toArgs(s), sample_id: s.sampleId, name: s.type ? `${s.type} ${s.sampleId}` : s.sampleId, status: s.status }),
-    // The sample ID can't change, so it is not sent (and the update call doesn't accept it).
+    // Pass sampleId to rename the sample (the server rejects duplicates).
     update: (id: Id<'samples'>, s: Partial<SampleInput>) => {
-      const { sample_id: _keep, name: _name, ...args } = toArgs({ ...s, sampleId: undefined });
+      const { name: _name, ...args } = toArgs(s);
       return updateM({ token: t, id, ...args, ...(s.type ? { name: `${s.type} ${s.sampleId ?? ''}`.trim() } : {}) });
     },
     remove: (id: Id<'samples'>) => removeM({ token: t, id }),

@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import { useAuth } from '../context/AuthContext';
 import { errText } from '../lib/errors';
 import EmojiIcon from '../components/EmojiIcon';
+import Fold from '../components/Fold';
 import { INST_PREFIX, qrValueFor } from '../features/instruments/instrumentQr';
 import { PRESETS, OTHER } from '../features/instruments/InstrumentBooking';
 import { ZEBRA_VENDOR_ID, labelsToZpl, sendZpl, type Dpi } from '../lib/zebraUsb';
@@ -369,6 +370,9 @@ export default function LabelPrinterPage() {
   });
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  // Editing a saved template: rename it, and optionally replace its settings with what is on screen now.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [replaceSettings, setReplaceSettings] = useState(false);
 
   const updateTypo = (patch: Partial<Typography>) => setTypo(prev => ({ ...prev, ...patch }));
 
@@ -448,6 +452,16 @@ export default function LabelPrinterPage() {
   const saveTemplate = () => {
     const name = templateName.trim();
     if (!name) return;
+    if (editingId) {
+      if (savedTemplates.some(t => t.id !== editingId && t.name.toLowerCase() === name.toLowerCase())) { toast.error(`A template called "${name}" already exists`); return; }
+      persistTemplates(savedTemplates.map(t => t.id !== editingId ? t : {
+        ...t, name,
+        ...(replaceSettings ? { entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo } : {}),
+      }));
+      setEditingId(null); setReplaceSettings(false); setTemplateName(''); setShowSaveModal(false);
+      toast.success(`Template "${name}" updated`);
+      return;
+    }
     const tpl: LabelTemplate = {
       id: Date.now().toString(),
       name,
@@ -477,8 +491,14 @@ export default function LabelPrinterPage() {
   };
 
   const deleteTemplate = (id: string) => {
-    persistTemplates(savedTemplates.filter(t => t.id !== id));
+    const t = savedTemplates.find(x => x.id === id);
+    if (!window.confirm(`Delete the saved template "${t?.name ?? ''}"? This can't be undone.`)) return;
+    persistTemplates(savedTemplates.filter(x => x.id !== id));
+    toast.success('Template deleted');
   };
+
+  const editTemplate = (tpl: LabelTemplate) => { setEditingId(tpl.id); setReplaceSettings(false); setTemplateName(tpl.name); setShowSaveModal(true); };
+  const closeSaveModal = () => { setShowSaveModal(false); setEditingId(null); setReplaceSettings(false); };
 
   const tryConnectPrinter = async (vendorId: number | null) => {
     setShowPrinterModal(false);
@@ -650,13 +670,19 @@ export default function LabelPrinterPage() {
       {/* ── Save Template Modal ──────────────────────────────────────────────── */}
       {showSaveModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setShowSaveModal(false)}>
+          onClick={closeSaveModal}>
           <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 28, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}><EmojiIcon glyph="💾" /> Save Label Template</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}><EmojiIcon glyph="💾" /> {editingId ? 'Edit Label Template' : 'Save Label Template'}</div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-              Save your current label setup — size, fields, font settings — so you can reload it instantly next time.
+              {editingId ? 'Rename this template, or replace what it saved with the label on screen now.' : 'Save your current label setup — size, fields, font settings — so you can reload it instantly next time.'}
             </p>
+            {editingId && (
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
+                <input type="checkbox" checked={replaceSettings} onChange={e => setReplaceSettings(e.target.checked)} />
+                Also replace its settings with the current label
+              </label>
+            )}
             <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Template name</div>
             <input
               autoFocus
@@ -670,7 +696,7 @@ export default function LabelPrinterPage() {
               Saving: <strong><EmojiIcon glyph={ENTITY_PRESETS[entityType]?.emoji} /> {ENTITY_PRESETS[entityType]?.label}</strong> · {size.name} · {fields.filter(f => f.show).length} fields
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowSaveModal(false)}
+              <button onClick={closeSaveModal}
                 style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>
                 Cancel
               </button>
@@ -711,6 +737,10 @@ export default function LabelPrinterPage() {
                     style={{ padding: '5px 10px', borderRadius: 6, border: 'none', background: 'var(--accent, #6366f1)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
                     Load
                   </button>
+                  <button onClick={() => editTemplate(tpl)} title="Edit template (rename or update)"
+                    style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                    Edit
+                  </button>
                   <button onClick={() => deleteTemplate(tpl.id)} title="Delete template"
                     style={{ width: 24, height: 24, borderRadius: 6, border: 'none', background: 'rgba(239,68,68,0.12)', color: '#ef4444', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
                     ×
@@ -726,8 +756,7 @@ export default function LabelPrinterPage() {
         {/* LEFT: Configuration */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Entity preset */}
-          <div className="card">
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>What are you labelling?</div>
+          <Fold title={"What are you labelling?"}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
               {Object.entries(ENTITY_PRESETS).map(([key, p]) => (
                 <button key={key} onClick={() => setEntityType(key)}
@@ -768,7 +797,7 @@ export default function LabelPrinterPage() {
                 )}
               </div>
             )}
-          </div>
+          </Fold>
 
           {/* Label size */}
           <div className="card">
@@ -792,14 +821,7 @@ export default function LabelPrinterPage() {
           </div>
 
           {/* Label Style Customisation */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}><EmojiIcon glyph="🎨" /> Label Style & Font</div>
-              <button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)}
-                style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                Reset all
-              </button>
-            </div>
+          <Fold title={<><EmojiIcon glyph="🎨" /> Label Style & Font</>} actions={<button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Reset all</button>}>
 
             {/* Font family */}
             <div style={{ marginBottom: 14 }}>
@@ -893,7 +915,7 @@ export default function LabelPrinterPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Fold>
 
           {/* Code options */}
           <div className="card">
@@ -927,16 +949,7 @@ export default function LabelPrinterPage() {
           </div>
 
           {/* Fields */}
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Label fields
-              </div>
-              <button onClick={addCustomField}
-                style={{ padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}>
-                + Add field
-              </button>
-            </div>
+          <Fold title={"Label fields"} actions={<button onClick={addCustomField} style={{ padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}>+ Add field</button>}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
               {fields.map(f => (
                 <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'auto 90px 1fr', gap: 6, alignItems: 'center' }}>
@@ -948,7 +961,7 @@ export default function LabelPrinterPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Fold>
 
           {batch.length > 0 && (
             <div className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>

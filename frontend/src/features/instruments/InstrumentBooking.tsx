@@ -9,11 +9,10 @@ import EmojiIcon from '../../components/EmojiIcon';
 import { PICK_KEY } from './instrumentQr';
 import BookingCalendar, { fmtMin } from './BookingCalendar';
 import { downloadIcs, googleCalendarUrl } from './calendarLinks';
+import { DATE_FORMATS, allTimeZones, dayIn, detectTimeZone, fmtClock, fmtDay, fmtWhen, timeIn, tzLabel, useDatePrefs, zonedToUtc } from '../../lib/datePrefs';
 
 const input: React.CSSProperties = { padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 3 };
-const when = (ms: number) => new Date(ms).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const today = () => new Date().toISOString().slice(0, 10);
 
 export const OTHER = '__other__';
 /** Common lab instruments, so adding one is a pick from a list. */
@@ -31,6 +30,10 @@ interface Confirmation { instrument: string; location?: string; start_time: numb
 /** Instruments and bookings on one screen: pick an instrument, choose a time, confirm. */
 export default function InstrumentBooking() {
   const { token } = useAuth();
+  const [prefs, setPrefs] = useDatePrefs();
+  const when = (ms: number) => fmtWhen(ms, prefs);
+  const today = () => dayIn(Date.now(), prefs.tz);
+  const zones = allTimeZones();
   const data = useQuery(api.instrumentBooking.overview, token ? { token } : 'skip');
   const book = useMutation(api.instrumentBooking.book);
   const cancel = useMutation(api.instrumentBooking.cancel);
@@ -74,8 +77,8 @@ export default function InstrumentBooking() {
 
   const submit = async () => {
     if (!token || !picked) return;
-    const start = new Date(`${date}T${from}`).getTime();
-    const end = new Date(`${toDate || date}T${to}`).getTime();
+    const start = zonedToUtc(date, from, prefs.tz);
+    const end = zonedToUtc(toDate || date, to, prefs.tz);
     const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
     setBusy(true);
     try {
@@ -146,7 +149,7 @@ export default function InstrumentBooking() {
                       style={{ flex: 1, minWidth: 160, background: 'none', border: 0, padding: 0, textAlign: 'left', color: 'var(--text)', cursor: i.bookable ? 'pointer' : 'default' }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{i.name}</div>
                       <div style={{ fontSize: 11, color: inUse ? '#b45309' : 'var(--text-muted)' }}>
-                        {[i.location, inUse ? `In use until ${new Date(inUse.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${inUse.person_name ?? inUse.user_name}` : i.bookable ? 'Free now' : '', next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}
+                        {[i.location, inUse ? `In use until ${fmtClock(inUse.end_time, prefs.tz)} · ${inUse.person_name ?? inUse.user_name}` : i.bookable ? 'Free now' : '', next && `next booked ${when(next.start_time)}`].filter(Boolean).join(' · ')}
                       </div>
                     </button>
                     <span style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg }}>{st.text}</span>
@@ -178,6 +181,22 @@ export default function InstrumentBooking() {
                 </span>
               )}
             </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'end', marginBottom: 10 }}>
+              <div style={{ flex: 2, minWidth: 200 }}>
+                <label style={lbl} htmlFor="bk-tz">Time zone</label>
+                <select id="bk-tz" value={prefs.auto ? '__auto__' : prefs.tz} onChange={(e) => { setDone(null); if (e.target.value === '__auto__') setPrefs({ auto: true }); else setPrefs({ auto: false, tz: e.target.value }); }} style={input}>
+                  <option value="__auto__">Auto-detect: {tzLabel(detectTimeZone())}</option>
+                  {zones.map((z) => <option key={z} value={z}>{tzLabel(z)}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 130 }}>
+                <label style={lbl} htmlFor="bk-fmt">Date format</label>
+                <select id="bk-fmt" value={prefs.format} onChange={(e) => setPrefs({ format: e.target.value as typeof prefs.format })} style={input}>
+                  {DATE_FORMATS.map((f) => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>Booking {fmtDay(date, prefs.format)} {from} to {fmtDay(toDate || date, prefs.format)} {to} ({prefs.tz}).</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div><label style={lbl} htmlFor="bk-lab">Lab name</label><input id="bk-lab" value={labName ?? data.lab} onChange={(e) => setLabName(e.target.value)} placeholder="Lab name" style={input} /></div>
               <div><label style={lbl} htmlFor="bk-person">Person name</label><input id="bk-person" value={personName ?? data.person} onChange={(e) => setPersonName(e.target.value)} placeholder="Your name" style={input} /></div>
@@ -192,10 +211,10 @@ export default function InstrumentBooking() {
               <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Length:</span>
               {[[30, '30 min'], [60, '1 h'], [120, '2 h'], [240, '4 h'], [480, 'Full day']].map(([mins, label]) => (
                 <button key={label} type="button" className="btn btn-sm btn-secondary" onClick={() => {
-                  const end = new Date(new Date(`${date}T${from}`).getTime() + (mins as number) * 60_000);
-                  const endDay = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+                  const end = zonedToUtc(date, from, prefs.tz) + (mins as number) * 60_000;
+                  const endDay = dayIn(end, prefs.tz);
                   setToDate(endDay === date ? '' : endDay);
-                  setTo(`${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`); setDone(null);
+                  setTo(timeIn(end, prefs.tz)); setDone(null);
                 }}>{label}</button>
               ))}
             </div>
@@ -225,7 +244,7 @@ export default function InstrumentBooking() {
             <h4 style={{ margin: '16px 0 6px', fontSize: 13 }}>Already booked</h4>
             {itsBookings.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nothing yet. Any time is free.</div> : itsBookings.map((b) => (
               <div key={b._id} style={{ fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ flex: 1 }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.person_name ?? b.user_name}{b.room ? ` · ${b.room}` : ''}{b.purpose ? ` · ${b.purpose}` : ''}</span>
+                <span style={{ flex: 1 }}>{when(b.start_time)} to {fmtClock(b.end_time, prefs.tz)} · {b.person_name ?? b.user_name}{b.room ? ` · ${b.room}` : ''}{b.purpose ? ` · ${b.purpose}` : ''}</span>
                 {b.can_cancel && <>
                   <button className="btn btn-sm btn-secondary" onClick={() => { if (confirm('Mark this booking complete? The instrument becomes free for others.')) act(() => complete({ token: token!, id: b._id }), 'Booking completed'); }}>Complete</button>
                   <button className="btn btn-sm btn-secondary" onClick={() => { if (confirm('Cancel this booking?')) act(() => cancel({ token: token!, id: b._id }), 'Booking cancelled'); }}>Cancel</button>
@@ -258,7 +277,7 @@ export default function InstrumentBooking() {
               <div key={b._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none' }}>
                 <div style={{ flex: 1, minWidth: 220 }}>
                   <div style={{ fontWeight: 600 }}>{instruments.find((i) => i._id === b.instrument_id)?.name ?? 'Instrument'} · {b.person_name ?? b.user_name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{b.purpose ? ` · ${b.purpose}` : ''}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {fmtClock(b.end_time, prefs.tz)}{b.purpose ? ` · ${b.purpose}` : ''}</div>
                 </div>
                 <button className="btn btn-primary btn-sm" onClick={() => act(() => decide({ token: token!, id: b._id, approve: true }), 'Approved')}>Approve</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => act(() => decide({ token: token!, id: b._id, approve: false }), 'Declined')}>Decline</button>
@@ -277,7 +296,7 @@ export default function InstrumentBooking() {
               <div key={b._id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px', flexWrap: 'wrap', borderTop: n ? '1px solid var(--border)' : 'none' }}>
                 <div style={{ flex: 1, minWidth: 220 }}>
                   <div style={{ fontWeight: 600 }}>{instruments.find((i) => i._id === b.instrument_id)?.name ?? 'Instrument'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{[b.room, b.lab_name, b.purpose].filter(Boolean).map((x) => ` · ${x}`).join('')}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{when(b.start_time)} to {fmtClock(b.end_time, prefs.tz)}{[b.room, b.lab_name, b.purpose].filter(Boolean).map((x) => ` · ${x}`).join('')}</div>
                 </div>
                 <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
                   <input type="checkbox" checked={!!b.remind_every_2_days} disabled={b.start_time <= Date.now()} onChange={(e) => act(() => setReminder({ token: token!, id: b._id, on: e.target.checked }), e.target.checked ? 'Reminders on' : 'Reminders off')} />

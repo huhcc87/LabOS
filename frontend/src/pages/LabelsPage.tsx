@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import LabelPrinterPage from './LabelPrinterPage';
 import ScanStore from '../features/labels/ScanStore';
 import BarcodeLabelsPage from './BarcodeLabelsPage';
+import LabelsHowToUse from '../features/labels/LabelsHowToUse';
 
 /** One place for labels: print them, then scan them to store the sample. */
 export default function LabelsPage({ scanCode }: { scanCode?: string }) {
@@ -12,6 +13,7 @@ export default function LabelsPage({ scanCode }: { scanCode?: string }) {
 
   return (
     <div>
+      <LabelsHowToUse />
       <div role="tablist" aria-label="Labels" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
         {([['print', 'Print labels'], ['stock', 'Reagent & lot labels'], ['scan', 'Scan & store']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
