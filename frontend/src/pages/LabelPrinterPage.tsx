@@ -216,15 +216,40 @@ function LabelInner({
 
   // QR size driven by typo.qrPct — user-controlled
   const qrMax = h - (isTiny ? 2 : 6);
-  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100)) * Math.max(fit, 0.6);
+  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100)) * Math.max(fit, 0.4);
 
   // UID display: show last segment on tiny, full on standard
   const uidDisplay = isTiny ? uid.split('-').slice(-1)[0] : uid;
 
   const ff = FONT_FAMILIES[typo.fontFamily]?.css ?? FONT_FAMILIES.system.css;
 
+  const brandLine = (
+    <div key="brand" style={{ fontSize: `${typo.uidPt * fit}pt`, fontFamily: ff, color: typo.fieldLabelColor, lineHeight: 1, wordBreak: 'break-all' }}>
+      {brand} · {uidDisplay}
+    </div>
+  );
+  const nameLine = fields[0]?.show && fields[0]?.value ? (
+    <div key="name" style={{ fontSize: `${typo.namePt * fit}pt`, fontWeight: 800, lineHeight: 1.15, color: typo.nameColor, fontFamily: ff, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+      {fields[0].value}
+    </div>
+  ) : null;
+  const fieldNode = (f: LabelField) => (
+    <div key={f.key} style={{ fontSize: `${typo.fieldPt * fit}pt`, fontWeight: 600, lineHeight: 1.1, color: typo.fieldColor, fontFamily: ff, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+      <span style={{ color: typo.fieldLabelColor, fontWeight: 400 }}>{f.label}: </span>
+      {f.value}
+    </div>
+  );
+  // One code in the middle; the details sit around it: brand + name above, the other fields left and right.
+  const rest = visibleFields.slice(1);
+  const half = Math.ceil(rest.length / 2);
+  const leftNodes = rest.slice(0, half).map(fieldNode);
+  const rightNodes = rest.slice(half).map(fieldNode);
+  const header = [brandLine, nameLine];
+  const sideStyle = (align: 'left' | 'right'): React.CSSProperties => ({ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1, textAlign: align, overflow: 'hidden' });
+
   return (
     <div
+      ref={textRef}
       className="label-card"
       style={{
         width: w, height: h,
@@ -235,75 +260,31 @@ function LabelInner({
         boxSizing: 'border-box',
         padding: isTiny ? 2 : 4,
         overflow: 'hidden',
-        display: 'flex', flexDirection: 'row',
-        gap: 3, alignItems: 'stretch',
+        display: 'flex', flexDirection: 'column', gap: 2,
       }}
     >
-      {/* Left: QR / barcode */}
-      {(showQr || showBarcode) && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
-          {showQr && <Barcode value={qrValueFor(uid)} type={codeType} width={qrSize} height={qrSize} />}
-          {showBarcode && !showQr && (
-            <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
-              showText textSize={typo.uidPt} />
-          )}
+      {!isTiny && <div style={{ display: 'flex', flexDirection: 'column', gap: 1, textAlign: 'center', flexShrink: 0 }}>{header}</div>}
+
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={sideStyle('left')}>{isTiny ? header : null}{leftNodes}</div>
+        {(showQr || showBarcode) && (
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
+            {showQr && <Barcode value={qrValueFor(uid)} type={codeType} width={qrSize} height={qrSize} />}
+            {showBarcode && !showQr && (
+              <Barcode value={uid} type="barcode" width={w * 0.45} height={Math.min(h * 0.5, 50)} showText textSize={typo.uidPt} />
+            )}
+          </div>
+        )}
+        <div style={sideStyle('right')}>{rightNodes}</div>
+      </div>
+
+      {/* Dual-code: barcode strip under the QR */}
+      {showQr && showBarcode && !isTiny && (
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+          <Barcode value={uid} type="barcode" width={w * 0.6} height={h * 0.14} showText={false} />
         </div>
       )}
-
-      {/* Right: all text fields — unified layout, wrapping allowed */}
-      <div ref={textRef} style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1, overflow: 'hidden' }}>
-
-        {/* Brand + UID */}
-        <div style={{
-          fontSize: `${typo.uidPt * fit}pt`,
-          fontFamily: ff,
-          color: typo.fieldLabelColor,
-          lineHeight: 1,
-          wordBreak: 'break-all',
-          marginBottom: 1,
-        }}>
-          {brand} · {uidDisplay}
-        </div>
-
-        {/* Name — largest */}
-        {fields[0]?.show && fields[0]?.value && (
-          <div style={{
-            fontSize: `${typo.namePt * fit}pt`,
-            fontWeight: 800,
-            lineHeight: 1.15,
-            color: typo.nameColor,
-            fontFamily: ff,
-            wordBreak: 'break-word',
-            overflowWrap: 'anywhere',
-          }}>
-            {fields[0].value}
-          </div>
-        )}
-
-        {/* All remaining visible fields */}
-        {visibleFields.slice(1).map(f => (
-          <div key={f.key} style={{
-            fontSize: `${typo.fieldPt * fit}pt`,
-            fontWeight: 600,
-            lineHeight: 1.1,
-            color: typo.fieldColor,
-            fontFamily: ff,
-            wordBreak: 'break-word',
-            overflowWrap: 'anywhere',
-          }}>
-            <span style={{ color: typo.fieldLabelColor, fontWeight: 400 }}>{f.label}: </span>
-            {f.value}
-          </div>
-        ))}
-
-        {/* Dual-code: barcode strip below fields */}
-        {showQr && showBarcode && !isTiny && (
-          <div style={{ marginTop: 2 }}>
-            <Barcode value={uid} type="barcode" width={w * 0.55} height={h * 0.18} showText={false} />
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -583,6 +564,7 @@ export default function LabelPrinterPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       <style>{`
+        .label-print-area { position: absolute; left: -10000px; top: 0; }
         @media print {
           body * { visibility: hidden; }
           .label-print-area, .label-print-area * { visibility: visible; }
