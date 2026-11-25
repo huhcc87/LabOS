@@ -82,6 +82,9 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx, args.token);
     const { token: _, ...fields } = args;
+    fields.sample_id = fields.sample_id.trim();
+    const clash = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", fields.sample_id)).first();
+    if (clash) throw new Error(`Sample ID ${fields.sample_id} is already used.`);
     const now = Date.now();
     return await ctx.db.insert("samples", {
       ...fields,
@@ -95,6 +98,7 @@ export const update = mutation({
   args: {
     token: v.optional(v.string()),
     id: v.id("samples"),
+    sample_id: v.optional(v.string()),
     name: v.optional(v.string()),
     type: v.optional(v.string()),
     status: v.optional(v.string()),
@@ -108,6 +112,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx, args.token);
     const { id, token: _, ...fields } = args;
+    if (fields.sample_id !== undefined) {
+      fields.sample_id = fields.sample_id.trim();
+      if (!fields.sample_id) throw new Error("Sample ID can't be empty.");
+      const clash = await ctx.db.query("samples").withIndex("by_sample_id", (q) => q.eq("sample_id", fields.sample_id!)).first();
+      if (clash && clash._id !== id) throw new Error(`Sample ID ${fields.sample_id} is already used.`);
+    }
     const patch: Record<string, unknown> = { updated_at: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;

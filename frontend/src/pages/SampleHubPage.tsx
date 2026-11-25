@@ -146,6 +146,12 @@ export default function SampleHubPage() {
   const typeOptions = uniq([...SAMPLE_TYPES, ...samples.map(s => s.type)]);
   const locationOptions = uniq([...(freezers ?? []).map(fz => fz.name), ...STORAGE_LOCATIONS, ...samples.map(s => s.location)]);
   const statusOptions = uniq([...DEFAULT_STATUSES, ...samples.map(s => s.status)]);
+  // Owner / collected by: you first, then everyone already named on a sample; "+ Custom…" adds someone new.
+  const { user: me } = useAuth();
+  const myName: string = me?.full_name || me?.name || '';
+  const ownerOptions = uniq([myName, ...samples.map(s => s.owner)].filter(n => n && n !== 'Unknown'));
+  const unitOptions = uniq([...QUANTITY_UNITS, ...samples.map(s => s.unit)]);
+  const parentOptions = samples.map(s => s.sampleId);
 
   const evLab = useLabSampleEvents(token, samples);
   const events = evLab.events;
@@ -219,6 +225,7 @@ export default function SampleHubPage() {
 
   // Form state for new sample
   const [newSample, setNewSample] = useState({
+    sampleId: '', // blank = next sequential ID
     type: '',
     customType: '',
     location: '',
@@ -247,14 +254,10 @@ export default function SampleHubPage() {
   };
 
   // Generate Sample ID
-  const generateSampleId = () => {
-    // Unbiased 6-digit number: reject draws above the largest multiple of 900000.
-    const LIMIT = Math.floor(0x100000000 / 900000) * 900000;
-    let r = crypto.getRandomValues(new Uint32Array(1))[0];
-    while (r >= LIMIT) r = crypto.getRandomValues(new Uint32Array(1))[0];
-    const num = (r % 900000) + 100000;
-    return `SMP-${num}`;
-  };
+  // Next ID in order: highest SMP-number in the lab + 1 (SMP-000001 for the first sample).
+  const idFor = (n: number) => `SMP-${String(n).padStart(6, '0')}`;
+  const topSampleNumber = () => samples.reduce((m, s) => { const n = /^SMP-(\d+)$/i.exec(s.sampleId.trim()); return n ? Math.max(m, Number(n[1])) : m; }, 0);
+  const nextSampleId = () => idFor(topSampleNumber() + 1);
 
   // Status colors
   const knownStatusColors: Record<string, { bg: string; text: string }> = {
@@ -324,7 +327,11 @@ export default function SampleHubPage() {
       return;
     }
 
-    const sampleId = generateSampleId();
+    const sampleId = newSample.sampleId.trim() || nextSampleId();
+    if (samples.some(s => s.sampleId.toLowerCase() === sampleId.toLowerCase())) {
+      showToast(`Sample ID ${sampleId} is already used.`, 'error');
+      return;
+    }
     try {
       await lab.create({
         sampleId, type, status: newSample.status.trim() || 'processing', location,
@@ -339,7 +346,7 @@ export default function SampleHubPage() {
     catch (e) { showToast(errText(e), 'error'); }
 
     const created = { sampleId, type, owner: newSample.owner, date: localDate(new Date()), location, quantity: newSample.quantity, unit: newSample.unit, notes: newSample.notes };
-    setNewSample({ type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '', status: 'processing' });
+    setNewSample({ sampleId: '', type: '', customType: '', location: '', customLocation: '', owner: '', quantity: '', unit: 'mL', temperature: '', notes: '', parentSampleId: '', status: 'processing' });
     setShowSampleModal(false);
     showToast('Sample created successfully!', 'success');
     if (print) printSampleLabels([created]);
@@ -350,9 +357,21 @@ export default function SampleHubPage() {
     if (!viewSample) return;
     try {
       const { id, ...rest } = viewSample;
-      const next = { ...rest, type: rest.type.trim(), location: rest.location.trim(), status: rest.status.trim() || 'processing' };
+      const next = { ...rest, sampleId: rest.sampleId.trim(), type: rest.type.trim(), location: rest.location.trim(), status: rest.status.trim() || 'processing' };
       const before = samples.find(x => x.id === id);
-      await lab.update(id, next);
+      if (!next.sampleId) { showToast('Sample ID can\'t be empty.', 'error'); return; }
+      if (samples.some(x => x.id !== id && x.sampleId.toLowerCase() === next.sampleId.toLowerCase())) { showToast(`Sample ID ${next.sampleId} is already used.`, 'error'); return; }
+      // Only send sampleId when it changed, so ordinary edits never depend on the rename field.
+      const renamed = !!before && before.sampleId !== next.sampleId;
+      const { sampleId: _keep, ...withoutId } = next;
+      await lab.update(id, renamed ? next : withoutId);
+      // Samples derived from this one keep pointing at it under the new ID.
+      if (renamed) {
+        await Promise.all(samples.filter(x => x.parentSampleId === before!.sampleId).map(x => {
+          const { sampleId: _own, ...child } = x;
+          return lab.update(x.id, { ...child, parentSampleId: next.sampleId });
+        }));
+      }
       if (before) {
         const changes = diffEvents(before, { ...before, ...next });
         await Promise.all(changes.map(c => evLab.add(before.sampleId, c.event, c.details)));
@@ -755,7 +774,7 @@ export default function SampleHubPage() {
 
         headers.forEach((header, idx) => {
           const value = values[idx] || '';
-          if (header.includes('id') || header.includes('sample')) sample.sampleId = value || generateSampleId();
+          if (header.includes('id') || header.includes('sample')) sample.sampleId = value; // blank: numbered in order on import
           else if (header.includes('type')) sample.type = value;
           else if (header.includes('status')) sample.status = value as Sample['status'];
           else if (header.includes('location')) sample.location = value;
@@ -784,8 +803,9 @@ export default function SampleHubPage() {
   };
 
   const confirmImport = async () => {
+    let counter = topSampleNumber();
     const newSamples = importedData.map((data) => ({
-      sampleId: data.sampleId || generateSampleId(),
+      sampleId: data.sampleId || idFor(++counter),
       type: data.type || 'Unknown',
       status: data.status || 'processing',
       location: data.location || 'Lab Bench',
@@ -1653,6 +1673,11 @@ export default function SampleHubPage() {
 
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }} htmlFor="new-sample-id">Sample ID</label>
+                <input id="new-sample-id" type="text" className="form-input" placeholder={`${nextSampleId()} (next in order, or type your own)`}
+                  value={newSample.sampleId} onChange={e => setNewSample({ ...newSample, sampleId: e.target.value })} />
+              </div>
+              <div>
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Sample Type *</label>
                 <select className="form-select" value={newSample.type} onChange={e => setNewSample({ ...newSample, type: e.target.value })} style={{ width: '100%' }}>
                   <option value="">Select type...</option>
@@ -1684,9 +1709,9 @@ export default function SampleHubPage() {
               </div>
 
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Owner / Collector</label>
-                <input type="text" className="form-input" placeholder="Enter name..." value={newSample.owner}
-                  onChange={e => setNewSample({ ...newSample, owner: e.target.value })} />
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Owner / Collected by</label>
+                <SelectOrCustom label="Owner / Collected by" noneLabel="Select a person…" options={ownerOptions} value={newSample.owner}
+                  onChange={v => setNewSample({ ...newSample, owner: v })} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
@@ -1697,9 +1722,7 @@ export default function SampleHubPage() {
                 </div>
                 <div>
                   <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Unit</label>
-                  <select className="form-select" value={newSample.unit} onChange={e => setNewSample({ ...newSample, unit: e.target.value })} style={{ width: '100%' }}>
-                    {QUANTITY_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  <SelectOrCustom label="Unit" options={unitOptions} value={newSample.unit} onChange={v => setNewSample({ ...newSample, unit: v })} />
                 </div>
               </div>
 
@@ -1713,10 +1736,7 @@ export default function SampleHubPage() {
 
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Parent Sample (if derived)</label>
-                <select className="form-select" value={newSample.parentSampleId} onChange={e => setNewSample({ ...newSample, parentSampleId: e.target.value })} style={{ width: '100%' }}>
-                  <option value="">None (New Sample)</option>
-                  {samples.map(s => <option key={s.id} value={s.sampleId}>{s.sampleId} - {s.type}</option>)}
-                </select>
+                <SelectOrCustom label="Parent Sample" noneLabel="None (New Sample)" options={parentOptions} value={newSample.parentSampleId} onChange={v => setNewSample({ ...newSample, parentSampleId: v })} />
               </div>
 
               <div>
@@ -1751,6 +1771,14 @@ export default function SampleHubPage() {
 
             {editMode ? (
               <div style={{ display: 'grid', gap: 16 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }} htmlFor="edit-sample-id">Sample ID</label>
+                  <input id="edit-sample-id" type="text" className="form-input" value={viewSample.sampleId} onChange={e => setViewSample({ ...viewSample, sampleId: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Parent Sample (if derived)</label>
+                  <SelectOrCustom label="Parent Sample" noneLabel="None" options={parentOptions.filter(p => p !== viewSample.sampleId)} value={viewSample.parentSampleId ?? ''} onChange={v => setViewSample({ ...viewSample, parentSampleId: v || undefined })} />
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
@@ -1764,6 +1792,20 @@ export default function SampleHubPage() {
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Location</label>
                   <SelectOrCustom label="Location" noneLabel="— No location —" options={locationOptions} value={viewSample.location} onChange={v => setViewSample({ ...viewSample, location: v })} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Owner / Collected by</label>
+                  <SelectOrCustom label="Owner / Collected by" noneLabel="Select a person…" options={ownerOptions} value={viewSample.owner} onChange={v => setViewSample({ ...viewSample, owner: v })} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Quantity</label>
+                    <input type="text" className="form-input" value={viewSample.quantity} onChange={e => setViewSample({ ...viewSample, quantity: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Unit</label>
+                    <SelectOrCustom label="Unit" options={unitOptions} value={viewSample.unit} onChange={v => setViewSample({ ...viewSample, unit: v })} />
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</label>
