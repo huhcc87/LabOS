@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import Barcode from '../components/Barcode';
 import toast from 'react-hot-toast';
 import { useMutation, useQuery } from 'convex/react';
@@ -170,8 +170,18 @@ interface LabelTemplate {
   typo: Typography;
 }
 
+const MIN_FIT = 0.3;
+
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
-function LabelCard({
+type LabelCardProps = React.ComponentProps<typeof LabelInner>;
+
+/** Remounts the label whenever its content or size changes, so the auto-fit below starts again from full size. */
+function LabelCard(props: LabelCardProps) {
+  const sig = JSON.stringify([props.size.widthMm, props.size.heightMm, props.fields, props.uid, props.codeType, props.showQr, props.showBarcode, props.brand, props.typo]);
+  return <LabelInner key={sig} {...props} />;
+}
+
+function LabelInner({
   size, fields, uid, codeType, showQr, showBarcode, brand, typo,
 }: {
   size: LabelSize;
@@ -184,6 +194,15 @@ function LabelCard({
   typo: Typography;
 }) {
   const pxPerMm = 3.78;
+  // Auto-fit: shrink text (and the code a little) in small steps until everything fits the label.
+  const [fit, setFit] = useState(1);
+  const textRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el || !el.clientHeight) return; // hidden: nothing to measure
+    const over = el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+    if (over && fit > MIN_FIT) setFit(+(fit - 0.05).toFixed(2));
+  }, [fit]);
   const w = size.widthMm * pxPerMm;
   const h = size.heightMm * pxPerMm;
 
@@ -192,7 +211,7 @@ function LabelCard({
 
   // QR size driven by typo.qrPct — user-controlled
   const qrMax = h - (isTiny ? 2 : 6);
-  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100));
+  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100)) * Math.max(fit, 0.6);
 
   // UID display: show last segment on tiny, full on standard
   const uidDisplay = isTiny ? uid.split('-').slice(-1)[0] : uid;
@@ -228,12 +247,24 @@ function LabelCard({
       )}
 
       {/* Right: all text fields — unified layout, wrapping allowed */}
-      <div style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1, overflow: 'hidden' }}>
+      <div ref={textRef} style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1, overflow: 'hidden' }}>
+
+        {/* Brand + UID */}
+        <div style={{
+          fontSize: `${typo.uidPt * fit}pt`,
+          fontFamily: ff,
+          color: typo.fieldLabelColor,
+          lineHeight: 1,
+          wordBreak: 'break-all',
+          marginBottom: 1,
+        }}>
+          {brand} · {uidDisplay}
+        </div>
 
         {/* Name — largest */}
         {fields[0]?.show && fields[0]?.value && (
           <div style={{
-            fontSize: typo.namePt,
+            fontSize: `${typo.namePt * fit}pt`,
             fontWeight: 800,
             lineHeight: 1.15,
             color: typo.nameColor,
@@ -248,7 +279,7 @@ function LabelCard({
         {/* All remaining visible fields */}
         {visibleFields.slice(1).map(f => (
           <div key={f.key} style={{
-            fontSize: typo.fieldPt,
+            fontSize: `${typo.fieldPt * fit}pt`,
             fontWeight: 600,
             lineHeight: 1.1,
             color: typo.fieldColor,
@@ -260,18 +291,6 @@ function LabelCard({
             {f.value}
           </div>
         ))}
-
-        {/* Brand + UID */}
-        <div style={{
-          fontSize: typo.uidPt,
-          fontFamily: ff,
-          color: typo.fieldLabelColor,
-          lineHeight: 1,
-          wordBreak: 'break-all',
-          marginTop: 1,
-        }}>
-          {brand} · {uidDisplay}
-        </div>
 
         {/* Dual-code: barcode strip below fields */}
         {showQr && showBarcode && !isTiny && (
