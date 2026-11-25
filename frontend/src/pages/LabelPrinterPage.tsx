@@ -172,6 +172,11 @@ interface LabelTemplate {
 
 const MIN_FIT = 0.3;
 
+// The label you were working on is remembered in this browser, so it is still there next visit.
+const DRAFT_KEY = 'labos_label_draft';
+type LabelDraft = Partial<Pick<LabelTemplate, 'entityType' | 'sizeId' | 'customW' | 'customH' | 'codeType' | 'showQr' | 'showBarcode' | 'brand' | 'fields' | 'copies' | 'typo'>>;
+const readDraft = (): LabelDraft => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') ?? {}; } catch { return {}; } };
+
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
 type LabelCardProps = React.ComponentProps<typeof LabelInner>;
 
@@ -313,15 +318,16 @@ export default function LabelPrinterPage() {
   const ALL = '__all__';
   const NEW = 'new:';
   const [instPick, setInstPick] = useState('');
-  const [entityType, setEntityType] = useState('sample');
-  const [sizeId, setSizeId] = useState('dymo30334');
-  const [customW, setCustomW] = useState('40');
-  const [customH, setCustomH] = useState('20');
-  const [codeType, setCodeType] = useState<'qrcode' | 'datamatrix'>('qrcode');
-  const [showQr, setShowQr] = useState(true);
-  const [showBarcode, setShowBarcode] = useState(false);
-  const [brand, setBrand] = useState('LabOS');
-  const [fields, setFields] = useState<LabelField[]>(DEFAULT_FIELDS);
+  const draft = useRef<LabelDraft>(readDraft()).current;
+  const [entityType, setEntityType] = useState(draft.entityType ?? 'sample');
+  const [sizeId, setSizeId] = useState(draft.sizeId ?? 'cryo');
+  const [customW, setCustomW] = useState(draft.customW ?? '40');
+  const [customH, setCustomH] = useState(draft.customH ?? '20');
+  const [codeType, setCodeType] = useState<'qrcode' | 'datamatrix'>(draft.codeType ?? 'qrcode');
+  const [showQr, setShowQr] = useState(draft.showQr ?? true);
+  const [showBarcode, setShowBarcode] = useState(draft.showBarcode ?? false);
+  const [brand, setBrand] = useState(draft.brand ?? 'LabOS');
+  const [fields, setFields] = useState<LabelField[]>(draft.fields ?? DEFAULT_FIELDS);
   const [uid, setUid] = useState(generateLabId());
   // Samples sent from Sample Hub: one label each, with the details already typed there (entered once).
   const [batch, setBatch] = useState<LabelHandoff[]>(() => {
@@ -350,8 +356,11 @@ export default function LabelPrinterPage() {
     setBatch(list.map(instLabel));
     if (v) setShowBarcode(true);
   };
-  const [copies, setCopies] = useState(1);
-  const [typo, setTypo] = useState<Typography>(DEFAULT_TYPOGRAPHY);
+  const [copies, setCopies] = useState(draft.copies ?? 1);
+  const [typo, setTypo] = useState<Typography>(draft.typo ?? DEFAULT_TYPOGRAPHY);
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo })); } catch { /* storage full or blocked */ }
+  }, [entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo]);
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const [showPrinterModal, setShowPrinterModal] = useState(false);
@@ -402,7 +411,10 @@ export default function LabelPrinterPage() {
     : LABEL_SIZES.find(s => s.id === sizeId) ?? LABEL_SIZES[0], [sizeId, customW, customH]);
 
   // Apply preset visibility when entity type changes
+  const presetReady = useRef(false);
   useEffect(() => {
+    // Skip the first run so fields restored from the saved draft keep the user's edits.
+    if (!presetReady.current) { presetReady.current = true; if (draft.fields) return; }
     const preset = ENTITY_PRESETS[entityType];
     setFields(prev => prev.map(f => {
       const override = preset.fields[f.key];
