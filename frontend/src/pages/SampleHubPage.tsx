@@ -361,10 +361,16 @@ export default function SampleHubPage() {
       const before = samples.find(x => x.id === id);
       if (!next.sampleId) { showToast('Sample ID can\'t be empty.', 'error'); return; }
       if (samples.some(x => x.id !== id && x.sampleId.toLowerCase() === next.sampleId.toLowerCase())) { showToast(`Sample ID ${next.sampleId} is already used.`, 'error'); return; }
-      await lab.update(id, next);
+      // Only send sampleId when it changed, so ordinary edits never depend on the rename field.
+      const renamed = !!before && before.sampleId !== next.sampleId;
+      const { sampleId: _keep, ...withoutId } = next;
+      await lab.update(id, renamed ? next : withoutId);
       // Samples derived from this one keep pointing at it under the new ID.
-      if (before && before.sampleId !== next.sampleId) {
-        await Promise.all(samples.filter(x => x.parentSampleId === before.sampleId).map(x => lab.update(x.id, { ...x, parentSampleId: next.sampleId })));
+      if (renamed) {
+        await Promise.all(samples.filter(x => x.parentSampleId === before!.sampleId).map(x => {
+          const { sampleId: _own, ...child } = x;
+          return lab.update(x.id, { ...child, parentSampleId: next.sampleId });
+        }));
       }
       if (before) {
         const changes = diffEvents(before, { ...before, ...next });
