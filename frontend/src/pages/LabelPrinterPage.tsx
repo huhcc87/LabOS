@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import Barcode from '../components/Barcode';
 import toast from 'react-hot-toast';
 import { useMutation, useQuery } from 'convex/react';
@@ -132,6 +132,21 @@ interface Typography {
   fieldLabelColor: string;
   labelBg: string;
   borderColor: string;
+  brandColor: string;
+  fontCustom: string;          // any installed font name, tried before the chosen family
+  nameWeight: number;
+  fieldWeight: number;
+  italicName: boolean;
+  lineHeight: number;
+  letterSpacing: number;       // px
+  align: 'left' | 'center' | 'right';
+  qrSide: 'left' | 'right';
+  showHeader: boolean;
+  showFieldLabels: boolean;
+  upperLabels: boolean;
+  borderStyle: 'dashed' | 'solid' | 'none';
+  radius: number;              // px
+  spacing: number;             // % of the automatic padding and gaps
 }
 
 const DEFAULT_TYPOGRAPHY: Typography = {
@@ -142,7 +157,16 @@ const DEFAULT_TYPOGRAPHY: Typography = {
   fieldLabelColor: '#94a3b8',
   labelBg: '#ffffff',
   borderColor: '#94a3b8',
+  brandColor: '#94a3b8',
+  fontCustom: '',
+  nameWeight: 800, fieldWeight: 600, italicName: false,
+  lineHeight: 1.12, letterSpacing: 0,
+  align: 'left', qrSide: 'left',
+  showHeader: true, showFieldLabels: true, upperLabels: false,
+  borderStyle: 'dashed', radius: 0, spacing: 100,
 };
+/** Older saved labels and templates lack the newer options, so fill them from the defaults. */
+const withTypoDefaults = (t?: Partial<Typography>): Typography => ({ ...DEFAULT_TYPOGRAPHY, ...(t ?? {}) });
 
 const FONT_FAMILIES: Record<string, { label: string; css: string }> = {
   system:    { label: 'System (default)',  css: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
@@ -170,8 +194,23 @@ interface LabelTemplate {
   typo: Typography;
 }
 
+const MIN_FIT = 0.3;
+
+// The label you were working on is remembered in this browser, so it is still there next visit.
+const DRAFT_KEY = 'labos_label_draft';
+type LabelDraft = Partial<Pick<LabelTemplate, 'entityType' | 'sizeId' | 'customW' | 'customH' | 'codeType' | 'showQr' | 'showBarcode' | 'brand' | 'fields' | 'copies' | 'typo'>>;
+const readDraft = (): LabelDraft => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') ?? {}; } catch { return {}; } };
+
 // ─── Single-label preview (used both on-screen and in print) ──────────────────
-function LabelCard({
+type LabelCardProps = React.ComponentProps<typeof LabelInner>;
+
+/** Remounts the label whenever its content or size changes, so the auto-fit below starts again from full size. */
+function LabelCard(props: LabelCardProps) {
+  const sig = JSON.stringify([props.size.widthMm, props.size.heightMm, props.fields, props.uid, props.codeType, props.showQr, props.showBarcode, props.brand, props.typo]);
+  return <LabelInner key={sig} {...props} />;
+}
+
+function LabelInner({
   size, fields, uid, codeType, showQr, showBarcode, brand, typo,
 }: {
   size: LabelSize;
@@ -184,102 +223,130 @@ function LabelCard({
   typo: Typography;
 }) {
   const pxPerMm = 3.78;
+  // Auto-fit: shrink text (and the code a little) in small steps until everything fits the label.
+  const [fit, setFit] = useState(1);
+  const textRef = useRef<HTMLDivElement>(null);
+  const colRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el || !el.clientHeight) return; // hidden: nothing to measure
+    // The details column clips its own overflow, so check it as well as the whole label.
+    const clipped = (e: HTMLElement | null) => !!e && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
+    const over = clipped(el) || clipped(colRef.current);
+    if (over && fit > MIN_FIT) setFit(+(fit - 0.05).toFixed(2));
+  }, [fit]);
   const w = size.widthMm * pxPerMm;
   const h = size.heightMm * pxPerMm;
 
   const isTiny = size.heightMm < 14;
   const visibleFields = fields.filter(f => f.show && f.value.trim());
 
-  // QR size driven by typo.qrPct — user-controlled
-  const qrMax = h - (isTiny ? 2 : 6);
-  const qrSize = Math.max(8, Math.min(qrMax, (h * typo.qrPct) / 100));
+  // Everything scales with the label: 50 × 30 mm is the reference, so big labels get bigger text and small ones smaller.
+  const base = Math.min(2.4, Math.max(0.55, Math.min(w / 189, h / 113)));
+  const pad = Math.max(2, Math.round(Math.min(w, h) * 0.05 * (typo.spacing / 100)));
+  const showHeader = typo.showHeader && !isTiny;
+  const hasCode = showQr || showBarcode;
+  const barcodeOnly = showBarcode && !showQr;
+  const stripH = Math.max(10, h * 0.13);
 
-  // UID display: show last segment on tiny, full on standard
-  const uidDisplay = isTiny ? uid.split('-').slice(-1)[0] : uid;
+  // QR: as tall as the label allows (leaving room for the header/strip), never more than ~42% of the width.
+  const roomH = h - 2 - pad * 2 - (showHeader ? base * typo.uidPt * 2.6 : 0) - (showQr && showBarcode && !isTiny ? stripH + 3 : 0);
+  const qrSize = Math.max(8, Math.min(roomH * (typo.qrPct / 60), w * 0.42)) * Math.max(fit, 0.4);
 
-  const ff = FONT_FAMILIES[typo.fontFamily]?.css ?? FONT_FAMILIES.system.css;
+  const baseFf = FONT_FAMILIES[typo.fontFamily]?.css ?? FONT_FAMILIES.system.css;
+  const custom = typo.fontCustom.replace(/["';{}\\]/g, '').trim();
+  const ff = custom ? `"${custom}", ${baseFf}` : baseFf;
+  const sz = (pt: number) => `${(pt * base * fit).toFixed(2)}pt`;
+  const rule = `${Math.max(1, Math.round(base))}px solid ${typo.fieldLabelColor}55`;
+
+  const rest = visibleFields.slice(1);
 
   return (
     <div
+      ref={textRef}
       className="label-card"
       style={{
         width: w, height: h,
         background: typo.labelBg,
         color: typo.nameColor,
-        border: `1px dashed ${typo.borderColor}`,
+        border: typo.borderStyle === 'none' ? 'none' : `1px ${typo.borderStyle} ${typo.borderColor}`,
+        borderRadius: typo.radius,
         fontFamily: ff,
+        letterSpacing: typo.letterSpacing || undefined,
         boxSizing: 'border-box',
-        padding: isTiny ? 2 : 4,
+        padding: pad,
         overflow: 'hidden',
-        display: 'flex', flexDirection: 'row',
-        gap: 3, alignItems: 'stretch',
+        display: 'flex', flexDirection: 'column', gap: Math.max(1, Math.round(pad * 0.6)),
       }}
     >
-      {/* Left: QR / barcode */}
-      {(showQr || showBarcode) && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
-          {showQr && <Barcode value={qrValueFor(uid)} type={codeType} width={qrSize} height={qrSize} />}
-          {showBarcode && !showQr && (
-            <Barcode value={uid} type="barcode" width={w * 0.55} height={Math.min(h * 0.7, 50)}
-              showText textSize={typo.uidPt} />
-          )}
+      {/* Header: brand on the left, label ID on the right */}
+      {showHeader && (
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, paddingBottom: Math.max(1, Math.round(pad * 0.4)), borderBottom: rule, fontSize: sz(typo.uidPt), lineHeight: 1.1, color: typo.brandColor }}>
+          <span style={{ fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{brand}</span>
+          <span style={{ fontFamily: FONT_FAMILIES.mono.css, minWidth: 0, wordBreak: 'break-all', textAlign: 'right' }}>{uid}</span>
         </div>
       )}
 
-      {/* Right: all text fields — unified layout, wrapping allowed */}
-      <div style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1, overflow: 'hidden' }}>
-
-        {/* Name — largest */}
-        {fields[0]?.show && fields[0]?.value && (
-          <div style={{
-            fontSize: typo.namePt,
-            fontWeight: 800,
-            lineHeight: 1.15,
-            color: typo.nameColor,
-            fontFamily: ff,
-            wordBreak: 'break-word',
-            overflowWrap: 'anywhere',
-          }}>
-            {fields[0].value}
+      {/* Body: code on the left, details on the right */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: typo.qrSide === 'right' ? 'row-reverse' : 'row', alignItems: 'center', gap: Math.max(3, pad) }}>
+        {showQr && (
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            {/* ponytail: QR holds just the code — smaller QR reads more easily on small labels and with any scanner keyboard layout */}
+            <Barcode value={qrValueFor(uid)} type={codeType} width={qrSize} height={qrSize} />
           </div>
         )}
-
-        {/* All remaining visible fields */}
-        {visibleFields.slice(1).map(f => (
-          <div key={f.key} style={{
-            fontSize: typo.fieldPt,
-            fontWeight: 600,
-            lineHeight: 1.1,
-            color: typo.fieldColor,
-            fontFamily: ff,
-            wordBreak: 'break-word',
-            overflowWrap: 'anywhere',
-          }}>
-            <span style={{ color: typo.fieldLabelColor, fontWeight: 400 }}>{f.label}: </span>
-            {f.value}
+        <div ref={colRef} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: Math.max(1, Math.round(pad * 0.35)), overflow: 'hidden', textAlign: typo.align }}>
+          {isTiny && (
+            <div style={{ fontSize: sz(typo.uidPt), lineHeight: 1.05, color: typo.fieldLabelColor, wordBreak: 'break-all' }}>{brand} · {uid.split('-').slice(-1)[0]}</div>
+          )}
+          {fields[0]?.show && fields[0]?.value && (
+            <div style={{ fontSize: sz(typo.namePt), fontWeight: typo.nameWeight, fontStyle: typo.italicName ? 'italic' : 'normal', lineHeight: typo.lineHeight, color: typo.nameColor, overflowWrap: 'break-word' }}>
+              {fields[0].value}
+            </div>
+          )}
+          <div style={isTiny ? { display: 'flex', flexWrap: 'wrap', columnGap: 5, rowGap: 0, justifyContent: typo.align === 'center' ? 'center' : typo.align === 'right' ? 'flex-end' : 'flex-start' } : { display: 'contents' }}>
+          {rest.map(f => (
+            <div key={f.key} style={{ fontSize: sz(typo.fieldPt), fontWeight: typo.fieldWeight, lineHeight: typo.lineHeight, color: typo.fieldColor, overflowWrap: 'break-word' }}>
+              {typo.showFieldLabels && <span style={{ color: typo.fieldLabelColor, fontWeight: 400, textTransform: typo.upperLabels ? 'uppercase' : 'none' }}>{f.label}: </span>}{f.value}
+            </div>
+          ))}
           </div>
-        ))}
-
-        {/* Brand + UID */}
-        <div style={{
-          fontSize: typo.uidPt,
-          fontFamily: ff,
-          color: typo.fieldLabelColor,
-          lineHeight: 1,
-          wordBreak: 'break-all',
-          marginTop: 1,
-        }}>
-          {brand} · {uidDisplay}
         </div>
-
-        {/* Dual-code: barcode strip below fields */}
-        {showQr && showBarcode && !isTiny && (
-          <div style={{ marginTop: 2 }}>
-            <Barcode value={uid} type="barcode" width={w * 0.55} height={h * 0.18} showText={false} />
-          </div>
-        )}
       </div>
+
+      {/* Barcode strip along the bottom (when on) */}
+      {showBarcode && hasCode && !isTiny && (
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+          <Barcode value={uid} type="barcode" width={w - pad * 2} height={barcodeOnly ? stripH * 1.6 : stripH} showText={barcodeOnly} textSize={typo.uidPt * base} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StyleChips<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {options.map(([v, l]) => (
+          <button key={String(v)} type="button" onClick={() => onChange(v)} aria-pressed={value === v}
+            style={{ padding: '3px 9px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1px solid',
+              borderColor: value === v ? 'var(--accent, #6366f1)' : 'var(--border)', background: value === v ? 'rgba(99,102,241,0.12)' : 'transparent', color: value === v ? 'var(--accent, #6366f1)' : 'var(--text-muted)' }}>{l}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StyleSlider({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</label>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{value}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ width: '100%' }} />
     </div>
   );
 }
@@ -294,15 +361,16 @@ export default function LabelPrinterPage() {
   const ALL = '__all__';
   const NEW = 'new:';
   const [instPick, setInstPick] = useState('');
-  const [entityType, setEntityType] = useState('sample');
-  const [sizeId, setSizeId] = useState('dymo30334');
-  const [customW, setCustomW] = useState('40');
-  const [customH, setCustomH] = useState('20');
-  const [codeType, setCodeType] = useState<'qrcode' | 'datamatrix'>('qrcode');
-  const [showQr, setShowQr] = useState(true);
-  const [showBarcode, setShowBarcode] = useState(false);
-  const [brand, setBrand] = useState('LabOS');
-  const [fields, setFields] = useState<LabelField[]>(DEFAULT_FIELDS);
+  const draft = useRef<LabelDraft>(readDraft()).current;
+  const [entityType, setEntityType] = useState(draft.entityType ?? 'sample');
+  const [sizeId, setSizeId] = useState(draft.sizeId ?? 'cryo');
+  const [customW, setCustomW] = useState(draft.customW ?? '40');
+  const [customH, setCustomH] = useState(draft.customH ?? '20');
+  const [codeType, setCodeType] = useState<'qrcode' | 'datamatrix'>(draft.codeType ?? 'qrcode');
+  const [showQr, setShowQr] = useState(draft.showQr ?? true);
+  const [showBarcode, setShowBarcode] = useState(draft.showBarcode ?? false);
+  const [brand, setBrand] = useState(draft.brand ?? 'LabOS');
+  const [fields, setFields] = useState<LabelField[]>(draft.fields ?? DEFAULT_FIELDS);
   const [uid, setUid] = useState(generateLabId());
   // Samples sent from Sample Hub: one label each, with the details already typed there (entered once).
   const [batch, setBatch] = useState<LabelHandoff[]>(() => {
@@ -331,8 +399,11 @@ export default function LabelPrinterPage() {
     setBatch(list.map(instLabel));
     if (v) setShowBarcode(true);
   };
-  const [copies, setCopies] = useState(1);
-  const [typo, setTypo] = useState<Typography>(DEFAULT_TYPOGRAPHY);
+  const [copies, setCopies] = useState(draft.copies ?? 1);
+  const [typo, setTypo] = useState<Typography>(withTypoDefaults(draft.typo));
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo })); } catch { /* storage full or blocked */ }
+  }, [entityType, sizeId, customW, customH, codeType, showQr, showBarcode, brand, fields, copies, typo]);
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'browser' | 'connected'>('unknown');
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const [showPrinterModal, setShowPrinterModal] = useState(false);
@@ -374,6 +445,20 @@ export default function LabelPrinterPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [replaceSettings, setReplaceSettings] = useState(false);
 
+  // Named looks you can save once and apply to any label later (kept in this browser).
+  const [stylePresets, setStylePresets] = useState<{ name: string; typo: Typography }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('labos_label_styles') || '[]'); } catch { return []; }
+  });
+  const persistStyles = (next: { name: string; typo: Typography }[]) => {
+    setStylePresets(next);
+    try { localStorage.setItem('labos_label_styles', JSON.stringify(next)); } catch { /* ignore */ }
+  };
+  const saveStyle = () => {
+    const name = window.prompt('Name this style (saving the same name replaces it)')?.trim();
+    if (!name) return;
+    persistStyles([...stylePresets.filter(x => x.name.toLowerCase() !== name.toLowerCase()), { name, typo }]);
+    toast.success(`Style "${name}" saved`);
+  };
   const updateTypo = (patch: Partial<Typography>) => setTypo(prev => ({ ...prev, ...patch }));
 
   // "Custom" lets the user type any size in mm (kept between 5 and 300 so a typo can't break the page).
@@ -383,7 +468,10 @@ export default function LabelPrinterPage() {
     : LABEL_SIZES.find(s => s.id === sizeId) ?? LABEL_SIZES[0], [sizeId, customW, customH]);
 
   // Apply preset visibility when entity type changes
+  const presetReady = useRef(false);
   useEffect(() => {
+    // Skip the first run so fields restored from the saved draft keep the user's edits.
+    if (!presetReady.current) { presetReady.current = true; if (draft.fields) return; }
     const preset = ENTITY_PRESETS[entityType];
     setFields(prev => prev.map(f => {
       const override = preset.fields[f.key];
@@ -485,7 +573,7 @@ export default function LabelPrinterPage() {
     setBrand(tpl.brand);
     setFields(tpl.fields);
     setCopies(tpl.copies);
-    setTypo(tpl.typo);
+    setTypo(withTypoDefaults(tpl.typo));
     setUid(generateLabId());
     toast.success(`Loaded "${tpl.name}"`);
   };
@@ -552,6 +640,7 @@ export default function LabelPrinterPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       <style>{`
+        .label-print-area { position: absolute; left: -10000px; top: 0; }
         @media print {
           body * { visibility: hidden; }
           .label-print-area, .label-print-area * { visibility: visible; }
@@ -823,6 +912,26 @@ export default function LabelPrinterPage() {
           {/* Label Style Customisation */}
           <Fold title={<><EmojiIcon glyph="🎨" /> Label Style & Font</>} actions={<button onClick={() => setTypo(DEFAULT_TYPOGRAPHY)} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Reset all</button>}>
 
+            {/* My styles */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>My styles</div>
+                <button type="button" onClick={saveStyle} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid #22c55e', background: 'rgba(34,197,94,0.1)', color: '#22c55e', cursor: 'pointer', fontWeight: 600 }}>Save current style</button>
+              </div>
+              {stylePresets.length === 0
+                ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Set the look you like, then save it to use again on any label.</div>
+                : <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {stylePresets.map(sp => (
+                      <span key={sp.name} style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', background: sp.typo.labelBg }}>
+                        <button type="button" onClick={() => { setTypo(withTypoDefaults(sp.typo)); toast.success(`Applied "${sp.name}"`); }}
+                          style={{ padding: '3px 9px', fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 0, background: 'transparent', color: sp.typo.nameColor }}>{sp.name}</button>
+                        <button type="button" aria-label={`Delete style ${sp.name}`} onClick={() => { if (window.confirm(`Delete the style "${sp.name}"?`)) persistStyles(stylePresets.filter(x => x.name !== sp.name)); }}
+                          style={{ padding: '3px 6px', fontSize: 11, cursor: 'pointer', border: 0, borderLeft: '1px solid var(--border)', background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>✕</button>
+                      </span>
+                    ))}
+                  </div>}
+            </div>
+
             {/* Font family */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Font family</div>
@@ -869,6 +978,47 @@ export default function LabelPrinterPage() {
               </div>
             </div>
 
+            {/* Text style */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Your own font</div>
+              <input list="lp-fonts" value={typo.fontCustom} onChange={e => updateTypo({ fontCustom: e.target.value })} placeholder="Type any font installed on your computer, e.g. Arial, Verdana, Courier New"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12 }} />
+              <datalist id="lp-fonts">{['Arial', 'Helvetica', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Georgia', 'Times New Roman', 'Courier New', 'Consolas', 'Menlo', 'Impact', 'Futura', 'Gill Sans', 'Avenir', 'Calibri', 'Cambria'].map(f => <option key={f} value={f} />)}</datalist>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>Used first; if your printer computer doesn't have it, the family above is used.</div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Text style</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <StyleChips label="Name weight" value={typo.nameWeight} options={[[400, 'Regular'], [600, 'Semi'], [800, 'Bold']]} onChange={v => updateTypo({ nameWeight: v })} />
+                <StyleChips label="Field weight" value={typo.fieldWeight} options={[[400, 'Regular'], [600, 'Semi'], [800, 'Bold']]} onChange={v => updateTypo({ fieldWeight: v })} />
+                <StyleChips label="Text align" value={typo.align} options={[['left', 'Left'], ['center', 'Centre'], ['right', 'Right']]} onChange={v => updateTypo({ align: v })} />
+                <StyleChips label="Code position" value={typo.qrSide} options={[['left', 'Left'], ['right', 'Right']]} onChange={v => updateTypo({ qrSide: v })} />
+              </div>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', margin: '10px 0' }}>
+                {([
+                  ['showHeader', 'Brand & ID header'], ['showFieldLabels', 'Show field names'], ['upperLabels', 'CAPITAL field names'], ['italicName', 'Italic name'],
+                ] as [keyof Typography, string][]).map(([k, l]) => (
+                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!typo[k]} onChange={e => updateTypo({ [k]: e.target.checked })} /> {l}
+                  </label>
+                ))}
+              </div>
+              {([
+                { label: 'Line spacing', key: 'lineHeight', min: 0.9, max: 1.8, step: 0.02 },
+                { label: 'Letter spacing (px)', key: 'letterSpacing', min: 0, max: 3, step: 0.1 },
+              ] as { label: string; key: keyof Typography; min: number; max: number; step: number }[]).map(r => <StyleSlider key={r.key} {...r} value={typo[r.key] as number} onChange={v => updateTypo({ [r.key]: v })} />)}
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Border &amp; spacing</div>
+              <StyleChips label="Border" value={typo.borderStyle} options={[['dashed', 'Dashed'], ['solid', 'Solid'], ['none', 'None']]} onChange={v => updateTypo({ borderStyle: v })} />
+              <div style={{ height: 8 }} />
+              <StyleSlider label="Corner radius (px)" value={typo.radius} min={0} max={20} step={1} onChange={v => updateTypo({ radius: v })} />
+              <StyleSlider label="Spacing (%)" value={typo.spacing} min={40} max={220} step={5} onChange={v => updateTypo({ spacing: v })} />
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>The border is only for the preview — it is not printed.</div>
+            </div>
+
             {/* Colors */}
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Colors</div>
@@ -879,6 +1029,7 @@ export default function LabelPrinterPage() {
                   { label: 'Name text', key: 'nameColor' },
                   { label: 'Field values', key: 'fieldColor' },
                   { label: 'Field labels', key: 'fieldLabelColor' },
+                  { label: 'Brand & ID line', key: 'brandColor' },
                 ] as { label: string; key: keyof Typography }[]).map(row => (
                   <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
@@ -902,7 +1053,7 @@ export default function LabelPrinterPage() {
                       { label: 'Dark', bg: '#0f172a', border: '#334155', name: '#f1f5f9', field: '#cbd5e1', fl: '#64748b' },
                       { label: 'Pink', bg: '#fdf2f8', border: '#db2777', name: '#831843', field: '#9d174d', fl: '#f9a8d4' },
                     ].map(theme => (
-                      <button key={theme.label} onClick={() => updateTypo({ labelBg: theme.bg, borderColor: theme.border, nameColor: theme.name, fieldColor: theme.field, fieldLabelColor: theme.fl })}
+                      <button key={theme.label} onClick={() => updateTypo({ labelBg: theme.bg, borderColor: theme.border, nameColor: theme.name, fieldColor: theme.field, fieldLabelColor: theme.fl, brandColor: theme.fl })}
                         style={{
                           padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: 'pointer',
                           background: theme.bg, color: theme.name,
@@ -1059,3 +1210,4 @@ export default function LabelPrinterPage() {
     </div>
   );
 }
+
