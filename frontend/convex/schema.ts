@@ -1120,12 +1120,122 @@ export default defineSchema({
   }).index("by_lab", ["lab_id"]).index("by_room_id", ["room_id"])
     .index("by_meeting", ["meeting_id"]),
 
+  // LabHuddle in-call extras: room state (lock, agenda step), host actions, reactions, chat, whiteboard, shared lab items, saved recordings.
+  huddle_room: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    locked: v.boolean(),
+    agenda_index: v.number(),
+    agenda_started_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_controls: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    target: v.string(), // a user id, or "all"
+    kind: v.string(), // "mute" | "kick"
+    by: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_reactions: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    name: v.string(),
+    emoji: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_chat: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    name: v.string(),
+    text: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_strokes: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    color: v.string(),
+    width: v.number(),
+    points: v.string(), // JSON [[x,y],...] with x and y from 0 to 1
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_shared: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    name: v.string(),
+    kind: v.string(), // "protocol" | "sample" | "experiment"
+    title: v.string(),
+    detail: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_recordings: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    meeting_id: v.optional(v.id("meetings")),
+    storage_id: v.id("_storage"),
+    file_name: v.string(),
+    size: v.number(),
+    user_id: v.id("users"),
+    by_name: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
   video_chat_messages: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
     user_id: v.id("users"),
     message: v.string(),
     created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  // LabHuddle live calls: who is in a room, WebRTC hand-shake messages, spoken lines (for the summary) and shared notes.
+  huddle_peers: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    name: v.string(),
+    sharing: v.boolean(),
+    hand: v.optional(v.boolean()),
+    admitted: v.optional(v.boolean()),
+    joined_at: v.number(),
+    last_seen: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_signals: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    from: v.string(),
+    to: v.string(),
+    channel: v.string(), // "cam" or "screen"
+    kind: v.string(), // "offer" | "answer" | "ice" | "stop"
+    data: v.string(),
+    created_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room_to", ["room_id", "to"]),
+
+  huddle_lines: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    user_id: v.id("users"),
+    name: v.string(),
+    text: v.string(),
+    at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  huddle_notes: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    text: v.string(),
+    updated_by: v.string(),
+    updated_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
 
   // ── Payments ────────────────────────────────────────────────────────

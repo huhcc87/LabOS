@@ -2,7 +2,7 @@ import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { useMeetings } from '../hooks/useMeetings'
-import { getMeetingTypeColor, getMeetingTypeLabel, getMeetingTypeIcon } from '../utils/meetingUtils'
+import { getMeetingTypeColor, getMeetingTypeLabel, getMeetingTypeIcon, meetingRoomId } from '../utils/meetingUtils'
 import MeetingCard from '../components/MeetingCard'
 import NextMeetingBanner from '../components/NextMeetingBanner'
 import MeetingDetailDrawer from '../components/MeetingDetailDrawer'
@@ -187,14 +187,12 @@ export default function LabMeetingsPage() {
     setJoiningCall(true)
     try {
       const meetingId = meeting?.id
-      const res = await videoApi.createRoom(meetingId)
-      setActiveVideoCall({
-        roomId: res.data.room_id,
-        meetingId: meetingId,
-        meetingTitle: meeting?.title,
-      })
+      // A scheduled meeting always uses its own room, so the link sent at scheduling time is the one everyone joins.
+      const roomId = meeting ? meetingRoomId(meeting.id) : (await videoApi.createRoom()).data.room_id
+      setActiveVideoCall({ roomId, meetingId, meetingTitle: meeting?.title })
       store.setSelectedMeeting(null)
-      toast.success('Video call started!')
+      const link = `${window.location.origin}/?room=${encodeURIComponent(roomId)}`
+      navigator.clipboard.writeText(link).then(() => toast.success('Call started. Invite link copied: send it to anyone in your lab, anywhere.'), () => toast.success('Video call started!'))
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to start video call')
     } finally {
@@ -204,6 +202,8 @@ export default function LabMeetingsPage() {
 
   function leaveVideoCall() {
     setActiveVideoCall(null)
+    // Drop ?room=… from the address so a refresh does not put the person back in the call.
+    if (new URLSearchParams(window.location.search).has('room')) window.history.replaceState(null, '', window.location.pathname)
   }
 
   const MEETING_TYPES: MeetingType[] = ['weekly', 'journal_club', 'lab_retreat', 'one_on_one', 'progress_report', 'special']
@@ -612,14 +612,22 @@ export default function LabMeetingsPage() {
 
       {/* Video Call Room */}
       {activeVideoCall && (
-        <VideoCallRoom
-          roomId={activeVideoCall.roomId}
-          meetingId={activeVideoCall.meetingId}
-          meetingTitle={activeVideoCall.meetingTitle}
-          userName={currentUserName}
-          userId={user?.id || 0}
-          onLeave={leaveVideoCall}
-        />
+        (() => {
+          // The meeting this room belongs to (also when joined from an invite link): its agenda and where the summary is saved.
+          const callMeeting = store.meetings.find(x => meetingRoomId(x.id) === activeVideoCall.roomId)
+          return (
+            <VideoCallRoom
+              roomId={activeVideoCall.roomId}
+              meetingId={activeVideoCall.meetingId ?? callMeeting?.id}
+              meetingTitle={activeVideoCall.meetingTitle ?? callMeeting?.title}
+              agenda={(callMeeting?.agenda ?? []).filter(a => a.status === 'approved').sort((a, b) => a.order - b.order)
+                .map(a => ({ title: a.title, duration: a.durationMinutes, presenter: a.presenter }))}
+              userName={currentUserName}
+              userId={user?.id || 0}
+              onLeave={leaveVideoCall}
+            />
+          )
+        })()
       )}
     </div>
   )

@@ -1,3 +1,4 @@
+import { initials } from '../lib/initials';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -71,7 +72,7 @@ export default function UsersPage() {
     { key: 'full_name', header: 'Name', render: (r) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: ROLE_META[r.role]?.bg || '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ROLE_META[r.role]?.color || '#64748b', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-          {r.full_name.charAt(0).toUpperCase()}
+          {initials(r.full_name)}
         </div>
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>{r.full_name}</span>
       </div>
@@ -146,7 +147,7 @@ export default function UsersPage() {
                 <div key={u.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: '50%', background: rm.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: rm.color, fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
-                      {u.full_name.charAt(0).toUpperCase()}
+                      {initials(u.full_name)}
                     </div>
                     <div>
                       <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 14 }}>{u.full_name}</div>

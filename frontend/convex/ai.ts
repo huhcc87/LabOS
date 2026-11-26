@@ -74,7 +74,7 @@ async function callDeepSeek(
 }
 
 /** Try DeepSeek first (primary), fall back to Anthropic, fall back to rule-based. */
-async function callAI(
+export async function callAI(
   messages: { role: string; content: string }[],
   systemPrompt: string,
   maxTokens = 1024

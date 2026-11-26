@@ -134,10 +134,11 @@ export default function CreateMeetingModal({ currentUserName, onSave, onClose, e
               <input style={inp} value={form.location} onChange={e => set('location', e.target.value)} placeholder="Conference Room B / Zoom" />
             </div>
             <div>
-              <label style={lbl}>Zoom Link (optional)</label>
+              <label style={lbl}>Other video link (optional)</label>
               <input style={inp} value={form.zoomLink} onChange={e => set('zoomLink', e.target.value)} placeholder="https://zoom.us/j/..." />
             </div>
           </div>
+          <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>A LabOS video call link is created automatically when you save. Open the meeting afterwards to copy it or send it by email or WhatsApp.</p>
 
           <div>
             <label style={lbl}>Description</label>

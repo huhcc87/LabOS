@@ -1,3 +1,4 @@
+import { initials } from '../../../lib/initials'
 import EmojiIcon from '../../../components/EmojiIcon';
 import React, { useState } from 'react'
 import type { ProgressReport } from '../types/meeting.types'
@@ -112,7 +113,7 @@ export default function ProgressReportPanel({ reports, isPiOrAdmin, currentUserN
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6366f1' }}>{r.submitterName.charAt(0)}</div>
+                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6366f1' }}>{initials(r.submitterName)}</div>
                   <div>
                     <div style={{ color: '#1e293b', fontSize: 13, fontWeight: 700 }}>{r.submitterName}</div>
                     <div style={{ color: '#94a3b8', fontSize: 11 }}>{r.submitterRole} · {new Date(r.submittedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>

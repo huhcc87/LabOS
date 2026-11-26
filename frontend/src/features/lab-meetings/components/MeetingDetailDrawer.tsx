@@ -9,6 +9,7 @@ import AttendanceSheet from './AttendanceSheet'
 import MinutesEditor from './MinutesEditor'
 import ProgressReportPanel from './ProgressReportPanel'
 import ActionItemsPanel from './ActionItemsPanel'
+import MeetingShare from './MeetingShare'
 
 type DrawerTab = 'agenda' | 'attendance' | 'actions' | 'progress' | 'minutes'
 
@@ -111,9 +112,10 @@ export default function MeetingDetailDrawer({
                     <span style={{ color: '#64748b', fontSize: 12 }}><EmojiIcon glyph="🕐" /> {formatTime(m.scheduledAt)} – {formatTime(m.endTime)} ({formatMeetingDuration(m.scheduledAt, m.endTime)})</span>
                     <span style={{ color: '#64748b', fontSize: 12 }}><EmojiIcon glyph="📍" /> {m.location}</span>
                   </div>
+                  {m.status !== 'cancelled' && m.status !== 'completed' && <MeetingShare meeting={m} />}
                   {/* Video Meeting Buttons */}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                    {/* Start LabOS Video Call */}
+                    {/* Join LabOS Video Call */}
                     {onStartVideoCall && (
                       <button
                         onClick={onStartVideoCall}
@@ -125,7 +127,7 @@ export default function MeetingDetailDrawer({
                           boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
                         }}
                       >
-                        <EmojiIcon glyph="🎥" /> Start LabOS Video Call
+                        <EmojiIcon glyph="🎥" /> Join LabOS Video Call
                       </button>
                     )}
                     {/* External Zoom Link */}

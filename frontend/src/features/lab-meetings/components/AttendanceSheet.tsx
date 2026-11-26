@@ -1,3 +1,4 @@
+import { initials } from '../../../lib/initials'
 import React, { useState } from 'react'
 import type { Meeting, AttendanceStatus } from '../types/meeting.types'
 import { AttendanceBadge } from './MeetingBadges'
@@ -48,7 +49,7 @@ export default function AttendanceSheet({ meeting, isPiOrAdmin, isManagerOrAbove
         {meeting.attendees.map(attendee => (
           <div key={attendee.userId} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#6366f1', flexShrink: 0 }}>
-              {attendee.name.charAt(0)}
+              {initials(attendee.name)}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ color: '#1e293b', fontSize: 13, fontWeight: 600 }}>{attendee.name}</div>

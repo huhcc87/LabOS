@@ -1,3 +1,4 @@
+import { initials } from '../lib/initials'
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { ExportMenu } from '../components/ExportMenu';
@@ -885,7 +886,7 @@ export default function ExperimentsHubPage({ initialTab = 'experiments', embedde
                 {viewingExp.team.map(member => (
                   <div key={member.id} style={{ background: 'var(--surface2)', padding: '10px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600 }}>
-                      {member.name.charAt(0)}
+                      {initials(member.name)}
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{member.name}</div>
