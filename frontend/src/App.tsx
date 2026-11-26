@@ -100,6 +100,8 @@ function AppInner() {
   const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
   // Someone scanned a label QR code with their phone camera: open the Freezer page on it once signed in
   useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('freezer-biobank'); }, [user]);
+  // A call invite link (?room=…) lands on LabHuddle, which joins that room.
+  useEffect(() => { if (user && new URLSearchParams(window.location.search).get('room')) setPage('lab-meetings'); }, [user]);
   // A phone scanned an instrument QR (/?instrument=<id>): open that instrument's booking once signed in
   useEffect(() => {
     if (!user || !takeInstrumentScan(window.location.href)) return;

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { incidentsApi } from '../lib/api';
 import type { IncidentReport } from '../lib/types';
 import { Table, Pagination } from '../components/Table';
+import CallAboutButton from '../components/CallAboutButton';
 import type { Column } from '../components/Table';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -195,6 +196,7 @@ export default function IncidentsPage() {
                     <span>{inc.reporter_name || '—'}</span>
                     <span>{formatDate(inc.created_at)}</span>
                   </div>
+                  <div style={{ marginBottom: 8 }}><CallAboutButton kind="incident" id={inc.id} /></div>
                   {canEdit && (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => openEdit(inc)} style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '6px 0', cursor: 'pointer', fontSize: 12 }}>Edit</button>

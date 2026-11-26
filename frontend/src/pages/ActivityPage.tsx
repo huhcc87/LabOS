@@ -1,3 +1,4 @@
+import { initials } from '../lib/initials';
 import { useState, useEffect, useMemo } from 'react';
 import { activityApi } from '../lib/api';
 import toast from 'react-hot-toast';
@@ -245,7 +246,7 @@ export default function ActivityPage() {
                                 fontSize: 13,
                                 fontWeight: 600,
                               }}>
-                                {event.user_name.charAt(0).toUpperCase()}
+                                {initials(event.user_name)}
                               </div>
                               <div>
                                 <div style={{ fontWeight: 600, fontSize: 14 }}>{event.user_name}</div>

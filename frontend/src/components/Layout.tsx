@@ -1,3 +1,4 @@
+import { initials } from '../lib/initials';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -336,7 +337,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
   );
   const accountBlock = user ? (
     <div className="hdr-account">
-      <div className="user-avatar hdr-avatar" aria-hidden="true">{(user.full_name ?? user.email ?? '?').charAt(0).toUpperCase()}</div>
+      <div className="user-avatar hdr-avatar" aria-hidden="true">{initials(user.full_name ?? user.email)}</div>
       <div className="hdr-who">
         <span className="hdr-name">{user.full_name ?? user.email}</span>
         <RoleBadge role={user.role} />

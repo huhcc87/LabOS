@@ -90,9 +90,14 @@ export function isPast(meeting: Meeting): boolean {
   return meeting.status === 'completed' || (new Date(meeting.scheduledAt) < new Date() && meeting.status !== 'cancelled')
 }
 
+/** The call room of a meeting: the same for everyone, so the link can be sent the moment the meeting is scheduled. */
+export const meetingRoomId = (meetingId: string | number): string => `mtg_${meetingId}`
+export const meetingJoinLink = (meetingId: string | number): string => `${window.location.origin}/?room=${encodeURIComponent(meetingRoomId(meetingId))}`
+
 export function getDaysUntil(iso: string): number {
-  const diff = new Date(iso).getTime() - Date.now()
-  return Math.ceil(diff / 86400000)
+  // Whole calendar days from today (a meeting later today is 0, not 1).
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  return Math.round((day(new Date(iso)) - day(new Date())) / 86400000)
 }
 
 export function getAgendaTotalDuration(meeting: Meeting): number {

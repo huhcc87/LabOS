@@ -1,3 +1,4 @@
+import { initials } from '../lib/initials'
 import { useState, useEffect, useCallback } from 'react';
 import { usersAdminApi, auditApi, integrationsApi } from '../lib/api';
 import { Icon } from '../components/Icon';
@@ -543,7 +544,7 @@ export default function AdminHubPage() {
                       <td style={{ padding: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 18, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: 14 }}>
-                            {user.name.charAt(0)}
+                            {initials(user.name)}
                           </div>
                           <div>
                             <div style={{ fontWeight: 500, fontSize: 14 }}>{user.name}</div>

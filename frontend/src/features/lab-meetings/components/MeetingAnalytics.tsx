@@ -1,3 +1,4 @@
+import { initials } from '../../../lib/initials'
 import React from 'react'
 import type { Meeting, ActionItem } from '../types/meeting.types'
 import { getMeetingTypeColor, getMeetingTypeLabel, getAttendanceRate, getActionItemCompletionRate } from '../utils/meetingUtils'
@@ -98,7 +99,7 @@ export default function MeetingAnalytics({ meetings, actionItems }: Props) {
             : topPresenters.map(([name, count]) => (
               <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#6366f1', flexShrink: 0 }}>
-                  {name.charAt(0)}
+                  {initials(name)}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: '#1e293b', fontSize: 12, fontWeight: 600 }}>{name}</div>
@@ -120,7 +121,7 @@ export default function MeetingAnalytics({ meetings, actionItems }: Props) {
             : Object.entries(reportsByMember).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
               <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#fae8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#9333ea', flexShrink: 0 }}>
-                  {name.charAt(0)}
+                  {initials(name)}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: '#1e293b', fontSize: 12, fontWeight: 600 }}>{name}</div>

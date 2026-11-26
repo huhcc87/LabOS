@@ -1,3 +1,4 @@
+import { initials } from '../../../lib/initials'
 import EmojiIcon from '../../../components/EmojiIcon';
 import React from 'react'
 import type { Meeting } from '../types/meeting.types'
@@ -108,7 +109,7 @@ export default function MeetingCard({ meeting: m, onClick, isPiOrAdmin, onCancel
               fontSize: 10, fontWeight: 700, color: accentColor,
               marginLeft: i > 0 ? -6 : 0, zIndex: 5 - i,
             }}>
-              {a.name.charAt(0)}
+              {initials(a.name)}
             </div>
           ))}
         </div>
