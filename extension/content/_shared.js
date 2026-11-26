@@ -108,13 +108,36 @@
     });
   }
 
+  // The latest product read from the page, per button (a page can re-read itself as it loads or its URL changes).
+  const latestProduct = new WeakMap();
+  const pageKey = () => location.origin + location.pathname;
+
+  // A vendor's error or block page ("Access Denied", 404) is not a product, even though it has an h1.
+  const ERROR_PAGE = /^(access denied|forbidden|page not found|not found|404\b|403\b|sorry\b|error\b)/i;
+  const isErrorPage = () => ERROR_PAGE.test((document.querySelector('h1')?.textContent || '').trim()) || ERROR_PAGE.test(document.title.trim());
+
   function injectCaptureButton(product, anchor) {
+    if (isErrorPage()) return null;
     ensureStyles();
-    if (document.querySelector(`[data-labos-id="${product.catalog || product.url}"]`)) return;
+
+    // One button per page. A page that re-reads itself (size picked, URL query changed, slow render) refreshes
+    // the existing button's product; a different page (the site moved to another product) replaces it.
+    const stale = document.querySelector('.labos-capture-btn');
+    if (stale) {
+      if (stale.dataset.labosPage === pageKey()) {
+        const old = latestProduct.get(stale) || {};
+        latestProduct.set(stale, { ...product, catalog: product.catalog || old.catalog, name: product.name || old.name });
+        return stale;
+      }
+      stale.remove();
+      document.querySelectorAll('[data-labos-hint]').forEach((e) => e.remove());
+    }
 
     const btn = document.createElement('button');
     btn.className = 'labos-capture-btn';
+    btn.dataset.labosPage = pageKey();
     btn.dataset.labosId = product.catalog || product.url;
+    latestProduct.set(btn, product);
     // The LabOS logo (shipped with the extension) so people recognise the button on any vendor site.
     const logo = chrome.runtime.getURL('icons/icon48.png');
     btn.innerHTML = `<img src="${logo}" alt="" width="18" height="18" style="border-radius:4px;vertical-align:middle;"> Add to LabOS<span class="labos-badge" data-labos-badge>?</span>`;
@@ -125,8 +148,12 @@
       btn.disabled = true;
       const original = btn.innerHTML;
       btn.innerHTML = '<span>⏳</span> Sending…';
-      const res = await captureProduct(product);
-      if (res.ok) {
+      const res = await captureProduct(latestProduct.get(btn) || product);
+      if (res.ok && res.duplicate) {
+        btn.dataset.state = 'added';
+        btn.innerHTML = '<span>✓</span> Already in your LabOS cart';
+        showToast('This product is already in your LabOS cart', 'success');
+      } else if (res.ok) {
         btn.dataset.state = 'added';
         btn.innerHTML = `<span>✓</span> Added to LabOS (cart: ${res.cartSize || '?'})`;
         showToast('Added to LabOS reagent cart', 'success');
@@ -159,6 +186,7 @@
     }, (r) => {
       if (r && r.matches && r.matches.length > 0) {
         const hint = document.createElement('div');
+        hint.dataset.labosHint = '1';
         hint.style.cssText = `
           margin-top: 8px; padding: 8px 12px; border-radius: 8px;
           background: rgba(234,179,8,0.15); color: #ca8a04; font-size: 12px;
@@ -184,6 +212,7 @@
       if (r && r.matches && r.matches.length > 0) {
         const blocked = r.blocked;
         const hint = document.createElement('div');
+        hint.dataset.labosHint = '1';
         hint.style.cssText = `
           margin-top: 8px; padding: 8px 12px; border-radius: 8px;
           background: ${blocked ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'};
@@ -212,6 +241,20 @@
 
     return btn;
   }
+
+  // Safety net: keep a single LabOS button even if a stale or second copy of the extension adds its own.
+  // Prefers this copy's button for the current page; checks at most every 50 ms (a timer, so it also runs in background tabs).
+  let sweepQueued = false;
+  function sweepDuplicateButtons() {
+    sweepQueued = false;
+    const all = [...document.querySelectorAll('.labos-capture-btn')];
+    if (all.length < 2) return;
+    const keep = all.find((b) => b.dataset.labosPage === pageKey()) || all[0];
+    all.forEach((b) => { if (b !== keep) b.remove(); });
+  }
+  new MutationObserver(() => {
+    if (!sweepQueued) { sweepQueued = true; setTimeout(sweepDuplicateButtons, 50); }
+  }).observe(document.documentElement, { childList: true, subtree: true });
 
   function updateBadge() {
     chrome.runtime.sendMessage({ type: 'LABOS_CART_COUNT' }, (r) => {

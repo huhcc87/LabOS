@@ -94,6 +94,15 @@ async function handleMessage(msg, sender, sendResponse) {
   {
     if (msg.type === 'LABOS_CAPTURE') {
       const cart = await getCart();
+      // Clicking the button again for the same product does not add it twice (same vendor + catalog, or same page).
+      const p = msg.product || {};
+      const samePage = (a, b) => { try { const x = new URL(a), y = new URL(b); return x.host === y.host && x.pathname === y.pathname; } catch (_) { return false; } };
+      const dup = cart.find((c) => (p.catalog && c.catalog && c.catalog === p.catalog && (c.vendor || '') === (p.vendor || ''))
+        || (p.url && c.url && samePage(c.url, p.url)));
+      if (dup) {
+        sendResponse({ ok: true, duplicate: true, cartSize: cart.length, synced: !!dup.synced });
+        return;
+      }
       const product = {
         ...msg.product,
         id: `${msg.product.vendor || 'unknown'}-${msg.product.catalog || Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

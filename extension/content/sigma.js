@@ -25,6 +25,8 @@
   }
 
   function tryInject() {
+    // Only product pages (/product/<brand>/<number>): not category, search or error pages.
+    if (!/\/product\//.test(location.pathname)) return;
     const product = extract();
     if (!product) return;
     const anchor =
