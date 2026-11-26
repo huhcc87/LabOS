@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES, type SupplierEntry } from '../data/biomedicalSuppliers';
+import { type SupplierEntry } from '../data/biomedicalSuppliers';
+import { useVendors } from '../lib/useVendors';
 import EmojiIcon from '../components/EmojiIcon';
 import { VENDOR_LINKS } from '../data/vendorLinks';
 import LabBanner from '../components/LabBanner';
@@ -121,20 +122,21 @@ function SupplierCard({ s }: { s: SupplierEntry }) {
 }
 
 export default function SupplierDirectoryPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const { suppliers: ALL_SUPPLIERS, categories: CATEGORIES } = useVendors();
   const [search, setSearch] = useState('');
   // The Shop page can open this list already filtered to a category.
   // Read without removing: React runs state initializers twice in development, so removal happens in an effect.
   const [selectedCategory, setSelectedCategory] = useState(() => {
     try {
       const c = sessionStorage.getItem('labos_vendor_category');
-      return c && (SUPPLIER_CATEGORIES as readonly string[]).includes(c) ? c : 'All';
+      return c || 'All';
     } catch { return 'All'; }
   });
   useEffect(() => { try { sessionStorage.removeItem('labos_vendor_category'); } catch { /* ignore */ } }, []);
   const [sortBy, setSortBy] = useState<'name' | 'rating'>('rating');
 
   const filtered = useMemo(() => {
-    let list = BIOMEDICAL_SUPPLIERS;
+    let list = ALL_SUPPLIERS;
     if (selectedCategory !== 'All') {
       list = list.filter(s => s.category === selectedCategory);
     }
@@ -149,20 +151,20 @@ export default function SupplierDirectoryPage({ embedded = false }: { embedded?:
     return [...list].sort((a, b) =>
       sortBy === 'rating' ? (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name)
     );
-  }, [search, selectedCategory, sortBy]);
+  }, [ALL_SUPPLIERS, search, selectedCategory, sortBy]);
 
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: BIOMEDICAL_SUPPLIERS.length };
-    BIOMEDICAL_SUPPLIERS.forEach(s => {
+    const counts: Record<string, number> = { All: ALL_SUPPLIERS.length };
+    ALL_SUPPLIERS.forEach(s => {
       counts[s.category] = (counts[s.category] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [ALL_SUPPLIERS]);
 
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
-      {!embedded && <LabBanner art="inventory" title="Vendor Directory" subtitle={`${BIOMEDICAL_SUPPLIERS.length}+ suppliers for reagents, chemicals, antibodies, equipment, and more`} />}
+      {!embedded && <LabBanner art="inventory" title="Vendor Directory" subtitle={`${ALL_SUPPLIERS.length}+ suppliers for reagents, chemicals, antibodies, equipment, and more`} />}
 
       {/* Search + Sort */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -190,7 +192,7 @@ export default function SupplierDirectoryPage({ embedded = false }: { embedded?:
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
             Categories
           </div>
-          {SUPPLIER_CATEGORIES.map(cat => (
+          {CATEGORIES.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}

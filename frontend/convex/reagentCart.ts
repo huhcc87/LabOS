@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { lineTotal, overBudget, committedFor } from "./cartBudgets";
 import { matchPo } from "./invoiceMatch";
 import { logProcurement } from "./procurementAudit";
+import { recordCommunityVendor } from "./communityVendors";
 // Students only reach this module if their PI allowed this hub.
 const { requireAuth, requireRole } = hubGuard("Resources");
 
@@ -141,7 +142,10 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx, args.token);
     const { token: _t, ...fields } = args;
-    return insertRequest(ctx, userId, fields);
+    const id = await insertRequest(ctx, userId, fields);
+    // A product link from a vendor that is not listed yet adds the vendor to Shop & Vendors for every lab.
+    await recordCommunityVendor(ctx.db, { supplier: fields.supplier, url: fields.url });
+    return id;
   },
 });
 

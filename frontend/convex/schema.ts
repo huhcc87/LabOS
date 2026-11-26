@@ -1113,6 +1113,20 @@ export default defineSchema({
   }).index("by_key", ["key"]).index("by_updated", ["updated_at"])
     .searchIndex("by_text", { searchField: "search_text" }),
 
+  // Vendors added to Shop & Vendors by LabOS users (automatically from captures and requests, or by hand).
+  // Shared by every lab on purpose: public facts about the vendor only, no lab and no person.
+  community_vendors: defineTable({
+    key: v.string(), // the vendor's website host without www, so one site is stored once
+    name: v.string(),
+    website: v.string(),
+    category: v.string(),
+    source: v.string(), // "auto" or "custom"
+    notes: v.optional(v.string()),
+    times_added: v.number(),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_key", ["key"]).index("by_updated", ["updated_at"]),
+
   // LabHuddle knowledge base: short write-ups captured from meetings.
   knowledge_articles: defineTable({
     lab_id: v.optional(v.id("labs")),
