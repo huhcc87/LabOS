@@ -418,6 +418,16 @@
         "content/generic.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://lab-os-eight.vercel.app/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "content/labos-app.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "action": {
