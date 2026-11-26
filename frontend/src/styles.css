@@ -1759,8 +1759,8 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 20px 28px;
-  background: var(--header-bg);
-  border-bottom: 1px solid var(--header-border);
+  background: var(--surface2); /* --header-bg is white even in dark theme, which hid the title */
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;
 }
@@ -1768,7 +1768,7 @@ a:hover { text-decoration: underline; }
 .modal-title {
   font-size: 17px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text); /* the header background is white in both themes, so white text was invisible */
   letter-spacing: -0.2px;
 }
 
@@ -1777,8 +1777,8 @@ a:hover { text-decoration: underline; }
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--surface2);
+  color: var(--text-soft);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1788,8 +1788,8 @@ a:hover { text-decoration: underline; }
 }
 
 .modal-close:hover {
-  background: rgba(227, 93, 93, 0.3);
-  color: #ffffff;
+  background: rgba(227, 93, 93, 0.2);
+  color: #b42318;
 }
 
 .modal-body {

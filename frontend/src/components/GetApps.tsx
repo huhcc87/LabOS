@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 
 // The extension's page in the Chrome Web Store, and the build that ships with this app (public/get).
@@ -38,6 +39,8 @@ export default function GetApps() {
         ⬇ Get the extension &amp; app
       </button>
 
+      {/* Rendered on document.body: inside the sidebar the window was squeezed into its width and its dark theme. */}
+      {open && createPortal(
       <Modal isOpen={open} onClose={() => setOpen(false)} title="Get the LabOS extension and app" size="md">
         <div style={card}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Browser extension (Chrome, Edge, Brave)</div>
@@ -69,7 +72,8 @@ export default function GetApps() {
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           Phone browsers can't run the extension. On a phone, add products from the Shop &amp; Vendors page instead.
         </div>
-      </Modal>
+      </Modal>,
+      document.body)}
     </>
   );
 }
