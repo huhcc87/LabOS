@@ -6,9 +6,14 @@ async function testConnection() {
   return new Promise(r => chrome.runtime.sendMessage({ type: 'LABOS_TEST_CONNECTION' }, res => r(res || { ok: false })));
 }
 
+// The hosted LabOS web app. A lab running its own copy sets its address in ⚙️ Settings.
+const DEFAULT_APP_URL = 'https://lab-os-eight.vercel.app';
+
 async function getSettings() {
   return new Promise(r => chrome.storage.sync.get(['apiBase', 'appUrl'], s => r(s)));
 }
+
+const appUrlOf = (s) => (s && /^https?:\/\//.test(s.appUrl || '') ? s.appUrl.replace(/\/+$/, '') : DEFAULT_APP_URL);
 
 // Sanitize text to prevent XSS when inserting into DOM
 function esc(str) {
@@ -82,12 +87,17 @@ async function init() {
   document.getElementById('open-options').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
+  // The link at the bottom always points at the app this extension is set up for.
+  const settings = await getSettings();
+  const appLink = document.getElementById('app-link');
+  appLink.href = `${appUrlOf(settings)}/`;
+  document.getElementById('app-link-host').textContent = new URL(appUrlOf(settings)).host;
+
   document.getElementById('open-labos').addEventListener('click', async () => {
     const s = await getSettings();
-    if (s.appUrl) { chrome.tabs.create({ url: `${s.appUrl}/?page=reagent-cart` }); return; }
-    // Old FastAPI setup: the app lived next to the API. Otherwise ask for the web app address.
-    if (s.apiBase && s.apiBase.endsWith('/api')) { chrome.tabs.create({ url: `${s.apiBase.replace('/api', '')}/?page=reagent-cart` }); return; }
-    chrome.runtime.openOptionsPage();
+    // Old FastAPI setup: the app lived next to the API.
+    if (!s.appUrl && s.apiBase && s.apiBase.endsWith('/api')) { chrome.tabs.create({ url: `${s.apiBase.replace('/api', '')}/?page=reagent-cart` }); return; }
+    chrome.tabs.create({ url: `${appUrlOf(s)}/?page=reagent-cart` });
   });
   document.getElementById('capture-page').addEventListener('click', async () => {
     // Works on ANY website — uses activeTab permission to grab tab metadata,

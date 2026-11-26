@@ -115,7 +115,9 @@
     const btn = document.createElement('button');
     btn.className = 'labos-capture-btn';
     btn.dataset.labosId = product.catalog || product.url;
-    btn.innerHTML = `<span style="font-size:16px;">🧪</span> Add to LabOS<span class="labos-badge" data-labos-badge>?</span>`;
+    // The LabOS logo (shipped with the extension) so people recognise the button on any vendor site.
+    const logo = chrome.runtime.getURL('icons/icon48.png');
+    btn.innerHTML = `<img src="${logo}" alt="" width="18" height="18" style="border-radius:4px;vertical-align:middle;"> Add to LabOS<span class="labos-badge" data-labos-badge>?</span>`;
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();

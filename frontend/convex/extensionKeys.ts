@@ -13,6 +13,7 @@ import { requireAuth, assertHub, mustSetUp2fa } from "./authHelper";
 import { sha256Hex } from "./cryptoSecrets";
 import { hitRateLimit } from "./security";
 import { insertRequest } from "./reagentCart";
+import { recordCommunityProduct } from "./community";
 import { EXTENSION_KEY_PREFIX, parseCapture } from "./extensionApi";
 
 const CAPTURES_PER_MINUTE = 30;
@@ -107,6 +108,9 @@ export const capture = internalMutation({
     const fields = Object.fromEntries(Object.entries(parsed.fields).filter(([, val]) => val !== undefined)) as typeof parsed.fields;
     try {
       const id = await insertRequest({ db }, a.user._id, fields);
+      // Share the product's public facts with every LabOS lab (never the lab, person, quantity or price).
+      const image = (body as { image_url?: unknown })?.image_url;
+      await recordCommunityProduct(ctx.db, { ...fields, image_url: typeof image === "string" ? image : undefined });
       return { ok: true as const, status: 200, id };
     } catch (e) {
       if (e instanceof ConvexError) return { ok: false as const, status: 400, error: String(e.data) };
