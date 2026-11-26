@@ -27,3 +27,10 @@ export const errorText = (e: unknown, fallback: string): string => {
   const msg = (e as { data?: string; message?: string })?.data ?? (e as Error)?.message ?? fallback
   return String(msg).replace(/^.*Uncaught ConvexError:\s*/, '').slice(0, 160)
 }
+
+// ── Guests: someone who joined through a guest link (no LabOS account) holds a secret for one call ──
+let guestSecret: string | undefined
+export const setGuestSession = (secret: string | undefined): void => { guestSecret = secret }
+export const isGuestSession = (): boolean => !!guestSecret
+/** The sign-in to send with call requests: the guest's secret, or the member's session token. */
+export const huddleAuth = (): { token?: string; guest?: string } => (guestSecret ? { guest: guestSecret } : { token: getToken() })

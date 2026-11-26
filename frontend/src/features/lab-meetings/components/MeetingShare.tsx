@@ -1,6 +1,9 @@
 import toast from 'react-hot-toast'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
 import type { Meeting } from '../types/meeting.types'
-import { meetingJoinLink } from '../utils/meetingUtils'
+import { meetingJoinLink, meetingRoomId } from '../utils/meetingUtils'
+import { errorText, getToken } from './huddle/huddleUi'
 
 /**
  * The call link for a scheduled meeting. It exists as soon as the meeting does, so it can be sent at once:
@@ -11,6 +14,18 @@ export default function MeetingShare({ meeting: m }: { meeting: Meeting }) {
   const when = new Date(m.scheduledAt)
   const local = when.toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const message = `You are invited to "${m.title}"\n\nWhen: ${local}\n(${when.toUTCString()})\n\nJoin the video call: ${link}\n\nSign in to LabOS with your lab account, then you will land in the call. Allow your camera and microphone when the browser asks.`
+
+  // A link for people with no LabOS account: they type a name and wait for the host to let them in.
+  const createGuest = useMutation(api.huddleCall.createGuestLink)
+  const guestLink = async (how: 'copy' | 'email') => {
+    try {
+      const r = await createGuest({ token: getToken(), room_id: meetingRoomId(m.id), title: m.title })
+      const url = `${window.location.origin}/?guest=${r.code}`
+      if (how === 'copy') { await navigator.clipboard.writeText(url); toast.success('Guest link copied. Guests wait until the host lets them in.'); return }
+      const body = `You are invited as a guest to "${m.title}"\n\nWhen: ${local}\n(${when.toUTCString()})\n\nJoin here (no account needed): ${url}\n\nType your name and ask to join. The host will let you in. Allow your camera and microphone when the browser asks. The link works for 24 hours.`
+      window.location.href = `mailto:?subject=${encodeURIComponent(`Guest invitation: ${m.title}`)}&body=${encodeURIComponent(body)}`
+    } catch (e) { toast.error(errorText(e, 'Could not make the guest link')) }
+  }
 
   const copy = () => navigator.clipboard.writeText(link).then(() => toast.success('Call link copied'), () => toast.error('Could not copy'))
   const email = () => { window.location.href = `mailto:?subject=${encodeURIComponent(`Invitation: ${m.title}`)}&body=${encodeURIComponent(message)}` }
@@ -43,8 +58,10 @@ export default function MeetingShare({ meeting: m }: { meeting: Meeting }) {
         {typeof navigator.share === 'function' && <button type="button" style={b} onClick={share}>Share…</button>}
         <button type="button" style={b} onClick={ics}>Add to calendar (.ics)</button>
         <button type="button" style={b} onClick={google}>Google Calendar</button>
+        <button type="button" style={{ ...b, background: '#fef3c7', color: '#92400e', borderColor: '#fcd34d' }} title="For people without a LabOS account. You let them in during the call." onClick={() => { void guestLink('copy') }}>Guest link</button>
+        <button type="button" style={{ ...b, background: '#fef3c7', color: '#92400e', borderColor: '#fcd34d' }} onClick={() => { void guestLink('email') }}>Email guest invite</button>
       </div>
-      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>People in your lab also get the usual reminders. People outside need a LabOS account in your lab to join.</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>People in your lab also get the usual reminders. People outside your lab can use a guest link: they wait until the host lets them in.</div>
     </div>
   )
 }

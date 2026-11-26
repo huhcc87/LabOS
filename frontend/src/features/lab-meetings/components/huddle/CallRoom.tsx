@@ -14,7 +14,7 @@ import BoardOverlay from './BoardOverlay'
 import OutcomePanel from './OutcomePanel'
 import BackgroundPicker, { saveBg } from './BackgroundPicker'
 import type { JoinChoice } from './PreJoin'
-import { btn, clock, errorText, field, getToken, muted, safeName, save, smallBtn } from './huddleUi'
+import { btn, clock, errorText, field, getToken, huddleAuth, isGuestSession, muted, safeName, save, smallBtn } from './huddleUi'
 
 export interface RoomProps { roomId: string; meetingId?: string | number; title: string; userName: string; agenda: AgendaLite[]; join: JoinChoice; onLeave: () => void }
 
@@ -33,6 +33,9 @@ function useNarrow(): boolean {
 
 export default function CallRoom({ roomId, meetingId, title, userName, agenda, join, onLeave }: RoomProps) {
   const narrow = useNarrow()
+  const guest = isGuestSession() // joined through a guest link: no account, so no host tools, summary, polls or lab items
+  const createGuest = useMutation(api.huddleCall.createGuestLink)
+  const revokeGuest = useMutation(api.huddleCall.revokeGuestLink)
   const finishRef = useRef<() => void>(() => undefined)
   const call = useHuddleCall(roomId, userName, {
     ...join,
@@ -65,9 +68,9 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
   call.people.forEach((p) => everHere.current.add(p.name))
 
   const captions = useHuddleCaptions(roomId, userName, captionsOn, capLang)
-  const lines = useQuery(api.huddleCall.lines, { token: getToken(), room_id: roomId }) ?? []
-  const sharedNotes = useQuery(api.huddleCall.getNotes, { token: getToken(), room_id: roomId })
-  const reactionList = useQuery(api.huddleCall.reactions, { token: getToken(), room_id: roomId })
+  const lines = useQuery(api.huddleCall.lines, call.admitted ? { ...huddleAuth(), room_id: roomId } : 'skip') ?? []
+  const sharedNotes = useQuery(api.huddleCall.getNotes, call.admitted ? { ...huddleAuth(), room_id: roomId } : 'skip')
+  const reactionList = useQuery(api.huddleCall.reactions, call.admitted ? { ...huddleAuth(), room_id: roomId } : 'skip')
   const setNotesRemote = useMutation(api.huddleCall.setNotes)
   const summarize = useAction(api.huddleCall.summarize)
   const hostAct = useMutation(api.huddleCall.hostAction)
@@ -82,7 +85,7 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
     if (sharedNotes && !dirty.current && sharedNotes.updated_at !== lastSaved.current) { setNotes(sharedNotes.text); lastSaved.current = sharedNotes.updated_at }
   }, [sharedNotes])
   useEffect(() => {
-    if (!dirty.current) return
+    if (guest || !dirty.current) return
     const t = setTimeout(() => {
       setNotesRemote({ token: getToken(), room_id: roomId, text: notes, by: userName || 'Guest' }).then(() => { dirty.current = false }).catch(() => toast.error('Could not save the notes'))
     }, 700)
@@ -136,12 +139,12 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
     const blob = await recorder.stop()
     let sum = summary?.text ?? null
     if (autoDownload) {
-      if (!sum && (lines.length || notes.trim())) sum = await Promise.race([makeSummary(), new Promise<null>((r) => setTimeout(() => r(null), SUMMARY_WAIT_MS))])
+      if (!guest && !sum && (lines.length || notes.trim())) sum = await Promise.race([makeSummary(), new Promise<null>((r) => setTimeout(() => r(null), SUMMARY_WAIT_MS))])
       save(`${safeName(title)}-notes.md`, notesFile(sum))
       if (blob) setTimeout(() => downloadRecording(blob), 400)
       toast.success('Meeting files saved to your downloads')
     } else if (blob) toast('Your recording is not saved. Turn on auto-download or save it to LabOS before leaving.')
-    if (notes && dirty.current) await setNotesRemote({ token: getToken(), room_id: roomId, text: notes, by: userName || 'Guest' }).catch(() => undefined)
+    if (!guest && notes && dirty.current) await setNotesRemote({ token: getToken(), room_id: roomId, text: notes, by: userName || 'Guest' }).catch(() => undefined)
     await call.leave()
     onLeave()
   }
@@ -156,12 +159,23 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
   const stage = spot ? call.tiles.filter((t) => t.id !== spot.id) : call.tiles
   const cols = call.tiles.length <= 1 ? 1 : call.tiles.length <= 4 ? 2 : 3
   const q = call.quality ? QUALITY_LABEL[call.quality] : null
-  const TABS: [Tab, string][] = [['notes', 'Notes'], ['chat', 'Chat'], ['agenda', 'Agenda'], ['polls', 'Polls'], ['shared', 'Shared'], ['transcript', 'Transcript'], ['summary', 'Summary'], ['people', 'People']]
+  const ALL_TABS: [Tab, string][] = [['notes', 'Notes'], ['chat', 'Chat'], ['agenda', 'Agenda'], ['polls', 'Polls'], ['shared', 'Shared'], ['transcript', 'Transcript'], ['summary', 'Summary'], ['people', 'People']]
+  // Guests get the call itself: notes (read only), chat, transcript and who is here.
+  const TABS = guest ? ALL_TABS.filter(([k]) => ['notes', 'chat', 'transcript', 'people'].includes(k)) : ALL_TABS
+
+  /** Make the call's guest link and copy it. Guests wait until the host lets them in. */
+  const copyGuestLink = async () => {
+    try {
+      const r = await createGuest({ token: getToken(), room_id: roomId, title })
+      await navigator.clipboard.writeText(`${window.location.origin}/?guest=${r.code}`)
+      toast.success('Guest link copied. Guests wait until you let them in.')
+    } catch (e) { toast.error(errorText(e, 'Could not make the guest link')) }
+  }
 
   if (!call.admitted) {
     return (
       <div role="dialog" aria-modal="true" aria-label="Waiting room" style={{ position: 'fixed', inset: 0, zIndex: 100000, background: '#0b1220', color: '#fff', display: 'grid', placeItems: 'center', textAlign: 'center', padding: 16 }}>
-        <div><h2 style={{ margin: '0 0 8px' }}>{title}</h2><p style={{ color: '#94a3b8' }}>This call is locked. Waiting for {call.hostName || 'the host'} to let you in…</p>
+        <div><h2 style={{ margin: '0 0 8px' }}>{title}</h2><p style={{ color: '#94a3b8' }}>{guest ? 'Asking to join. ' : 'This call is locked. '}Waiting for {call.hostName || 'the host'} to let you in…</p>
           <button style={btn()} onClick={() => { void call.leave().then(onLeave) }}>Leave</button></div>
       </div>
     )
@@ -174,7 +188,8 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
         {q && <span title={q[1]} style={{ fontSize: 12, color: q[0] }}>● {q[1]}</span>}
         {recorder.recording && <span style={{ color: '#f87171', fontSize: 13 }}>● Recording on this computer</span>}
         <span style={{ fontSize: 13, color: '#94a3b8' }}>{clock(elapsed)} · {call.people.length + 1} in call</span>
-        <button style={{ ...smallBtn, padding: '6px 12px', fontSize: 13 }} onClick={copyLink}>Copy invite link</button>
+        {!guest && <button style={{ ...smallBtn, padding: '6px 12px', fontSize: 13 }} onClick={copyLink}>Copy invite link</button>}
+        {!guest && <button style={{ ...smallBtn, padding: '6px 12px', fontSize: 13 }} title="For people without a LabOS account. You let them in." onClick={() => { void copyGuestLink() }}>Copy guest link</button>}
         <button style={{ ...smallBtn, padding: '6px 12px', fontSize: 13 }} onClick={() => setPanelOpen((o) => !o)}>{panelOpen ? 'Hide panel' : 'Panel'}</button>
       </header>
 
@@ -217,8 +232,8 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
             <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12, fontSize: 14 }}>
               {tab === 'notes' && (
                 <>
-                  <p style={{ margin: '0 0 6px', ...muted }}>Shared notes: everyone in the call sees and edits this page.</p>
-                  <textarea aria-label="Shared meeting notes" value={notes} onChange={(e) => { dirty.current = true; setNotes(e.target.value) }}
+                  <p style={{ margin: '0 0 6px', ...muted }}>{guest ? 'Shared notes (members edit these; you can read them).' : 'Shared notes: everyone in the call sees and edits this page.'}</p>
+                  <textarea aria-label="Shared meeting notes" readOnly={guest} value={notes} onChange={(e) => { dirty.current = true; setNotes(e.target.value) }}
                     placeholder="Decisions, tasks, who does what…" style={{ ...field, height: 'calc(100% - 28px)', minHeight: 220, resize: 'none' }} />
                 </>
               )}
@@ -267,6 +282,16 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
                     ))}
                   </ul>
                   {call.hostName && !call.isHost && <p style={muted}>Host: {call.hostName}</p>}
+                  {!guest && (
+                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid #1e293b' }}>
+                      <div style={muted}>GUESTS (people without a LabOS account)</div>
+                      <p style={{ ...muted, margin: '4px 0 8px' }}>They open the guest link, type a name, and wait. The host lets each one in; guests never get lab data.</p>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button style={{ ...smallBtn, background: '#2563eb' }} onClick={() => { void copyGuestLink() }}>Copy guest link</button>
+                        <button style={{ ...smallBtn, background: '#7f1d1d' }} onClick={() => { if (window.confirm('Cancel the guest link and remove the guests who used it?')) revokeGuest({ token: getToken(), room_id: roomId }).then(() => toast.success('Guest link cancelled')).catch((e) => toast.error(errorText(e, 'Could not cancel'))) }}>Cancel guest link</button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -287,12 +312,12 @@ export default function CallRoom({ roomId, meetingId, title, userName, agenda, j
         <button style={{ ...btn(), background: call.sharing ? '#0369a1' : '#334155' }} onClick={call.sharing ? call.stopShare : call.startShare}>
           {call.sharing ? 'Stop my share' : shares.length ? 'Share my screen too' : 'Share screen'}
         </button>
-        <button style={{ ...btn(), background: call.myHand ? '#a16207' : '#334155' }} onClick={() => setHand({ token: getToken(), room_id: roomId, up: !call.myHand }).catch(() => undefined)}>{call.myHand ? 'Lower hand' : '✋ Raise hand'}</button>
+        <button style={{ ...btn(), background: call.myHand ? '#a16207' : '#334155' }} onClick={() => setHand({ ...huddleAuth(), room_id: roomId, up: !call.myHand }).catch(() => undefined)}>{call.myHand ? 'Lower hand' : '✋ Raise hand'}</button>
         <span style={{ position: 'relative' }}>
           <button style={btn()} onClick={() => setShowReact((s) => !s)} aria-label="Reactions">😊</button>
           {showReact && (
             <span style={{ position: 'absolute', bottom: 50, left: 0, background: '#1e293b', borderRadius: 999, padding: '6px 10px', display: 'flex', gap: 6, zIndex: 6 }}>
-              {REACTIONS.map((e) => <button key={e} aria-label={`React ${e}`} style={{ background: 'none', border: 0, fontSize: 24, cursor: 'pointer' }} onClick={() => { setShowReact(false); react({ token: getToken(), room_id: roomId, name: userName || 'Guest', emoji: e }).catch(() => undefined) }}>{e}</button>)}
+              {REACTIONS.map((e) => <button key={e} aria-label={`React ${e}`} style={{ background: 'none', border: 0, fontSize: 24, cursor: 'pointer' }} onClick={() => { setShowReact(false); react({ ...huddleAuth(), room_id: roomId, name: userName || 'Guest', emoji: e }).catch(() => undefined) }}>{e}</button>)}
             </span>
           )}
         </span>

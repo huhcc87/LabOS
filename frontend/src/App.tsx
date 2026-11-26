@@ -46,6 +46,7 @@ const PaymentMethodsPage     = lazy(() => import('./pages/PaymentMethodsPage'));
 const LabMembersPage         = lazy(() => import('./pages/LabMembersPage'));
 const MyStudentsPage         = lazy(() => import('./pages/MyStudentsPage'));
 const AcceptInvitePage       = lazy(() => import('./pages/AcceptInvitePage'));
+const GuestJoinPage          = lazy(() => import('./pages/GuestJoinPage'));
 const FreezerBiobankPage     = lazy(() => import('./pages/FreezerBiobankPage'));
 const VendorIntelligencePage = lazy(() => import('./pages/VendorIntelligencePage'));
 const SecurityCenterPage      = lazy(() => import('./pages/SecurityCenterPage'));
@@ -98,6 +99,7 @@ function AppInner() {
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   // Invite links look like /?invite=<token>
   const [invite, setInvite] = useState(() => new URLSearchParams(window.location.search).get('invite'));
+  const [guestCode] = useState(() => new URLSearchParams(window.location.search).get('guest'));
   // Someone scanned a label QR code with their phone camera: open the Freezer page on it once signed in
   useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('freezer-biobank'); }, [user]);
   // A call invite link (?room=…) lands on LabHuddle, which joins that room.
@@ -123,6 +125,15 @@ function AppInner() {
 
   // Analytics: track page views
   useEffect(() => { trackPageView(page); }, [page]);
+
+  // Guest links look like /?guest=<code>: for people with no LabOS account, so this page works without signing in.
+  if (guestCode) {
+    return (
+      <Suspense fallback={null}>
+        <GuestJoinPage code={guestCode} />
+      </Suspense>
+    );
+  }
 
   if (invite) {
     const leaveInvite = () => {
