@@ -390,9 +390,14 @@
   "388": "vitest",
   "389": "chronobio",
   "390": "@edge-runtime/vm",
+  "391": "@mediapipe/tasks-vision",
+  "392": "react-hot-toast",
+  "393": "@tiptap/extension-table-row",
+  "394": "@tiptap/extension-typography",
+  "395": "@types/qrcode",
+  "396": "zod",
+  "397": "@zxing/browser",
   "402": "react-dropzone",
   "474": "key",
-  "483": "@capacitor/push-notifications",
-  "484": "socket.io-client",
-  "487": "@tiptap/pm"
+  "484": "socket.io-client"
 }

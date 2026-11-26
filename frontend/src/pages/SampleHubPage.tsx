@@ -970,12 +970,12 @@ export default function SampleHubPage() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-secondary btn-sm" onClick={() => {
                 const visibleSamples = filteredSamples ?? samples;
-                exportCSV(visibleSamples.map((s: any) => ({ Barcode: s.barcode, Name: s.name || '', Type: s.sample_type, Status: s.status, Location: s.storage_location || '', 'Received On': s.received_on || '', Notes: s.notes || '' })), 'samples');
+                exportCSV(visibleSamples.map((s) => ({ 'Sample ID': s.sampleId, Barcode: s.barcode || '', Type: s.type, Status: s.status, Location: s.location || '', 'Collected On': s.date || '', Owner: s.owner || '', Quantity: s.quantity ? `${s.quantity} ${s.unit}`.trim() : '', Notes: s.notes || '' })), 'samples');
               }}><EmojiIcon glyph="⬇" /> CSV</button>
               <button className="btn btn-secondary btn-sm" onClick={() => {
                 const visibleSamples = filteredSamples ?? samples;
-                exportPDF('Sample Registry', ['Barcode','Name','Type','Status','Location','Received On'],
-                  visibleSamples.map((s: any) => [s.barcode, s.name || '', s.sample_type, s.status, s.storage_location || '', s.received_on || '']), 'samples');
+                exportPDF('Sample Registry', ['Sample ID','Type','Status','Location','Collected On','Owner'],
+                  visibleSamples.map((s) => [s.sampleId, s.type, s.status, s.location || '', s.date || '', s.owner || '']), 'samples');
               }}><EmojiIcon glyph="⬇" /> PDF</button>
               <button className="btn btn-primary" onClick={() => setShowSampleModal(true)}>+ New Sample</button>
             </div>

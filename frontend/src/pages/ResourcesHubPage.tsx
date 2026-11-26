@@ -50,10 +50,11 @@ const TEMPLATE_TYPES = ['Document', 'Spreadsheet', 'Protocol', 'Report', 'Form',
 const EXPENSE_CATEGORIES = ['Reagents', 'Equipment', 'Consumables', 'Services', 'Maintenance', 'Software', 'Travel', 'Other'];
 
 // Backend → frontend mappers
+/** Convex inventory row -> the shape this page uses. Field names match convex/inventory.ts (cost_per_unit is in dollars). */
 function mapInvItem(raw: any): InventoryItem {
   const qty = raw.quantity ?? 0;
-  const min = raw.reorder_threshold ?? 0;
-  const status: InventoryItem['status'] = qty <= min * 0.25 ? 'critical' : qty <= min ? 'low' : 'ok';
+  const min = raw.minimum_quantity ?? 0;
+  const status: InventoryItem['status'] = min > 0 && qty <= min * 0.25 ? 'critical' : min > 0 && qty <= min ? 'low' : 'ok';
   return {
     id: raw.id,
     name: raw.name ?? '',
@@ -61,11 +62,25 @@ function mapInvItem(raw: any): InventoryItem {
     quantity: qty,
     unit: raw.unit ?? 'pcs',
     minStock: min,
-    location: raw.storage_location ?? '',
-    supplier: raw.supplier?.company ?? '',
-    cost: (raw.unit_price ?? 0) / 100,
+    location: raw.location ?? '',
+    supplier: typeof raw.supplier === 'string' ? raw.supplier : '',
+    cost: raw.cost_per_unit ?? 0,
     status,
-    lastUpdated: raw.last_ordered ?? new Date().toISOString().slice(0, 10),
+    lastUpdated: new Date(raw.updated_at ?? raw.created_at ?? Date.now()).toISOString().slice(0, 10),
+  };
+}
+
+/** The page's item -> the fields inventory.create / inventory.update accept. */
+function toInvFields(i: { name: string; category: string; quantity: number; unit: string; minStock: number; location: string; supplier: string; cost: number }) {
+  return {
+    name: i.name.trim(),
+    category: i.category.toLowerCase(),
+    quantity: i.quantity,
+    unit: i.unit,
+    minimum_quantity: i.minStock,
+    location: i.location,
+    cost_per_unit: i.cost,
+    ...(i.supplier.trim() ? { supplier: i.supplier.trim() } : {}),
   };
 }
 
@@ -203,16 +218,7 @@ export default function ResourcesHubPage() {
   const handleCreateItem = async () => {
     if (!newItem.name) { showToast('Please enter item name', 'error'); return; }
     try {
-      await inventoryApi.create({
-        name: newItem.name,
-        category: newItem.category.toLowerCase(),
-        quantity: newItem.quantity,
-        unit: newItem.unit,
-        reorder_threshold: newItem.minStock,
-        storage_location: newItem.location,
-        unit_price: Math.round(newItem.cost * 100),
-        notes: '',
-      });
+      await inventoryApi.create({ ...toInvFields(newItem), notes: '' });
       setNewItem({ name: '', category: 'Reagents', quantity: 0, unit: 'pcs', minStock: 10, location: '', supplier: '', cost: 0 });
       setShowItemModal(false);
       showToast('Item added to inventory!');
@@ -225,15 +231,7 @@ export default function ResourcesHubPage() {
   const handleUpdateItem = async () => {
     if (!editingItem) return;
     try {
-      await inventoryApi.update(editingItem.id, {
-        name: editingItem.name,
-        category: editingItem.category.toLowerCase(),
-        quantity: editingItem.quantity,
-        unit: editingItem.unit,
-        reorder_threshold: editingItem.minStock,
-        storage_location: editingItem.location,
-        unit_price: Math.round(editingItem.cost * 100),
-      });
+      await inventoryApi.update(editingItem.id, toInvFields(editingItem));
       setEditingItem(null);
       showToast('Item updated!');
       await loadInventory();
@@ -243,6 +241,7 @@ export default function ResourcesHubPage() {
   };
 
   const handleDeleteItem = async (item: InventoryItem) => {
+    if (!window.confirm(`Delete "${item.name}" from inventory? This cannot be undone.`)) return;
     try {
       await inventoryApi.delete(item.id);
       showToast('Item deleted');
@@ -255,15 +254,8 @@ export default function ResourcesHubPage() {
   const handleAdjustQuantity = async (item: InventoryItem, delta: number) => {
     const newQty = Math.max(0, item.quantity + delta);
     try {
-      await inventoryApi.update(item.id, {
-        name: item.name,
-        category: item.category.toLowerCase(),
-        quantity: newQty,
-        unit: item.unit,
-        reorder_threshold: item.minStock,
-        storage_location: item.location,
-        unit_price: Math.round(item.cost * 100),
-      });
+      // Only the count changes; leave every other field as it is.
+      await inventoryApi.update(item.id, { quantity: newQty });
       showToast(`Quantity ${delta > 0 ? 'increased' : 'decreased'}`);
       await loadInventory();
     } catch {
@@ -627,7 +619,7 @@ export default function ResourcesHubPage() {
                       <td style={{ padding: 12, textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button className="btn btn-sm btn-secondary" onClick={() => setEditingItem(item)}><EmojiIcon glyph="✏️" /> Edit</button>
-                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} onClick={() => handleDeleteItem(item)}><EmojiIcon glyph="🗑️" /></button>
+                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none' }} aria-label={`Delete ${item.name}`} title="Delete item" onClick={() => handleDeleteItem(item)}><EmojiIcon glyph="🗑️" /></button>
                         </div>
                       </td>
                     </tr>
