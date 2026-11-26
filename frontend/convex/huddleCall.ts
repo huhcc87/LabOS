@@ -341,9 +341,9 @@ export const inbox = query({
 });
 
 export const ackSignals = mutation({
-  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), ids: v.array(v.id("huddle_signals")) },
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.optional(v.string()), ids: v.array(v.id("huddle_signals")) },
   handler: async (ctx, { token, guest, room_id, ids }) => {
-    const me = (await who(ctx, token, guest, room_id)).id;
+    const me = (await who(ctx, token, guest, room_id ?? "")).id; // room_id is optional only for members on older pages; a guest must send it
     for (const id of ids) {
       const s = await ctx.db.get(id);
       if (s && s.to === me) await ctx.db.delete(id);
