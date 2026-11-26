@@ -80,6 +80,18 @@ async function pushToLabOS(product) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
+    try {
+      await handleMessage(msg, sender, sendResponse);
+    } catch (e) {
+      // Never leave the popup hanging with "unknown": always answer with the real reason.
+      try { sendResponse({ ok: false, error: (e && e.message) || String(e) || 'Extension error' }); } catch (_) {}
+    }
+  })();
+  return true; // keep channel open for async sendResponse
+});
+
+async function handleMessage(msg, sender, sendResponse) {
+  {
     if (msg.type === 'LABOS_CAPTURE') {
       const cart = await getCart();
       const product = {
@@ -100,7 +112,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await setCart(cart);
       }
 
-      sendResponse({ ok: true, cartSize: cart.length, synced: sync.ok });
+      sendResponse({ ok: true, cartSize: cart.length, synced: sync.ok, syncError: sync.ok ? undefined : sync.error });
       return;
     }
 
@@ -195,9 +207,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       return;
     }
-  })();
-  return true; // keep channel open for async sendResponse
-});
+  }
+}
 
 // Right-click context menu — capture current page link as a manual item
 chrome.runtime.onInstalled.addListener(() => {
