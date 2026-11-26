@@ -33,6 +33,7 @@ import type * as http from "../http.js";
 import type * as hubs from "../hubs.js";
 import type * as huddle from "../huddle.js";
 import type * as huddleCall from "../huddleCall.js";
+import type * as huddleGuest from "../huddleGuest.js";
 import type * as incidents from "../incidents.js";
 import type * as instrumentBooking from "../instrumentBooking.js";
 import type * as instrumentEmail from "../instrumentEmail.js";
@@ -121,6 +122,7 @@ declare const fullApi: ApiFromModules<{
   hubs: typeof hubs;
   huddle: typeof huddle;
   huddleCall: typeof huddleCall;
+  huddleGuest: typeof huddleGuest;
   incidents: typeof incidents;
   instrumentBooking: typeof instrumentBooking;
   instrumentEmail: typeof instrumentEmail;

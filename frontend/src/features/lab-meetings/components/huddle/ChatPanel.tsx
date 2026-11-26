@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../convex/_generated/api'
-import { field, getToken, muted, smallBtn } from './huddleUi'
+import { field, huddleAuth, muted, smallBtn } from './huddleUi'
 
 export default function ChatPanel({ roomId, name }: { roomId: string; name: string }) {
-  const messages = useQuery(api.huddleCall.chat, { token: getToken(), room_id: roomId }) ?? []
+  const messages = useQuery(api.huddleCall.chat, { ...huddleAuth(), room_id: roomId }) ?? []
   const send = useMutation(api.huddleCall.sendChat)
   const [text, setText] = useState('')
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [messages.length])
 
-  const submit = () => { const t = text.trim(); if (!t) return; setText(''); send({ token: getToken(), room_id: roomId, name, text: t }).catch(() => setText(t)) }
+  const submit = () => { const t = text.trim(); if (!t) return; setText(''); send({ ...huddleAuth(), room_id: roomId, name, text: t }).catch(() => setText(t)) }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 260 }}>
       <div style={{ flex: 1, overflow: 'auto' }}>

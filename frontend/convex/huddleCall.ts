@@ -2,7 +2,7 @@
  * LabHuddle live calls. The video itself flows peer to peer (WebRTC); Convex only carries the hand-shake messages,
  * the list of people in a room, the spoken lines used for the summary, and the shared notes.
  */
-import { query, mutation } from "./tenant";
+import { query, mutation, guestSession } from "./tenant";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v, ConvexError } from "convex/values";
@@ -20,21 +20,43 @@ const MAX_SIGNAL = 20_000;
 const MAX_LINE = 1_000;
 const MAX_NOTES = 50_000;
 
+/**
+ * Who is calling a call function: a signed-in member (token) or a guest who came in through a guest link (guest secret).
+ * A guest only ever acts inside the one room their link was made for, and uses the name they gave, never one the page sends.
+ * Functions a guest must not use simply do not take a `guest` argument.
+ */
+async function who(ctx: { db: any; rawDb: any }, token: string | undefined, guest: string | undefined, room_id: string, allowWaiting = false): Promise<{ id: string; guest: boolean; name?: string }> {
+  if (token) return { id: (await requireAuth(ctx as never, token)) as string, guest: false };
+  const g = await guestSession(ctx.rawDb, guest);
+  if (!g || g.room_id !== room_id) throw new ConvexError("This guest link is no longer valid. Ask for a new one.");
+  const id = `g_${g._id}`;
+  // Until the host lets a guest in, they can only wait: no chat, notes, board or hand-shake with anyone.
+  if (!allowWaiting) {
+    const row = (await ctx.db.query("huddle_peers").withIndex("by_room", (q: any) => q.eq("room_id", room_id)).collect()).find((p: { user_id: string }) => p.user_id === id);
+    if (!row || !isAdmitted(row)) throw new ConvexError("Waiting for the host to let you in.");
+  }
+  return { id, guest: true, name: g.name };
+}
+const guestArg = { guest: v.optional(v.string()) };
+const isGuestId = (id: string) => id.startsWith("g_");
+
 export const heartbeat = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), name: v.string(), sharing: v.boolean() },
-  handler: async (ctx, { token, room_id, name, sharing }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), name: v.string(), sharing: v.boolean() },
+  handler: async (ctx, { token, guest, room_id, name, sharing }) => {
+    const who_ = await who(ctx, token, guest, room_id, true);
+    const me = who_.id;
+    const shown = (who_.name ?? name).slice(0, 80);
     const now = Date.now();
     const all = await ctx.db.query("huddle_peers").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
-    const row = all.find((p: { user_id: Id<"users"> }) => p.user_id === me);
+    const row = all.find((p: { user_id: string }) => p.user_id === me);
     if (row) {
       // Only write when something changed or the last beat is getting old, so the room list isn't re-sent every few seconds.
-      if (row.sharing !== sharing || now - row.last_seen > 8_000) await ctx.db.patch(row._id, { sharing, last_seen: now, name: name.slice(0, 80) });
+      if (row.sharing !== sharing || now - row.last_seen > 8_000) await ctx.db.patch(row._id, { sharing, last_seen: now, name: shown });
     } else {
-      // In a locked room newcomers wait until the host lets them in (the first person in is always let in).
+      // Guests always wait for the host. In a locked room members wait too (the first person in is always let in).
       const state = await roomState(ctx, room_id);
-      const admitted = !state?.locked || all.filter(isAdmitted).length === 0;
-      await ctx.db.insert("huddle_peers", { room_id, user_id: me, name: name.slice(0, 80), sharing, admitted, joined_at: now, last_seen: now });
+      const admitted = who_.guest ? false : !state?.locked || all.filter(isAdmitted).length === 0;
+      await ctx.db.insert("huddle_peers", { room_id, user_id: me, name: shown, sharing, admitted, joined_at: now, last_seen: now });
     }
   },
 });
@@ -48,12 +70,13 @@ async function roomState(ctx: { db: any }, room_id: string) {
 }
 
 /** The host is whoever has been in the room (and let in) the longest. */
-function hostOf(rows: { user_id: Id<"users">; joined_at: number; admitted?: boolean }[]): string {
-  const h = rows.filter(isAdmitted).sort((a, b) => a.joined_at - b.joined_at || (a.user_id < b.user_id ? -1 : 1))[0];
-  return h ? (h.user_id as string) : "";
+function hostOf(rows: { user_id: string; joined_at: number; admitted?: boolean }[]): string {
+  // A guest is never the host.
+  const h = rows.filter((p) => isAdmitted(p) && !isGuestId(p.user_id)).sort((a, b) => a.joined_at - b.joined_at || (a.user_id < b.user_id ? -1 : 1))[0];
+  return h ? h.user_id : "";
 }
 
-async function requireHost(ctx: { db: any }, me: Id<"users">, room_id: string) {
+async function requireHost(ctx: { db: any }, me: string, room_id: string) {
   const rows = await ctx.db.query("huddle_peers").withIndex("by_room", (q: any) => q.eq("room_id", room_id)).collect();
   if (hostOf(rows) !== me) throw new ConvexError("Only the host can do that.");
   return rows;
@@ -73,7 +96,11 @@ export const hostAction = mutation({
       if (action !== "muteAll" && !target) throw new ConvexError("Pick a person.");
       if (target === me) throw new ConvexError("You cannot do that to yourself.");
       await ctx.db.insert("huddle_controls", { room_id, target: action === "muteAll" ? "all" : target!, kind: action === "kick" ? "kick" : "mute", by: me, at: now });
-      if (action === "kick") for (const p of rows) if (p.user_id === target) await ctx.db.delete(p._id);
+      if (action === "kick") {
+        for (const p of rows) if (p.user_id === target) await ctx.db.delete(p._id);
+        // A removed guest cannot come back with the same link session.
+        if (target && isGuestId(target)) { const g = await ctx.db.get(target.slice(2) as Id<"huddle_guests">); if (g) await ctx.db.delete(g._id); }
+      }
     } else if (action === "lock" || action === "unlock") {
       const s = await roomState(ctx, room_id);
       if (s) await ctx.db.patch(s._id, { locked: action === "lock" });
@@ -85,9 +112,9 @@ export const hostAction = mutation({
 });
 
 export const controls = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    const me = (await who(ctx, token, guest, room_id, true)).id;
     const rows = await ctx.db.query("huddle_controls").withIndex("by_room", (q) => q.eq("room_id", room_id)).order("desc").take(30);
     return rows.filter((c: any) => (c.target === me || c.target === "all") && c.by !== me).map((c: any) => ({ id: c._id as string, kind: c.kind as string, at: c.at as number }));
   },
@@ -106,9 +133,9 @@ export const setAgenda = mutation({
 });
 
 export const setHand = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), up: v.boolean() },
-  handler: async (ctx, { token, room_id, up }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), up: v.boolean() },
+  handler: async (ctx, { token, guest, room_id, up }) => {
+    const me = (await who(ctx, token, guest, room_id)).id;
     for (const p of await ctx.db.query("huddle_peers").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect()) {
       if (p.user_id === me) await ctx.db.patch(p._id, { hand: up });
     }
@@ -117,36 +144,36 @@ export const setHand = mutation({
 
 const EMOJI = ["👍", "👏", "❤️", "😂", "🎉", "🤔"];
 export const react = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), name: v.string(), emoji: v.string() },
-  handler: async (ctx, { token, room_id, name, emoji }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), name: v.string(), emoji: v.string() },
+  handler: async (ctx, { token, guest, room_id, name, emoji }) => {
+    const w = await who(ctx, token, guest, room_id);
     if (!EMOJI.includes(emoji)) throw new ConvexError("Pick one of the reactions.");
-    await ctx.db.insert("huddle_reactions", { room_id, user_id: me, name: name.slice(0, 80), emoji, at: Date.now() });
+    await ctx.db.insert("huddle_reactions", { room_id, user_id: w.id, name: (w.name ?? name).slice(0, 80), emoji, at: Date.now() });
   },
 });
 
 export const reactions = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const rows = await ctx.db.query("huddle_reactions").withIndex("by_room", (q) => q.eq("room_id", room_id)).order("desc").take(20);
     return rows.map((r: any) => ({ id: r._id as string, name: r.name as string, emoji: r.emoji as string, at: r.at as number }));
   },
 });
 
 export const sendChat = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), name: v.string(), text: v.string() },
-  handler: async (ctx, { token, room_id, name, text }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), name: v.string(), text: v.string() },
+  handler: async (ctx, { token, guest, room_id, name, text }) => {
+    const w = await who(ctx, token, guest, room_id);
     const t = text.trim().slice(0, 2_000);
-    if (t) await ctx.db.insert("huddle_chat", { room_id, user_id: me, name: name.slice(0, 80), text: t, at: Date.now() });
+    if (t) await ctx.db.insert("huddle_chat", { room_id, user_id: w.id, name: (w.name ?? name).slice(0, 80), text: t, at: Date.now() });
   },
 });
 
 export const chat = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const rows = await ctx.db.query("huddle_chat").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
     return rows.sort((a: any, b: any) => a.at - b.at).slice(-300).map((c: any) => ({ id: c._id as string, name: c.name as string, text: c.text as string, at: c.at as number }));
   },
@@ -155,27 +182,27 @@ export const chat = query({
 // ── Whiteboard ───────────────────────────────────────────────────────────────
 
 export const addStroke = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), color: v.string(), width: v.number(), points: v.string() },
-  handler: async (ctx, { token, room_id, color, width, points }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), color: v.string(), width: v.number(), points: v.string() },
+  handler: async (ctx, { token, guest, room_id, color, width, points }) => {
+    const me = (await who(ctx, token, guest, room_id)).id;
     if (points.length > 20_000) throw new ConvexError("Stroke too long.");
     await ctx.db.insert("huddle_strokes", { room_id, user_id: me, color: color.slice(0, 20), width: Math.min(24, Math.max(1, width)), points, at: Date.now() });
   },
 });
 
 export const strokes = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const rows = await ctx.db.query("huddle_strokes").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
     return rows.sort((a: any, b: any) => a.at - b.at).slice(-1500).map((s: any) => ({ id: s._id as string, color: s.color as string, width: s.width as number, points: s.points as string }));
   },
 });
 
 export const clearBoard = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     for (const s of await ctx.db.query("huddle_strokes").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect()) await ctx.db.delete(s._id);
   },
 });
@@ -208,9 +235,9 @@ export const shareItem = mutation({
 });
 
 export const sharedItems = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const rows = await ctx.db.query("huddle_shared").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
     return rows.sort((a: any, b: any) => b.at - a.at).map((r: any) => ({ id: r._id as string, name: r.name as string, kind: r.kind as string, title: r.title as string, detail: r.detail as string, at: r.at as number }));
   },
@@ -266,9 +293,9 @@ export const removeRecording = mutation({
 });
 
 export const leave = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    const me = (await who(ctx, token, guest, room_id, true)).id;
     for (const p of await ctx.db.query("huddle_peers").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect()) {
       if (p.user_id === me) await ctx.db.delete(p._id);
     }
@@ -277,9 +304,9 @@ export const leave = mutation({
 });
 
 export const peers = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    const me = (await who(ctx, token, guest, room_id, true)).id;
     const rows = await ctx.db.query("huddle_peers").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
     const state = await roomState(ctx, room_id);
     return {
@@ -294,9 +321,9 @@ export const peers = query({
 });
 
 export const sendSignal = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), to: v.string(), channel: v.string(), kind: v.string(), data: v.string() },
-  handler: async (ctx, { token, room_id, to, channel, kind, data }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), to: v.string(), channel: v.string(), kind: v.string(), data: v.string() },
+  handler: async (ctx, { token, guest, room_id, to, channel, kind, data }) => {
+    const me = (await who(ctx, token, guest, room_id)).id;
     if (data.length > MAX_SIGNAL) throw new ConvexError("Signal too large.");
     if (!["offer", "answer", "ice", "stop"].includes(kind)) throw new ConvexError("Bad signal.");
     await ctx.db.insert("huddle_signals", { room_id, from: me, to, channel: channel.slice(0, 40), kind, data, created_at: Date.now() });
@@ -304,9 +331,9 @@ export const sendSignal = mutation({
 });
 
 export const inbox = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    const me = (await who(ctx, token, guest, room_id)).id;
     const rows = await ctx.db.query("huddle_signals").withIndex("by_room_to", (q) => q.eq("room_id", room_id).eq("to", me)).collect();
     return rows.sort((a: any, b: any) => a.created_at - b.created_at || a._creationTime - b._creationTime)
       .map((s: any) => ({ id: s._id as string, from: s.from as string, channel: s.channel as string, kind: s.kind as string, data: s.data as string }));
@@ -314,9 +341,9 @@ export const inbox = query({
 });
 
 export const ackSignals = mutation({
-  args: { token: v.optional(v.string()), ids: v.array(v.id("huddle_signals")) },
-  handler: async (ctx, { token, ids }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), ids: v.array(v.id("huddle_signals")) },
+  handler: async (ctx, { token, guest, room_id, ids }) => {
+    const me = (await who(ctx, token, guest, room_id)).id;
     for (const id of ids) {
       const s = await ctx.db.get(id);
       if (s && s.to === me) await ctx.db.delete(id);
@@ -325,27 +352,27 @@ export const ackSignals = mutation({
 });
 
 export const addLine = mutation({
-  args: { token: v.optional(v.string()), room_id: v.string(), name: v.string(), text: v.string() },
-  handler: async (ctx, { token, room_id, name, text }) => {
-    const me = await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string(), name: v.string(), text: v.string() },
+  handler: async (ctx, { token, guest, room_id, name, text }) => {
+    const w = await who(ctx, token, guest, room_id);
     const t = text.trim().slice(0, MAX_LINE);
-    if (t) await ctx.db.insert("huddle_lines", { room_id, user_id: me, name: name.slice(0, 80), text: t, at: Date.now() });
+    if (t) await ctx.db.insert("huddle_lines", { room_id, user_id: w.id, name: (w.name ?? name).slice(0, 80), text: t, at: Date.now() });
   },
 });
 
 export const lines = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const rows = await ctx.db.query("huddle_lines").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
     return rows.sort((a: any, b: any) => a.at - b.at).map((l: any) => ({ name: l.name as string, text: l.text as string, at: l.at as number }));
   },
 });
 
 export const getNotes = query({
-  args: { token: v.optional(v.string()), room_id: v.string() },
-  handler: async (ctx, { token, room_id }) => {
-    await requireAuth(ctx, token);
+  args: { token: v.optional(v.string()), ...guestArg, room_id: v.string() },
+  handler: async (ctx, { token, guest, room_id }) => {
+    await who(ctx, token, guest, room_id);
     const n = await ctx.db.query("huddle_notes").withIndex("by_room", (q) => q.eq("room_id", room_id)).first();
     return n ? { text: n.text as string, updated_by: n.updated_by as string, updated_at: n.updated_at as number } : null;
   },
@@ -497,5 +524,40 @@ export const saveOutcome = mutation({
     }
     void room_id;
     return done;
+  },
+});
+
+// ── Guest links (a member makes one for a call; guests wait for the host) ────
+
+const GUEST_LINK_MS = 24 * 3_600_000;
+
+/** Make (or reuse) the guest link for a call. Anyone with it can ask to join this one call, and the host has to let them in. */
+export const createGuestLink = mutation({
+  args: { token: v.optional(v.string()), room_id: v.string(), title: v.string() },
+  handler: async (ctx, { token, room_id, title }) => {
+    const me = await requireAuth(ctx, token);
+    const now = Date.now();
+    const links = await ctx.db.query("huddle_guest_links").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect();
+    const live = links.find((l: any) => !l.revoked && l.expires_at > now + 3_600_000);
+    if (live) return { code: live.code as string, expires_at: live.expires_at as number };
+    const code = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const expires_at = now + GUEST_LINK_MS;
+    await ctx.db.insert("huddle_guest_links", { room_id, title: title.trim().slice(0, 120) || "LabHuddle call", code, created_by: me, created_at: now, expires_at, revoked: false });
+    return { code, expires_at };
+  },
+});
+
+/** Cancel the guest link for a call and remove the guests who used it. */
+export const revokeGuestLink = mutation({
+  args: { token: v.optional(v.string()), room_id: v.string() },
+  handler: async (ctx, { token, room_id }) => {
+    await requireAuth(ctx, token);
+    for (const l of await ctx.db.query("huddle_guest_links").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect()) {
+      await ctx.db.patch(l._id, { revoked: true });
+      for (const g of await ctx.db.query("huddle_guests").withIndex("by_link", (q) => q.eq("link_id", l._id)).collect()) {
+        for (const p of await ctx.db.query("huddle_peers").withIndex("by_room", (q) => q.eq("room_id", room_id)).collect()) if (p.user_id === `g_${g._id}`) await ctx.db.delete(p._id);
+        await ctx.db.delete(g._id);
+      }
+    }
   },
 });

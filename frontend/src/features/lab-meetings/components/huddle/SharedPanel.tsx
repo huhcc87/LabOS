@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import toast from 'react-hot-toast'
 import { api } from '../../../../../convex/_generated/api'
-import { errorText, field, getToken, muted, smallBtn } from './huddleUi'
+import { errorText, field, getToken, huddleAuth, muted, smallBtn } from './huddleUi'
 
 const ICON: Record<string, string> = { protocol: '📋', sample: '🧪', experiment: '🔬' }
 
@@ -10,7 +10,7 @@ const ICON: Record<string, string> = { protocol: '📋', sample: '🧪', experim
 export default function SharedPanel({ roomId, name }: { roomId: string; name: string }) {
   const [q, setQ] = useState('')
   const found = useQuery(api.huddleCall.searchItems, { token: getToken(), q }) ?? []
-  const shared = useQuery(api.huddleCall.sharedItems, { token: getToken(), room_id: roomId }) ?? []
+  const shared = useQuery(api.huddleCall.sharedItems, { ...huddleAuth(), room_id: roomId }) ?? []
   const share = useMutation(api.huddleCall.shareItem)
 
   return (

@@ -1141,7 +1141,7 @@ export default defineSchema({
   huddle_reactions: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
-    user_id: v.id("users"),
+    user_id: v.string(), // a member's id, or g_… for a guest
     name: v.string(),
     emoji: v.string(),
     at: v.number(),
@@ -1150,7 +1150,7 @@ export default defineSchema({
   huddle_chat: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
-    user_id: v.id("users"),
+    user_id: v.string(), // a member's id, or g_… for a guest
     name: v.string(),
     text: v.string(),
     at: v.number(),
@@ -1159,7 +1159,7 @@ export default defineSchema({
   huddle_strokes: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
-    user_id: v.id("users"),
+    user_id: v.string(), // a member's id, or g_… for a guest
     color: v.string(),
     width: v.number(),
     points: v.string(), // JSON [[x,y],...] with x and y from 0 to 1
@@ -1201,7 +1201,7 @@ export default defineSchema({
   huddle_peers: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
-    user_id: v.id("users"),
+    user_id: v.string(), // a member's id, or g_… for a guest
     name: v.string(),
     sharing: v.boolean(),
     hand: v.optional(v.boolean()),
@@ -1224,11 +1224,33 @@ export default defineSchema({
   huddle_lines: defineTable({
     lab_id: v.optional(v.id("labs")),
     room_id: v.string(),
-    user_id: v.id("users"),
+    user_id: v.string(), // a member's id, or g_… for a guest
     name: v.string(),
     text: v.string(),
     at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_room", ["room_id"]),
+
+  // LabHuddle guests: a link a member makes for one call, and the people who joined through it (they wait for the host to let them in).
+  huddle_guest_links: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    title: v.string(),
+    code: v.string(), // secret in the link
+    created_by: v.id("users"),
+    created_at: v.number(),
+    expires_at: v.number(),
+    revoked: v.boolean(),
+  }).index("by_lab", ["lab_id"]).index("by_code", ["code"]).index("by_room", ["room_id"]),
+
+  huddle_guests: defineTable({
+    lab_id: v.optional(v.id("labs")),
+    room_id: v.string(),
+    link_id: v.id("huddle_guest_links"),
+    token_hash: v.string(), // the guest keeps the secret; only its hash is stored
+    name: v.string(),
+    created_at: v.number(),
+    expires_at: v.number(),
+  }).index("by_lab", ["lab_id"]).index("by_token", ["token_hash"]).index("by_link", ["link_id"]),
 
   huddle_notes: defineTable({
     lab_id: v.optional(v.id("labs")),

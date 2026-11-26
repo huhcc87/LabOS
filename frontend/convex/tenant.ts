@@ -102,8 +102,23 @@ async function keepLab(db: any, ref: any[]) {
   return out;
 }
 
+/**
+ * A LabHuddle guest (someone who joined a call through a guest link) by the secret they hold, or null when it is unknown or expired.
+ * Only functions that declare a `guest` argument can ever receive one; they must check the guest's room themselves.
+ */
+export async function guestSession(db: any, guest: string | undefined | null) {
+  if (!guest) return null;
+  const hashed = await sha256Hex(guest); // only the hash of the secret is stored
+  const row = await db.query("huddle_guests").withIndex("by_token", (q: any) => q.eq("token_hash", hashed)).first();
+  return row && row.expires_at > Date.now() ? row : null;
+}
+
 /** Who is calling, and which lab they are working in. */
-export async function whoIs(db: any, token: string | undefined | null) {
+export async function whoIs(db: any, token: string | undefined | null, guest?: string | null) {
+  if (!token && guest) {
+    const g = await guestSession(db, guest);
+    return { lab: (g?.lab_id ?? null) as LabId | null, self: null as string | null };
+  }
   if (!token) return { lab: null as LabId | null, self: null as string | null };
   const hashed = await sha256Hex(token); // sessions store only the hash of the token
   const session = await db.query("sessions").withIndex("by_token", (q: any) => q.eq("token", hashed)).first();
@@ -124,7 +139,7 @@ export function query<A extends PropertyValidators = Record<string, never>, R = 
   return rawQuery({
     args: (def.args ?? {}) as A,
     handler: async (ctx, args: any) => {
-      const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token);
+      const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token, (args as { guest?: string }).guest);
       return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantQueryCtx, args as ObjectType<A>);
     },
   });
@@ -137,7 +152,7 @@ export function mutation<A extends PropertyValidators = Record<string, never>, R
   return rawMutation({
     args: (def.args ?? {}) as A,
     handler: async (ctx, args: any) => {
-      const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token);
+      const { lab, self } = await whoIs(ctx.db, (args as { token?: string }).token, (args as { guest?: string }).guest);
       return def.handler({ ...ctx, db: scopeDb(ctx.db, lab, self), rawDb: ctx.db, labId: lab } as TenantMutationCtx, args as ObjectType<A>);
     },
   });

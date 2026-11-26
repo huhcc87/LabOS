@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../convex/_generated/api'
-import { getToken, smallBtn } from './huddleUi'
+import { huddleAuth, smallBtn } from './huddleUi'
 
 type Pt = [number, number]
 const COLORS = ['#f8fafc', '#f87171', '#facc15', '#4ade80', '#38bdf8', '#c084fc']
 
 /** A whiteboard everyone draws on at once. Points are saved as 0 to 1 so every screen size shows the same picture. */
 export default function BoardOverlay({ roomId, onClose }: { roomId: string; onClose: () => void }) {
-  const strokes = useQuery(api.huddleCall.strokes, { token: getToken(), room_id: roomId }) ?? []
+  const strokes = useQuery(api.huddleCall.strokes, { ...huddleAuth(), room_id: roomId }) ?? []
   const addStroke = useMutation(api.huddleCall.addStroke)
   const clear = useMutation(api.huddleCall.clearBoard)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -41,7 +41,7 @@ export default function BoardOverlay({ roomId, onClose }: { roomId: string; onCl
   const end = () => {
     const pts = drawing.current
     drawing.current = null
-    if (pts?.length) addStroke({ token: getToken(), room_id: roomId, color, width, points: JSON.stringify(pts.map(([x, y]) => [Math.round(x * 1e4) / 1e4, Math.round(y * 1e4) / 1e4])) }).catch(() => undefined)
+    if (pts?.length) addStroke({ ...huddleAuth(), room_id: roomId, color, width, points: JSON.stringify(pts.map(([x, y]) => [Math.round(x * 1e4) / 1e4, Math.round(y * 1e4) / 1e4])) }).catch(() => undefined)
   }
 
   return (
@@ -50,7 +50,7 @@ export default function BoardOverlay({ roomId, onClose }: { roomId: string; onCl
         <strong>Whiteboard</strong>
         {COLORS.map((c) => <button key={c} aria-label={`Pen colour ${c}`} onClick={() => setColor(c)} style={{ width: 24, height: 24, borderRadius: 12, background: c, border: color === c ? '3px solid #60a5fa' : '1px solid #475569', cursor: 'pointer' }} />)}
         <label style={{ fontSize: 12 }}>Pen <input type="range" min={1} max={12} value={width} onChange={(e) => setWidth(Number(e.target.value))} /></label>
-        <button style={smallBtn} onClick={() => clear({ token: getToken(), room_id: roomId })}>Clear for everyone</button>
+        <button style={smallBtn} onClick={() => clear({ ...huddleAuth(), room_id: roomId })}>Clear for everyone</button>
         <button style={{ ...smallBtn, marginLeft: 'auto' }} onClick={onClose}>Close board</button>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center' }}>

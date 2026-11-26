@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
+import { huddleAuth } from '../components/huddle/huddleUi'
 import { BackgroundProcessor, type BgMode } from './backgroundEffect'
 
 /**
@@ -19,11 +20,11 @@ const ICE: RTCConfiguration = {
     ...(TURN_URL ? [{ urls: TURN_URL.split(','), username: import.meta.env.VITE_TURN_USERNAME as string, credential: import.meta.env.VITE_TURN_CREDENTIAL as string }] : []),
   ],
 }
-const TOKEN_KEY = 'labos_auth_token'
+
 const BEAT_MS = 5_000
 const STALE_MS = 30_000
 
-const getToken = (): string | undefined => localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? undefined
+
 
 export interface Tile { id: string; peerId: string; name: string; stream: MediaStream; kind: 'cam' | 'screen'; local: boolean }
 export interface Person { id: string; name: string; sharing: boolean; hand: boolean; joined_at: number }
@@ -33,10 +34,14 @@ export type Quality = '' | 'good' | 'fair' | 'poor'
 interface Conn { pc: RTCPeerConnection; joined: number }
 
 export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
-  const token = getToken()
-  const roster = useQuery(api.huddleCall.peers, { token, room_id: roomId })
-  const inbox = useQuery(api.huddleCall.inbox, { token, room_id: roomId })
-  const controlList = useQuery(api.huddleCall.controls, { token, room_id: roomId })
+  const auth = huddleAuth()
+  const token = auth.guest ?? auth.token // only used to refresh callbacks when the sign-in changes
+  const roster = useQuery(api.huddleCall.peers, { ...auth, room_id: roomId })
+  // A guest waiting for the host may only wait: no hand-shake messages until they are let in.
+  const myRow = roster?.peers.find((p) => p.id === roster.me)
+  const inboxOn = !!roster && (myRow ? myRow.admitted : !auth.guest)
+  const inbox = useQuery(api.huddleCall.inbox, inboxOn ? { ...auth, room_id: roomId } : 'skip')
+  const controlList = useQuery(api.huddleCall.controls, { ...auth, room_id: roomId })
   const optsRef = useRef(opts)
   optsRef.current = opts
   const heartbeat = useMutation(api.huddleCall.heartbeat)
@@ -70,7 +75,7 @@ export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 5_000); return () => clearInterval(t) }, [])
   const people: Person[] = []
   const waiting: Person[] = []
-  let admitted = true
+  let admitted = !auth.guest // a guest is not in until the host lets them in; a member is, unless the call is locked
   let myHand = false
   if (roster) {
     for (const p of roster.peers) {
@@ -88,7 +93,7 @@ export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
   const peerKey = people.map((p) => `${p.id}:${p.joined_at}:${p.sharing}`).join('|')
 
   const sig = useCallback((to: string, channel: string, kind: string, data: unknown) => {
-    sendSignal({ token, room_id: roomId, to, channel, kind, data: JSON.stringify(data) }).catch(() => undefined)
+    sendSignal({ ...auth, room_id: roomId, to, channel, kind, data: JSON.stringify(data) }).catch(() => undefined)
   }, [sendSignal, token, roomId])
 
   // ── My camera and microphone ──
@@ -312,7 +317,7 @@ export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
     fresh.forEach((s) => seen.current.add(s.id))
     chain.current = chain.current.then(async () => {
       for (const s of fresh) { try { await handle(s) } catch { /* a bad message must not stop the call */ } }
-      ack({ token, ids: fresh.map((s) => s.id as never) }).catch(() => undefined)
+      ack({ ...auth, room_id: roomId, ids: fresh.map((s) => s.id as never) }).catch(() => undefined)
     })
   }, [inbox, mediaReady, handle, ack, token])
 
@@ -320,7 +325,7 @@ export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
   const sharing = !!myShare
   useEffect(() => {
     if (!mediaReady) return
-    const beat = () => heartbeat({ token, room_id: roomId, name: myName || 'Guest', sharing }).catch(() => undefined)
+    const beat = () => heartbeat({ ...auth, room_id: roomId, name: myName || 'Guest', sharing }).catch(() => undefined)
     beat()
     const t = setInterval(beat, BEAT_MS)
     return () => clearInterval(t)
@@ -352,11 +357,11 @@ export function useHuddleCall(roomId: string, myName: string, opts: CallOpts) {
     for (const key of [...conns.current.keys()]) closeConn(key)
     effect.current?.stop(); rawVideo.current?.stop()
     localRef.current?.getTracks().forEach((t) => t.stop())
-    await leaveRoom({ token, room_id: roomId }).catch(() => undefined)
+    await leaveRoom({ ...auth, room_id: roomId }).catch(() => undefined)
   }, [stopShare, closeConn, leaveRoom, token, roomId])
 
   useEffect(() => {
-    const bye = () => { leaveRoom({ token, room_id: roomId }).catch(() => undefined) }
+    const bye = () => { leaveRoom({ ...auth, room_id: roomId }).catch(() => undefined) }
     window.addEventListener('pagehide', bye)
     return () => { window.removeEventListener('pagehide', bye); for (const key of [...conns.current.keys()]) closeConn(key) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
