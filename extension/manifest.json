@@ -420,6 +420,12 @@
       "run_at": "document_idle"
     },
     {
+      "matches": ["https://*/*", "http://*/*"],
+      "exclude_matches": ["https://lab-os-eight.vercel.app/*", "http://localhost/*"],
+      "js": ["content/_shared.js", "scrape.js", "content/universal.js"],
+      "run_at": "document_idle"
+    },
+    {
       "matches": [
         "https://lab-os-eight.vercel.app/*",
         "http://localhost/*"
