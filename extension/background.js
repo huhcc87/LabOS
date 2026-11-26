@@ -104,6 +104,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return;
     }
 
+    if (msg.type === 'LABOS_PAIR') {
+      // Only from the LabOS app page (content/labos-app.js), and only a LabOS key + a Convex HTTP address.
+      const okKey = typeof msg.apiToken === 'string' && /^lbx_[0-9a-f]{48}$/.test(msg.apiToken);
+      const okBase = typeof msg.apiBase === 'string' && /^https:\/\/[a-z0-9-]+\.convex\.site\/extension$/.test(msg.apiBase);
+      const fromApp = !!(sender.tab && sender.url && sender.id === chrome.runtime.id);
+      if (!fromApp || !okKey || !okBase) { sendResponse({ ok: false, error: 'Rejected pairing request' }); return; }
+      await chrome.storage.sync.set({ apiBase: msg.apiBase, apiToken: msg.apiToken });
+      sendResponse({ ok: true });
+      return;
+    }
+
     if (msg.type === 'LABOS_CART_COUNT') {
       const cart = await getCart();
       sendResponse({ count: cart.length });

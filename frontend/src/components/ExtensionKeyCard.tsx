@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import toast from 'react-hot-toast';
 import { api } from '../../convex/_generated/api';
@@ -24,9 +24,29 @@ export default function ExtensionKeyCard() {
 
   const copy = (text: string) => navigator.clipboard.writeText(text).then(() => toast.success('Copied'), () => toast.error('Copy failed. Select it and copy by hand.'));
 
-  const make = async () => {
+  // The extension's script on this page answers a ping, so we only offer one-click connect when it is installed.
+  const [extReady, setExtReady] = useState(false);
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.source !== window || e.origin !== window.location.origin || e.data?.source !== 'labos-ext') return;
+      if (e.data.type === 'LABOS_EXT_READY') setExtReady(true);
+      if (e.data.type === 'LABOS_EXT_PAIRED') {
+        if (e.data.ok) toast.success('Extension connected. Captured items now sync to your Reagent Cart.');
+        else toast.error('Extension refused to connect. Copy the key by hand instead.');
+      }
+    };
+    window.addEventListener('message', onMsg);
+    window.postMessage({ source: 'labos-app', type: 'LABOS_EXT_PING' }, window.location.origin);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const make = async (connect = false) => {
     if (!token) return;
-    try { setFresh((await create({ token })).key); } catch { toast.error('Could not create the key'); }
+    try {
+      const { key } = await create({ token });
+      setFresh(key);
+      if (connect && base) window.postMessage({ source: 'labos-app', type: 'LABOS_EXT_PAIR', apiBase: base, key }, window.location.origin);
+    } catch { toast.error('Could not create the key'); }
   };
   const remove = async () => {
     if (!token || !window.confirm('Revoke the extension key? The extension stops working until you make a new one.')) return;
@@ -62,7 +82,12 @@ export default function ExtensionKeyCard() {
         </div>
       )}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button style={{ ...btn, background: 'var(--accent)', color: '#fff', border: 'none' }} onClick={make}>
+        {extReady && (
+          <button style={{ ...btn, background: 'var(--accent)', color: '#fff', border: 'none' }} onClick={() => make(true)}>
+            {status?.has_key ? 'Connect extension (replaces the old key)' : 'Connect extension'}
+          </button>
+        )}
+        <button style={extReady ? btn : { ...btn, background: 'var(--accent)', color: '#fff', border: 'none' }} onClick={() => make(false)}>
           {status?.has_key ? 'Make a new key (replaces the old one)' : 'Make extension key'}
         </button>
         {status?.has_key && <button style={{ ...btn, color: '#ef4444' }} onClick={remove}>Revoke</button>}
