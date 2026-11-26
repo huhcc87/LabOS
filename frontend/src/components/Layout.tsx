@@ -11,6 +11,7 @@ import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { ErrorBoundary } from './ErrorBoundary';
 import EmojiIcon from './EmojiIcon';
 import LockedHub from './LockedHub';
+import GetApps from './GetApps';
 import { useHubAccess } from '../lib/useHubAccess';
 import { isHub } from '../../convex/hubs';
 import { SearchIcon, AssistantIcon, BellIcon, MoonIcon, SunIcon, MonitorIcon } from './HeaderIcons';
@@ -440,6 +441,7 @@ export function Layout({ activePage, onNavigate, children }: LayoutProps) {
             );
           })}
         </nav>
+        <GetApps />
         <div className="sidebar-footer sidebar-footer-mobile">
           {menuToggle}
           {themeToggle}
