@@ -108,6 +108,8 @@ export const inventoryPredictions = query({
           item_id: item._id,
           name: item.name,
           current_quantity: item.quantity,
+          reorder_threshold: item.minimum_quantity ?? 0, // the Inventory page shows these two
+          unit: item.unit ?? "",
           predicted_runout: isOut ? "Now" : "Within 2 weeks",
           recommendation: isOut ? "Reorder immediately" : "Plan reorder",
           confidence: 0.8,

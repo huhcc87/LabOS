@@ -1324,7 +1324,7 @@ export default function ResearchAITab({ onSendToGrant }: Props) {
             <div>
               <label htmlFor="swarm-disease" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>DISEASE / CONDITION</label>
               <input id="swarm-disease" list="swarm-disease-list" value={disease} onChange={e => setDisease(e.target.value)} placeholder="Start typing, e.g. Glioblastoma" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
-              <datalist id="swarm-disease-list">{DISEASES.flatMap(g => g.items).map(item => <option key={item} value={item} />)}</datalist>
+              <datalist id="swarm-disease-list">{[...new Set(DISEASES.flatMap(g => g.items))].map(item => <option key={item} value={item} />)}</datalist>
             </div>
             <div>
               <label htmlFor="swarm-grant" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>GRANT TYPE</label>

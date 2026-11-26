@@ -190,7 +190,7 @@ export default function SupplierDirectoryPage({ embedded = false }: { embedded?:
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
             Categories
           </div>
-          {['All', ...SUPPLIER_CATEGORIES].map(cat => (
+          {SUPPLIER_CATEGORIES.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
