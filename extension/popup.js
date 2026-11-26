@@ -95,15 +95,13 @@ async function init() {
 
   document.getElementById('open-labos').addEventListener('click', async () => {
     const s = await getSettings();
-    // Old FastAPI setup: the app lived next to the API.
-    if (!s.appUrl && s.apiBase && s.apiBase.endsWith('/api')) { chrome.tabs.create({ url: `${s.apiBase.replace('/api', '')}/?page=reagent-cart` }); return; }
     chrome.tabs.create({ url: `${appUrlOf(s)}/?page=reagent-cart` });
   });
   document.getElementById('capture-page').addEventListener('click', async () => {
     // Works on ANY website — uses activeTab permission to grab tab metadata,
     // then runs a tiny content-script function to scrape h1 + price + image.
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url || tab.url.startsWith('chrome://')) {
+    if (!tab || !tab.url || !/^https?:/.test(tab.url)) {
       alert('Open the vendor product page in this tab first.');
       return;
     }
