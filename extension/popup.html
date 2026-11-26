@@ -36,6 +36,9 @@
   .connection { font-size: 10px; padding: 6px 12px; background: #0f172a; color: #94a3b8; }
   .connection.ok { color: #4ade80; }
   .connection.err { color: #f87171; }
+  .app-link { display: block; padding: 10px 16px; background: #020617; color: #a5b4fc; font-size: 12px; font-weight: 600; text-align: center; text-decoration: none; border-top: 1px solid #1e293b; }
+  .app-link:hover { color: #c7d2fe; background: #0b1220; }
+  .app-link small { display: block; font-weight: 400; color: #64748b; font-size: 10px; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -84,6 +87,11 @@
   </footer>
 
   <div class="connection" id="connection-row"></div>
+
+  <a class="app-link" id="app-link" href="https://lab-os-eight.vercel.app/" target="_blank" rel="noopener noreferrer">
+    🌐 Open the LabOS app
+    <small id="app-link-host">lab-os-eight.vercel.app</small>
+  </a>
 
   <script src="popup.js"></script>
 </body>

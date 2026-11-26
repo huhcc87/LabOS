@@ -1095,6 +1095,24 @@ export default defineSchema({
     created_at: v.number(),
   }).index("by_lab", ["lab_id"]).index("by_poll", ["poll_id"]),
 
+  // Community reagent catalog: products any LabOS lab has captured from a vendor site with the browser extension.
+  // Shared by every lab on purpose, so it holds public product facts only: no lab, no person, no price, no quantity.
+  community_reagents: defineTable({
+    key: v.string(), // vendor + catalog number (or vendor + name) in lower case, so the same product is stored once
+    name: v.string(),
+    vendor: v.optional(v.string()),
+    catalog_number: v.optional(v.string()),
+    size: v.optional(v.string()),
+    cas: v.optional(v.string()),
+    url: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+    search_text: v.string(),
+    times_added: v.number(), // how many times labs have captured it (a count only)
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_key", ["key"]).index("by_updated", ["updated_at"])
+    .searchIndex("by_text", { searchField: "search_text" }),
+
   // LabHuddle knowledge base: short write-ups captured from meetings.
   knowledge_articles: defineTable({
     lab_id: v.optional(v.id("labs")),

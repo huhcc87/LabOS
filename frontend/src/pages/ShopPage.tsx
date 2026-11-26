@@ -4,6 +4,7 @@ import { BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES } from '../data/biomedicalSup
 import LabBanner from '../components/LabBanner';
 import EmojiIcon from '../components/EmojiIcon';
 import SupplierDirectoryPage from './SupplierDirectoryPage';
+import CommunityCatalog from '../components/CommunityCatalog';
 
 /** One glyph per category tile; unknown categories fall back to a neutral icon. */
 const GLYPH: Record<string, string> = {
@@ -53,6 +54,8 @@ export default function ShopPage() {
       <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', margin: '0 0 28px' }}>
         Looking for something specific? Use the <button onClick={() => navigate('requests')} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, fontSize: 12 }}>Requests</button> page to ask for it.
       </p>
+
+      <CommunityCatalog />
 
       <h2 style={{ textAlign: 'center', fontSize: 18, margin: '0 0 14px' }}>Browse vendors by category</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 12, maxWidth: 1000, margin: '0 auto' }}>

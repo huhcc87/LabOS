@@ -2,7 +2,7 @@ async function load() {
   const s = await chrome.storage.sync.get(['apiBase', 'apiToken', 'appUrl', 'customVendors', 'crowdsource']);
   document.getElementById('apiBase').value = s.apiBase || 'https://tame-ladybug-197.convex.site/extension';
   document.getElementById('apiToken').value = s.apiToken || '';
-  document.getElementById('appUrl').value = s.appUrl || '';
+  document.getElementById('appUrl').value = s.appUrl || 'https://lab-os-eight.vercel.app';
   const cs = document.getElementById('crowdsource');
   if (cs) {
     cs.checked = !!s.crowdsource;

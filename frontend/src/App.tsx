@@ -102,6 +102,11 @@ function AppInner() {
   const [guestCode] = useState(() => new URLSearchParams(window.location.search).get('guest'));
   // Someone scanned a label QR code with their phone camera: open the Freezer page on it once signed in
   useEffect(() => { if (user && new URLSearchParams(window.location.search).get('label')) setPage('freezer-biobank'); }, [user]);
+  // The browser extension opens /?page=reagent-cart (or shop): go to that page once signed in.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('page');
+    if (user && p && ['reagent-cart', 'shop', 'requests'].includes(p)) setPage(p);
+  }, [user]);
   // A call invite link (?room=…) lands on LabHuddle, which joins that room.
   useEffect(() => { if (user && new URLSearchParams(window.location.search).get('room')) setPage('lab-meetings'); }, [user]);
   // A phone scanned an instrument QR (/?instrument=<id>): open that instrument's booking once signed in

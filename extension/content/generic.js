@@ -1,4 +1,4 @@
-// Generic adapter — Santa Cruz, Miltenyi, Eppendorf, Beckman, Promega, Takara
+// Generic adapter — every vendor in the LabOS supplier directory without its own script (about 130 sites)
 // Plus any custom vendor configured in extension Options.
 //
 // Strategy: prefer schema.org product microdata, fall back to common selectors.
@@ -49,7 +49,10 @@
     const size = sizeEl ? sizeEl.textContent.trim() : '';
     const imageUrl = (root.querySelector('[itemprop="image"]') || document.querySelector('img.product-image, img'))?.src;
 
-    if (!name && !catalog) return null;
+    // Only product pages get the LabOS button: a vendor's home, search or blog page has no catalog number and no buy button.
+    const buyButton = document.querySelector('.add-to-cart, button[class*="addToCart" i], button[class*="add-to-cart" i], [data-testid*="add-to-cart" i], button[name="add"], form[action*="cart" i] button[type="submit"]');
+    const looksLikeProduct = !!itemScope || (!!catalog && (unitPrice != null || !!buyButton)) || (!!cfg && !!name);
+    if (!name || !looksLikeProduct) return null;
     return {
       vendor: cfg?.vendor || vendorFromHost(),
       name, catalog, size, unitPrice,
