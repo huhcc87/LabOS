@@ -21,7 +21,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content ${sizeClass}`} onClick={(e) => e.stopPropagation()}>
+      {/* .modal carries the background, border and width; .modal-content is only used by the phone rules. */}
+      <div className={`modal modal-content ${sizeClass}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>

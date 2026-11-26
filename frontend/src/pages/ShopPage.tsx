@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from '../context/NavigationContext';
-import { BIOMEDICAL_SUPPLIERS, SUPPLIER_CATEGORIES } from '../data/biomedicalSuppliers';
+import { useVendors } from '../lib/useVendors';
+import AddVendor from '../components/AddVendor';
 import LabBanner from '../components/LabBanner';
 import EmojiIcon from '../components/EmojiIcon';
 import SupplierDirectoryPage from './SupplierDirectoryPage';
@@ -23,10 +24,11 @@ export default function ShopPage() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
 
-  const tiles = useMemo(() => SUPPLIER_CATEGORIES.filter((c) => c !== 'All').map((c) => ({
+  const { suppliers, categories } = useVendors();
+  const tiles = useMemo(() => categories.filter((c) => c !== 'All').map((c) => ({
     name: c,
-    count: BIOMEDICAL_SUPPLIERS.filter((s) => s.category === c).length,
-  })).filter((t) => t.count > 0).sort((a, b) => b.count - a.count), []);
+    count: suppliers.filter((s) => s.category === c).length,
+  })).filter((t) => t.count > 0).sort((a, b) => b.count - a.count), [suppliers, categories]);
 
   const go = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +76,10 @@ export default function ShopPage() {
       </div>
 
       <section id="vendors" aria-label="All vendors" style={{ marginTop: 32 }}>
-        <h2 style={{ fontSize: 18, margin: '0 0 14px' }}>All vendors</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', margin: '0 0 14px' }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>All vendors</h2>
+          <AddVendor />
+        </div>
         <SupplierDirectoryPage key={dirKey} embedded />
       </section>
     </div>

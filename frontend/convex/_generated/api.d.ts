@@ -16,6 +16,7 @@ import type * as authHelper from "../authHelper.js";
 import type * as biosketches from "../biosketches.js";
 import type * as cartBudgets from "../cartBudgets.js";
 import type * as community from "../community.js";
+import type * as communityVendors from "../communityVendors.js";
 import type * as compliance from "../compliance.js";
 import type * as costs from "../costs.js";
 import type * as crons from "../crons.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   biosketches: typeof biosketches;
   cartBudgets: typeof cartBudgets;
   community: typeof community;
+  communityVendors: typeof communityVendors;
   compliance: typeof compliance;
   costs: typeof costs;
   crons: typeof crons;
