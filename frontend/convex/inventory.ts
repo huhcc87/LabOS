@@ -18,41 +18,31 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx, args.token);
-    const numItems = args.paginationOpts?.numItems ?? 20;
+    // ponytail: client paginates in memory, so default to a bounded full set (500), not 20
+    const LIMIT = 500;
+    const numItems = args.paginationOpts?.numItems ?? LIMIT;
     const cursor = args.paginationOpts?.cursor ?? null;
 
-    if (args.search && !args.category) {
-      const results = await ctx.db
-        .query("inventory")
-        .withSearchIndex("search_name", (q) =>
-          q.search("name", args.search!)
-        )
-        .take(numItems);
-      return { page: results, isDone: true, continueCursor: null };
+    const base = args.category
+      ? ctx.db.query("inventory").withIndex("by_category", (q) => q.eq("category", args.category!))
+      : ctx.db.query("inventory");
+
+    if (!args.search) {
+      return await base.paginate({ numItems, cursor });
     }
 
-    let dbQuery;
-    if (args.category) {
-      dbQuery = ctx.db
-        .query("inventory")
-        .withIndex("by_category", (q) => q.eq("category", args.category!));
-    } else {
-      dbQuery = ctx.db.query("inventory");
-    }
-
-    const result = await dbQuery.paginate({ numItems, cursor });
-
-    if (args.search) {
-      const term = args.search.toLowerCase();
-      result.page = result.page.filter(
+    // Substring search over name/catalog/supplier, honoring category.
+    const term = args.search.toLowerCase();
+    const rows = await base.take(LIMIT * 4);
+    const page = rows
+      .filter(
         (item) =>
           item.name.toLowerCase().includes(term) ||
           (item.catalog_number ?? "").toLowerCase().includes(term) ||
           (item.supplier ?? "").toLowerCase().includes(term)
-      );
-    }
-
-    return result;
+      )
+      .slice(0, numItems);
+    return { page, isDone: true, continueCursor: "" };
   },
 });
 
