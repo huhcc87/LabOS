@@ -25,6 +25,9 @@ build_chrome() {
   echo "→ Packaging Chrome / Edge / Brave bundle…"
   zip -r "$zip_name" . "${EXCLUDES[@]}" > /dev/null
   echo "  ✓ $zip_name ($(du -h "$zip_name" | cut -f1))"
+  # The app's "Get the extension & app" window serves this copy (frontend/public/get).
+  mkdir -p ../frontend/public/get
+  cp "$zip_name" ../frontend/public/get/labos-extension.zip
 }
 
 build_firefox() {

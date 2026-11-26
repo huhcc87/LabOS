@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usersAdminApi, auditApi, integrationsApi } from '../lib/api';
 import { Icon } from '../components/Icon';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
+import ExtensionKeyCard from '../components/ExtensionKeyCard';
 import { AdminPasswordReset } from '../components/AdminPasswordReset';
 import EmojiIcon from '../components/EmojiIcon';
 import LabBanner from '../components/LabBanner';
@@ -735,6 +736,7 @@ export default function AdminHubPage() {
         <div className="card">
           <div style={{ marginBottom: 24 }}>
             <TwoFactorSetup />
+            <ExtensionKeyCard />
           </div>
           <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>System Settings</h3>
           {systemSettings.map(setting => (
