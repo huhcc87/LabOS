@@ -371,7 +371,6 @@
   "369": "@zxing/browser",
   "370": "mqtt",
   "371": "@tanstack/react-table",
-  "372": "@tiptap/extension-table-cell",
   "373": "@tiptap/extension-task-item",
   "374": "@types/bwip-js",
   "375": "@types/uuid",
